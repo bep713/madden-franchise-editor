@@ -1,5 +1,6 @@
 const fs = require('fs');
-const { ipcRenderer } = require('electron');
+const { ipcRenderer, remote } = require('electron');
+const app = remote.app;
 const Selectr = require('mobius1-selectr');
 const utilService = require('./utilService');
 const FranchiseFile = require('./FranchiseFile');
@@ -432,7 +433,9 @@ function getDayChoices() {
 };
 
 function getScheduleChoices() {
-  return fs.readdirSync('schedules').reverse().map((year) => {
+  console.log(ipcRenderer);
+  console.log(app.getAppPath());
+  return fs.readdirSync(`${app.getAppPath()}\\schedules`).reverse().map((year) => {
     return {
       'value': year,
       'text': year,
