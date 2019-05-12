@@ -1,0 +1,23 @@
+.context-menu {
+  width: 150px;
+  position: absolute;
+  z-index: 2;
+  border: 1px solid $brand-black;
+  background: #FFF;
+
+  ul {
+    list-style: none;
+    margin: 2px 0;
+    padding: 0;
+
+    li {
+      padding: 10px;
+      text-align: center;
+      cursor: default;
+
+      &:hover {
+        background: #D1D1D1;
+      }
+    }
+  }
+}

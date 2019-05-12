@@ -1,0 +1,28 @@
+.hex-view-wrapper {
+  position: absolute;
+  z-index: 2;
+}
+
+.hex-view {
+  width: 500px;
+  padding: 20px;
+  background-color: #FFF;
+  border: 1px solid #D1D1D1;
+}
+
+.hex-view-text {
+  padding: 10px;
+  width: 100%;
+  font-size: 1em;
+}
+
+.save-hex {
+  width: 100%;
+  padding: 10px;
+}
+
+.header-text {
+  margin-bottom: 10px;
+  background-color: #FFF;
+  text-align: center;
+}

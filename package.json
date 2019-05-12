@@ -1,0 +1,24 @@
+{
+  "name": "madden-schedule",
+  "version": "1.0.0",
+  "description": "An app that can modify Madden 19 franchise file schedules.",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "set NODE_ENV=development&& electron ."
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^4.1.4",
+    "gulp": "^4.0.1",
+    "gulp-sass": "^4.0.2"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.3",
+    "electron-reload": "^1.4.0",
+    "gulp-sourcemaps": "^2.6.5",
+    "mobius1-selectr": "^2.4.8",
+    "moment": "^2.24.0"
+  }
+}

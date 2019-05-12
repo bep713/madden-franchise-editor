@@ -1,0 +1,46 @@
+{
+  "days": [
+    {
+      "name": "Monday",
+      "abbreviation": "Mon",
+      "nameMatchList": ["Monday", "Mon", "M"],
+      "scheduleId": 1
+    },
+    {
+      "name": "Tuesday",
+      "abbreviation": "Tues",
+      "nameMatchList": ["Tuesday", "Tue", "Tues", "T"],
+      "scheduleId": 2
+    },
+    {
+      "name": "Wednesday",
+      "abbreviation": "Wed",
+      "nameMatchList": ["Wednesday", "Wed", "W"],
+      "scheduleId": 3
+    },
+    {
+      "name": "Thursday",
+      "abbreviation": "Thurs",
+      "nameMatchList": ["Thursday", "Thu", "Thurs", "R", "Th"],
+      "scheduleId": 4
+    },
+    {
+      "name": "Friday",
+      "abbreviation": "Fri",
+      "nameMatchList": ["Friday", "Fri", "F"],
+      "scheduleId": 5
+    },
+    {
+      "name": "Saturday",
+      "abbreviation": "Sat",
+      "nameMatchList": ["Saturday", "Sat", "Sa"],
+      "scheduleId": 6
+    },
+    {
+      "name": "Sunday",
+      "abbreviation": "Sun",
+      "nameMatchList": ["Sunday", "Sun", "Su"],
+      "scheduleId": 0
+    }
+  ]
+}

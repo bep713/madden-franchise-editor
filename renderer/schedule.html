@@ -1,0 +1,58 @@
+<div class="header">
+  <div class="top-bar">
+    <div class="title">M19 Schedule Editor</div>
+    <div class="right-action-buttons">
+      <!-- <div class="action-button">Help</div> -->
+    </div>
+  </div>
+  <div class="bottom-bar">
+    <div class="info-bar">
+      <div class="file-name"></div>
+      <div class="right-action-buttons">
+        <!-- <div class="action-button">Clear all</div> -->
+        <div id="replace-all" class="action-button">Replace all</div>
+        <!-- <div id="change-times" class="action-button">Change all times</div> -->
+      </div>
+    </div>
+  </div>
+  <div class="schedule-wrapper">
+    <div class="week-selection-wrapper">
+      <div class="week-header">Select a week:</div>
+      <div class="week-wrapper"></div>
+    </div>
+    <div class="games-wrapper"></div>
+  </div>
+  <div class="hex-view-wrapper hidden">
+    <div class="hex-view">
+      <div class="hex-view-header">
+        <div class="header-text"></div>
+      </div>
+      <textarea id="hex-view-text" class="hex-view-text" cols="45" rows="6" maxlength="275"></textarea>
+      <button id="save-hex" class="save-hex">Save</button>
+    </div>
+    <div class="hex-underlay"></div>
+  </div>
+  <div class="context-menu hidden">
+    <ul>
+      <li id="view-edit-hex">View/edit hex</li>
+      <li id="view-edit-binary">View/edit binary</li>
+    </ul>
+  </div>
+  <div class="replace-all-modal modal hidden">
+    <div class="modal-header">
+      <h2 class="title">Replace all games</h2>
+      <div class="close-modal">X</div>
+    </div>
+    <div class="modal-content">
+      <p>Replace all games with games defined in the below file.</p>
+      <div class="year-select-wrapper">
+        <select name="available-years" id="available-years"></select>
+        <button class="btn btn-replace-all">Replace all</button>
+      </div>
+    </div>
+  </div>
+  <div class="underlay hidden"></div>
+  <div class="loader-wrapper hidden">
+    <div class="loader"></div>
+  </div>
+</div>

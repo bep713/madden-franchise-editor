@@ -1,0 +1,17 @@
+.year-select-wrapper {
+  display: flex;
+
+  .selectr-container {
+    margin-right: 10px;
+  }
+
+  .selectr-selected {
+    border-color: $brand-black;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+}
+
+.btn-replace-all {
+  width: 150px;
+}

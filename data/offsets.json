@@ -1,0 +1,177 @@
+{
+  "tables": [
+    {
+      "table": "SeasonGame",
+      "offsets": [
+        {
+          "name": "awayTeam",
+          "offset": 56,
+          "type": "binary",
+          "length": 8
+        },
+        {
+          "name": "homeTeam",
+          "offset": 216,
+          "type": "binary",
+          "length": 8
+        },
+        {
+          "name": "awayRequestId",
+          "offset": 353,
+          "type": "binary",
+          "length": 31
+        },
+        {
+          "name": "homeRequestId",
+          "offset": 513,
+          "type": "binary",
+          "length": 31
+        },
+        {
+          "name": "timeOfDay",
+          "offset": 565,
+          "type": "binary",
+          "length": 11
+        },
+        {
+          "name": "forceWin",
+          "offset": 576,
+          "type": "binary",
+          "length": 2
+        },
+        {
+          "name": "awayFirstQuarterScore",
+          "offset": 578,
+          "type": "binary",
+          "length": 7
+        },
+        {
+          "name": "awayOvertimeScore",
+          "offset": 585,
+          "type": "binary",
+          "length": 7
+        },
+        {
+          "name": "homeScore",
+          "offset": 592,
+          "type": "binary",
+          "length": 8
+        },
+        {
+          "name": "awayScore",
+          "offset": 600,
+          "type": "binary",
+          "length": 8
+        },
+        {
+          "name": "homeOvertimeScore",
+          "offset": 612,
+          "type": "binary",
+          "length": 7
+        },
+        {
+          "name": "awayFourthQuarterScore",
+          "offset": 619,
+          "type": "binary",
+          "length": 7
+        },
+        {
+          "name": "awayThirdQuarterScore",
+          "offset": 626,
+          "type": "binary",
+          "length": 7
+        },
+        {
+          "name": "awaySecondQuarterScore",
+          "offset": 658,
+          "type": "binary",
+          "length": 7
+        },
+        {
+          "name": "gameStatus",
+          "offset": 641,
+          "type": "binary",
+          "length": 3
+        },
+        {
+          "name": "homeFourthQuarterScore",
+          "offset": 644,
+          "type": "binary",
+          "length": 7
+        },
+        {
+          "name": "homeThirdQuarterScore",
+          "offset": 651,
+          "type": "binary",
+          "length": 7
+        },
+        {
+          "name": "homeSecondQuarterScore",
+          "offset": 658,
+          "type": "binary",
+          "length": 7
+        },
+        {
+          "name": "homeFirstQuarterScore",
+          "offset": 665,
+          "type": "binary",
+          "length": 7
+        },
+        {
+          "name": "seasonWeek",
+          "offset": 674,
+          "type": "binary",
+          "length": 5
+        },
+        {
+          "name": "seasonGameNumber",
+          "offset": 679,
+          "type": "binary",
+          "length": 5
+        },
+        {
+          "name": "isSimmed",
+          "offset": 711,
+          "type": "binary",
+          "length": 1
+        },
+        {
+          "name": "isThanksgiving",
+          "offset": 713,
+          "type": "binary",
+          "length": 1
+        },
+        {
+          "name": "isOvertime",
+          "offset": 714,
+          "type": "binary",
+          "length": 1
+        },
+        {
+          "name": "forceWinType",
+          "offset": 718,
+          "type": "binary",
+          "length": 1
+        },
+        {
+          "name": "liveSeasonGameType",
+          "offset": 724,
+          "type": "binary",
+          "length": 4
+        },
+        {
+          "name": "dayOfWeek",
+          "offset": 728,
+          "type": "binary",
+          "length": 4
+        },
+        {
+          "name": "weekType",
+          "offset": 732,
+          "type": "binary",
+          "length": 4
+        }
+      ]
+    }
+  ]
+}

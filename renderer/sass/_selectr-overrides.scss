@@ -1,0 +1,34 @@
+.selectr-selected {
+  background-color: inherit;
+  border-color: transparent;
+
+  &:before {
+    // display: none;
+  }
+
+  &:hover,
+  &:focus,
+  &:active {
+    border-color: $brand-black;
+
+    &:before {
+      display: inherit;
+    }
+  }
+}
+
+.selectr-container {
+  &.open {
+    .selectr-selected {
+      &:before {
+        display: inherit;
+      }
+    }
+  }
+
+  input[type="search"]::-webkit-search-decoration,
+  input[type="search"]::-webkit-search-cancel-button,
+  input[type="search"]::-webkit-search-results-button,
+  input[type="search"]::-webkit-search-results-decoration { display: none; }
+
+}

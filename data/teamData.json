@@ -1,0 +1,276 @@
+{
+  "teams": [
+    {
+      "city": "Arizona",
+      "nickname": "Cardinals",
+      "abbreviation": "ARI",
+      "nameMatchList": ["Arizona Cardinals", "St. Louis Cardinals", "Phoenix Cardinals"],
+      "scheduleId": 8,
+      "logoPath": "img/team-logos/cardinals.png"
+    },
+    {
+      "city": "Atlanta",
+      "nickname": "Falcons",
+      "abbreviation": "ATL",
+      "nameMatchList": ["Atlanta Falcons"],
+      "scheduleId": 15,
+      "logoPath": "img/team-logos/falcons.png"
+    },
+    {
+      "city": "Baltimore",
+      "nickname": "Ravens",
+      "abbreviation": "BAL",
+      "nameMatchList": ["Baltimore Ravens"],
+      "scheduleId": 29,
+      "logoPath": "img/team-logos/ravens.png"
+    },
+    {
+      "city": "Buffalo",
+      "nickname": "Bills",
+      "abbreviation": "BUF",
+      "nameMatchList": ["Buffalo Bills"],
+      "scheduleId": 4,
+      "logoPath": "img/team-logos/bills.png"
+    },
+    {
+      "city": "Carolina",
+      "nickname": "Panthers",
+      "abbreviation": "CAR",
+      "nameMatchList": ["Carolina Panthers"],
+      "scheduleId": 25,
+      "logoPath": "img/team-logos/panthers.png"
+    },
+    {
+      "city": "Chicago",
+      "nickname": "Bears",
+      "abbreviation": "CHI",
+      "nameMatchList": ["Chicago Bears"],
+      "scheduleId": 2,
+      "logoPath": "img/team-logos/bears.png"
+    },
+    {
+      "city": "Cincinnati",
+      "nickname": "Bengals",
+      "abbreviation": "CIN",
+      "nameMatchList": ["Cincinnati Bengals"],
+      "scheduleId": 3,
+      "logoPath": "img/team-logos/bengals.png"
+    },
+    {
+      "city": "Cleveland",
+      "nickname": "Browns",
+      "abbreviation": "CLE",
+      "nameMatchList": ["Cleveland Browns"],
+      "scheduleId": 6,
+      "logoPath": "img/team-logos/browns.png"
+    },
+    {
+      "city": "Dallas",
+      "nickname": "Cowboys",
+      "abbreviation": "DAL",
+      "nameMatchList": ["Dallas Cowboys"],
+      "scheduleId": 12,
+      "logoPath": "img/team-logos/cowboys.png"
+    },
+    {
+      "city": "Denver",
+      "nickname": "Broncos",
+      "abbreviation": "DEN",
+      "nameMatchList": ["Denver Broncos"],
+      "scheduleId": 5,
+      "logoPath": "img/team-logos/broncos.png"
+    },
+    {
+      "city": "Detroit",
+      "nickname": "Lions",
+      "abbreviation": "DET",
+      "nameMatchList": ["Detroit Lions"],
+      "scheduleId": 21,
+      "logoPath": "img/team-logos/lions.png"
+    },
+    {
+      "city": "Green Bay",
+      "nickname": "Packers",
+      "abbreviation": "GB",
+      "nameMatchList": ["Green Bay Packers"],
+      "scheduleId": 24,
+      "logoPath": "img/team-logos/packers.png"
+    },
+    {
+      "city": "Houston",
+      "nickname": "Texans",
+      "abbreviation": "HOU",
+      "nameMatchList": ["Houston Texans"],
+      "scheduleId": 34,
+      "logoPath": "img/team-logos/texans.png"
+    },
+    {
+      "city": "Indianapolis",
+      "nickname": "Colts",
+      "abbreviation": "IND",
+      "nameMatchList": ["Indianapolis Colts", "Baltimore Colts"],
+      "scheduleId": 11,
+      "logoPath": "img/team-logos/colts.png"
+    },
+    {
+      "city": "Jacksonville",
+      "nickname": "Jaguars",
+      "abbreviation": "JAX",
+      "nameMatchList": ["Jacksonville Jaguars"],
+      "scheduleId": 19,
+      "logoPath": "img/team-logos/jaguars.png"
+    },
+    {
+      "city": "Kansas City",
+      "nickname": "Chiefs",
+      "abbreviation": "KC",
+      "nameMatchList": ["Kansas City Chiefs"],
+      "scheduleId": 10,
+      "logoPath": "img/team-logos/chiefs.png"
+    },
+    {
+      "city": "Los Angeles",
+      "nickname": "Chargers",
+      "abbreviation": "LAC",
+      "nameMatchList": ["Los Angeles Chargers", "San Diego Chargers"],
+      "scheduleId": 9,
+      "logoPath": "img/team-logos/chargers.png"
+    },
+    {
+      "city": "Los Angeles",
+      "nickname": "Rams",
+      "abbreviation": "LAR",
+      "nameMatchList": ["Los Angeles Rams", "St. Louis Rams"],
+      "scheduleId": 28,
+      "logoPath": "img/team-logos/rams.png"
+    },
+    {
+      "city": "Miami",
+      "nickname": "Dolphins",
+      "abbreviation": "MIA",
+      "nameMatchList": ["Miami Dolphins"],
+      "scheduleId": 13,
+      "logoPath": "img/team-logos/dolphins.png"
+    },
+    {
+      "city": "Minnesota",
+      "nickname": "Vikings",
+      "abbreviation": "MIN",
+      "nameMatchList": ["Minnesota Vikings"],
+      "scheduleId": 36,
+      "logoPath": "img/team-logos/vikings.png"
+    },
+    {
+      "city": "New England",
+      "nickname": "Patriots",
+      "abbreviation": "NE",
+      "nameMatchList": ["New England Patriots", "Boston Patriots", "Bay State Patriots"],
+      "scheduleId": 26,
+      "logoPath": "img/team-logos/patriots.png"
+    },
+    {
+      "city": "New Orleans",
+      "nickname": "Saints",
+      "abbreviation": "NO",
+      "nameMatchList": ["New Orleans Saints"],
+      "scheduleId": 31,
+      "logoPath": "img/team-logos/saints.png"
+    },
+    {
+      "city": "New York",
+      "nickname": "Giants",
+      "abbreviation": "NYG",
+      "nameMatchList": ["New York Giants"],
+      "scheduleId": 17,
+      "logoPath": "img/team-logos/giants.png"
+    },
+    {
+      "city": "New York",
+      "nickname": "Jets",
+      "abbreviation": "NYJ",
+      "nameMatchList": ["New York Jets"],
+      "scheduleId": 20,
+      "logoPath": "img/team-logos/jets.png"
+    },
+    {
+      "city": "Oakland",
+      "nickname": "Raiders",
+      "abbreviation": "OAK",
+      "nameMatchList": ["Oakland Raiders", "Los Angeles Raiders"],
+      "scheduleId": 27,
+      "logoPath": "img/team-logos/raiders.png"
+    },
+    {
+      "city": "Philadelphia",
+      "nickname": "Eagles",
+      "abbreviation": "PHI",
+      "nameMatchList": ["Philadelphia Eagles"],
+      "scheduleId": 14,
+      "logoPath": "img/team-logos/eagles.png"
+    },
+    {
+      "city": "Pittsburgh",
+      "nickname": "Steelers",
+      "abbreviation": "PIT",
+      "nameMatchList": ["Pittsburgh Steelers"],
+      "scheduleId": 33,
+      "logoPath": "img/team-logos/steelers.png"
+    },
+    {
+      "city": "San Francisco",
+      "nickname": "49ers",
+      "abbreviation": "SF",
+      "nameMatchList": ["San Francisco 49ers"],
+      "scheduleId": 0,
+      "logoPath": "img/team-logos/49ers.png"
+    },
+    {
+      "city": "Seattle",
+      "nickname": "Seahawks",
+      "abbreviation": "SEA",
+      "nameMatchList": ["Seattle Seahawks"],
+      "scheduleId": 32,
+      "logoPath": "img/team-logos/seahawks.png"
+    },
+    {
+      "city": "Tampa Bay",
+      "nickname": "Buccaneers",
+      "abbreviation": "TB",
+      "nameMatchList": ["Tampa Bay Buccaneers"],
+      "scheduleId": 7,
+      "logoPath": "img/team-logos/buccaneers.png"
+    },
+    {
+      "city": "Tennessee",
+      "nickname": "Titans",
+      "abbreviation": "TEN",
+      "nameMatchList": ["Tennessee Titans", "Houston Oilers", "Tenneesee Oilers"],
+      "scheduleId": 35,
+      "logoPath": "img/team-logos/titans.png"
+    },
+    {
+      "city": "Washington",
+      "nickname": "Redskins",
+      "abbreviation": "WAS",
+      "nameMatchList": ["Washington Redskins"],
+      "scheduleId": 30,
+      "logoPath": "img/team-logos/redskins.png"
+    },
+    {
+      "city": "AFC",
+      "nickname": "Pro Bowl",
+      "abbreviation": "AFC",
+      "nameMatchList": ["AFC"],
+      "scheduleId": 1,
+      "logoPath": "img/team-logos/redskins.png"
+    },
+    {
+      "city": "NFC",
+      "nickname": "Pro Bowl",
+      "abbreviation": "NFC",
+      "nameMatchList": ["NFC"],
+      "scheduleId": 22,
+      "logoPath": "img/team-logos/redskins.png"
+    }
+  ]
+}
