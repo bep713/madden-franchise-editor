@@ -21,6 +21,14 @@ utilService.bin2dec = function (binary) {
   return parseInt(binary, 2);
 };
 
+utilService.uintToInt = function (uint, nbit) {
+  nbit = +nbit || 32;
+  if (nbit > 32) throw new RangeError('uintToInt only supports ints up to 32 bits');
+  uint <<= 32 - nbit;
+  uint >>= 32 - nbit;
+  return uint;
+};
+
 utilService.hex2bin = function (hex) {
   return (parseInt(hex, 16).toString(2)).padStart(8, '0');
 };
@@ -87,6 +95,46 @@ utilService.getBitArray = function (data) {
 
 utilService.replaceAt = function (oldValue, index, value) {
   return oldValue.substr(0, index) + value + oldValue.substr(index + value.length);
+};
+
+utilService.byteArrayToLong = function(byteArray, reverse) {
+  let newByteArray;
+
+  if (Buffer.isBuffer(byteArray)) {
+    newByteArray = Buffer.from(byteArray);
+  } else {
+    newByteArray = byteArray.slice();
+  }
+
+  if (reverse) {
+    newByteArray = newByteArray.reverse();
+  }
+  
+  var value = 0;
+  for ( var i = newByteArray.length - 1; i >= 0; i--) {
+      value = (value * 256) + newByteArray[i];
+  }
+
+  return value;
+};
+
+utilService.show = function (element) {
+  element.classList.remove('hidden');
+};
+
+utilService.hide = function (element) {
+  element.classList.add('hidden');
+};
+
+utilService.arrayMove = function (arr, old_index, new_index) {
+  if (new_index >= arr.length) {
+      var k = new_index - arr.length + 1;
+      while (k--) {
+          arr.push(undefined);
+      }
+  }
+  arr.splice(new_index, 0, arr.splice(old_index, 1)[0]);
+  return arr;
 };
 
 module.exports = utilService;

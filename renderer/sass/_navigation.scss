@@ -1,0 +1,21 @@
+.navigation {
+  display: flex;
+}
+
+.nav-item {
+  color: $welcome-link-color;
+  cursor: pointer;
+
+  &.active {
+    color: $brand-black;
+    cursor: default;
+
+    &:hover {
+      color: $brand-black;
+    }
+  }
+
+  + .nav-item {
+    margin-left: 50px;
+  }
+}

@@ -1,0 +1,58 @@
+.filter-header {
+  h3 {
+    margin-top: 0;
+  }
+}
+
+.filters {
+  display: flex;
+
+  .filter {
+    + .filter {
+      margin-left: 50px;
+    }
+  }
+}
+
+.filter {
+  label {
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .filter-input {
+    font-size: 1em;
+  }
+}
+
+.filter-input {
+  padding: 8px;
+}
+
+.results-wrapper {
+  margin: 40px 0 20px 0;
+
+  .headers {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    padding: 10px 0;
+    border-bottom: 1px solid #D1D1D1;
+  }
+
+  .results {
+    .result:nth-child(2n) {
+      background-color: #F8F8F8;
+    }
+  }
+
+  .result {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    padding: 20px 0;
+  }
+}
+
+.load-more {
+  padding: 10px;
+  width: 100%;
+}

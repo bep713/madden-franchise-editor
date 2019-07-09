@@ -1,7 +1,9 @@
 const fs = require('fs');
 const zlib = require('zlib');
 const EventEmitter = require('events').EventEmitter;
+const FranchiseSchema = require('./FranchiseSchema');
 const FranchiseSchedule = require('./FranchiseSchedule');
+const FranchiseFileTable = require('./FranchiseFileTable');
 
 const COMPRESSED_FILE_LENGTH = 2936094;
 const COMPRESSED_DATA_OFFSET = 0x52;
@@ -9,6 +11,7 @@ const COMPRESSED_DATA_OFFSET = 0x52;
 class FranchiseFile extends EventEmitter {
   constructor(filePath) {
     super();
+    this.isLoaded = false;
 
     if (Array.isArray(filePath)) {
       this._filePath = filePath[0];
@@ -32,8 +35,8 @@ class FranchiseFile extends EventEmitter {
 
   parse() {
     this.schedule = new FranchiseSchedule(this.unpackedFileContents);
-
     const that = this;
+
     this.schedule.on('change', function (game) {
       const header = that.unpackedFileContents.slice(0, game.offset);
       const trailer = that.unpackedFileContents.slice(game.offset + game.hexData.length);
@@ -48,6 +51,72 @@ class FranchiseFile extends EventEmitter {
 
       that.unpackedFileContents = Buffer.concat([header, offsets.hexData, trailer]);
       that.packFile();
+    });
+
+    let schemaPromise = new Promise((resolve, reject) => {
+      this.schemaList = new FranchiseSchema();
+      this.schemaList.on('done', function () {
+        resolve();
+      });
+    });
+
+    let tablePromise = new Promise((resolve, reject) => {
+      const firstCheck = 0x53;
+      const secondCheck = 0x50;
+      const thirdCheck = 0x42;
+      const fourthCheck = 0x46;
+
+      const altFirstCheck = 0x41;
+      const altSecondCheck = 0x53;
+      const altThirdCheck = 0x54;
+      const altFourthCheck = 0x4F;
+
+      const tableIndicies = [];
+
+      for (let i = 0; i <= this.unpackedFileContents.length - 4; i+=1) {
+        if ((this.unpackedFileContents[i] === firstCheck
+          && this.unpackedFileContents[i+1] === secondCheck
+          && this.unpackedFileContents[i+2] === thirdCheck
+          && this.unpackedFileContents[i+3] === fourthCheck) ||
+          (this.unpackedFileContents[i] === altFirstCheck
+          && this.unpackedFileContents[i+1] === altSecondCheck
+          && this.unpackedFileContents[i+2] === altThirdCheck
+          && this.unpackedFileContents[i+3] === altFourthCheck)) {
+            const tableStart = i - 0x90;
+            tableIndicies.push(tableStart);
+          }
+      }
+
+      this.tables = [];
+
+      for (let i = 0; i < tableIndicies.length; i++) {
+        const currentTable = tableIndicies[i];
+        const nextTable = tableIndicies.length >= i+1 ? tableIndicies[i+1] : null;
+
+        const tableData = this.unpackedFileContents.slice(currentTable, nextTable);
+
+        const newFranchiseTable = new FranchiseFileTable(tableData, currentTable);
+        this.tables.push(newFranchiseTable);
+
+        newFranchiseTable.on('change', function () {
+          const header = that.unpackedFileContents.slice(0, this.offset);
+          const trailer = that.unpackedFileContents.slice(this.offset + this.data.length);
+
+          that.unpackedFileContents = Buffer.concat([header, this.data, trailer]);
+          that.packFile();
+        });
+      }
+
+      resolve();
+    });
+
+    Promise.all([schemaPromise, tablePromise]).then(() => {
+      that.tables.forEach((table) => {
+        table.schema = that.schemaList.getSchema(table.name);
+      });
+
+      that.isLoaded = true;
+      that.emit('tables-done');
     });
   };
 
@@ -77,6 +146,18 @@ class FranchiseFile extends EventEmitter {
 
   get filePath () {
     return this._filePath;
+  };
+
+  getTableByName (name) {
+    return this.tables.find((table) => { return table.name === name; });
+  };
+
+  getAllTablesByName (name) {
+    return this.tables.filter((table) => { return table.name === name; });
+  };
+
+  getTableById (id) {
+    return this.tables.find((table) => { return table.header && table.header.tableId === id; });
   };
 };
 

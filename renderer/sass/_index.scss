@@ -34,7 +34,13 @@ $brand-color: $brand-primary;
 
   li {
     + li {
-      margin-top: 5px;
+      margin-top: 10px;
+    }
+
+    &.hidden {
+      + li {
+        margin-top: 0;
+      }
     }
   }
 

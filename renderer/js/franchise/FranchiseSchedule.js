@@ -1,9 +1,9 @@
 const moment = require('moment');
 const FranchiseGame = require('./FranchiseGame');
 const EventEmitter = require('events').EventEmitter;
-const teamData = require('../../data/teamData.json');
-const seasonWeekData = require('../../data/seasonWeekData.json');
-const dayOfWeekData = require('../../data/dayOfWeekData.json');
+const teamData = require('../../../data/teamData.json');
+const seasonWeekData = require('../../../data/seasonWeekData.json');
+const dayOfWeekData = require('../../../data/dayOfWeekData.json');
 
 const PLAYOFF_START_OFFSET = 0x1CEB09;
 const PRESEASON_START_OFFSET = 0x1CEEA1;

@@ -3,30 +3,20 @@ const { ipcRenderer, remote } = require('electron');
 const app = remote.app;
 const Selectr = require('mobius1-selectr');
 const utilService = require('./utilService');
-const FranchiseFile = require('./FranchiseFile');
-const teamData = require('../../data/teamData.json');
-const dayOfWeekData = require('../../data/dayOfWeekData.json');
-const seasonWeekData = require('../../data/seasonWeekData.json');
+const FranchiseFile = require('../franchise/FranchiseFile');
+const teamData = require('../../../data/teamData.json');
+const dayOfWeekData = require('../../../data/dayOfWeekData.json');
+const seasonWeekData = require('../../../data/seasonWeekData.json');
 
 const teamChoices = getTeamChoices();
 const dayChoices = getDayChoices();
 const scheduleYearChoices = getScheduleChoices();
 
 let scheduleService = {};
+scheduleService.file = null;
 
-let file;
-
-scheduleService.loadSchedule = function (fileName) {
-  file = new FranchiseFile(fileName);
-  backupSchedule(file);
-
-  file.on('saving', function () {
-    ipcRenderer.send('saving');
-  });
-
-  file.on('saved', function (game) {
-    ipcRenderer.send('saved');
-  });
+scheduleService.loadSchedule = function (file) {
+  scheduleService.file = file;
 
   addEventListeners();
   this.loadWeeks();
@@ -43,14 +33,6 @@ scheduleService.loadGamesByWeek = function (weekNum) {
   removeGameElements();
   setActiveWeek(weekNum);
   attachGameElementsForWeek(weekNum);
-};
-
-scheduleService.closeFile = function () {
-  file = null;
-};
-
-scheduleService.isLoaded = function () {
-  return file !== null && file !== undefined;
 };
 
 module.exports = scheduleService;
@@ -75,7 +57,7 @@ function addEventListeners() {
     const newDataString = textArea.value;
 
     const gameOffset = contextMenu.getAttribute('data-game');
-    const game = file.schedule.getGameByOffset(gameOffset);
+    const game = scheduleService.file.schedule.getGameByOffset(gameOffset);
 
     if (isShowingHex(newDataString)) {
       const newDataHex = newDataString.split(' ');
@@ -107,7 +89,7 @@ function addEventListeners() {
   const viewEditHex = document.querySelector('#view-edit-hex');
   viewEditHex.addEventListener('click', function (e) {
     const gameOffset = contextMenu.getAttribute('data-game');
-    const game = file.schedule.getGameByOffset(gameOffset);
+    const game = scheduleService.file.schedule.getGameByOffset(gameOffset);
     const hexUnformatted = game.hexData.toString('hex').toUpperCase();
     const data = chunk(hexUnformatted, 2).join(' ')
     const header = game.gameDescription;
@@ -118,7 +100,7 @@ function addEventListeners() {
   const viewEditBinary = document.querySelector('#view-edit-binary');
   viewEditBinary.addEventListener('click', function (e) {
     const gameOffset = contextMenu.getAttribute('data-game');
-    const game = file.schedule.getGameByOffset(gameOffset);
+    const game = scheduleService.file.schedule.getGameByOffset(gameOffset);
     const header = game.gameDescription;
 
     populateHexViewWrapper(e, game.data, header);
@@ -143,11 +125,11 @@ function addEventListeners() {
     closeModals();
 
     const selectedFile = yearSelectr.selectedValue;
-    const scheduleFile = require(`../../schedules/${selectedFile}`);
+    const scheduleFile = require(`../../../schedules/${selectedFile}`);
     const spinner = document.querySelector('.loader-wrapper');
     spinner.classList.remove('hidden');
     setTimeout(() => {
-      file.schedule.replaceAllGamesWithFile(scheduleFile);
+      scheduleService.file.schedule.replaceAllGamesWithFile(scheduleFile);
       spinner.classList.add('hidden');
       scheduleService.loadGamesByWeek(0);
     }, 100);
@@ -186,22 +168,6 @@ function populateHexViewWrapper(event, data, header) {
 
   const headerTextElement = document.querySelector('.header-text');
   headerTextElement.textContent = header;
-};
-
-function backupSchedule(franchiseFile) {
-  if (!fs.existsSync('temp/backup')) {
-    if (!fs.existsSync('temp')) {
-      fs.mkdirSync('temp');
-    }
-    
-    fs.mkdirSync('temp/backup');
-  }
-
-  fs.writeFile('temp/backup/backup.bak', franchiseFile.rawContents, function (err) {
-    if (err) {
-      throw err;
-    }
-  });
 };
 
 function removeWeekNumberElements() {
@@ -267,7 +233,7 @@ function clearActiveWeek() {
 };
 
 function attachGameElementsForWeek (weekNum) {
-  file.schedule.getGamesInWeek(weekNum).forEach(attachGameElement);
+  scheduleService.file.schedule.getGamesInWeek(weekNum).forEach(attachGameElement);
 };
 
 function attachGameElement (game) {
@@ -433,8 +399,6 @@ function getDayChoices() {
 };
 
 function getScheduleChoices() {
-  console.log(ipcRenderer);
-  console.log(app.getAppPath());
   return fs.readdirSync(`${app.getAppPath()}\\schedules`).reverse().map((year) => {
     return {
       'value': year,

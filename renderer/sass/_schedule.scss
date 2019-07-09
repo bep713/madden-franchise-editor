@@ -1,5 +1,5 @@
 .header {
-  padding: 20px;
+  padding: 20px 0;
 
   .top-bar {
     display: flex;
@@ -7,11 +7,14 @@
     padding-bottom: 20px;
   }
 
+  .bottom-bar {
+    border-top: 1px solid $brand-black;
+  }
+
   .info-bar {
     padding-top: 20px;
-    border-top: 1px solid $brand-black;
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
 
     .right-action-buttons {
       display: flex;
@@ -23,14 +26,14 @@
       }
     }
   }
+}
 
-  .action-button {
-    color: #0079c1;
-    cursor: pointer;
+.action-button {
+  color: #0079c1;
+  cursor: pointer;
 
-    &:hover {
-      color: darken(#0079c1, 10%);
-    }
+  &:hover {
+    color: darken(#0079c1, 10%);
   }
 }
 

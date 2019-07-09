@@ -1,2 +1,2 @@
-const welcomeService = require('./js/welcomeService.js');
-welcomeService.start();
+const navigationService = require('./js/services/navigationService.js');
+navigationService.onHomeClicked();

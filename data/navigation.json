@@ -1,0 +1,24 @@
+{
+  "items": [
+    {
+      "id": "home",
+      "text": "Home",
+      "clickListener": "onHomeClicked"
+    },
+    {
+      "id": "schedule-editor",
+      "text": "Schedule Editor",
+      "clickListener": "onScheduleEditorClicked"
+    },
+    {
+      "id": "table-editor",
+      "text": "Table Editor",
+      "clickListener": "onTableEditorClicked"
+    },
+    {
+      "id": "schema-viewer",
+      "text": "Schema Viewer",
+      "clickListener": "onSchemaViewerClicked"
+    }
+  ]
+}

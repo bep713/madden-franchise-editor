@@ -1,5 +1,5 @@
-const FranchiseTable = require('./FranchiseTable');
-const offsetData = require('../../data/offsets.json');
+const FranchiseTable = require('../franchise/FranchiseTable');
+const offsetData = require('../../../data/offsets.json');
 
 let tables;
 let offsetDataService = {};

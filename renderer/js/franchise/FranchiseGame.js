@@ -1,10 +1,10 @@
 const moment = require('moment');
-const utilService = require('../js/utilService');
 const EventEmitter = require('events').EventEmitter;
-const teamData = require('../../data/teamData.json');
-const offsetDataService = require('./offsetDataService');
-const dayOfWeekData = require('../../data/dayOfWeekData.json');
-const seasonWeekData = require('../../data/seasonWeekData.json');
+const utilService = require('../services/utilService');
+const teamData = require('../../../data/teamData.json');
+const dayOfWeekData = require('../../../data/dayOfWeekData.json');
+const offsetDataService = require('../services/offsetDataService');
+const seasonWeekData = require('../../../data/seasonWeekData.json');
 
 class FranchiseGame extends EventEmitter {
   constructor(data, offset) {

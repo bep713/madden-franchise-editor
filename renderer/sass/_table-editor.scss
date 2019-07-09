@@ -1,0 +1,35 @@
+.table-wrapper {
+  display: grid;
+  grid-template-rows: 40px 1fr;
+  height: 90vh;
+}
+
+.table-content-wrapper {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  font-family: 'Roboto Mono', 'monospace';
+}
+
+td.active-row {
+  background-color: #f1f1f1;
+}
+
+.table-list {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+
+  .selectr-selected {
+    border: 1px solid $brand-black;
+  }
+}
+
+.toggle-types {
+  margin-left: 25px;
+  flex-basis: 100px;
+}
+
+.header-type {
+  font-style: italic;
+}
