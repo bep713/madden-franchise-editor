@@ -26,10 +26,42 @@ td.active-row {
 }
 
 .toggle-types {
+  flex-basis: 105px;
+}
+
+.table-action-link {
   margin-left: 25px;
-  flex-basis: 100px;
+}
+
+.jump-to-column {
+  flex-basis: 135px;
 }
 
 .header-type {
   font-style: italic;
+}
+
+.jump-row {
+  margin-right: 10px;
+  padding-left: 10px;
+}
+
+.back-link {
+  flex-basis: 80px;
+
+  &.disabled {
+    color: gray;
+
+    &:hover {
+      color: gray;
+    }
+  }
+}
+
+.htCore a {
+  &:hover {
+    color: $brand-link-color;
+    text-decoration: underline;
+    cursor: pointer;
+  } 
 }

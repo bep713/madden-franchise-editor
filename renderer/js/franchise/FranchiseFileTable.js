@@ -9,14 +9,27 @@ class FranchiseFileTable extends EventEmitter {
     this.offset = offset;
     this.name = readTableName(data);
     this.recordsRead = false;
+    this.isArray = this.name.indexOf('[]') >= 0;
+    this.header = readTableHeader(this.data, this.isArray);
   };
 
   set schema (schema) {
     this._schema = schema;
-    
+
+    let headerSize = 0;
+    let records1Size = 0;
+    let records1SizeOffset = 1689 + this.header.tableStoreLength * 8;
+
     if (schema) {
-      this.header = readTableHeader(this.data, schema);
+      headerSize = 0xE4 + (schema.numMembers * 4) + this.header.tableStoreLength;
+      const binaryData = utilService.getBitArray(this.data.slice(0, headerSize));
+      records1Size = utilService.bin2dec(binaryData.slice(records1SizeOffset, records1SizeOffset+9));
     }
+
+    this.header.headerSize = headerSize;
+    this.header.record1Size = records1Size;
+    this.header.table1StartIndex = headerSize,
+    this.header.table2StartIndex = headerSize + (this.header.data1RecordCount * records1Size);
   };
 
   get schema () {
@@ -28,26 +41,64 @@ class FranchiseFileTable extends EventEmitter {
       if (!this.recordsRead) {
         if (this.schema) {
           this.offsetTable = readOffsetTable(this.data, this.schema, this.header);
-          this.records = readRecords(this.data, this.header, this.schema, this.offsetTable);
-  
-          this.records.forEach((record, index) => {
-            const that = this;
-            record.on('change', function () {
-              const recordOffset = that.header.headerSize + (index * that.header.record1Size);
-  
-              const header = that.data.slice(0, recordOffset);
-              const trailer = that.data.slice(recordOffset + that.header.record1Size);
+        } else if (this.isArray) {
+          const numberOfFields = this.header.record1Size / 4;
+          let offsetTable = [];
 
-              that.data = Buffer.concat([header, this.hexData, trailer]);
-              that.emit('change');
-            });
-          });
-  
-          this.recordsRead = true;
-          resolve(this);
+          for (let i = 0; i < numberOfFields; i++) {
+            const offset = {
+              'final': false,
+              'index': i,
+              'indexOffset': i * 32,
+              'isSigned': false,
+              'length': 32,
+              'maxLength': null,
+              'maxValue': null,
+              'minValue': null,
+              'name': `${this.name.substring(0, this.name.length - 2)}${i}`,
+              'offset': i * 32,
+              'type': this.name.substring(0, this.name.length - 2),
+              'valueInSecondTable': false,
+              'isReference': true
+            }
+
+            offsetTable.push(offset);
+          }
+
+          this.offsetTable = offsetTable;
+        } else {
+          reject('Cannot read records: Schema is not defined.');
         }
-  
-        reject('Cannot read records: Schema is not defined.');
+
+        this.records = readRecords(this.data, this.header, this.offsetTable);
+
+        if (this.header.hasSecondTable) {
+          parseTable2Values(this.data, this.header, this.records);
+        }
+
+        this.records.forEach((record, index) => {
+          const that = this;
+          record.on('change', function () {
+            const recordOffset = that.header.headerSize + (index * that.header.record1Size);
+
+            const header = that.data.slice(0, recordOffset);
+            const trailer = that.data.slice(recordOffset + that.header.record1Size);
+
+            that.data = Buffer.concat([header, this.hexData, trailer]);
+            that.emit('change');
+          });
+
+          record.on('table2-change', function (secondTableField) {
+            const header = that.data.slice(0, that.header.table2StartIndex + secondTableField.index);
+            const trailer = that.data.slice(that.header.table2StartIndex + secondTableField.index + secondTableField.maxLength);
+
+            that.data = Buffer.concat([header, secondTableField.hexData, trailer]);
+            that.emit('change');
+          });
+        });
+
+        this.recordsRead = true;
+        resolve(this);
       } else {
         resolve(this);
       }
@@ -71,7 +122,7 @@ function readTableName (data) {
   return name;
 };
 
-function readTableHeader(data, schema) {
+function readTableHeader(data, isArray) {
   const headerStart = 0x80;
   const tableId = utilService.byteArrayToLong(data.slice(headerStart, headerStart+4), true);
   const tablePad1 = utilService.byteArrayToLong(data.slice(headerStart+4, headerStart+8), true);
@@ -108,11 +159,17 @@ function readTableHeader(data, schema) {
   const table1Length2 = utilService.byteArrayToLong(data.slice(headerOffset+36, headerOffset+40), true);
   const tableTotalLength = utilService.byteArrayToLong(data.slice(headerOffset+40, headerOffset+44), true);
 
-  let headerSize = 0xE4 + (schema.numMembers * 4) + tableStoreLength;
   let offsetStart = 0xE4 + tableStoreLength;
-  const binaryData = utilService.getBitArray(data.slice(0, headerSize));
-  const records1Size = utilService.bin2dec(binaryData.slice(records1SizeOffset, records1SizeOffset+9));
   const hasSecondTable = tableTotalLength > table1Length;
+
+  let headerSize = 0;
+  let records1Size = 0;
+
+  if (isArray) {
+    headerSize = 0xE8 + tableStoreLength;
+    const binaryData = utilService.getBitArray(data.slice(0, headerSize));
+    records1Size = utilService.bin2dec(binaryData.slice(records1SizeOffset, records1SizeOffset+9));
+  }
 
   return {
     'tableId': tableId,
@@ -142,49 +199,33 @@ function readTableHeader(data, schema) {
     'data2Id': data2Id,
     'table1Length2': table1Length2,
     'tableTotalLength': tableTotalLength,
-    'hasSecondTable': hasSecondTable
+    'hasSecondTable': hasSecondTable,
+    'table1StartIndex': tableStoreLength === 0 ? headerSize : headerSize - 4 + (data1RecordCount * 4),
+    'table2StartIndex': tableStoreLength === 0 ? headerSize + (data1RecordCount * records1Size) : (headerSize -4 + (data1RecordCount * 4)) + (data1RecordCount * records1Size)
   }
-
-  // return {
-  //   'tableId': 5102,
-  //   'tablePad1': 0,
-  //   'tableUnknown1': 64,
-  //   'tableUnknown2': 1,
-  //   'data1Id': 'SPBF',
-  //   'data1Type': 95,
-  //   'data1Unknown1': 7,
-  //   'data1Flag1': 0,
-  //   'data1Flag2': 1,
-  //   'data1Flag3': 0,
-  //   'data1Flag4': 0,
-  //   'tableStoreLength': 0,
-  //   'tableStoreName': null,
-  //   'data1Offset': 64,
-  //   'data1TableId': 5102,
-  //   'data1RecordCount': 1,
-  //   'data1Pad2': 0,
-  //   'table1Length': 212,
-  //   'table2Length': 0,
-  //   'data1Pad3': 0,
-  //   'data1Pad4': 0,
-  //   'headerSize': 392,
-  //   'record1Size': 16,
-  //   'capacity': 0,
-  //   'offsetStart': 228
-  // }
 };
 
 function readOffsetTable(data, schema, header) {
   let currentIndex = header.offsetStart;
   let offsetTable = parseOffsetTableFromData();
-  sortOffsetTableByIndex();
+  sortOffsetTableByIndexOffset();
 
   for(let i = 0; i < offsetTable.length; i++) {
     let curOffset = offsetTable[i];
     let nextOffset = offsetTable.length > i + 1 ? offsetTable[i+1] : null;
 
     if (nextOffset) {
-      curOffset.length = nextOffset.indexOffset - curOffset.indexOffset; 
+      let curIndex = i+2;
+      while(nextOffset && nextOffset.final) {
+        nextOffset = offsetTable[curIndex];
+        curIndex += 1;
+      }
+
+      if (nextOffset) {
+        curOffset.length = nextOffset.indexOffset - curOffset.indexOffset;  
+      } else {
+        curOffset.length = (header.record1Size * 8) - curOffset.indexOffset;
+      }      
     }
     else {
       curOffset.length = (header.record1Size * 8) - curOffset.indexOffset;
@@ -193,23 +234,31 @@ function readOffsetTable(data, schema, header) {
 
   let currentOffsetIndex = 0;
   let chunked32bit = [];
-
+ 
   for (let i = 0; i < header.record1Size * 8; i += 32) {
     let chunkedOffsets = [];
     let offsetLength = i % 32;
 
     do {
       const currentOffset = offsetTable[currentOffsetIndex];
+
+      if (currentOffset.final) {
+        currentOffsetIndex += 1;
+        continue;
+      }
+      
       offsetLength += currentOffset.length;
       chunkedOffsets.push(currentOffset);
 
       currentOffsetIndex += 1;
-    } while(offsetLength < 32);
+    } while((currentOffsetIndex < offsetTable.length) && offsetLength < 32);
 
     chunked32bit.push(chunkedOffsets);
   }
 
   chunked32bit.forEach((offsetArray) => {
+    // offsetArray = offsetArray.filter((offset) => { return !offset.final; });
+    
     let currentOffset = offsetArray[0].indexOffset;
     offsetArray[offsetArray.length - 1].offset = currentOffset;
 
@@ -220,11 +269,12 @@ function readOffsetTable(data, schema, header) {
     }
   });
 
+  offsetTable = offsetTable.filter((offset) => { return !offset.final; });
   offsetTable.sort((a,b) => { return a.offset - b.offset; });
 
   return offsetTable;
 
-  function sortOffsetTableByIndex() {
+  function sortOffsetTableByIndexOffset() {
     offsetTable.sort((a, b) => { return a.indexOffset - b.indexOffset; });
   };
 
@@ -239,9 +289,13 @@ function readOffsetTable(data, schema, header) {
         'index': parseInt(attribute.index),
         'name': attribute.name,
         'type': (minValue < 0 || maxValue < 0) ? 's_' + attribute.type : attribute.type,
+        'isReference': (attribute.type[0] == attribute.type[0].toUpperCase()) ? true : false,
+        'valueInSecondTable': header.hasSecondTable && attribute.type === 'string',
         'isSigned': minValue < 0 || maxValue < 0,
         'minValue': minValue,
         'maxValue': maxValue,
+        'maxLength': attribute.maxLength ? parseInt(attribute.maxLength) : null,
+        'final': attribute.final === 'true' ? true : false,
         'indexOffset': utilService.byteArrayToLong(data.slice(currentIndex, currentIndex + 4), true)
       });
       currentIndex += 4;
@@ -251,8 +305,8 @@ function readOffsetTable(data, schema, header) {
   };
 };
 
-function readRecords(data, header, schema, offsetTable) {
-  const binaryData = utilService.getBitArray(data.slice(header.headerSize, header.table1Length + header.headerSize));
+function readRecords(data, header, offsetTable) {
+  const binaryData = utilService.getBitArray(data.slice(header.table1StartIndex, header.table2StartIndex));
 
   let records = [];
 
@@ -262,4 +316,18 @@ function readRecords(data, header, schema, offsetTable) {
   }
 
   return records;
+};
+
+function parseTable2Values(data, header, records) {
+  const secondTableBinaryData = utilService.getBitArray(data.slice(header.table2StartIndex));
+
+  records.forEach((record) => {
+    const fieldsReferencingSecondTable = record._fields.filter((field) => { return field.secondTableField; });
+
+    fieldsReferencingSecondTable.forEach((field) => {
+      const stringStartBinaryIndex = field.secondTableField.index * 8;
+      const stringEndBinaryIndex = stringStartBinaryIndex + (field.offset.maxLength * 8);
+      field.secondTableField.unformattedValue = secondTableBinaryData.slice(stringStartBinaryIndex, stringEndBinaryIndex);
+    });
+  });
 };

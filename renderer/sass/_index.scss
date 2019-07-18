@@ -70,6 +70,15 @@ $brand-color: $brand-primary;
     &:hover {
       color: darken($welcome-link-color, 10%);
     }
+
+    &.disabled {
+      color: $brand-black;
+      cursor: default;
+
+      &:hover {
+        color: $brand-black;
+      }
+    }
   }
 
   .file-path {

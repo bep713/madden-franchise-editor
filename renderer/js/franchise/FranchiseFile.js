@@ -98,6 +98,8 @@ class FranchiseFile extends EventEmitter {
         const newFranchiseTable = new FranchiseFileTable(tableData, currentTable);
         this.tables.push(newFranchiseTable);
 
+        // console.log(i, newFranchiseTable.name);
+
         newFranchiseTable.on('change', function () {
           const header = that.unpackedFileContents.slice(0, this.offset);
           const trailer = that.unpackedFileContents.slice(this.offset + this.data.length);
@@ -112,7 +114,11 @@ class FranchiseFile extends EventEmitter {
 
     Promise.all([schemaPromise, tablePromise]).then(() => {
       that.tables.forEach((table) => {
-        table.schema = that.schemaList.getSchema(table.name);
+        const schema = that.schemaList.getSchema(table.name);
+
+        if (schema) {
+          table.schema = that.schemaList.getSchema(table.name);
+        }
       });
 
       that.isLoaded = true;
@@ -158,6 +164,10 @@ class FranchiseFile extends EventEmitter {
 
   getTableById (id) {
     return this.tables.find((table) => { return table.header && table.header.tableId === id; });
+  };
+
+  getTableByIndex (index) {
+    return this.tables[index];
   };
 };
 

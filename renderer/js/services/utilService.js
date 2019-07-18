@@ -21,6 +21,32 @@ utilService.bin2dec = function (binary) {
   return parseInt(binary, 2);
 };
 
+utilService.bin2Float = function (binary) {
+  const buffer = Buffer.from(utilService.bin2hex(binary), 'hex');
+
+  if (buffer.length >= 4) {
+    return buffer.readFloatBE(0);
+  } else {
+    return 0;
+  }
+};
+
+utilService.float2Bin = function (float) {
+  const getHex = i => ('00' + i.toString(16)).slice(-2);
+
+  var view = new DataView(new ArrayBuffer(4)),
+      result;
+
+  view.setFloat32(0, float);
+
+  result = Array
+      .apply(null, { length: 4 })
+      .map((_, i) => getHex(view.getUint8(i)))
+      .join('');
+
+  return utilService.hex2bin(result).padStart(32, '0');
+};
+
 utilService.uintToInt = function (uint, nbit) {
   nbit = +nbit || 32;
   if (nbit > 32) throw new RangeError('uintToInt only supports ints up to 32 bits');
@@ -135,6 +161,12 @@ utilService.arrayMove = function (arr, old_index, new_index) {
   }
   arr.splice(new_index, 0, arr.splice(old_index, 1)[0]);
   return arr;
+};
+
+utilService.removeChildNodes = function (node) {
+  while (node.firstChild) {
+      node.removeChild(node.firstChild);
+  }
 };
 
 module.exports = utilService;

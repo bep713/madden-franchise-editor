@@ -15,6 +15,10 @@ class FranchiseFileRecord extends EventEmitter {
         that._data = utilService.replaceAt(that._data, this.offset.offset, this.unformattedValue);
         that.emit('change');
       });
+
+      field.on('table2-change', function () {
+        that.emit('table2-change', this.secondTableField);
+      });
     });
   };
 

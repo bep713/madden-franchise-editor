@@ -82,7 +82,7 @@ function DEV_openFile() {
   welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-2019');
 
   setTimeout(() => {
-    navigationService.onSchemaViewerClicked();
+    navigationService.onTableEditorClicked();
   }, 10);
 };
 

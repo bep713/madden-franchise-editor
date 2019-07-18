@@ -28,7 +28,8 @@ class FranchiseSchema extends EventEmitter {
             'minValue': attribute.$.minValue,
             'maxValue': attribute.$.maxValue,
             'maxLength': attribute.$.maxLen,
-            'default': attribute.$.default
+            'default': attribute.$.default,
+            'final': attribute.$.final
           }
         });
       }

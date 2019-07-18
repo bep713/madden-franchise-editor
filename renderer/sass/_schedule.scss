@@ -29,11 +29,20 @@
 }
 
 .action-button {
-  color: #0079c1;
+  color: $brand-link-color;
   cursor: pointer;
 
   &:hover {
-    color: darken(#0079c1, 10%);
+    color: darken($brand-link-color, 10%);
+  }
+
+  &.disabled {
+    color: $brand-black;
+    cursor: default;
+
+    &:hover {
+      color: $brand-black;
+    }
   }
 }
 

@@ -11,12 +11,32 @@
   <div class="content">
     <div class="table-wrapper">
       <div class="table-list">
+        <div class="action-button back-link disabled">< Back</div>
         <select class="table-selector"></select>
-        <div class="toggle-types action-button">Toggle types</div>
+        <div class="toggle-types table-action-link action-button">Toggle types</div>
+        <div class="jump-to-column table-action-link action-button">Jump to column</div>
       </div>
       <div class="table-content-wrapper">
       
       </div>
     </div>
+  </div>
+  <div class="jump-to-column-modal modal hidden">
+    <div class="modal-header">
+      <h2 class="title">Jump to column</h2>
+      <div class="close-modal">X</div>
+    </div>
+    <div class="modal-content">
+      <p>Jump to the following column at the following row</p>
+      <div class="year-select-wrapper">
+        <select name="available-columns" id="available-columns"></select>
+        <input type="text" name="row-index" class="jump-row" value="1">
+        <button class="btn btn-go-jump-to-column">Go</button>
+      </div>
+    </div>
+  </div>
+  <div class="underlay hidden"></div>
+  <div class="loader-wrapper hidden">
+    <div class="loader"></div>
   </div>
 </div>

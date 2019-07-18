@@ -1,5 +1,6 @@
 const EventEmitter = require('events').EventEmitter;
 const utilService = require('../services/utilService');
+const FranchiseFileTable2Field = require('./FranchiseFileTable2Field');
 
 class FranchiseFileField extends EventEmitter {
   constructor(key, value, offset) {
@@ -8,6 +9,14 @@ class FranchiseFileField extends EventEmitter {
     this._unformattedValue = value;
     this._value = parseFieldValue(value, offset);
     this._offset = offset;
+
+    if (offset.valueInSecondTable) {
+      this.secondTableField = new FranchiseFileTable2Field(value, offset.maxLength);
+      this.secondTableField.on('change', function () {
+        this._value = this.secondTableField.value;
+        this.emit('table2-change');
+      }.bind(this));
+    }
   };
 
   get key () {
@@ -22,10 +31,18 @@ class FranchiseFileField extends EventEmitter {
     return this._value;
   };
 
+  get isReference () {
+    return this._offset.isReference;
+  };
+
   set value (value) {
-    this._value = value.toString();
-    this._unformattedValue = parseFormattedValue(value, this._offset);
-    this.emit('change');
+    if (this.offset.type === 'string') {
+      this.secondTableField.value = value.toString();
+    } else {
+      this._value = value.toString();
+      this._unformattedValue = parseFormattedValue(value, this._offset);
+      this.emit('change');
+    }
   };
 
   get unformattedValue () {
@@ -49,6 +66,8 @@ function parseFieldValue(unformatted, offset) {
       return utilService.bin2dec(unformatted);
     case 'bool':
       return unformatted[0] === '1' ? true : false;
+    case 'float':
+      return utilService.bin2Float(unformatted);
     default:
       return unformatted;
   }
@@ -63,6 +82,8 @@ function parseFormattedValue(formatted, offset) {
       return utilService.dec2bin(formatted, offset.length);
     case 'bool':
       return (formatted == 'true') ? '1' : '0';
+    case 'float':
+      return utilService.float2Bin(formatted);
     default:
       return formatted;
   }
