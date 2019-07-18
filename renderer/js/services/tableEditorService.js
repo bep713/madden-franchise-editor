@@ -215,9 +215,11 @@ function addEventListeners() {
 
       tableEditorService.selectedTable = table;
 
-      if (tableEditorService.navSteps.length === 1) {
-        backLink.classList.add('disabled');
-      }
+      setTimeout(() => {
+        if (tableEditorService.navSteps.length === 1) {
+          backLink.classList.add('disabled');
+        }
+      }, 200);
     }
   });
 };
@@ -263,7 +265,8 @@ function formatColumns(table) {
     return {
       'data': offset.name,
       'renderer': offset.isReference ? referenceRenderer : 'text',
-      'readOnly': offset.isReference
+      'readOnly': offset.isReference,
+      'wordWrap': false
     };
   });
 };
@@ -272,33 +275,33 @@ function referenceRenderer(instance, td, row, col, prop, value, cellProperties) 
   if (value && value.length === 32) {
     utilService.removeChildNodes(td);
     const referenceLink = document.createElement('a');
-    const tableIndex = utilService.bin2dec(value.substring(3,15));
-    const recordIndex = utilService.bin2dec(value.substring(16));
-    const table = tableEditorService.file.getTableByIndex(tableIndex);
+    const otherTableFlag = value[0];
 
-    if (tableIndex > 0 && table) {
-      referenceLink.innerHTML = `${table.name} - ${recordIndex}`;
-      td.appendChild(referenceLink);
+    if (otherTableFlag === '0') {
+      const tableIndex = utilService.bin2dec(value.substring(3,15));
+      const recordIndex = utilService.bin2dec(value.substring(16));
+      const table = tableEditorService.file.getTableByIndex(tableIndex);
 
-      referenceLink.addEventListener('click', function () {
-        tableEditorService.navSteps[tableEditorService.navSteps.length - 1].column = col;
-        tableEditorService.navSteps[tableEditorService.navSteps.length - 1].recordIndex = row;
+      if (tableIndex > 0 && table) {
+        referenceLink.innerHTML = `${table.name} - ${recordIndex}`;
+        td.appendChild(referenceLink);
 
-        tableEditorService.rowIndexToSelect = recordIndex;
-        tableEditorService.columnIndexToSelect = 0;
+        referenceLink.addEventListener('click', function () {
+          tableEditorService.navSteps[tableEditorService.navSteps.length - 1].column = col;
+          tableEditorService.navSteps[tableEditorService.navSteps.length - 1].recordIndex = row;
 
-        tableEditorService.tableSelector.setValue(table.header.tableId);
-    
-        setTimeout(() => {
-          tableEditorService.navSteps[tableEditorService.navSteps.length - 1].recordIndex = recordIndex;
-        }, 1000);
+          tableEditorService.rowIndexToSelect = recordIndex;
+          tableEditorService.columnIndexToSelect = 0;
 
-        // table.readRecords().then((table) => {
-        //   tableEditorService.hot.selectCell(recordIndex, 0);
-        // });
-    
-        tableEditorService.selectedTable = table;
-     });
+          tableEditorService.tableSelector.setValue(table.header.tableId);
+      
+          setTimeout(() => {
+            tableEditorService.navSteps[tableEditorService.navSteps.length - 1].recordIndex = recordIndex;
+          }, 1000);
+        });
+      } else {
+        td.innerHTML = value;
+      }
     } else {
       td.innerHTML = value;
     }

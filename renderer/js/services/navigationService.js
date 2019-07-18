@@ -74,7 +74,7 @@ navigationService.loadPage = function (pagePath) {
   content.innerHTML = page;
 };
 
-DEV_openFile();
+// DEV_openFile();
 
 module.exports = navigationService;
 
