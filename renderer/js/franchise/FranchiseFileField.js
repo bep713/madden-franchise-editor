@@ -59,32 +59,66 @@ class FranchiseFileField extends EventEmitter {
 module.exports = FranchiseFileField;
 
 function parseFieldValue(unformatted, offset) {
-  switch (offset.type) {
-    case 's_int':
-      return utilService.bin2dec(unformatted) - (offset.maxValue + 1);
-    case 'int':
-      return utilService.bin2dec(unformatted);
-    case 'bool':
-      return unformatted[0] === '1' ? true : false;
-    case 'float':
-      return utilService.bin2Float(unformatted);
-    default:
+  if (offset.enum) {
+    const theEnum = offset.enum.getMemberByUnformattedValue(unformatted);
+
+    if (theEnum) {
+      return theEnum.name;
+    } else {
       return unformatted;
+    }
+  }
+  else {
+    switch (offset.type) {
+      case 's_int':
+        return utilService.bin2dec(unformatted) - (offset.maxValue + 1);
+      case 'int':
+        return utilService.bin2dec(unformatted);
+      case 'bool':
+        return unformatted[0] === '1' ? true : false;
+      case 'float':
+        return utilService.bin2Float(unformatted);
+      default:
+        return unformatted;
+    }
   }
 };
 
 function parseFormattedValue(formatted, offset) {
-  switch (offset.type) {
-    case 's_int':
-      const actualValue = parseInt(formatted);
-      return utilService.dec2bin(actualValue + offset.maxValue + 1, offset.length);
-    case 'int':
-      return utilService.dec2bin(formatted, offset.length);
-    case 'bool':
-      return (formatted == 'true') ? '1' : '0';
-    case 'float':
-      return utilService.float2Bin(formatted);
-    default:
-      return formatted;
+  if (offset.enum) {
+    const enumName = offset.enum.getMemberByName(formatted);
+
+    if (enumName) {
+      return enumName.unformattedValue;
+    } else {
+      const formattedEnum = offset.enum.getMemberByValue(formatted)
+
+      if (formattedEnum) {
+        return formattedEnum.unformattedValue;
+      } else {
+        const unformattedEnum = offset.enum.getMemberByUnformattedValue(formatted);
+
+        if (unformattedEnum) {
+          return unformattedEnum.unformattedValue;
+        } else {
+          return offset.enum.members[0].unformattedValue;
+        }
+      }
+    }
+  }
+  else {
+    switch (offset.type) {
+      case 's_int':
+        const actualValue = parseInt(formatted);
+        return utilService.dec2bin(actualValue + offset.maxValue + 1, offset.length);
+      case 'int':
+        return utilService.dec2bin(formatted, offset.length);
+      case 'bool':
+        return (formatted == 'true') ? '1' : '0';
+      case 'float':
+        return utilService.float2Bin(formatted);
+      default:
+        return formatted;
+    }
   }
 };

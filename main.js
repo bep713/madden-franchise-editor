@@ -48,7 +48,7 @@ function createWindow () {
   }
 
   workerWindow.on('closed', () => {
-    workerWindow = null;''
+    workerWindow = null;
   });
 
   workerWindow.webContents.on('did-finish-load', function () {

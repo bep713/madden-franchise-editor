@@ -9072,8 +9072,8 @@
             <attribute name="PrevTeamIndex" idx="7" type="int" minValue="0" maxValue="32" default="0" />
             <attribute name="TeamIndex" idx="8" type="int" minValue="0" maxValue="32" default="0" />
         </schema>
-        <schema name="UserEntity" numMembers="9" assetId="28862" isRecordPersistent="true">
-            <attribute name="IsUserControlled" idx="2" type="bool" default="False" />
+        <schema name="UserEntity" numMembers="1" assetId="28862" isRecordPersistent="true">
+            <attribute name="IsUserControlled" idx="0" type="bool" default="False" />
         </schema>
         <schema name="StaffPerson" numMembers="18" base="Person" assetId="28828" isRecordPersistent="true">
             <attribute name="Age" idx="0" type="int" minValue="0" maxValue="127" default="0" />

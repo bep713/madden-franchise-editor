@@ -1,15 +1,19 @@
 const fs = require('fs');
 const path = require('path');
 const XmlStream = require('xml-stream');
+const FranchiseEnum = require('./FranchiseEnum');
 const schemaFilePath = '../../../data/schemas.xml';
 const EventEmitter = require('events').EventEmitter;
 const utilService = require('../services/utilService');
+const FranchiseEnumValue = require('./FranchiseEnumValue');
 
 class FranchiseSchema extends EventEmitter {
   constructor () {
     super();
 
     this.schemas = [];
+    this.enums = [];
+
     const stream = fs.createReadStream(path.join(__dirname, schemaFilePath));
     this.xml = new XmlStream(stream);
 
@@ -29,7 +33,8 @@ class FranchiseSchema extends EventEmitter {
             'maxValue': attribute.$.maxValue,
             'maxLength': attribute.$.maxLen,
             'default': attribute.$.default,
-            'final': attribute.$.final
+            'final': attribute.$.final,
+            'enum': that.getEnum(attribute.$.type)
           }
         });
       }
@@ -47,8 +52,21 @@ class FranchiseSchema extends EventEmitter {
 
       if (element.name === 'WinLossStreakPlayerGoal') {
         calculateInheritedSchemas();
-        that.emit('done', that.schemas);
+        that.emit('schemas:done', that.schemas);
       }
+    });
+
+    this.xml.on('endElement: enum', function (theEnum) {
+      let newEnum = new FranchiseEnum(theEnum.$.name, theEnum.$.assetId, theEnum.$.isRecordPersistent);
+
+      if (theEnum.attribute) {
+        theEnum.attribute.forEach((attribute) => {
+          newEnum.addMember(attribute.$.name, attribute.$.idx, attribute.$.value);
+        });
+      }
+
+      newEnum.setMemberLength();
+      that.enums.push(newEnum);
     });
 
     function calculateInheritedSchemas() {
@@ -69,6 +87,10 @@ class FranchiseSchema extends EventEmitter {
 
   getSchema(name) {
     return this.schemas.find((schema) => { return schema.name === name; });
+  };
+
+  getEnum(name) {
+    return this.enums.find((theEnum) => { return theEnum.name === name; });
   };
 };
 

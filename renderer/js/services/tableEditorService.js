@@ -83,7 +83,6 @@ tableEditorService.loadTable = function () {
       }
 
       console.log(table);
-      console.log(table.offsetTable.map((offset) => { return offset.name; }));
     }, 100);
   });
 
@@ -183,7 +182,7 @@ function addEventListeners() {
     jumpToColumnModal.classList.add('hidden');
     underlay.classList.add('hidden');
 
-    let row = parseInt(jumpRow.value) - 1;
+    let row = parseInt(jumpRow.value);
 
     if (!row || row < 0) {
       row = 0;
@@ -264,9 +263,11 @@ function formatColumns(table) {
   return table.offsetTable.map((offset) => {
     return {
       'data': offset.name,
-      'renderer': offset.isReference ? referenceRenderer : 'text',
+      'renderer': offset.isReference ? referenceRenderer : offset.enum || offset.type === 'bool' ? 'dropdown' : 'text',
       'readOnly': offset.isReference,
-      'wordWrap': false
+      'wordWrap': false,
+      'editor': offset.enum || offset.type === 'bool' ? 'select' : 'text',
+      'selectOptions': offset.enum ? offset.enum.members.map((member) => { return member.name; }) : offset.type === 'bool' ? ['true', 'false'] : []
     };
   });
 };
@@ -305,6 +306,21 @@ function referenceRenderer(instance, td, row, col, prop, value, cellProperties) 
     } else {
       td.innerHTML = value;
     }
+  } else {
+    td.innerHTML = value;
+  }
+
+  return td;
+};
+
+function enumRenderer(instance, td, row, col, prop, value, cellProperties) {
+  const colEnum = tableEditorService.selectedTable.records[0].getFieldByKey(prop).offset.enum;
+
+  if (colEnum) {
+    // const val = colEnum.getMemberByUnformattedValue(value);
+    
+    // td.innerHTML = val.name;
+    td.innerHTML = value;
   } else {
     td.innerHTML = value;
   }

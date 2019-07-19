@@ -55,7 +55,7 @@ class FranchiseFile extends EventEmitter {
 
     let schemaPromise = new Promise((resolve, reject) => {
       this.schemaList = new FranchiseSchema();
-      this.schemaList.on('done', function () {
+      this.schemaList.on('schemas:done', function () {
         resolve();
       });
     });
@@ -152,6 +152,10 @@ class FranchiseFile extends EventEmitter {
 
   get filePath () {
     return this._filePath;
+  };
+
+  get schema () {
+    return this.schemaList;
   };
 
   getTableByName (name) {

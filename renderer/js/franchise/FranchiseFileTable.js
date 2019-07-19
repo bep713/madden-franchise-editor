@@ -242,30 +242,34 @@ function readOffsetTable(data, schema, header) {
     do {
       const currentOffset = offsetTable[currentOffsetIndex];
 
-      if (currentOffset.final) {
+      if (currentOffset) {
+        if (currentOffset.final) {
+          currentOffsetIndex += 1;
+          continue;
+        }
+        
+        offsetLength += currentOffset.length;
+        chunkedOffsets.push(currentOffset);
+  
         currentOffsetIndex += 1;
-        continue;
+      } else {
+        break;
       }
-      
-      offsetLength += currentOffset.length;
-      chunkedOffsets.push(currentOffset);
-
-      currentOffsetIndex += 1;
     } while((currentOffsetIndex < offsetTable.length) && offsetLength < 32);
 
     chunked32bit.push(chunkedOffsets);
   }
 
   chunked32bit.forEach((offsetArray) => {
-    // offsetArray = offsetArray.filter((offset) => { return !offset.final; });
-    
-    let currentOffset = offsetArray[0].indexOffset;
-    offsetArray[offsetArray.length - 1].offset = currentOffset;
+    if (offsetArray.length > 0) {
+      let currentOffset = offsetArray[0].indexOffset;
+      offsetArray[offsetArray.length - 1].offset = currentOffset;
 
-    for (let i = offsetArray.length - 2; i >= 0; i--) {
-      let previousOffset = offsetArray[i+1];
-      let offset = offsetArray[i];
-      offset.offset = previousOffset.offset + previousOffset.length;
+      for (let i = offsetArray.length - 2; i >= 0; i--) {
+        let previousOffset = offsetArray[i+1];
+        let offset = offsetArray[i];
+        offset.offset = previousOffset.offset + previousOffset.length;
+      }
     }
   });
 
@@ -289,14 +293,15 @@ function readOffsetTable(data, schema, header) {
         'index': parseInt(attribute.index),
         'name': attribute.name,
         'type': (minValue < 0 || maxValue < 0) ? 's_' + attribute.type : attribute.type,
-        'isReference': (attribute.type[0] == attribute.type[0].toUpperCase()) ? true : false,
+        'isReference': !attribute.enum && (attribute.type[0] == attribute.type[0].toUpperCase()) ? true : false,
         'valueInSecondTable': header.hasSecondTable && attribute.type === 'string',
         'isSigned': minValue < 0 || maxValue < 0,
         'minValue': minValue,
         'maxValue': maxValue,
         'maxLength': attribute.maxLength ? parseInt(attribute.maxLength) : null,
         'final': attribute.final === 'true' ? true : false,
-        'indexOffset': utilService.byteArrayToLong(data.slice(currentIndex, currentIndex + 4), true)
+        'indexOffset': utilService.byteArrayToLong(data.slice(currentIndex, currentIndex + 4), true),
+        'enum': attribute.enum
       });
       currentIndex += 4;
     });
