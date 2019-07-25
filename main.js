@@ -36,7 +36,8 @@ function createWindow () {
     // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
-    mainWindow = null
+    mainWindow = null;
+    app.quit();
   })
 
   workerWindow = new BrowserWindow({ width: 1000, height: 500, show: isDev });

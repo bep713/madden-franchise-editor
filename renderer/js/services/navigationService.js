@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { ipcRenderer, remote } = require('electron');
+const { ipcRenderer, remote, webFrame } = require('electron');
 
 const app = remote.app;
 
@@ -26,6 +26,8 @@ navigationService.currentlyOpenedFile = {
   data: null
 };
 
+navigationService.currentlyOpenService = null;
+
 navigationService.generateNavigation = function (element, activeItem) {
   navigationData.items.forEach((item) => {
     const button = document.createElement('div');
@@ -43,28 +45,36 @@ navigationService.generateNavigation = function (element, activeItem) {
 };
 
 navigationService.onHomeClicked = function () {
+  navigationService.runCloseFunction();
   navigationService.loadPage('welcome.html');
+  navigationService.currentlyOpenService = welcomeService;
   welcomeService.start(navigationService.currentlyOpenedFile.path);
 };
 
 navigationService.onScheduleEditorClicked = function () {
+  navigationService.runCloseFunction();
   navigationService.loadPage('schedule.html');
   appendNavigation('schedule-editor');
 
+  navigationService.currentlyOpenService = scheduleService;
   scheduleService.loadSchedule(navigationService.currentlyOpenedFile.data);
 };
 
 navigationService.onTableEditorClicked = function () {
+  navigationService.runCloseFunction();
   navigationService.loadPage('table-editor.html');
   appendNavigation('table-editor');
 
+  navigationService.currentlyOpenService = tableEditorService;
   tableEditorService.start(navigationService.currentlyOpenedFile.data);
 };
 
 navigationService.onSchemaViewerClicked = function () {
+  navigationService.runCloseFunction();
   navigationService.loadPage('schema-viewer.html');
   appendNavigation('schema-viewer');
 
+  navigationService.currentlyOpenService = schemaViewerService;
   schemaViewerService.start(navigationService.currentlyOpenedFile.data);
 };
 
@@ -73,6 +83,73 @@ navigationService.loadPage = function (pagePath) {
   const content = document.querySelector('#content');
   content.innerHTML = page;
 };
+
+navigationService.runCloseFunction = function () {
+
+  if (navigationService.currentlyOpenService && navigationService.currentlyOpenService.onClose) {
+    navigationService.currentlyOpenService.onClose();
+  }
+};
+
+function getMemory() {
+  // `format` omitted  (pads + limits to 15 characters for the output)
+  function logMemDetails(x) {
+    function toMb(bytes) {
+      return (bytes / (1000.0 * 1000)).toFixed(2)
+    }
+
+    console.log(
+      format(x[0]),
+      format(x[1].count),
+      format(toMb(x[1].size) + "MB"),
+      format(toMb(x[1].liveSize) +"MB")
+    )
+  }
+
+  console.log(
+    format("object"),
+    format("count"),
+    format("size"),
+    format("liveSize")
+  )
+  Object.entries(webFrame.getResourceUsage()).map(logMemDetails)
+  console.log('------')
+}
+
+function format(x) {
+  if (x.length === 15) {
+    return x;
+  }
+  else if (x.length < 15) {
+    return x.padStart(15);
+  }
+  else if (x.length > 15) {
+    return x.substring(0,15);
+  }
+  else {
+    return x;
+  }
+}
+
+// setInterval(getMemory, 5000)
+
+function logBytes(x) {
+  console.log(x[0], x[1] / (1000.0*1000), "MB")
+}
+
+function getMemory() {
+  Object.entries(process.memoryUsage()).map(logBytes)
+  console.log('\n')
+}
+
+setInterval(getMemory, 5000)
+
+function clearCache() {
+  remote.getCurrentWindow().webContents.session.clearCache(function(){
+    console.log("Cache Cleared")
+  })
+}
+setInterval(clearCache, 10000)
 
 // DEV_openFile();
 

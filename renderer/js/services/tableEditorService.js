@@ -29,6 +29,16 @@ tableEditorService.start = function (file) {
   }
 };
 
+tableEditorService.onClose = function () {
+  tableEditorService.navSteps = [];
+  tableEditorService.rowIndexToSelect = 0;
+  tableEditorService.columnIndexToSelect = 0;
+  tableEditorService.selectedTable = null;
+  tableEditorService.hot.destroy();
+  tableEditorService.hot = null;
+  tableEditorService.file = null;
+};
+
 // tableEditorService.onFileReady = function (file) {
 //   tableEditorService.file = file;
 //   tableEditorService.loadTable();
