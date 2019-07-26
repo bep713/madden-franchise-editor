@@ -53,11 +53,11 @@ tableEditorService.loadTable = function () {
     };
   });
 
-  const initialTableToLoad = '1 - PopularityComponentTable';
+  // const initialTableToLoad = '1 - PopularityComponentTable';
 
-  tableChoices.find((choice) => {
-    return choice.text === initialTableToLoad;
-  }).selected = true;
+  // tableChoices.find((choice) => {
+  //   return choice.text === initialTableToLoad;
+  // }).selected = true;
 
   const tableSelector = document.querySelector('.table-selector');
   tableEditorService.tableSelector = new Selectr(tableSelector, {
@@ -67,7 +67,7 @@ tableEditorService.loadTable = function () {
   const backLink = document.querySelector('.back-link');
 
   tableEditorService.tableSelector.on('selectr.change', function (option) {
-    utilService.show(loader);
+    // utilService.show(loader);
 
     setTimeout(() => {
       const tableId = parseInt(tableEditorService.tableSelector.getValue(true).value);

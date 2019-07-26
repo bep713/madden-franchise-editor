@@ -34,24 +34,24 @@ class FranchiseFile extends EventEmitter {
   };
 
   parse() {
-    this.schedule = new FranchiseSchedule(this.unpackedFileContents);
+    // this.schedule = new FranchiseSchedule(this.unpackedFileContents);
     const that = this;
 
-    this.schedule.on('change', function (game) {
-      const header = that.unpackedFileContents.slice(0, game.offset);
-      const trailer = that.unpackedFileContents.slice(game.offset + game.hexData.length);
+    // this.schedule.on('change', function (game) {
+    //   const header = that.unpackedFileContents.slice(0, game.offset);
+    //   const trailer = that.unpackedFileContents.slice(game.offset + game.hexData.length);
 
-      that.unpackedFileContents = Buffer.concat([header, game.hexData, trailer]);
-      that.packFile();
-    });
+    //   that.unpackedFileContents = Buffer.concat([header, game.hexData, trailer]);
+    //   that.packFile();
+    // });
 
-    this.schedule.on('change-all', function (offsets) {
-      const header = that.unpackedFileContents.slice(0, offsets.startingOffset);
-      const trailer = that.unpackedFileContents.slice(offsets.endingOffset);
+    // this.schedule.on('change-all', function (offsets) {
+    //   const header = that.unpackedFileContents.slice(0, offsets.startingOffset);
+    //   const trailer = that.unpackedFileContents.slice(offsets.endingOffset);
 
-      that.unpackedFileContents = Buffer.concat([header, offsets.hexData, trailer]);
-      that.packFile();
-    });
+    //   that.unpackedFileContents = Buffer.concat([header, offsets.hexData, trailer]);
+    //   that.packFile();
+    // });
 
     let schemaPromise = new Promise((resolve, reject) => {
       this.schemaList = new FranchiseSchema();
@@ -82,7 +82,7 @@ class FranchiseFile extends EventEmitter {
           && this.unpackedFileContents[i+1] === altSecondCheck
           && this.unpackedFileContents[i+2] === altThirdCheck
           && this.unpackedFileContents[i+3] === altFourthCheck)) {
-            const tableStart = i - 0x90;
+            const tableStart = i - 0x94;
             tableIndicies.push(tableStart);
           }
       }
