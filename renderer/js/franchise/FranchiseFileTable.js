@@ -19,13 +19,12 @@ class FranchiseFileTable extends EventEmitter {
 
     let headerSize = 0;
     let records1Size = 0;
-    let records1SizeOffset = this.header.record1SizeOffset + this.header.tableStoreLength * 8;
+    let record1SizeOffset = this.header.record1SizeOffset + this.header.tableStoreLength * 8;
 
     if (schema) {
-      headerSize = getHeaderOffsetByGameYear(this._gameYear) + (schema.numMembers * 4) + this.header.tableStoreLength;
-      let record1SizeOffsetLength = getRecordSizeOffsetLength(this._gameYear);
+      headerSize = this.header.headerOffset + (schema.numMembers * 4) + this.header.tableStoreLength;
       const binaryData = utilService.getBitArray(this.data.slice(0, headerSize));
-      records1Size = utilService.bin2dec(binaryData.slice(records1SizeOffset, records1SizeOffset + record1SizeOffsetLength));
+      records1Size = utilService.bin2dec(binaryData.slice(record1SizeOffset, record1SizeOffset + this.header.record1SizeLength));
     }
 
     this.header.headerSize = headerSize;
@@ -205,7 +204,9 @@ function readTableHeader(data, isArray, gameYear) {
       'data1Pad3': data1Pad3,
       'data1Pad4': data1Pad4,
       'headerSize': headerSize,
+      'headerOffset': 0xE4,
       'record1SizeOffset': records1SizeOffset,
+      'record1SizeLength': 9,
       'record1Size': records1Size,
       'offsetStart': offsetStart,
       'data2Id': data2Id,
@@ -289,8 +290,10 @@ function readTableHeader(data, isArray, gameYear) {
       'table2Length': table2Length,
       'data1Pad3': data1Pad3,
       'data1Pad4': data1Pad4,
+      'headerOffset': 0xE8,
       'headerSize': headerSize,
       'record1SizeOffset': records1SizeOffset,
+      'record1SizeLength': 10,
       'record1Size': records1Size,
       'offsetStart': offsetStart,
       'data2Id': data2Id,
@@ -436,22 +439,22 @@ function parseTable2Values(data, header, records) {
   });
 };
 
-function getHeaderOffsetByGameYear(year) {
-  switch(year) {
-    case 20:
-      return 0xE8;
-    case 19:
-    default:
-      return 0xE4;
-  };
-};
+// function getHeaderOffsetByGameYear(year) {
+//   switch(year) {
+//     case 20:
+//       return 0xE8;
+//     case 19:
+//     default:
+//       return 0xE4;
+//   };
+// };
 
-function getRecordSizeOffsetLength(year) {
-  switch(year) {
-    case 20:
-      return 10;
-    case 19:
-    default:
-      return 9;
-  }
-};
+// function getRecordSizeOffsetLength(year) {
+//   switch(year) {
+//     case 20:
+//       return 10;
+//     case 19:
+//     default:
+//       return 9;
+//   }
+// };
