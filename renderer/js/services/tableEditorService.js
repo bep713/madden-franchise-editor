@@ -53,11 +53,13 @@ tableEditorService.loadTable = function () {
     };
   });
 
-  const initialTableToLoad = '1 - OverallPercentage';
+  // const initialTableToLoad = '1 - OverallPercentage';
 
-  tableChoices.find((choice) => {
-    return choice.text === initialTableToLoad;
-  }).selected = true;
+  // tableChoices.find((choice) => {
+  //   return choice.text === initialTableToLoad;
+  // }).selected = true;
+
+  tableChoices[1].selected = true;
 
   const tableSelector = document.querySelector('.table-selector');
   tableEditorService.tableSelector = new Selectr(tableSelector, {
@@ -67,7 +69,7 @@ tableEditorService.loadTable = function () {
   const backLink = document.querySelector('.back-link');
 
   tableEditorService.tableSelector.on('selectr.change', function (option) {
-    // utilService.show(loader);
+    utilService.show(loader);
 
     setTimeout(() => {
       const tableId = parseInt(tableEditorService.tableSelector.getValue(true).value);
@@ -96,7 +98,7 @@ tableEditorService.loadTable = function () {
     }, 100);
   });
 
-  const seasonGame = tableEditorService.file.getAllTablesByName(initialTableToLoad.substring(initialTableToLoad.indexOf(' ') + 3));
+  const seasonGame = tableEditorService.file.getAllTablesByName(tableChoices[1].text.substring(tableChoices[1].text.indexOf(' ') + 3));
   tableEditorService.selectedTable = seasonGame[seasonGame.length - 1];
   seasonGame[seasonGame.length - 1].readRecords().then(loadTable);
   console.log(seasonGame[seasonGame.length - 1]);

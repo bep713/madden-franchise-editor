@@ -15,7 +15,7 @@ if (isDev) {
 
 const homePage = 'renderer/index.html';
 const workerPage = 'renderer/worker.html';
-const baseWindowTitle = 'M19 Franchise Editor';
+const baseWindowTitle = 'Madden Franchise Editor';
 let currentFilePath = '';
 
 function createWindow () {
