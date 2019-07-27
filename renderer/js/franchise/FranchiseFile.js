@@ -25,6 +25,8 @@ class FranchiseFile extends EventEmitter {
       this._openedFranchiseFile = true;
       this.packedFileContents = this.rawContents;
       this.unpackedFileContents = unpackFile(this.rawContents);
+      console.log(filePath);
+      // fs.writeFileSync(filePath.substring(0, filePath.lastIndexOf('\\')) + '\\M20unpack.frt', this.unpackedFileContents);
     } else {
       this._openedFranchiseFile = false;
       this.unpackedFileContents = this.rawContents;

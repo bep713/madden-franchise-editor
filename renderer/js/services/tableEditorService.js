@@ -53,11 +53,11 @@ tableEditorService.loadTable = function () {
     };
   });
 
-  // const initialTableToLoad = '1 - PopularityComponentTable';
+  const initialTableToLoad = '1 - OverallPercentage';
 
-  // tableChoices.find((choice) => {
-  //   return choice.text === initialTableToLoad;
-  // }).selected = true;
+  tableChoices.find((choice) => {
+    return choice.text === initialTableToLoad;
+  }).selected = true;
 
   const tableSelector = document.querySelector('.table-selector');
   tableEditorService.tableSelector = new Selectr(tableSelector, {

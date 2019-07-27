@@ -18,12 +18,17 @@ class FranchiseFileTable extends EventEmitter {
 
     let headerSize = 0;
     let records1Size = 0;
-    let records1SizeOffset = 1689 + this.header.tableStoreLength * 8;
+    let records1SizeOffset = 1720 + this.header.tableStoreLength * 8;
 
     if (schema) {
-      headerSize = 0xE4 + (schema.numMembers * 4) + this.header.tableStoreLength;
+      headerSize = 0xE8 + (schema.numMembers * 4) + this.header.tableStoreLength;
       const binaryData = utilService.getBitArray(this.data.slice(0, headerSize));
-      records1Size = utilService.bin2dec(binaryData.slice(records1SizeOffset, records1SizeOffset+9));
+
+      if (this.name === 'Team' || this.name === 'Player') {
+        console.log(this.name , ' ', binaryData); 
+      }
+
+      records1Size = utilService.bin2dec(binaryData.slice(records1SizeOffset, records1SizeOffset+10));
     }
 
     this.header.headerSize = headerSize;
@@ -128,23 +133,24 @@ function readTableHeader(data, isArray) {
   const tablePad1 = utilService.byteArrayToLong(data.slice(headerStart+4, headerStart+8), true);
   const tableUnknown1 = utilService.byteArrayToLong(data.slice(headerStart+8, headerStart+12), true);
   const tableUnknown2 = utilService.byteArrayToLong(data.slice(headerStart+12, headerStart+16), true);
-  const data1Id = readTableName(data.slice(headerStart+16, headerStart+20));
-  const data1Type = utilService.byteArrayToLong(data.slice(headerStart+20, headerStart+24), true);
-  const data1Unknown1 = utilService.byteArrayToLong(data.slice(headerStart+24, headerStart+28), true);
-  const data1Flag1 = data[headerStart+28];
-  const data1Flag2 = data[headerStart+29];
-  const data1Flag3 = data[headerStart+30];
-  const data1Flag4 = data[headerStart+31];
-  const tableStoreLength = utilService.byteArrayToLong(data.slice(headerStart+32, headerStart+36), true);
+  const tableUnknown3 = utilService.byteArrayToLong(data.slice(headerStart+16, headerStart+20), true);
+  const data1Id = readTableName(data.slice(headerStart+20, headerStart+24));
+  const data1Type = utilService.byteArrayToLong(data.slice(headerStart+24, headerStart+28), true);
+  const data1Unknown1 = utilService.byteArrayToLong(data.slice(headerStart+28, headerStart+32), true);
+  const data1Flag1 = data[headerStart+32];
+  const data1Flag2 = data[headerStart+33];
+  const data1Flag3 = data[headerStart+34];
+  const data1Flag4 = data[headerStart+35];
+  const tableStoreLength = utilService.byteArrayToLong(data.slice(headerStart+36, headerStart+40), true);
 
-  let headerOffset = headerStart+36;
-  let records1SizeOffset = 1689;
+  let headerOffset = headerStart+40;
+  let records1SizeOffset = 1720;
   let tableStoreName = null;
 
   if (tableStoreLength > 0) {
     headerOffset += tableStoreLength;
     records1SizeOffset += tableStoreLength * 8;
-    tableStoreName = readTableName(data.slice(headerStart+36, headerStart+36+tableStoreLength));
+    tableStoreName = readTableName(data.slice(headerStart+40, headerStart+40+tableStoreLength));
   }
 
   const data1Offset = utilService.byteArrayToLong(data.slice(headerOffset, headerOffset+4), true);
@@ -159,7 +165,7 @@ function readTableHeader(data, isArray) {
   const table1Length2 = utilService.byteArrayToLong(data.slice(headerOffset+36, headerOffset+40), true);
   const tableTotalLength = utilService.byteArrayToLong(data.slice(headerOffset+40, headerOffset+44), true);
 
-  let offsetStart = 0xE4 + tableStoreLength;
+  let offsetStart = 0xE8 + tableStoreLength;
   const hasSecondTable = tableTotalLength > table1Length;
 
   let headerSize = 0;
@@ -168,7 +174,7 @@ function readTableHeader(data, isArray) {
   if (isArray) {
     headerSize = 0xE8 + tableStoreLength;
     const binaryData = utilService.getBitArray(data.slice(0, headerSize));
-    records1Size = utilService.bin2dec(binaryData.slice(records1SizeOffset, records1SizeOffset+9));
+    records1Size = utilService.bin2dec(binaryData.slice(records1SizeOffset, records1SizeOffset+10));
   }
 
   return {
@@ -208,6 +214,7 @@ function readTableHeader(data, isArray) {
 function readOffsetTable(data, schema, header) {
   let currentIndex = header.offsetStart;
   let offsetTable = parseOffsetTableFromData();
+  console.log(offsetTable.sort((a,b) => { return a.indexOffset - b.indexOffset}))
   sortOffsetTableByIndexOffset();
 
   for(let i = 0; i < offsetTable.length; i++) {

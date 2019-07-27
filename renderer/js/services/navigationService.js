@@ -91,72 +91,13 @@ navigationService.runCloseFunction = function () {
   }
 };
 
-function getMemory() {
-  // `format` omitted  (pads + limits to 15 characters for the output)
-  function logMemDetails(x) {
-    function toMb(bytes) {
-      return (bytes / (1000.0 * 1000)).toFixed(2)
-    }
-
-    console.log(
-      format(x[0]),
-      format(x[1].count),
-      format(toMb(x[1].size) + "MB"),
-      format(toMb(x[1].liveSize) +"MB")
-    )
-  }
-
-  console.log(
-    format("object"),
-    format("count"),
-    format("size"),
-    format("liveSize")
-  )
-  Object.entries(webFrame.getResourceUsage()).map(logMemDetails)
-  console.log('------')
-}
-
-function format(x) {
-  if (x.length === 15) {
-    return x;
-  }
-  else if (x.length < 15) {
-    return x.padStart(15);
-  }
-  else if (x.length > 15) {
-    return x.substring(0,15);
-  }
-  else {
-    return x;
-  }
-}
-
-// setInterval(getMemory, 5000)
-
-function logBytes(x) {
-  console.log(x[0], x[1] / (1000.0*1000), "MB")
-}
-
-function getMemory() {
-  Object.entries(process.memoryUsage()).map(logBytes)
-  console.log('\n')
-}
-
-setInterval(getMemory, 5000)
-
-function clearCache() {
-  remote.getCurrentWindow().webContents.session.clearCache(function(){
-    console.log("Cache Cleared")
-  })
-}
-setInterval(clearCache, 10000)
-
-// DEV_openFile();
+DEV_openFile();
 
 module.exports = navigationService;
 
 function DEV_openFile() {
-  welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-2019');
+  // welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-2019');
+  welcomeService.eventEmitter.emit('open-file', 'D:\\Projects\\Madden 20\\CAREER-BEPFRANCHISE');
 
   setTimeout(() => {
     navigationService.onTableEditorClicked();
