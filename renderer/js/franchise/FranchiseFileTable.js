@@ -12,6 +12,7 @@ class FranchiseFileTable extends EventEmitter {
     this.isArray = this.name.indexOf('[]') >= 0;
     this._gameYear = gameYear;
     this.header = readTableHeader(this.data, this.isArray, gameYear);
+    this.loadedOffsets = [];
   };
 
   set schema (schema) {
@@ -36,9 +37,10 @@ class FranchiseFileTable extends EventEmitter {
     return this._schema;
   };
 
-  readRecords () {
+  // attribsToLoad is an array of attribute names (strings) to load. It is optional - if nothing is provided to the function it will load all attributes.
+  readRecords (attribsToLoad) {
     return new Promise((resolve, reject) => {
-      if (!this.recordsRead) {
+      if (!this.recordsRead || isLoadingNewOffsets(this.loadedOffsets, attribsToLoad, this.offsetTable)) {
         if (this.schema) {
           this.offsetTable = readOffsetTable(this.data, this.schema, this.header);
         } else if (this.isArray) {
@@ -70,7 +72,14 @@ class FranchiseFileTable extends EventEmitter {
           reject('Cannot read records: Schema is not defined.');
         }
 
-        this.records = readRecords(this.data, this.header, this.offsetTable);
+        let offsetTableToUse = this.offsetTable;
+
+        if (attribsToLoad) {
+          offsetTableToUse = offsetTableToUse.filter((attrib) => { return attribsToLoad.includes(attrib.name); });
+        }
+
+        this.loadedOffsets = offsetTableToUse;
+        this.records = readRecords(this.data, this.header, offsetTableToUse);
 
         if (this.header.hasSecondTable) {
           parseTable2Values(this.data, this.header, this.records);
@@ -299,7 +308,7 @@ function readTableHeader(data, isArray, gameYear) {
       'table1Length2': table1Length2,
       'tableTotalLength': tableTotalLength,
       'hasSecondTable': hasSecondTable,
-      'table1StartIndex': tableStoreLength === 0 ? headerSize : headerSize - 4 + (data1RecordCount * 4),
+      'table1StartIndex': tableStoreLength === 0 ? headerSize : headerSize + (data1RecordCount * 4),
       'table2StartIndex': tableStoreLength === 0 ? headerSize + (data1RecordCount * records1Size) : (headerSize -4 + (data1RecordCount * 4)) + (data1RecordCount * records1Size)
     };
   };
@@ -438,6 +447,19 @@ function parseTable2Values(data, header, records) {
       field.secondTableField.unformattedValue = secondTableBinaryData.slice(stringStartBinaryIndex, stringEndBinaryIndex);
     });
   });
+};
+
+function isLoadingNewOffsets(currentlyLoaded, attribsToLoad, offsetTable) {
+  if (attribsToLoad) {
+    let newAttribs = attribsToLoad.filter((attrib) => {
+      return currentlyLoaded.includes(attrib);
+    });
+  
+    return newAttribs.length > 0;
+  }
+  else {
+    return currentlyLoaded.length !== offsetTable.length;
+  }
 };
 
 // function getHeaderOffsetByGameYear(year) {

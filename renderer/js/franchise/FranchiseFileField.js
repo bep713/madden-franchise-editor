@@ -71,7 +71,7 @@ function parseFieldValue(unformatted, offset) {
   else {
     switch (offset.type) {
       case 's_int':
-        return utilService.bin2dec(unformatted) - (offset.maxValue + 1);
+        return utilService.bin2dec(unformatted) + offset.minValue;
       case 'int':
         return utilService.bin2dec(unformatted);
       case 'bool':
@@ -110,7 +110,7 @@ function parseFormattedValue(formatted, offset) {
     switch (offset.type) {
       case 's_int':
         const actualValue = parseInt(formatted);
-        return utilService.dec2bin(actualValue + offset.maxValue + 1, offset.length);
+        return utilService.dec2bin(actualValue - offset.minValue, offset.length);
       case 'int':
         return utilService.dec2bin(formatted, offset.length);
       case 'bool':

@@ -82,12 +82,16 @@ tableEditorService.loadTable = function () {
     setTimeout(() => {
       const tableId = parseInt(tableEditorService.tableSelector.getValue(true).value);
       const table = tableEditorService.file.getTableById(tableId);
+
       table.readRecords().then((table) => {
         loadTable(table);
         tableEditorService.hot.selectCell(tableEditorService.rowIndexToSelect, tableEditorService.columnIndexToSelect);
 
         tableEditorService.rowIndexToSelect = 0;
         tableEditorService.columnIndexToSelect = 0;
+      }).catch((err) => {
+        console.log(err);
+        loadTable(table);
       });
       
       tableEditorService.selectedTable = table;
@@ -270,28 +274,36 @@ function formatTable(table) {
 };
 
 function formatHeaders(table) {
-  if (tableEditorService.showHeaderTypes) {
-    return table.offsetTable.map((offset) => {
-      return `${offset.name} <div class="header-type">${offset.type}</div>`;
-    });
+  if (table.offsetTable) {
+    if (tableEditorService.showHeaderTypes) {
+      return table.offsetTable.map((offset) => {
+        return `${offset.name} <div class="header-type">${offset.type}</div>`;
+      });
+    } else {
+      return table.offsetTable.map((offset) => {
+        return offset.name;
+      });
+    }
   } else {
-    return table.offsetTable.map((offset) => {
-      return offset.name;
-    });
+    return [];
   }
 };
 
 function formatColumns(table) {
-  return table.offsetTable.map((offset) => {
-    return {
-      'data': offset.name,
-      'renderer': offset.isReference ? referenceRenderer : offset.enum || offset.type === 'bool' ? 'dropdown' : 'text',
-      'readOnly': offset.isReference,
-      'wordWrap': false,
-      'editor': offset.enum || offset.type === 'bool' ? 'select' : 'text',
-      'selectOptions': offset.enum ? offset.enum.members.map((member) => { return member.name; }) : offset.type === 'bool' ? ['true', 'false'] : []
-    };
-  });
+  if (table.offsetTable) {
+    return table.offsetTable.map((offset) => {
+      return {
+        'data': offset.name,
+        'renderer': offset.isReference ? referenceRenderer : offset.enum || offset.type === 'bool' ? 'dropdown' : 'text',
+        'readOnly': offset.isReference,
+        'wordWrap': false,
+        'editor': offset.enum || offset.type === 'bool' ? 'select' : 'text',
+        'selectOptions': offset.enum ? offset.enum.members.map((member) => { return member.name; }) : offset.type === 'bool' ? ['true', 'false'] : []
+      };
+    });
+  } else {
+    return [];
+  }
 };
 
 function referenceRenderer(instance, td, row, col, prop, value, cellProperties) {

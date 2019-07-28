@@ -29,6 +29,10 @@ class FranchiseFileRecord extends EventEmitter {
   getFieldByKey(key) {
     return this._fields.find((field) => { return field.key === key; });
   };
+
+  get fields () {
+    return this._fields;
+  };
 };
 
 module.exports = FranchiseFileRecord;
