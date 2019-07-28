@@ -14,6 +14,12 @@ tableEditorService.columnIndexToSelect = 0;
 
 let loader;
 
+const windowResizeListener = () => {
+  tableEditorService.hot.updateSettings({
+    width: document.querySelector('.table-wrapper').offsetWidth
+  });
+};
+
 tableEditorService.start = function (file) {
   initializeTable();
   addEventListeners();
@@ -37,6 +43,8 @@ tableEditorService.onClose = function () {
   tableEditorService.hot.destroy();
   tableEditorService.hot = null;
   tableEditorService.file = null;
+
+  window.removeEventListener('resize', windowResizeListener);
 };
 
 // tableEditorService.onFileReady = function (file) {
@@ -142,15 +150,9 @@ function addEventListeners() {
   const jumpToColumnModal = document.querySelector('.jump-to-column-modal');
   const underlay = document.querySelector('.underlay');
   const jumpRow = document.querySelector('.jump-row');
-  const tableWrapper = document.querySelector('.table-wrapper');
-  const tableContentWrapper = document.querySelector('.table-content-wrapper');
   loader = document.querySelector('.loader-wrapper');
 
-  window.addEventListener('resize', () => {
-    tableEditorService.hot.updateSettings({
-      width: tableWrapper.offsetWidth
-    });
-  })
+  window.addEventListener('resize', windowResizeListener)
 
   const toggleTypesButton = document.querySelector('.toggle-types');
   toggleTypesButton.addEventListener('click', function () {
