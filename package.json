@@ -1,7 +1,7 @@
 {
-  "name": "madden-schedule",
+  "name": "madden-franchise-editor",
   "version": "1.0.0",
-  "description": "An app that can modify Madden 19 franchise file schedules.",
+  "description": "An app that can modify Madden franchise file.",
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
