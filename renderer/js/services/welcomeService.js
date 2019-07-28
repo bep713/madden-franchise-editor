@@ -1,4 +1,4 @@
-const { remote } = require('electron');
+const { remote, ipcRenderer } = require('electron');
 const app = remote.app;
 const dialog = remote.dialog;
 
@@ -12,15 +12,31 @@ const utilService = require('./utilService');
 let welcomeService = {};
 welcomeService.eventEmitter = new EventEmitter();
 
+addLoadedFileListener();
+
 welcomeService.start = function (file) {
   addListeners();
 
-  if (file) {
+  if (file.gameYear) {
     showOpenedFileLinks();
+    toggleNavigationLinks(file.gameYear);
   }
 };
 
 module.exports = welcomeService;
+
+function toggleNavigationLinks(gameYear) {
+  const scheduleLink = document.querySelector('#open-schedule');
+
+  if (scheduleLink) {
+    if (gameYear === 20) {
+      scheduleLink.classList.add('unavailable');
+    }
+    else {
+      scheduleLink.classList.remove('unavailable');
+    }
+  }
+};
 
 function addListeners() {
   addOpenFileListener();
@@ -35,6 +51,12 @@ function addOpenFileListener() {
 
   openFileButton.addEventListener('click', openFile);
   openDifferentFileButton.addEventListener('click', openFile);
+};
+
+function addLoadedFileListener() {
+  ipcRenderer.on('file-loaded', (event, file) => {
+    toggleNavigationLinks(file.gameYear);
+  });
 };
 
 function addOpenScheduleListener() {
@@ -69,8 +91,13 @@ function openFile () {
   });
 
   if (filePath) {
+    utilService.show(document.querySelector('.loader-wrapper'));
     welcomeService.eventEmitter.emit('open-file', filePath[0]);
     showOpenedFileLinks();
+
+    setTimeout(() => {
+      utilService.hide(document.querySelector('.loader-wrapper'));
+    }, 50);
   }
 };
 

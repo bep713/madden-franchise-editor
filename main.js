@@ -91,9 +91,11 @@ function addIpcListeners() {
     setCurrentWindowTitle(baseWindowTitle);
   });
   
-  ipcMain.on('load-file', function (event, filePath) {
-    currentFilePath = filePath;
+  ipcMain.on('file-loaded', function (event, file) {
+    currentFilePath = file.path;
     setCurrentWindowTitle(`${baseWindowTitle} - ${currentFilePath}`);
+
+    mainWindow.webContents.send('file-loaded', file);
   });
   
   ipcMain.on('saving', function () {

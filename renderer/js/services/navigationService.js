@@ -29,7 +29,11 @@ navigationService.currentlyOpenedFile = {
 navigationService.currentlyOpenService = null;
 
 navigationService.generateNavigation = function (element, activeItem) {
-  navigationData.items.forEach((item) => {
+  const applicableNavigationData = navigationData.items.filter((navigation) => {
+    return navigation.availableVersions.includes(navigationService.currentlyOpenedFile.data._gameYear);
+  });
+
+  applicableNavigationData.forEach((item) => {
     const button = document.createElement('div');
     button.innerHTML = item.text;
     button.classList.add('nav-item', 'action-button');
@@ -48,7 +52,7 @@ navigationService.onHomeClicked = function () {
   navigationService.runCloseFunction();
   navigationService.loadPage('welcome.html');
   navigationService.currentlyOpenService = welcomeService;
-  welcomeService.start(navigationService.currentlyOpenedFile.path);
+  welcomeService.start(navigationService.currentlyOpenedFile);
 };
 
 navigationService.onScheduleEditorClicked = function () {
@@ -108,6 +112,7 @@ function addIpcListeners() {
   ipcRenderer.on('close-file', function () {
     navigationService.currentlyOpenedFile.path = null;
     navigationService.currentlyOpenedFile.data = null;
+    navigationService.currentlyOpenedFile.gameYear = null;
     navigationService.onHomeClicked();
 
     ipcRenderer.send('close-file');
@@ -118,7 +123,13 @@ function setupEvents() {
   welcomeService.eventEmitter.on('open-file', function (file) {
     navigationService.currentlyOpenedFile.path = file;
     navigationService.currentlyOpenedFile.data = new FranchiseFile(file);
-    ipcRenderer.send('load-file', file);
+    navigationService.currentlyOpenedFile.gameYear = navigationService.currentlyOpenedFile.data._gameYear;
+
+    ipcRenderer.send('file-loaded', {
+      'path': navigationService.currentlyOpenedFile.path,
+      'gameYear': navigationService.currentlyOpenedFile.gameYear
+    });
+
     backupFile(navigationService.currentlyOpenedFile.path);
 
     navigationService.currentlyOpenedFile.data.on('saving', function () {

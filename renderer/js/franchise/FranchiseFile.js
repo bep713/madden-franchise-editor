@@ -37,24 +37,27 @@ class FranchiseFile extends EventEmitter {
   };
 
   parse() {
-    // this.schedule = new FranchiseSchedule(this.unpackedFileContents);
     const that = this;
 
-    // this.schedule.on('change', function (game) {
-    //   const header = that.unpackedFileContents.slice(0, game.offset);
-    //   const trailer = that.unpackedFileContents.slice(game.offset + game.hexData.length);
+    if (this._gameYear === 19) {
+      this.schedule = new FranchiseSchedule(this.unpackedFileContents);
 
-    //   that.unpackedFileContents = Buffer.concat([header, game.hexData, trailer]);
-    //   that.packFile();
-    // });
+      this.schedule.on('change', function (game) {
+        const header = that.unpackedFileContents.slice(0, game.offset);
+        const trailer = that.unpackedFileContents.slice(game.offset + game.hexData.length);
 
-    // this.schedule.on('change-all', function (offsets) {
-    //   const header = that.unpackedFileContents.slice(0, offsets.startingOffset);
-    //   const trailer = that.unpackedFileContents.slice(offsets.endingOffset);
+        that.unpackedFileContents = Buffer.concat([header, game.hexData, trailer]);
+        that.packFile();
+      });
 
-    //   that.unpackedFileContents = Buffer.concat([header, offsets.hexData, trailer]);
-    //   that.packFile();
-    // });
+      this.schedule.on('change-all', function (offsets) {
+        const header = that.unpackedFileContents.slice(0, offsets.startingOffset);
+        const trailer = that.unpackedFileContents.slice(offsets.endingOffset);
+
+        that.unpackedFileContents = Buffer.concat([header, offsets.hexData, trailer]);
+        that.packFile();
+      });
+    }
 
     let schemaPromise = new Promise((resolve, reject) => {
       this.schemaList = new FranchiseSchema(this._gameYear);

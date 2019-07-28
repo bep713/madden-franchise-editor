@@ -79,6 +79,17 @@ $brand-color: $brand-primary;
         color: $brand-black;
       }
     }
+
+    &.unavailable {
+      color: #333;
+      cursor: default;
+      pointer-events: none;
+
+      &:after {
+        content: '<- Not yet available for this year';
+        margin-left: 15px;
+      }
+    }
   }
 
   .file-path {
