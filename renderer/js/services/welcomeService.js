@@ -20,23 +20,11 @@ welcomeService.start = function (file) {
   if (file.gameYear) {
     showOpenedFileLinks();
     toggleNavigationLinks(file.gameYear);
+    toggleMaddenIcons(file.gameYear);
   }
 };
 
 module.exports = welcomeService;
-
-function toggleNavigationLinks(gameYear) {
-  const scheduleLink = document.querySelector('#open-schedule');
-
-  if (scheduleLink) {
-    if (gameYear === 20) {
-      scheduleLink.classList.add('unavailable');
-    }
-    else {
-      scheduleLink.classList.remove('unavailable');
-    }
-  }
-};
 
 function addListeners() {
   addOpenFileListener();
@@ -56,7 +44,32 @@ function addOpenFileListener() {
 function addLoadedFileListener() {
   ipcRenderer.on('file-loaded', (event, file) => {
     toggleNavigationLinks(file.gameYear);
+    toggleMaddenIcons(file.gameYear);
   });
+};
+
+function toggleNavigationLinks(gameYear) {
+  const scheduleLink = document.querySelector('#open-schedule');
+
+  if (scheduleLink) {
+    if (gameYear === 20) {
+      scheduleLink.classList.add('unavailable');
+    }
+    else {
+      scheduleLink.classList.remove('unavailable');
+    }
+  }
+};
+
+function toggleMaddenIcons(year) {
+  const iconsToDisable = document.querySelectorAll('.madden-icon:not([data-year="' + year + '"])');
+  const iconToEnable = document.querySelector('.madden-icon[data-year="' + year + '"]');
+
+  iconsToDisable.forEach((icon) => {
+    icon.classList.add('inactive');
+  });
+
+  iconToEnable.classList.remove('inactive');
 };
 
 function addOpenScheduleListener() {

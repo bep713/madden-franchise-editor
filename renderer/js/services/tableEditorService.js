@@ -142,7 +142,15 @@ function addEventListeners() {
   const jumpToColumnModal = document.querySelector('.jump-to-column-modal');
   const underlay = document.querySelector('.underlay');
   const jumpRow = document.querySelector('.jump-row');
+  const tableWrapper = document.querySelector('.table-wrapper');
+  const tableContentWrapper = document.querySelector('.table-content-wrapper');
   loader = document.querySelector('.loader-wrapper');
+
+  window.addEventListener('resize', () => {
+    tableEditorService.hot.updateSettings({
+      width: tableWrapper.offsetWidth
+    });
+  })
 
   const toggleTypesButton = document.querySelector('.toggle-types');
   toggleTypesButton.addEventListener('click', function () {
@@ -306,8 +314,13 @@ function referenceRenderer(instance, td, row, col, prop, value, cellProperties) 
           tableEditorService.rowIndexToSelect = recordIndex;
           tableEditorService.columnIndexToSelect = 0;
 
-          tableEditorService.tableSelector.setValue(table.header.tableId);
-      
+          if (table.header.tableId != tableEditorService.tableSelector.getValue()) {
+            tableEditorService.tableSelector.setValue(table.header.tableId);
+          } 
+          else {
+            tableEditorService.hot.selectCell(recordIndex, 0);
+          }
+
           setTimeout(() => {
             tableEditorService.navSteps[tableEditorService.navSteps.length - 1].recordIndex = recordIndex;
           }, 1000);

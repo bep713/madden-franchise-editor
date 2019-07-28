@@ -17,15 +17,7 @@ body {
   font-family: $font-base-family;
   font-size: $font-base-size;
   margin: 0;
-  padding: 0 10px;
-
-  @media (min-width: $breakpoint-md) {
-    padding: 0 20px;
-  }
-
-  @media (min-width: $breakpoint-xlg) {
-    padding: 0 50px;
-  }
+  padding: 0 20px;
 }
 
 h1 {

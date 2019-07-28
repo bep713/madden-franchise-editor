@@ -48,9 +48,13 @@ $brand-color: $brand-primary;
     height: 50px;
     background-color: $brand-color;
     margin: -40px -40px 0 -40px;
-    padding: 40px 0 100px 40px;
+    padding: 40px 40px 100px 40px;
     color: #fff;
+    display: flex;
+    justify-content: space-between;
+  }
 
+  .app-title-left {
     h1 {
       margin-bottom: 0;
       font-size: 36px;
@@ -62,6 +66,17 @@ $brand-color: $brand-primary;
     }
   }
 
+  .app-title-right {
+    .madden-icon {
+      // cursor: pointer;
+    }
+
+    .madden-icons {
+      display: flex;
+      height: 43px;
+      align-items: center;
+    }
+  }
 
   .link-item {
     color: $welcome-link-color;

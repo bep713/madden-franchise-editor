@@ -23,12 +23,16 @@ addIpcListeners();
 let navigationService = {};
 navigationService.currentlyOpenedFile = {
   path: null,
-  data: null
+  data: null,
+  gameYear: null
 };
 
 navigationService.currentlyOpenService = null;
 
-navigationService.generateNavigation = function (element, activeItem) {
+navigationService.generateNavigation = function (activeItem) {
+  const element = document.querySelector('.navigation');
+  const rightActionButtons = document.querySelector('.right-action-buttons');
+
   const applicableNavigationData = navigationData.items.filter((navigation) => {
     return navigation.availableVersions.includes(navigationService.currentlyOpenedFile.data._gameYear);
   });
@@ -46,6 +50,14 @@ navigationService.generateNavigation = function (element, activeItem) {
 
     element.appendChild(button);
   });
+
+  if (navigationService.currentlyOpenedFile) {
+    const gameIcon = document.createElement('div');
+    gameIcon.id = `m${navigationService.currentlyOpenedFile.gameYear}-icon`;
+    gameIcon.className = 'madden-icon'
+
+    rightActionButtons.appendChild(gameIcon);
+  }
 };
 
 navigationService.onHomeClicked = function () {
@@ -165,9 +177,8 @@ function setupMenu() {
 };
 
 function appendNavigation(activeItemId) {
-  const navigation = document.querySelector('.navigation');
   const activeItem = navigationData.items.find((item) => { return item.id === activeItemId; });
-  navigationService.generateNavigation(navigation, activeItem);
+  navigationService.generateNavigation(activeItem);
 };
 
 function backupFile(franchiseFile) {

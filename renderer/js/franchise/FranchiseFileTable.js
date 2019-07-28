@@ -19,12 +19,11 @@ class FranchiseFileTable extends EventEmitter {
 
     let headerSize = 0;
     let records1Size = 0;
-    let record1SizeOffset = this.header.record1SizeOffset + this.header.tableStoreLength * 8;
 
     if (schema) {
       headerSize = this.header.headerOffset + (schema.numMembers * 4) + this.header.tableStoreLength;
       const binaryData = utilService.getBitArray(this.data.slice(0, headerSize));
-      records1Size = utilService.bin2dec(binaryData.slice(record1SizeOffset, record1SizeOffset + this.header.record1SizeLength));
+      records1Size = utilService.bin2dec(binaryData.slice(this.header.record1SizeOffset, this.header.record1SizeOffset + this.header.record1SizeLength));
     }
 
     this.header.headerSize = headerSize;
@@ -417,9 +416,11 @@ function readRecords(data, header, offsetTable) {
 
   let records = [];
 
-  for (let i = 0; i < binaryData.length; i += (header.record1Size * 8)) {
-    const recordBinary = binaryData.slice(i, i + (header.record1Size * 8));
-    records.push(new FranchiseFileRecord(recordBinary, offsetTable));
+  if (binaryData) {
+    for (let i = 0; i < binaryData.length; i += (header.record1Size * 8)) {
+      const recordBinary = binaryData.slice(i, i + (header.record1Size * 8));
+      records.push(new FranchiseFileRecord(recordBinary, offsetTable));
+    }
   }
 
   return records;
