@@ -1,15 +1,24 @@
-# madden-schedule-editor
+# madden-franchise-editor
 
-An app for editing schedules in Madden 19. Includes all real-life schedules from 1970-2019.
+An app for editing franchise files in Madden 19 and 20. Instructions on how to build the source are at the bottom of this file.
+
+## Features
+- [19 ONLY] Schedule editor - An easy UI for changing franchise schedules. See the 'Schedule editor basic usage' section of this readme.
+- [ALL] Table editor - Raw editor for changing any value in any table. Useful for testing or for modifying things that aren't in an easy UI yet.
+- [ALL] Schema viewer - View the schema file in the app
+- Offset tool - link to an app that I made that is helpful for finding offsets in the same place across different data and values.
+
+
+Includes all real-life schedules from 1970-2019.
 
 ## How to Use
 
-### Basic usage
+### Schedule Editor Basic usage
 **NOTE**: always make a copy of your franchise before using this app. It has been tested lightly, but you never know what might happen.
 
 Also, it is best to change the schedule during preseason week 1, since the app doesn't include a way to change the current week in game.
 
-1. Click on 'Open a franchise file' at the welcome screen. Select your Madden franchise save in the file dialog.
+1. Click on 'Open a franchise file' at the welcome screen. Select your Madden franchise save in the file dialog. Select 'Open the schedule editor' from the list of options.
 
 1. Your current franchise schedule will open in the editor, starting with Preseason Week 1. You can scroll through the weeks of the season at the top.
 
