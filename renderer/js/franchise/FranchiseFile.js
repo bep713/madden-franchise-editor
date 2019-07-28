@@ -20,11 +20,14 @@ class FranchiseFile extends EventEmitter {
     }
     
     this._rawContents = fs.readFileSync(filePath);
+    this._gameYear = getMaddenYear(this._rawContents);
+    console.log('This was saved in Madden', this._gameYear);
 
     if (this._rawContents.length === COMPRESSED_FILE_LENGTH) {
       this._openedFranchiseFile = true;
       this.packedFileContents = this.rawContents;
       this.unpackedFileContents = unpackFile(this.rawContents);
+      // fs.writeFileSync(filePath.substring(0, filePath.lastIndexOf('\\')) + '\\M20unpack.frt', this.unpackedFileContents);
     } else {
       this._openedFranchiseFile = false;
       this.unpackedFileContents = this.rawContents;
@@ -34,27 +37,30 @@ class FranchiseFile extends EventEmitter {
   };
 
   parse() {
-    this.schedule = new FranchiseSchedule(this.unpackedFileContents);
     const that = this;
 
-    this.schedule.on('change', function (game) {
-      const header = that.unpackedFileContents.slice(0, game.offset);
-      const trailer = that.unpackedFileContents.slice(game.offset + game.hexData.length);
+    if (this._gameYear === 19) {
+      this.schedule = new FranchiseSchedule(this.unpackedFileContents);
 
-      that.unpackedFileContents = Buffer.concat([header, game.hexData, trailer]);
-      that.packFile();
-    });
+      this.schedule.on('change', function (game) {
+        const header = that.unpackedFileContents.slice(0, game.offset);
+        const trailer = that.unpackedFileContents.slice(game.offset + game.hexData.length);
 
-    this.schedule.on('change-all', function (offsets) {
-      const header = that.unpackedFileContents.slice(0, offsets.startingOffset);
-      const trailer = that.unpackedFileContents.slice(offsets.endingOffset);
+        that.unpackedFileContents = Buffer.concat([header, game.hexData, trailer]);
+        that.packFile();
+      });
 
-      that.unpackedFileContents = Buffer.concat([header, offsets.hexData, trailer]);
-      that.packFile();
-    });
+      this.schedule.on('change-all', function (offsets) {
+        const header = that.unpackedFileContents.slice(0, offsets.startingOffset);
+        const trailer = that.unpackedFileContents.slice(offsets.endingOffset);
+
+        that.unpackedFileContents = Buffer.concat([header, offsets.hexData, trailer]);
+        that.packFile();
+      });
+    }
 
     let schemaPromise = new Promise((resolve, reject) => {
-      this.schemaList = new FranchiseSchema();
+      this.schemaList = new FranchiseSchema(this._gameYear);
       this.schemaList.on('schemas:done', function () {
         resolve();
       });
@@ -82,7 +88,7 @@ class FranchiseFile extends EventEmitter {
           && this.unpackedFileContents[i+1] === altSecondCheck
           && this.unpackedFileContents[i+2] === altThirdCheck
           && this.unpackedFileContents[i+3] === altFourthCheck)) {
-            const tableStart = i - 0x90;
+            const tableStart = i - getTableStartOffsetByGameYear(this._gameYear);
             tableIndicies.push(tableStart);
           }
       }
@@ -95,10 +101,8 @@ class FranchiseFile extends EventEmitter {
 
         const tableData = this.unpackedFileContents.slice(currentTable, nextTable);
 
-        const newFranchiseTable = new FranchiseFileTable(tableData, currentTable);
+        const newFranchiseTable = new FranchiseFileTable(tableData, currentTable, this._gameYear);
         this.tables.push(newFranchiseTable);
-
-        // console.log(i, newFranchiseTable.name);
 
         newFranchiseTable.on('change', function () {
           const header = that.unpackedFileContents.slice(0, this.offset);
@@ -114,6 +118,7 @@ class FranchiseFile extends EventEmitter {
 
     Promise.all([schemaPromise, tablePromise]).then(() => {
       that.tables.forEach((table) => {
+        // console.log(table.name);
         const schema = that.schemaList.getSchema(table.name);
 
         if (schema) {
@@ -177,6 +182,16 @@ class FranchiseFile extends EventEmitter {
 
 module.exports = FranchiseFile;
 
+function getTableStartOffsetByGameYear(gameYear) {
+  switch (gameYear) {
+    case 20:
+      return 0x94;
+    case 19:
+    default:
+      return 0x90;
+  }
+};
+
 function unpackFile (fileData) {
   return zlib.inflateSync(fileData.slice(COMPRESSED_DATA_OFFSET));
 };
@@ -204,4 +219,18 @@ function save (destination, packedContents) {
   fs.writeFile(destination, packedContents, (err) => {
     if (err) throw err;
   });
+};
+
+function getMaddenYear(compressedData) {
+  if (compressedData.length < 0x24) {
+    return null;
+  }
+
+
+  // Madden 20 saves will have 'M20' at this location in the compressed file
+  if (compressedData[0x22] === 77 && compressedData[0x23] === 50 && compressedData[0x24] === 48) {
+    return 20;
+  }
+
+  return 19;
 };

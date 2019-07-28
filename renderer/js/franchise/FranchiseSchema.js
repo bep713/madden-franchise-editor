@@ -2,17 +2,24 @@ const fs = require('fs');
 const path = require('path');
 const XmlStream = require('xml-stream');
 const FranchiseEnum = require('./FranchiseEnum');
-const schemaFilePath = '../../../data/schemas.xml';
 const EventEmitter = require('events').EventEmitter;
 const utilService = require('../services/utilService');
 const FranchiseEnumValue = require('./FranchiseEnumValue');
 
+let schemaFilePath;
+const schemaPaths = {
+  19: '../../../data/schemas/schema-19.xml',
+  20: '../../../data/schemas/schema-20.xml'
+};
+
 class FranchiseSchema extends EventEmitter {
-  constructor () {
+  constructor (gameYear) {
     super();
 
     this.schemas = [];
     this.enums = [];
+
+    schemaFilePath = schemaPaths[gameYear];
 
     const stream = fs.createReadStream(path.join(__dirname, schemaFilePath));
     this.xml = new XmlStream(stream);

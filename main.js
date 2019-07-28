@@ -15,7 +15,7 @@ if (isDev) {
 
 const homePage = 'renderer/index.html';
 const workerPage = 'renderer/worker.html';
-const baseWindowTitle = 'M19 Franchise Editor';
+const baseWindowTitle = 'Madden Franchise Editor';
 let currentFilePath = '';
 
 function createWindow () {
@@ -91,9 +91,11 @@ function addIpcListeners() {
     setCurrentWindowTitle(baseWindowTitle);
   });
   
-  ipcMain.on('load-file', function (event, filePath) {
-    currentFilePath = filePath;
+  ipcMain.on('file-loaded', function (event, file) {
+    currentFilePath = file.path;
     setCurrentWindowTitle(`${baseWindowTitle} - ${currentFilePath}`);
+
+    mainWindow.webContents.send('file-loaded', file);
   });
   
   ipcMain.on('saving', function () {

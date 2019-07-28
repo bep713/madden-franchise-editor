@@ -53,11 +53,13 @@ tableEditorService.loadTable = function () {
     };
   });
 
-  const initialTableToLoad = '1 - PopularityComponentTable';
+  // const initialTableToLoad = '1 - OverallPercentage';
 
-  tableChoices.find((choice) => {
-    return choice.text === initialTableToLoad;
-  }).selected = true;
+  // tableChoices.find((choice) => {
+  //   return choice.text === initialTableToLoad;
+  // }).selected = true;
+
+  tableChoices[1].selected = true;
 
   const tableSelector = document.querySelector('.table-selector');
   tableEditorService.tableSelector = new Selectr(tableSelector, {
@@ -96,7 +98,7 @@ tableEditorService.loadTable = function () {
     }, 100);
   });
 
-  const seasonGame = tableEditorService.file.getAllTablesByName(initialTableToLoad.substring(initialTableToLoad.indexOf(' ') + 3));
+  const seasonGame = tableEditorService.file.getAllTablesByName(tableChoices[1].text.substring(tableChoices[1].text.indexOf(' ') + 3));
   tableEditorService.selectedTable = seasonGame[seasonGame.length - 1];
   seasonGame[seasonGame.length - 1].readRecords().then(loadTable);
   console.log(seasonGame[seasonGame.length - 1]);
@@ -140,7 +142,15 @@ function addEventListeners() {
   const jumpToColumnModal = document.querySelector('.jump-to-column-modal');
   const underlay = document.querySelector('.underlay');
   const jumpRow = document.querySelector('.jump-row');
+  const tableWrapper = document.querySelector('.table-wrapper');
+  const tableContentWrapper = document.querySelector('.table-content-wrapper');
   loader = document.querySelector('.loader-wrapper');
+
+  window.addEventListener('resize', () => {
+    tableEditorService.hot.updateSettings({
+      width: tableWrapper.offsetWidth
+    });
+  })
 
   const toggleTypesButton = document.querySelector('.toggle-types');
   toggleTypesButton.addEventListener('click', function () {
@@ -304,8 +314,13 @@ function referenceRenderer(instance, td, row, col, prop, value, cellProperties) 
           tableEditorService.rowIndexToSelect = recordIndex;
           tableEditorService.columnIndexToSelect = 0;
 
-          tableEditorService.tableSelector.setValue(table.header.tableId);
-      
+          if (table.header.tableId != tableEditorService.tableSelector.getValue()) {
+            tableEditorService.tableSelector.setValue(table.header.tableId);
+          } 
+          else {
+            tableEditorService.hot.selectCell(recordIndex, 0);
+          }
+
           setTimeout(() => {
             tableEditorService.navSteps[tableEditorService.navSteps.length - 1].recordIndex = recordIndex;
           }, 1000);

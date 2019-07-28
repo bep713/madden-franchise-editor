@@ -3,22 +3,26 @@
     {
       "id": "home",
       "text": "Home",
-      "clickListener": "onHomeClicked"
+      "clickListener": "onHomeClicked",
+      "availableVersions": [19,20]
     },
     {
       "id": "schedule-editor",
       "text": "Schedule Editor",
-      "clickListener": "onScheduleEditorClicked"
+      "clickListener": "onScheduleEditorClicked",
+      "availableVersions": [19]
     },
     {
       "id": "table-editor",
       "text": "Table Editor",
-      "clickListener": "onTableEditorClicked"
+      "clickListener": "onTableEditorClicked",
+      "availableVersions": [19,20]
     },
     {
       "id": "schema-viewer",
       "text": "Schema Viewer",
-      "clickListener": "onSchemaViewerClicked"
+      "clickListener": "onSchemaViewerClicked",
+      "availableVersions": [19,20]
     }
   ]
 }

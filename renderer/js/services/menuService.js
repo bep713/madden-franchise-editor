@@ -1,3 +1,4 @@
+const { shell } = require('electron');
 const { Menu, app, BrowserWindow } = require('electron').remote;
 const path = require('path');
 
@@ -271,10 +272,12 @@ menuService.closeFile = function (menuItem, browserWindow, event) {
 };
 
 menuService.showOffsetHelper = function () {
-  let window = new BrowserWindow({ width: 800, height: 600 });
-  window.on('close', function () { window = null; });
-  window.loadFile(path.join(__dirname, '../offset-tool.html'));
-  window.show();
+  // let window = new BrowserWindow({ width: 800, height: 600 });
+  // window.on('close', function () { window = null; });
+  // window.loadFile(path.join(__dirname, '../offset-tool.html'));
+  // window.show();
+
+  shell.openExternal('https://bep713.github.io/offset-tool/index.html');
 };
 
 module.exports = menuService;

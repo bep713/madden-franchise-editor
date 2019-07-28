@@ -110,13 +110,18 @@ utilService.binaryBlockToDecimalBlock = function (binary) {
 utilService.getBitArray = function (data) {
   let arr = [...data];
 
-  const bits = arr.map((decimal) => {
-    return (decimal).toString(2).padStart(8, '0');
-  }).reduce((prev, curr, idx) => {
-    return prev + curr;
-  });
-
-  return bits;
+  try {
+    const bits = arr.map((decimal) => {
+      return (decimal).toString(2).padStart(8, '0');
+    }).reduce((prev, curr, idx) => {
+      return prev + curr;
+    });
+  
+    return bits;
+  }
+  catch(err) {
+    return null;
+  }
 };
 
 utilService.replaceAt = function (oldValue, index, value) {

@@ -1,0 +1,26 @@
+.madden-icon {
+  background-repeat: no-repeat;
+  background-size: contain;
+  height: 36px;
+  width: 36px;
+
+  +.madden-icon {
+    margin-left: 15px;
+  }
+
+  &.inactive {
+    filter: saturate(0) blur(1px);
+  }
+
+  @at-root .top-bar #{&} {
+    margin: -10px 0;
+  }
+}
+
+#m19-icon {
+  background-image: url(../img/M19.PNG);
+}
+
+#m20-icon {
+  background-image: url(../img/M20.PNG);
+}

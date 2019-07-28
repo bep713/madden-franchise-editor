@@ -23,13 +23,21 @@ addIpcListeners();
 let navigationService = {};
 navigationService.currentlyOpenedFile = {
   path: null,
-  data: null
+  data: null,
+  gameYear: null
 };
 
 navigationService.currentlyOpenService = null;
 
-navigationService.generateNavigation = function (element, activeItem) {
-  navigationData.items.forEach((item) => {
+navigationService.generateNavigation = function (activeItem) {
+  const element = document.querySelector('.navigation');
+  const rightActionButtons = document.querySelector('.right-action-buttons');
+
+  const applicableNavigationData = navigationData.items.filter((navigation) => {
+    return navigation.availableVersions.includes(navigationService.currentlyOpenedFile.data._gameYear);
+  });
+
+  applicableNavigationData.forEach((item) => {
     const button = document.createElement('div');
     button.innerHTML = item.text;
     button.classList.add('nav-item', 'action-button');
@@ -42,13 +50,21 @@ navigationService.generateNavigation = function (element, activeItem) {
 
     element.appendChild(button);
   });
+
+  if (navigationService.currentlyOpenedFile) {
+    const gameIcon = document.createElement('div');
+    gameIcon.id = `m${navigationService.currentlyOpenedFile.gameYear}-icon`;
+    gameIcon.className = 'madden-icon'
+
+    rightActionButtons.appendChild(gameIcon);
+  }
 };
 
 navigationService.onHomeClicked = function () {
   navigationService.runCloseFunction();
   navigationService.loadPage('welcome.html');
   navigationService.currentlyOpenService = welcomeService;
-  welcomeService.start(navigationService.currentlyOpenedFile.path);
+  welcomeService.start(navigationService.currentlyOpenedFile);
 };
 
 navigationService.onScheduleEditorClicked = function () {
@@ -91,72 +107,13 @@ navigationService.runCloseFunction = function () {
   }
 };
 
-function getMemory() {
-  // `format` omitted  (pads + limits to 15 characters for the output)
-  function logMemDetails(x) {
-    function toMb(bytes) {
-      return (bytes / (1000.0 * 1000)).toFixed(2)
-    }
-
-    console.log(
-      format(x[0]),
-      format(x[1].count),
-      format(toMb(x[1].size) + "MB"),
-      format(toMb(x[1].liveSize) +"MB")
-    )
-  }
-
-  console.log(
-    format("object"),
-    format("count"),
-    format("size"),
-    format("liveSize")
-  )
-  Object.entries(webFrame.getResourceUsage()).map(logMemDetails)
-  console.log('------')
-}
-
-function format(x) {
-  if (x.length === 15) {
-    return x;
-  }
-  else if (x.length < 15) {
-    return x.padStart(15);
-  }
-  else if (x.length > 15) {
-    return x.substring(0,15);
-  }
-  else {
-    return x;
-  }
-}
-
-// setInterval(getMemory, 5000)
-
-function logBytes(x) {
-  console.log(x[0], x[1] / (1000.0*1000), "MB")
-}
-
-function getMemory() {
-  Object.entries(process.memoryUsage()).map(logBytes)
-  console.log('\n')
-}
-
-setInterval(getMemory, 5000)
-
-function clearCache() {
-  remote.getCurrentWindow().webContents.session.clearCache(function(){
-    console.log("Cache Cleared")
-  })
-}
-setInterval(clearCache, 10000)
-
-// DEV_openFile();
+DEV_openFile();
 
 module.exports = navigationService;
 
 function DEV_openFile() {
-  welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-2019');
+  // welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-2019');
+  welcomeService.eventEmitter.emit('open-file', 'D:\\Projects\\Madden 20\\CAREER-BEPFRANCHISE');
 
   setTimeout(() => {
     navigationService.onTableEditorClicked();
@@ -167,6 +124,7 @@ function addIpcListeners() {
   ipcRenderer.on('close-file', function () {
     navigationService.currentlyOpenedFile.path = null;
     navigationService.currentlyOpenedFile.data = null;
+    navigationService.currentlyOpenedFile.gameYear = null;
     navigationService.onHomeClicked();
 
     ipcRenderer.send('close-file');
@@ -177,7 +135,13 @@ function setupEvents() {
   welcomeService.eventEmitter.on('open-file', function (file) {
     navigationService.currentlyOpenedFile.path = file;
     navigationService.currentlyOpenedFile.data = new FranchiseFile(file);
-    ipcRenderer.send('load-file', file);
+    navigationService.currentlyOpenedFile.gameYear = navigationService.currentlyOpenedFile.data._gameYear;
+
+    ipcRenderer.send('file-loaded', {
+      'path': navigationService.currentlyOpenedFile.path,
+      'gameYear': navigationService.currentlyOpenedFile.gameYear
+    });
+
     backupFile(navigationService.currentlyOpenedFile.path);
 
     navigationService.currentlyOpenedFile.data.on('saving', function () {
@@ -213,9 +177,8 @@ function setupMenu() {
 };
 
 function appendNavigation(activeItemId) {
-  const navigation = document.querySelector('.navigation');
   const activeItem = navigationData.items.find((item) => { return item.id === activeItemId; });
-  navigationService.generateNavigation(navigation, activeItem);
+  navigationService.generateNavigation(activeItem);
 };
 
 function backupFile(franchiseFile) {
