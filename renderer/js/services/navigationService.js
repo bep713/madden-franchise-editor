@@ -142,7 +142,7 @@ function setupEvents() {
       'gameYear': navigationService.currentlyOpenedFile.gameYear
     });
 
-    backupFile(navigationService.currentlyOpenedFile.path);
+    backupFile(navigationService.currentlyOpenedFile);
 
     navigationService.currentlyOpenedFile.data.on('saving', function () {
       ipcRenderer.send('saving');
@@ -190,7 +190,7 @@ function backupFile(franchiseFile) {
     fs.mkdirSync('temp/backup');
   }
 
-  fs.writeFile('temp/backup/backup.bak', franchiseFile.rawContents, function (err) {
+  fs.writeFile('temp/backup/backup.bak', franchiseFile.data.rawContents, function (err) {
     if (err) {
       throw err;
     }
