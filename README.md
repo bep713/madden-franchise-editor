@@ -13,7 +13,7 @@ Includes all real-life schedules from 1970-2019.
 
 ## How to Use
 
-### Schedule Editor Basic usage
+### Schedule editor basic usage
 **NOTE**: always make a copy of your franchise before using this app. It has been tested lightly, but you never know what might happen.
 
 Also, it is best to change the schedule during preseason week 1, since the app doesn't include a way to change the current week in game.
