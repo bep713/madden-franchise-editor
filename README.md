@@ -1,6 +1,10 @@
 # madden-franchise-editor
 
-An app for editing franchise files in Madden 19 and 20. Latest release: https://github.com/bep713/madden-franchise-editor/releases Instructions on how to build the source are at the bottom of this file.
+An app for editing franchise files in Madden 19 and 20. 
+
+Latest release: https://github.com/bep713/madden-franchise-editor/releases 
+
+Instructions on how to build the source are at the bottom of this file.
 
 ## Features
 - [19 ONLY] Schedule editor - An easy UI for changing franchise schedules. See the 'Schedule editor basic usage' section of this readme.
