@@ -124,7 +124,7 @@ tableEditorService.loadTable = function () {
     tableEditorService.rowIndexToSelect = tableEditorService.initialTableToSelect.recordIndex;
     tableEditorService.columnIndexToSelect = 0;
 
-    tableChoices[tableEditorService.initialTableToSelect.tableId].selected = true;
+    tableEditorService.tableSelector.setValue(tableChoices[tableEditorService.initialTableToSelect.tableId].value);
     const table = tableEditorService.file.getTableByIndex(tableEditorService.initialTableToSelect.tableId);
     table.readRecords().then(loadTable);
     console.log(table);
@@ -134,8 +134,10 @@ tableEditorService.loadTable = function () {
       'recordIndex': tableEditorService.initialTableToSelect.recordIndex,
       'column': 0
     });
+
+    tableEditorService.initialTableToSelect = null;
   } else {
-    tableChoices[1].selected = true;
+    tableEditorService.tableSelector.setValue(tableChoices[1].value);
 
     const seasonGame = tableEditorService.file.getAllTablesByName(tableChoices[1].text.substring(tableChoices[1].text.indexOf(' ') + 3));
     tableEditorService.selectedTable = seasonGame[seasonGame.length - 1];
