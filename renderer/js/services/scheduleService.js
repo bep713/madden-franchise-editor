@@ -1,12 +1,15 @@
 const fs = require('fs');
+const EventEmitter = require('events');
 const { ipcRenderer, remote } = require('electron');
 const app = remote.app;
+
 const Selectr = require('mobius1-selectr');
 const utilService = require('./utilService');
-const FranchiseFile = require('../franchise/FranchiseFile');
 const teamData = require('../../../data/teamData.json');
 const dayOfWeekData = require('../../../data/dayOfWeekData.json');
 const seasonWeekData = require('../../../data/seasonWeekData.json');
+const FranchiseSchedule = require('../franchise/FranchiseSchedule');
+const franchiseGameYearService = require('../services/franchiseGameYearService');
 
 const teamChoices = getTeamChoices();
 const dayChoices = getDayChoices();
@@ -14,13 +17,25 @@ const scheduleYearChoices = getScheduleChoices();
 
 let scheduleService = {};
 scheduleService.file = null;
+scheduleService.eventEmitter = new EventEmitter();
 
 scheduleService.loadSchedule = function (file) {
-  scheduleService.file = file;
+  utilService.show(document.querySelector('.loader-wrapper'));
+
+  setTimeout(() => {
+    scheduleService.file = {
+      schedule: new FranchiseSchedule(file),
+      file: file
+    };
+
+    scheduleService.file.schedule.on('ready', () => {
+      this.loadGamesByWeek(0);
+      utilService.hide(document.querySelector('.loader-wrapper'));
+    });
+  }, 1);
 
   addEventListeners();
   this.loadWeeks();
-  this.loadGamesByWeek(0);
 };
 
 scheduleService.loadWeeks = function () {
@@ -35,6 +50,11 @@ scheduleService.loadGamesByWeek = function (weekNum) {
   attachGameElementsForWeek(weekNum);
 };
 
+scheduleService.onClose = function () {
+  const contextMenu = document.querySelector('.context-menu');
+  contextMenu.removeEventListener('click', hideContextMenu);
+};
+
 module.exports = scheduleService;
 
 function addEventListeners() {
@@ -45,69 +65,74 @@ function addEventListeners() {
   });
 
   const contextMenu = document.querySelector('.context-menu');
-  contextMenu.addEventListener('click', function () {
-    hideContextMenu();
+  contextMenu.addEventListener('click', hideContextMenu);
+
+  const viewTableEditor = document.querySelector('#view-table-editor');
+  viewTableEditor.addEventListener('click', function () {
+    const gameOffset = parseInt(contextMenu.getAttribute('data-game'));
+    scheduleService.eventEmitter.emit('open-table-editor', franchiseGameYearService.getTableIndex('SeasonGame', scheduleService.file.file._gameYear), gameOffset);
   });
 
-  const hexSaveButton = document.querySelector('#save-hex');
-  hexSaveButton.addEventListener('click', function () {
-    hideHexView();
+  // const hexSaveButton = document.querySelector('#save-hex');
+  // hexSaveButton.addEventListener('click', function () {
+  //   hideHexView();
 
-    const textArea = document.querySelector('.hex-view-wrapper textarea');
-    const newDataString = textArea.value;
+  //   const textArea = document.querySelector('.hex-view-wrapper textarea');
+  //   const newDataString = textArea.value;
 
-    const gameOffset = contextMenu.getAttribute('data-game');
-    const game = scheduleService.file.schedule.getGameByOffset(gameOffset);
+  //   const gameOffset = contextMenu.getAttribute('data-game');
+  //   const game = scheduleService.file.schedule.getGameByOffset(gameOffset);
 
-    if (isShowingHex(newDataString)) {
-      const newDataHex = newDataString.split(' ');
-      const newDataArr = newDataHex.map(function (data) {
-        return parseInt(data, 16);
-      });
+  //   if (isShowingHex(newDataString)) {
+  //     const newDataHex = newDataString.split(' ');
+  //     const newDataArr = newDataHex.map(function (data) {
+  //       return parseInt(data, 16);
+  //     });
 
-      const newData = Buffer.from(newDataArr);
-      game.data = newData;
-    }
-    else if (isShowingBinary(newDataString)) {
-      const newDataArr = utilService.binaryBlockToDecimalBlock(newDataString);
-      const newData = Buffer.from(newDataArr);
-      game.data = newData;
-    }
+  //     const newData = Buffer.from(newDataArr);
+  //     game.data = newData;
+  //   }
+  //   else if (isShowingBinary(newDataString)) {
+  //     const newDataArr = utilService.binaryBlockToDecimalBlock(newDataString);
+  //     const newData = Buffer.from(newDataArr);
+  //     game.data = newData;
+  //   }
 
-    const currentWeek = document.querySelector('.week.active').getAttribute('data-week');
-    scheduleService.loadGamesByWeek(currentWeek);
+  //   const currentWeek = document.querySelector('.week.active').getAttribute('data-week');
+  //   scheduleService.loadGamesByWeek(currentWeek);
 
-    function isShowingHex(newDataString) {
-      return newDataString.length === 275;
-    };
+  //   function isShowingHex(newDataString) {
+  //     return newDataString.length === 275;
+  //   };
 
-    function isShowingBinary(newDataString) {
-      return newDataString.length === 736;
-    };
-  });
+  //   function isShowingBinary(newDataString) {
+  //     return newDataString.length === 736;
+  //   };
+  // });
 
-  const viewEditHex = document.querySelector('#view-edit-hex');
-  viewEditHex.addEventListener('click', function (e) {
-    const gameOffset = contextMenu.getAttribute('data-game');
-    const game = scheduleService.file.schedule.getGameByOffset(gameOffset);
-    const hexUnformatted = game.hexData.toString('hex').toUpperCase();
-    const data = chunk(hexUnformatted, 2).join(' ')
-    const header = game.gameDescription;
+  // const viewEditHex = document.querySelector('#view-edit-hex');
+  // viewEditHex.addEventListener('click', function (e) {
+  //   const gameOffset = contextMenu.getAttribute('data-game');
+  //   const game = scheduleService.file.schedule.getGameByOffset(gameOffset);
 
-    populateHexViewWrapper(e, data, header);
-  });
+  //   const hexUnformatted = game.hexData.toString('hex').toUpperCase();
+  //   const data = chunk(hexUnformatted, 2).join(' ')
+  //   const header = game.gameDescription;
 
-  const viewEditBinary = document.querySelector('#view-edit-binary');
-  viewEditBinary.addEventListener('click', function (e) {
-    const gameOffset = contextMenu.getAttribute('data-game');
-    const game = scheduleService.file.schedule.getGameByOffset(gameOffset);
-    const header = game.gameDescription;
+  //   populateHexViewWrapper(e, data, header);
+  // });
 
-    populateHexViewWrapper(e, game.data, header);
+  // const viewEditBinary = document.querySelector('#view-edit-binary');
+  // viewEditBinary.addEventListener('click', function (e) {
+  //   const gameOffset = contextMenu.getAttribute('data-game');
+  //   const game = scheduleService.file.schedule.getGameByOffset(gameOffset);
+  //   const header = game.gameDescription;
 
-    const textArea = document.querySelector('.hex-view-wrapper textarea');
-    textArea.maxLength = 736;
-  });
+  //   populateHexViewWrapper(e, game.data, header);
+
+  //   const textArea = document.querySelector('.hex-view-wrapper textarea');
+  //   textArea.maxLength = 736;
+  // });
 
   const modalClose = document.querySelectorAll('.modal-header .close-modal');
   modalClose.forEach((modalClose) => {
@@ -128,6 +153,7 @@ function addEventListeners() {
     const scheduleFile = require(`../../../schedules/${selectedFile}`);
     const spinner = document.querySelector('.loader-wrapper');
     spinner.classList.remove('hidden');
+
     setTimeout(() => {
       scheduleService.file.schedule.replaceAllGamesWithFile(scheduleFile);
       spinner.classList.add('hidden');
@@ -143,11 +169,6 @@ function addEventListeners() {
     replaceAllModal.classList.remove('hidden');
     underlay.classList.remove('hidden');
   });
-
-  // const changeTimes = document.querySelector('#change-times');
-  // changeTimes.addEventListener('click', function () {
-    
-  // });
 };
 
 function populateHexViewWrapper(event, data, header) {

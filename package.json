@@ -12,17 +12,18 @@
   "devDependencies": {
     "electron": "^4.1.4",
     "electron-packager": "^13.1.1",
-    "electron-rebuild": "^1.8.4",
-    "gulp": "^4.0.1",
-    "gulp-sass": "^4.0.2"
+    "electron-rebuild": "^1.8.5",
+    "electron-reload": "^1.4.1",
+    "gulp": "^4.0.2",
+    "gulp-sass": "^4.0.2",
+    "gulp-sourcemaps": "^2.6.5"
   },
   "dependencies": {
     "@babel/polyfill": "^7.4.4",
     "cheerio": "^1.0.0-rc.3",
-    "electron-reload": "^1.4.0",
-    "gulp-sourcemaps": "^2.6.5",
     "handsontable": "^6.2.2",
-    "mobius1-selectr": "^2.4.8",
+    "madden-franchise": "^1.0.4",
+    "mobius1-selectr": "^2.4.13",
     "moment": "^2.24.0",
     "xml-stream": "^0.4.5"
   }

@@ -10,7 +10,7 @@
       "id": "schedule-editor",
       "text": "Schedule Editor",
       "clickListener": "onScheduleEditorClicked",
-      "availableVersions": [19]
+      "availableVersions": [19, 20]
     },
     {
       "id": "table-editor",

@@ -49,16 +49,16 @@ function addLoadedFileListener() {
 };
 
 function toggleNavigationLinks(gameYear) {
-  const scheduleLink = document.querySelector('#open-schedule');
+  // const scheduleLink = document.querySelector('#open-schedule');
 
-  if (scheduleLink) {
-    if (gameYear === 20) {
-      scheduleLink.classList.add('unavailable');
-    }
-    else {
-      scheduleLink.classList.remove('unavailable');
-    }
-  }
+  // if (scheduleLink) {
+  //   if (gameYear === 20) {
+  //     scheduleLink.classList.add('unavailable');
+  //   }
+  //   else {
+  //     scheduleLink.classList.remove('unavailable');
+  //   }
+  // }
 };
 
 function toggleMaddenIcons(year) {

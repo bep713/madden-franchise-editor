@@ -4,7 +4,7 @@ const { ipcRenderer, remote, webFrame } = require('electron');
 
 const app = remote.app;
 
-const FranchiseFile = require('../franchise/FranchiseFile');
+const FranchiseFile = require('madden-franchise');
 
 const menuService = require('./menuService.js');
 const welcomeService = require('./welcomeService');
@@ -107,7 +107,7 @@ navigationService.runCloseFunction = function () {
   }
 };
 
-// DEV_openFile();
+DEV_openFile();
 
 module.exports = navigationService;
 
@@ -116,7 +116,7 @@ function DEV_openFile() {
   welcomeService.eventEmitter.emit('open-file', 'D:\\Projects\\Madden 20\\CAREER-BEPFRANCHISE');
 
   setTimeout(() => {
-    navigationService.onTableEditorClicked();
+    navigationService.onScheduleEditorClicked();
   }, 10);
 };
 
@@ -169,6 +169,16 @@ function setupEvents() {
 
   welcomeService.eventEmitter.on('open-schema-viewer', function () {
     navigationService.onSchemaViewerClicked();
+  });
+
+  scheduleService.eventEmitter.on('open-table-editor', function (tableId, index) {
+    tableEditorService.initialTableToSelect = {
+      tableId: tableId,
+      recordIndex: index
+    };
+
+    navigationService.runCloseFunction();
+    navigationService.onTableEditorClicked();
   });
 };
 

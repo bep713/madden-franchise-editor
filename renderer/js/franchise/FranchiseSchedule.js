@@ -1,9 +1,11 @@
 const moment = require('moment');
 const FranchiseGame = require('./FranchiseGame');
 const EventEmitter = require('events').EventEmitter;
+const utilService = require('../services/utilService');
 const teamData = require('../../../data/teamData.json');
-const seasonWeekData = require('../../../data/seasonWeekData.json');
 const dayOfWeekData = require('../../../data/dayOfWeekData.json');
+const seasonWeekData = require('../../../data/seasonWeekData.json');
+const franchiseGameYearService = require('../services/franchiseGameYearService');
 
 const PLAYOFF_START_OFFSET = 0x1CEB09;
 const PRESEASON_START_OFFSET = 0x1CEEA1;
@@ -14,13 +16,21 @@ const SEASON_GAME_MAX_OFFSET = 0x1D6DD9;
 const GAME_SIZE = 0x5C;
 
 class FranchiseSchedule extends EventEmitter {
-  constructor(data) {
+  constructor(file) {
     super();
     this.NUMBER_WEEKS_SEASON = 25;
-    this.data = data;
+    // this.data = data;
+    this.file = file;
     this.games = [];
     // this.initializeWeeks();
-    this.parse();
+
+    if (!file.isLoaded) {
+      file.on('ready', () => {
+        this.parse();
+      });
+    } else {
+      this.parse();
+    }
   };
 
   // initializeWeeks() {
@@ -34,22 +44,63 @@ class FranchiseSchedule extends EventEmitter {
   // };
 
   parse() {
-    for (var i = PLAYOFF_START_OFFSET; i <= SUPERBOWL_START_OFFSET; i += GAME_SIZE) {
-      const game = new FranchiseGame(this.data.slice(i, i + GAME_SIZE), i);
-      this.games.push(game);
+    const seasonGameTable = this.file.getTableByIndex(franchiseGameYearService.getTableIndex('SeasonGame', this.file._gameYear));
+    const teamTable = this.file.getTableByIndex(franchiseGameYearService.getTableIndex('Team', this.file._gameYear));
 
-      const that = this;
-      game.on('change', function () {
-        that.emit('change', this);
+    const seasonGameFields = ['AwayTeam', 'HomeTeam', 'TimeOfDay', 'HomeScore', 'AwayScore', 'SeasonWeek', 'DayOfWeek', 'SeasonWeekType'];
+    const teamFields = ['ShortName'];
+
+    const that = this;
+  
+    let tablesLoaded = Promise.all([seasonGameTable.readRecords(seasonGameFields), teamTable.readRecords(teamFields)]);
+    tablesLoaded.then(() => {
+      console.log(seasonGameTable);
+      console.log(teamTable);
+
+      teamData.teams.forEach((team) => {
+        team.referenceIndex = teamTable.records.findIndex((record) => { return record.ShortName === team.abbreviation; });
       });
-    }
+
+      seasonGameTable.records.forEach((record, index) => {
+        let game = new FranchiseGame(record, index);
+        
+        if (record.HomeTeam !== '00000000000000000000000000000000') {
+          const recordIndex = utilService.bin2dec(record.HomeTeam.substring(16));
+          game._homeTeam = teamData.teams.find((team) => { return team.abbreviation === teamTable.records[recordIndex].ShortName; });
+        }
+
+        if (record.AwayTeam !== '00000000000000000000000000000000') {
+          const recordIndex = utilService.bin2dec(record.AwayTeam.substring(16));
+          game._awayTeam = teamData.teams.find((team) => { return team.abbreviation === teamTable.records[recordIndex].ShortName; });
+        }
+
+        this.games.push(game);
+
+        game.on('change', () => {
+          console.log('change');
+          that.file.save();
+        });
+      });
+
+      this.emit('ready');
+    });
+
+    // for (var i = PLAYOFF_START_OFFSET; i <= SUPERBOWL_START_OFFSET; i += GAME_SIZE) {
+    //   const game = new FranchiseGame(this.data.slice(i, i + GAME_SIZE), i);
+    //   this.games.push(game);
+
+    //   const that = this;
+    //   game.on('change', function () {
+    //     that.emit('change', this);
+    //   });
+    // }
   };
 
-  get hexData () {
-    return this.games.reduce((accumulator, current) => {
-      return Buffer.concat([accumulator, current.hexData]);
-    }, Buffer.from([]));
-  };
+  // get hexData () {
+  //   return this.games.reduce((accumulator, current) => {
+  //     return Buffer.concat([accumulator, current.hexData]);
+  //   }, Buffer.from([]));
+  // };
 
   getGameByOffset(offset) {
     return this.games.find((game) => {
@@ -61,7 +112,8 @@ class FranchiseSchedule extends EventEmitter {
     const week = seasonWeekData.weeks[weekNum];
 
     return this.games.filter((game) => {
-      return game.week === week;
+      const gameRecord = game.gameRecord;
+      return gameRecord.SeasonWeek === week.weekIndex && gameRecord.SeasonWeekType === week.seasonWeekType && game.homeTeam !== null && game.awayTeam !== null;
     });
   };
 
@@ -71,9 +123,9 @@ class FranchiseSchedule extends EventEmitter {
     let gamesToReplace;
 
     if (hasPreseasonGames) {
-      gamesToReplace = this.games.filter((game) => { return game.week.weekType === 'preseason' || game.week.weekType === 'season'; });
+      gamesToReplace = this.games.filter((game) => { return (game.gameRecord.SeasonWeekType === 'PreSeason' || game.gameRecord.SeasonWeekType === 'RegularSeason') && game.homeTeam !== null && game.awayTeam !== null; });
     } else {
-      gamesToReplace = this.games.filter((game) => { return game.week.weekType === 'season'; });
+      gamesToReplace = this.games.filter((game) => { return game.gameRecord.SeasonWeekType === 'RegularSeason' && game.homeTeam !== null && game.awayTeam !== null; });
     }
 
     const weeksToAdd = file.weeks.filter((week) => { return (week.type === 'preseason' && week.number > 1) || week.type === 'season'});
@@ -102,7 +154,8 @@ class FranchiseSchedule extends EventEmitter {
           currentGame.awayTeam = awayTeam;
           currentGame.homeTeam = homeTeam;
           currentGame.dayOfWeek = day;
-          currentGame.week = seasonWeek;
+          currentGame.seasonWeek = seasonWeek;
+          currentGame.seasonWeekType = seasonWeek;
           currentGame.time = time;
         }
 
@@ -118,11 +171,15 @@ class FranchiseSchedule extends EventEmitter {
       }
     });
 
-    this.emit('change-all', {
-      startingOffset: PLAYOFF_START_OFFSET,
-      endingOffset: SUPERBOWL_START_OFFSET + GAME_SIZE,
-      hexData: this.hexData
+    this.file.save().then(() => {
+      console.log('saved!');
     });
+
+    // this.emit('change-all', {
+    //   startingOffset: PLAYOFF_START_OFFSET,
+    //   endingOffset: SUPERBOWL_START_OFFSET + GAME_SIZE,
+    //   hexData: this.hexData
+    // });
   };
 };
 

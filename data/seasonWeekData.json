@@ -5,182 +5,208 @@
       "abbreviation": "P1",
       "weekType": "preseason",
       "scheduleId": 0,
-      "weekIndex": 0
+      "weekIndex": 0,
+      "seasonWeekType": "PreSeason"
     },
     {
       "weekName": "Preseason Week 2",
       "abbreviation": "P2",
       "weekType": "preseason",
       "scheduleId": 0,
-      "weekIndex": 1
+      "weekIndex": 1,
+      "seasonWeekType": "PreSeason"
     },
     {
       "weekName": "Preseason Week 3",
       "abbreviation": "P3",
       "weekType": "preseason",
       "scheduleId": 0,
-      "weekIndex": 2
+      "weekIndex": 2,
+      "seasonWeekType": "PreSeason"
     },
     {
       "weekName": "Preseason Week 4",
       "abbreviation": "P4",
       "weekType": "preseason",
       "scheduleId": 0,
-      "weekIndex": 3
+      "weekIndex": 3,
+      "seasonWeekType": "PreSeason"
     },
     {
       "weekName": "Week 1",
       "abbreviation": "1",
       "weekType": "season",
       "scheduleId": 1,
-      "weekIndex": 0
+      "weekIndex": 0,
+      "seasonWeekType": "RegularSeason"
     },
     {
       "weekName": "Week 2",
       "abbreviation": "2",
       "weekType": "season",
       "scheduleId": 1,
-      "weekIndex": 1
+      "weekIndex": 1,
+      "seasonWeekType": "RegularSeason"
     },
     {
       "weekName": "Week 3",
       "abbreviation": "3",
       "weekType": "season",
       "scheduleId": 1,
-      "weekIndex": 2
+      "weekIndex": 2,
+      "seasonWeekType": "RegularSeason"
     },
     {
       "weekName": "Week 4",
       "abbreviation": "4",
       "weekType": "season",
       "scheduleId": 1,
-      "weekIndex": 3
+      "weekIndex": 3,
+      "seasonWeekType": "RegularSeason"
     },
     {
       "weekName": "Week 5",
       "abbreviation": "5",
       "weekType": "season",
       "scheduleId": 1,
-      "weekIndex": 4
+      "weekIndex": 4,
+      "seasonWeekType": "RegularSeason"
     },
     {
       "weekName": "Week 6",
       "abbreviation": "6",
       "weekType": "season",
       "scheduleId": 1,
-      "weekIndex": 5
+      "weekIndex": 5,
+      "seasonWeekType": "RegularSeason"
     },
     {
       "weekName": "Week 7",
       "abbreviation": "7",
       "weekType": "season",
       "scheduleId": 1,
-      "weekIndex": 6
+      "weekIndex": 6,
+      "seasonWeekType": "RegularSeason"
     },
     {
       "weekName": "Week 8",
       "abbreviation": "8",
       "weekType": "season",
       "scheduleId": 1,
-      "weekIndex": 7
+      "weekIndex": 7,
+      "seasonWeekType": "RegularSeason"
     },
     {
       "weekName": "Week 9",
       "abbreviation": "9",
       "weekType": "season",
       "scheduleId": 1,
-      "weekIndex": 8
+      "weekIndex": 8,
+      "seasonWeekType": "RegularSeason"
     },
     {
       "weekName": "Week 10",
       "abbreviation": "10",
       "weekType": "season",
       "scheduleId": 1,
-      "weekIndex": 9
+      "weekIndex": 9,
+      "seasonWeekType": "RegularSeason"
     },
     {
       "weekName": "Week 11",
       "abbreviation": "11",
       "weekType": "season",
       "scheduleId": 1,
-      "weekIndex": 10
+      "weekIndex": 10,
+      "seasonWeekType": "RegularSeason"
     },
     {
       "weekName": "Week 12",
       "abbreviation": "12",
       "weekType": "season",
       "scheduleId": 1,
-      "weekIndex": 11
+      "weekIndex": 11,
+      "seasonWeekType": "RegularSeason"
     },
     {
       "weekName": "Week 13",
       "abbreviation": "13",
       "weekType": "season",
       "scheduleId": 1,
-      "weekIndex": 12
+      "weekIndex": 12,
+      "seasonWeekType": "RegularSeason"
     },
     {
       "weekName": "Week 14",
       "abbreviation": "14",
       "weekType": "season",
       "scheduleId": 1,
-      "weekIndex": 13
+      "weekIndex": 13,
+      "seasonWeekType": "RegularSeason"
     },
     {
       "weekName": "Week 15",
       "abbreviation": "15",
       "weekType": "season",
       "scheduleId": 1,
-      "weekIndex": 14
+      "weekIndex": 14,
+      "seasonWeekType": "RegularSeason"
     },
     {
       "weekName": "Week 16",
       "abbreviation": "16",
       "weekType": "season",
       "scheduleId": 1,
-      "weekIndex": 15
+      "weekIndex": 15,
+      "seasonWeekType": "RegularSeason"
     },
     {
       "weekName": "Week 17",
       "abbreviation": "17",
       "weekType": "season",
       "scheduleId": 1,
-      "weekIndex": 16
+      "weekIndex": 16,
+      "seasonWeekType": "RegularSeason"
     },
     {
       "weekName": "Wildcard",
       "abbreviation": "WC",
       "weekType": "playoffs",
       "scheduleId": 2,
-      "weekIndex": 17
+      "weekIndex": 17,
+      "seasonWeekType": "FirstPlayoff_"
     },
     {
       "weekName": "Divisional",
       "abbreviation": "DV",
       "weekType": "playoffs",
       "scheduleId": 3,
-      "weekIndex": 18
+      "weekIndex": 18,
+      "seasonWeekType": "DivisionalPlayoff"
     },
     {
       "weekName": "Conference Championship",
       "abbreviation": "CC",
       "weekType": "playoffs",
       "scheduleId": 4,
-      "weekIndex": 19
+      "weekIndex": 19,
+      "seasonWeekType": "ConferencePlayoff"
     },
     {
       "weekName": "Pro Bowl",
       "abbreviation": "PB",
       "weekType": "playoffs",
       "scheduleId": 6,
-      "weekIndex": 20
+      "weekIndex": 20,
+      "seasonWeekType": "ProBowl"
     },
     {
       "weekName": "Super Bowl",
       "abbreviation": "SB",
       "weekType": "playoffs",
       "scheduleId": 5,
-      "weekIndex": 21
+      "weekIndex": 21,
+      "seasonWeekType": "LastPlayoff_"
     },
     {
       "weekName": "Not Available",
