@@ -7,11 +7,10 @@ Latest release: https://github.com/bep713/madden-franchise-editor/releases
 Instructions on how to build the source are at the bottom of this file.
 
 ## Features
-- [19 ONLY] Schedule editor - An easy UI for changing franchise schedules. See the 'Schedule editor basic usage' section of this readme.
-- [ALL] Table editor - Raw editor for changing any value in any table. Useful for testing or for modifying things that aren't in an easy UI yet.
-- [ALL] Schema viewer - View the schema file in the app
+- Schedule editor - An easy UI for changing franchise schedules. See the 'Schedule editor basic usage' section of this readme.
+- Table editor - Raw editor for changing any value in any table. Useful for testing or for modifying things that aren't in an easy UI yet.
+- Schema viewer - View the schema file in the app
 - Offset tool - link to an app that I made that is helpful for finding offsets in the same place across different data and values.
-
 
 Includes all real-life schedules from 1970-2019.
 
