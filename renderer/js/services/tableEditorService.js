@@ -28,7 +28,7 @@ tableEditorService.start = function (file) {
   if (file.isLoaded) {
     runStartTasks();
   } else {
-    file.on('tables-done', function () {
+    file.on('ready', function () {
       runStartTasks();
     });
   }
@@ -327,7 +327,6 @@ function formatColumns(table) {
       return {
         'data': offset.name,
         'renderer': offset.isReference ? referenceRenderer : offset.enum || offset.type === 'bool' ? 'dropdown' : 'text',
-        'readOnly': offset.isReference,
         'wordWrap': false,
         'editor': offset.enum || offset.type === 'bool' ? 'select' : 'text',
         'selectOptions': offset.enum ? offset.enum.members.map((member) => { return member.name; }) : offset.type === 'bool' ? ['true', 'false'] : []

@@ -107,7 +107,7 @@ navigationService.runCloseFunction = function () {
   }
 };
 
-DEV_openFile();
+// DEV_openFile();
 
 module.exports = navigationService;
 
@@ -116,8 +116,8 @@ function DEV_openFile() {
   welcomeService.eventEmitter.emit('open-file', 'D:\\Projects\\Madden 20\\CAREER-BEPFRANCHISE');
 
   setTimeout(() => {
-    navigationService.onScheduleEditorClicked();
-  }, 10);
+    navigationService.onTableEditorClicked();
+  }, 0);
 };
 
 function addIpcListeners() {
