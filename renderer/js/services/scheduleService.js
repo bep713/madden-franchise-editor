@@ -11,7 +11,7 @@ const seasonWeekData = require('../../../data/seasonWeekData.json');
 const FranchiseSchedule = require('../franchise/FranchiseSchedule');
 const franchiseGameYearService = require('../services/franchiseGameYearService');
 
-const teamChoices = getTeamChoices();
+const teamChoices = getTeamChoices(teamData);
 const dayChoices = getDayChoices();
 const scheduleYearChoices = getScheduleChoices();
 
@@ -269,7 +269,7 @@ function attachGameElement (game) {
   const awayTeamLogo = document.createElement('img');
   awayTeamLogo.classList.add('away-team-logo');
   awayTeamLogo.classList.add('team-logo');
-  awayTeamLogo.src = game.awayTeam.logoPath;
+  changeTeamLogo(awayTeamLogo, game.awayTeam.logoPath);
 
   const awayTeamName = document.createElement('select');
   awayTeamName.classList.add('team-name');
@@ -279,7 +279,7 @@ function attachGameElement (game) {
   awayTeamWrapper.appendChild(awayTeamName);
 
   const awayTeamSelector = new Selectr(awayTeamName, {
-    data: teamChoices,
+    data: getTeamChoices(scheduleService.file.schedule.teamData),
     // renderOption: selectrCustomOptionRenderer
   });
 
@@ -287,7 +287,7 @@ function attachGameElement (game) {
 
   awayTeamSelector.on('selectr.change', function (option) {
     game.awayTeam = getTeamByAbbreviation(option.value);
-    awayTeamLogo.src = game.awayTeam.logoPath;
+    changeTeamLogo(awayTeamLogo, game.awayTeam.logoPath);
   });
 
   const homeTeamWrapper = document.createElement('div');
@@ -297,7 +297,7 @@ function attachGameElement (game) {
   const homeTeamLogo = document.createElement('img');
   homeTeamLogo.classList.add('home-team-logo');
   homeTeamLogo.classList.add('team-logo');
-  homeTeamLogo.src = game.homeTeam.logoPath;
+  changeTeamLogo(homeTeamLogo, game.homeTeam.logoPath);
 
   const homeTeamName = document.createElement('select');
   homeTeamName.classList.add('team-name');
@@ -306,7 +306,7 @@ function attachGameElement (game) {
   homeTeamWrapper.appendChild(homeTeamName);
 
   const homeTeamSelector = new Selectr(homeTeamName, {
-    data: teamChoices,
+    data: getTeamChoices(scheduleService.file.schedule.teamData),
     // renderOption: selectrCustomOptionRenderer
   });
 
@@ -314,7 +314,7 @@ function attachGameElement (game) {
 
   homeTeamSelector.on('selectr.change', function (option) {
     game.homeTeam = getTeamByAbbreviation(option.value);
-    homeTeamLogo.src = game.homeTeam.logoPath;
+    changeTeamLogo(homeTeamLogo, game.homeTeam.logoPath);
   });
 
   const dayWrapper = document.createElement('div');
@@ -373,6 +373,15 @@ function attachGameElement (game) {
   });
 
   gamesListElement.append(gameWrapper);
+
+  function changeTeamLogo(element, logoPath) {
+    if (logoPath) {
+      element.src = logoPath;
+    }
+    else {
+      element.classList.add('hidden');
+    }
+  }
 }
 
 function hideContextMenu () {
@@ -397,7 +406,7 @@ function chunk(str, n) {
   return ret;
 };
 
-function getTeamChoices() {
+function getTeamChoices(teamData) {
   return teamData.teams.map((team) => {
     return {
       'value': team.abbreviation,

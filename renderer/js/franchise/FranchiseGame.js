@@ -207,13 +207,13 @@ class FranchiseGame extends EventEmitter {
 
   get awayTeam () {
     return this._awayTeam;
-  }
+  };
 
   set homeTeam (metadata) {
     this._homeTeam = metadata;
     this.gameRecord.HomeTeam = this.gameRecord.HomeTeam.substring(0, 16) + utilService.dec2bin(metadata.referenceIndex, 16);
     this.emit('change');
-  }
+  };
 
   get homeTeam () {
     return this._homeTeam;

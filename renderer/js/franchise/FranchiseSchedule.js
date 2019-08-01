@@ -48,7 +48,7 @@ class FranchiseSchedule extends EventEmitter {
     const teamTable = this.file.getTableByIndex(franchiseGameYearService.getTableIndex('Team', this.file._gameYear));
 
     const seasonGameFields = ['AwayTeam', 'HomeTeam', 'TimeOfDay', 'HomeScore', 'AwayScore', 'SeasonWeek', 'DayOfWeek', 'SeasonWeekType'];
-    const teamFields = ['ShortName'];
+    const teamFields = ['ShortName', 'LongName', 'DisplayName'];
 
     const that = this;
   
@@ -56,6 +56,18 @@ class FranchiseSchedule extends EventEmitter {
     tablesLoaded.then(() => {
       console.log(seasonGameTable);
       console.log(teamTable);
+
+      teamTable.records.forEach((team) => {
+        let teamInMetadata = teamData.teams.find((teamDataTeam) => { return teamDataTeam.abbreviation === team.ShortName; });
+        if (!teamInMetadata) {
+          teamData.teams.push({
+            'city': team.LongName,
+            'nickname': team.DisplayName,
+            'abbreviation': team.ShortName,
+            'logoPath': null
+          });
+        }
+      });
 
       teamData.teams.forEach((team) => {
         team.referenceIndex = teamTable.records.findIndex((record) => { return record.ShortName === team.abbreviation; });
@@ -94,6 +106,10 @@ class FranchiseSchedule extends EventEmitter {
     //     that.emit('change', this);
     //   });
     // }
+  };
+
+  get teamData () {
+    return teamData;
   };
 
   // get hexData () {
