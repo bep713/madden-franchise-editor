@@ -11,7 +11,7 @@ const seasonWeekData = require('../../../data/seasonWeekData.json');
 const FranchiseSchedule = require('../franchise/FranchiseSchedule');
 const franchiseGameYearService = require('../services/franchiseGameYearService');
 
-const teamChoices = getTeamChoices(teamData);
+const teamChoices = getTeamChoices(teamData.teams);
 const dayChoices = getDayChoices();
 const scheduleYearChoices = getScheduleChoices();
 
@@ -286,7 +286,7 @@ function attachGameElement (game) {
   awayTeamSelector.setValue(game.awayTeam.abbreviation);
 
   awayTeamSelector.on('selectr.change', function (option) {
-    game.awayTeam = getTeamByAbbreviation(option.value);
+    game.awayTeam = getTeamByAbbreviation(scheduleService.file.schedule.teamData, option.value);
     changeTeamLogo(awayTeamLogo, game.awayTeam.logoPath);
   });
 
@@ -313,7 +313,7 @@ function attachGameElement (game) {
   homeTeamSelector.setValue(game.homeTeam.abbreviation);
 
   homeTeamSelector.on('selectr.change', function (option) {
-    game.homeTeam = getTeamByAbbreviation(option.value);
+    game.homeTeam = getTeamByAbbreviation(scheduleService.file.schedule.teamData, option.value);
     changeTeamLogo(homeTeamLogo, game.homeTeam.logoPath);
   });
 
@@ -406,8 +406,8 @@ function chunk(str, n) {
   return ret;
 };
 
-function getTeamChoices(teamData) {
-  return teamData.teams.map((team) => {
+function getTeamChoices(teams) {
+  return teams.map((team) => {
     return {
       'value': team.abbreviation,
       'text': team.abbreviation,
@@ -439,17 +439,17 @@ function getScheduleChoices() {
   });
 };
 
-function selectrCustomOptionRenderer(option) {
-  const team = getTeamByAbbreviation(option.text);
-  var template = [
-    `<div class='my-template'>${team.city} ${team.nickname}</div>`
-  ];
+// function selectrCustomOptionRenderer(option) {
+//   const team = getTeamByAbbreviation(option.text);
+//   var template = [
+//     `<div class='my-template'>${team.city} ${team.nickname}</div>`
+//   ];
 
-  return template.join('');
-};
+//   return template.join('');
+// };
 
-function getTeamByAbbreviation(abbreviation) {
-  return teamData.teams.find((team) => { return team.abbreviation === abbreviation; });
+function getTeamByAbbreviation(teamList, abbreviation) {
+  return teamList.find((team) => { return team.abbreviation === abbreviation; });
 };
 
 function getDayOfWeekByAbbreviation(abbreviation) {

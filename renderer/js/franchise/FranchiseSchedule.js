@@ -2,10 +2,11 @@ const moment = require('moment');
 const FranchiseGame = require('./FranchiseGame');
 const EventEmitter = require('events').EventEmitter;
 const utilService = require('../services/utilService');
-const teamData = require('../../../data/teamData.json');
 const dayOfWeekData = require('../../../data/dayOfWeekData.json');
 const seasonWeekData = require('../../../data/seasonWeekData.json');
 const franchiseGameYearService = require('../services/franchiseGameYearService');
+
+const pathToTeamData = '../../../data/teamData.json';
 
 const PLAYOFF_START_OFFSET = 0x1CEB09;
 const PRESEASON_START_OFFSET = 0x1CEEA1;
@@ -22,6 +23,7 @@ class FranchiseSchedule extends EventEmitter {
     // this.data = data;
     this.file = file;
     this.games = [];
+    this._teamData = require(pathToTeamData);
     // this.initializeWeeks();
 
     if (!file.isLoaded) {
@@ -44,6 +46,10 @@ class FranchiseSchedule extends EventEmitter {
   // };
 
   parse() {
+    delete require.cache[require.resolve(pathToTeamData)]
+    this._teamData = require(pathToTeamData);
+    console.log(this._teamData);
+    
     const seasonGameTable = this.file.getTableByIndex(franchiseGameYearService.getTableIndex('SeasonGame', this.file._gameYear));
     const teamTable = this.file.getTableByIndex(franchiseGameYearService.getTableIndex('Team', this.file._gameYear));
 
@@ -57,20 +63,30 @@ class FranchiseSchedule extends EventEmitter {
       console.log(seasonGameTable);
       console.log(teamTable);
 
-      teamTable.records.forEach((team) => {
-        let teamInMetadata = teamData.teams.find((teamDataTeam) => { return teamDataTeam.abbreviation === team.ShortName; });
+      teamTable.records.forEach((team, index) => {
+        let teamInMetadata = this._teamData.teams.find((teamDataTeam) => { return teamDataTeam.abbreviation === team.ShortName; });
         if (!teamInMetadata) {
-          teamData.teams.push({
+          this._teamData.teams.push({
             'city': team.LongName,
             'nickname': team.DisplayName,
             'abbreviation': team.ShortName,
-            'logoPath': null
+            'logoPath': null,
+            'referenceIndex': index,
+            'existsInTeamTable': true
           });
+        } else {
+          teamInMetadata.referenceIndex = index;
+          teamInMetadata.existsInTeamTable = true;
         }
       });
 
-      teamData.teams.forEach((team) => {
-        team.referenceIndex = teamTable.records.findIndex((record) => { return record.ShortName === team.abbreviation; });
+      this._teamData.teams = this._teamData.teams.sort((a, b) => {
+        var nameA = a.abbreviation;
+        var nameB = b.abbreviation;
+
+        if (nameA < nameB) { return -1; }
+        else if (nameA > nameB) { return 1; }
+        else { return 0; }
       });
 
       seasonGameTable.records.forEach((record, index) => {
@@ -78,18 +94,17 @@ class FranchiseSchedule extends EventEmitter {
         
         if (record.HomeTeam !== '00000000000000000000000000000000') {
           const recordIndex = utilService.bin2dec(record.HomeTeam.substring(16));
-          game._homeTeam = teamData.teams.find((team) => { return team.abbreviation === teamTable.records[recordIndex].ShortName; });
+          game._homeTeam = this._teamData.teams.find((team) => { return team.abbreviation === teamTable.records[recordIndex].ShortName; });
         }
 
         if (record.AwayTeam !== '00000000000000000000000000000000') {
           const recordIndex = utilService.bin2dec(record.AwayTeam.substring(16));
-          game._awayTeam = teamData.teams.find((team) => { return team.abbreviation === teamTable.records[recordIndex].ShortName; });
+          game._awayTeam = this._teamData.teams.find((team) => { return team.abbreviation === teamTable.records[recordIndex].ShortName; });
         }
 
         this.games.push(game);
 
         game.on('change', () => {
-          console.log('change');
           that.file.save();
         });
       });
@@ -109,7 +124,7 @@ class FranchiseSchedule extends EventEmitter {
   };
 
   get teamData () {
-    return teamData;
+    return this._teamData.teams.filter((team) => { return team.existsInTeamTable; });
   };
 
   // get hexData () {
@@ -202,7 +217,7 @@ class FranchiseSchedule extends EventEmitter {
 module.exports = FranchiseSchedule;
 
 function getTeamByFullName(name) {
-  return teamData.teams.find((team) => { return team.nameMatchList.includes(name); });
+  return this.teamData.teams.find((team) => { return team.nameMatchList.includes(name); });
 };
 
 function getDayOfWeekByAbbreviation(abbreviation) {

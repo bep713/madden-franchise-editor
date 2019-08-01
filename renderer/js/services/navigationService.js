@@ -107,16 +107,17 @@ navigationService.runCloseFunction = function () {
   }
 };
 
-// DEV_openFile();
+DEV_openFile();
 
 module.exports = navigationService;
 
 function DEV_openFile() {
   // welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-2019');
-  welcomeService.eventEmitter.emit('open-file', 'D:\\Projects\\Madden 20\\CAREER-BEPFRANCHISE');
+  // welcomeService.eventEmitter.emit('open-file', 'D:\\Projects\\Madden 20\\CAREER-BEPFRANCHISE');
+  welcomeService.eventEmitter.emit('open-file', `${MADDEN_SAVE_BASE_FOLDER}\\CAREER-CFBM19_BASE-AUTOSAVE`);
 
   setTimeout(() => {
-    navigationService.onTableEditorClicked();
+    navigationService.onScheduleEditorClicked();
   }, 0);
 };
 
