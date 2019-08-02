@@ -6,7 +6,8 @@
       "abbreviation": "ARI",
       "nameMatchList": ["Arizona Cardinals", "St. Louis Cardinals", "Phoenix Cardinals"],
       "scheduleId": 8,
-      "logoPath": "img/team-logos/cardinals.png"
+      "logoPath": "img/team-logos/nfl/cardinals.png",
+      "isCollege": false
     },
     {
       "city": "Atlanta",
@@ -14,7 +15,8 @@
       "abbreviation": "ATL",
       "nameMatchList": ["Atlanta Falcons"],
       "scheduleId": 15,
-      "logoPath": "img/team-logos/falcons.png"
+      "logoPath": "img/team-logos/nfl/falcons.png",
+      "isCollege": false
     },
     {
       "city": "Baltimore",
@@ -22,7 +24,8 @@
       "abbreviation": "BAL",
       "nameMatchList": ["Baltimore Ravens"],
       "scheduleId": 29,
-      "logoPath": "img/team-logos/ravens.png"
+      "logoPath": "img/team-logos/nfl/ravens.png",
+      "isCollege": false
     },
     {
       "city": "Buffalo",
@@ -30,7 +33,8 @@
       "abbreviation": "BUF",
       "nameMatchList": ["Buffalo Bills"],
       "scheduleId": 4,
-      "logoPath": "img/team-logos/bills.png"
+      "logoPath": "img/team-logos/nfl/bills.png",
+      "isCollege": false
     },
     {
       "city": "Carolina",
@@ -38,7 +42,8 @@
       "abbreviation": "CAR",
       "nameMatchList": ["Carolina Panthers"],
       "scheduleId": 25,
-      "logoPath": "img/team-logos/panthers.png"
+      "logoPath": "img/team-logos/nfl/panthers.png",
+      "isCollege": false
     },
     {
       "city": "Chicago",
@@ -46,7 +51,8 @@
       "abbreviation": "CHI",
       "nameMatchList": ["Chicago Bears"],
       "scheduleId": 2,
-      "logoPath": "img/team-logos/bears.png"
+      "logoPath": "img/team-logos/nfl/bears.png",
+      "isCollege": false
     },
     {
       "city": "Cincinnati",
@@ -54,7 +60,8 @@
       "abbreviation": "CIN",
       "nameMatchList": ["Cincinnati Bengals"],
       "scheduleId": 3,
-      "logoPath": "img/team-logos/bengals.png"
+      "logoPath": "img/team-logos/nfl/bengals.png",
+      "isCollege": false
     },
     {
       "city": "Cleveland",
@@ -62,7 +69,8 @@
       "abbreviation": "CLE",
       "nameMatchList": ["Cleveland Browns"],
       "scheduleId": 6,
-      "logoPath": "img/team-logos/browns.png"
+      "logoPath": "img/team-logos/nfl/browns.png",
+      "isCollege": false
     },
     {
       "city": "Dallas",
@@ -70,7 +78,8 @@
       "abbreviation": "DAL",
       "nameMatchList": ["Dallas Cowboys"],
       "scheduleId": 12,
-      "logoPath": "img/team-logos/cowboys.png"
+      "logoPath": "img/team-logos/nfl/cowboys.png",
+      "isCollege": false
     },
     {
       "city": "Denver",
@@ -78,7 +87,8 @@
       "abbreviation": "DEN",
       "nameMatchList": ["Denver Broncos"],
       "scheduleId": 5,
-      "logoPath": "img/team-logos/broncos.png"
+      "logoPath": "img/team-logos/nfl/broncos.png",
+      "isCollege": false
     },
     {
       "city": "Detroit",
@@ -86,7 +96,8 @@
       "abbreviation": "DET",
       "nameMatchList": ["Detroit Lions"],
       "scheduleId": 21,
-      "logoPath": "img/team-logos/lions.png"
+      "logoPath": "img/team-logos/nfl/lions.png",
+      "isCollege": false
     },
     {
       "city": "Green Bay",
@@ -94,7 +105,8 @@
       "abbreviation": "GB",
       "nameMatchList": ["Green Bay Packers"],
       "scheduleId": 24,
-      "logoPath": "img/team-logos/packers.png"
+      "logoPath": "img/team-logos/nfl/packers.png",
+      "isCollege": false
     },
     {
       "city": "Houston",
@@ -102,7 +114,8 @@
       "abbreviation": "HOU",
       "nameMatchList": ["Houston Texans"],
       "scheduleId": 34,
-      "logoPath": "img/team-logos/texans.png"
+      "logoPath": "img/team-logos/nfl/texans.png",
+      "isCollege": false
     },
     {
       "city": "Indianapolis",
@@ -110,7 +123,8 @@
       "abbreviation": "IND",
       "nameMatchList": ["Indianapolis Colts", "Baltimore Colts"],
       "scheduleId": 11,
-      "logoPath": "img/team-logos/colts.png"
+      "logoPath": "img/team-logos/nfl/colts.png",
+      "isCollege": false
     },
     {
       "city": "Jacksonville",
@@ -118,7 +132,8 @@
       "abbreviation": "JAX",
       "nameMatchList": ["Jacksonville Jaguars"],
       "scheduleId": 19,
-      "logoPath": "img/team-logos/jaguars.png"
+      "logoPath": "img/team-logos/nfl/jaguars.png",
+      "isCollege": false
     },
     {
       "city": "Kansas City",
@@ -126,7 +141,8 @@
       "abbreviation": "KC",
       "nameMatchList": ["Kansas City Chiefs"],
       "scheduleId": 10,
-      "logoPath": "img/team-logos/chiefs.png"
+      "logoPath": "img/team-logos/nfl/chiefs.png",
+      "isCollege": false
     },
     {
       "city": "Los Angeles",
@@ -134,7 +150,8 @@
       "abbreviation": "LAC",
       "nameMatchList": ["Los Angeles Chargers", "San Diego Chargers"],
       "scheduleId": 9,
-      "logoPath": "img/team-logos/chargers.png"
+      "logoPath": "img/team-logos/nfl/chargers.png",
+      "isCollege": false
     },
     {
       "city": "Los Angeles",
@@ -142,7 +159,8 @@
       "abbreviation": "LAR",
       "nameMatchList": ["Los Angeles Rams", "St. Louis Rams"],
       "scheduleId": 28,
-      "logoPath": "img/team-logos/rams.png"
+      "logoPath": "img/team-logos/nfl/rams.png",
+      "isCollege": false
     },
     {
       "city": "Miami",
@@ -150,7 +168,8 @@
       "abbreviation": "MIA",
       "nameMatchList": ["Miami Dolphins"],
       "scheduleId": 13,
-      "logoPath": "img/team-logos/dolphins.png"
+      "logoPath": "img/team-logos/nfl/dolphins.png",
+      "isCollege": false
     },
     {
       "city": "Minnesota",
@@ -158,7 +177,8 @@
       "abbreviation": "MIN",
       "nameMatchList": ["Minnesota Vikings"],
       "scheduleId": 36,
-      "logoPath": "img/team-logos/vikings.png"
+      "logoPath": "img/team-logos/nfl/vikings.png",
+      "isCollege": false
     },
     {
       "city": "New England",
@@ -166,7 +186,8 @@
       "abbreviation": "NE",
       "nameMatchList": ["New England Patriots", "Boston Patriots", "Bay State Patriots"],
       "scheduleId": 26,
-      "logoPath": "img/team-logos/patriots.png"
+      "logoPath": "img/team-logos/nfl/patriots.png",
+      "isCollege": false
     },
     {
       "city": "New Orleans",
@@ -174,7 +195,8 @@
       "abbreviation": "NO",
       "nameMatchList": ["New Orleans Saints"],
       "scheduleId": 31,
-      "logoPath": "img/team-logos/saints.png"
+      "logoPath": "img/team-logos/nfl/saints.png",
+      "isCollege": false
     },
     {
       "city": "New York",
@@ -182,7 +204,8 @@
       "abbreviation": "NYG",
       "nameMatchList": ["New York Giants"],
       "scheduleId": 17,
-      "logoPath": "img/team-logos/giants.png"
+      "logoPath": "img/team-logos/nfl/giants.png",
+      "isCollege": false
     },
     {
       "city": "New York",
@@ -190,7 +213,8 @@
       "abbreviation": "NYJ",
       "nameMatchList": ["New York Jets"],
       "scheduleId": 20,
-      "logoPath": "img/team-logos/jets.png"
+      "logoPath": "img/team-logos/nfl/jets.png",
+      "isCollege": false
     },
     {
       "city": "Oakland",
@@ -198,7 +222,8 @@
       "abbreviation": "OAK",
       "nameMatchList": ["Oakland Raiders", "Los Angeles Raiders"],
       "scheduleId": 27,
-      "logoPath": "img/team-logos/raiders.png"
+      "logoPath": "img/team-logos/nfl/raiders.png",
+      "isCollege": false
     },
     {
       "city": "Philadelphia",
@@ -206,7 +231,8 @@
       "abbreviation": "PHI",
       "nameMatchList": ["Philadelphia Eagles"],
       "scheduleId": 14,
-      "logoPath": "img/team-logos/eagles.png"
+      "logoPath": "img/team-logos/nfl/eagles.png",
+      "isCollege": false
     },
     {
       "city": "Pittsburgh",
@@ -214,7 +240,8 @@
       "abbreviation": "PIT",
       "nameMatchList": ["Pittsburgh Steelers"],
       "scheduleId": 33,
-      "logoPath": "img/team-logos/steelers.png"
+      "logoPath": "img/team-logos/nfl/steelers.png",
+      "isCollege": false
     },
     {
       "city": "San Francisco",
@@ -222,7 +249,8 @@
       "abbreviation": "SF",
       "nameMatchList": ["San Francisco 49ers"],
       "scheduleId": 0,
-      "logoPath": "img/team-logos/49ers.png"
+      "logoPath": "img/team-logos/nfl/49ers.png",
+      "isCollege": false
     },
     {
       "city": "Seattle",
@@ -230,7 +258,8 @@
       "abbreviation": "SEA",
       "nameMatchList": ["Seattle Seahawks"],
       "scheduleId": 32,
-      "logoPath": "img/team-logos/seahawks.png"
+      "logoPath": "img/team-logos/nfl/seahawks.png",
+      "isCollege": false
     },
     {
       "city": "Tampa Bay",
@@ -238,7 +267,8 @@
       "abbreviation": "TB",
       "nameMatchList": ["Tampa Bay Buccaneers"],
       "scheduleId": 7,
-      "logoPath": "img/team-logos/buccaneers.png"
+      "logoPath": "img/team-logos/nfl/buccaneers.png",
+      "isCollege": false
     },
     {
       "city": "Tennessee",
@@ -246,7 +276,8 @@
       "abbreviation": "TEN",
       "nameMatchList": ["Tennessee Titans", "Houston Oilers", "Tenneesee Oilers"],
       "scheduleId": 35,
-      "logoPath": "img/team-logos/titans.png"
+      "logoPath": "img/team-logos/nfl/titans.png",
+      "isCollege": false
     },
     {
       "city": "Washington",
@@ -254,7 +285,8 @@
       "abbreviation": "WAS",
       "nameMatchList": ["Washington Redskins"],
       "scheduleId": 30,
-      "logoPath": "img/team-logos/redskins.png"
+      "logoPath": "img/team-logos/nfl/redskins.png",
+      "isCollege": false
     },
     {
       "city": "AFC",
@@ -262,7 +294,8 @@
       "abbreviation": "AFC",
       "nameMatchList": ["AFC"],
       "scheduleId": 1,
-      "logoPath": "img/team-logos/redskins.png"
+      "logoPath": "img/team-logos/nfl/redskins.png",
+      "isCollege": false
     },
     {
       "city": "NFC",
@@ -270,7 +303,264 @@
       "abbreviation": "NFC",
       "nameMatchList": ["NFC"],
       "scheduleId": 22,
-      "logoPath": "img/team-logos/redskins.png"
+      "logoPath": "img/team-logos/nfl/redskins.png",
+      "isCollege": false
+    },
+    {
+      "city": "South Carolina",
+      "nickname": "Gamecocks",
+      "abbreviation": "SCAR",
+      "nameMatchList": ["South Carolina Gamecocks", "University of South Carolina"],
+      "logoPath": "img/team-logos/ncaa/gamecocks.png",
+      "isCollege": true
+    },
+    {
+      "city": "Notre Dame",
+      "nickname": "Fighting Irish",
+      "abbreviation": "ND",
+      "nameMatchList": ["Notre Dame Fighting Irish"],
+      "logoPath": "img/team-logos/ncaa/irish.png",
+      "isCollege": true
+    },
+    {
+      "city": "Alabama",
+      "nickname": "Crimson Tide",
+      "abbreviation": "ALA",
+      "nameMatchList": ["Alabama Crimson Tide"],
+      "logoPath": "img/team-logos/ncaa/crimson-tide.png",
+      "isCollege": true
+    },
+    {
+      "city": "Auburn",
+      "nickname": "Tigers",
+      "abbreviation": "AUB",
+      "nameMatchList": ["Auburn Tigers"],
+      "logoPath": "img/team-logos/ncaa/auburn-tigers.png",
+      "isCollege": true
+    },
+    {
+      "city": "Boise St.",
+      "nickname": "Broncos",
+      "abbreviation": "BOISE",
+      "nameMatchList": ["Boise St. Broncos"],
+      "logoPath": "img/team-logos/ncaa/boise-st-broncos.png",
+      "isCollege": true
+    },
+    {
+      "city": "Clemson",
+      "nickname": "Tigers",
+      "abbreviation": "CLEM",
+      "nameMatchList": ["Clemson Tigers"],
+      "logoPath": "img/team-logos/ncaa/clemson-tigers.png",
+      "isCollege": true
+    },
+    {
+      "city": "Florida",
+      "nickname": "Gators",
+      "abbreviation": "UF",
+      "nameMatchList": ["Florida Gators"],
+      "logoPath": "img/team-logos/ncaa/gators.png",
+      "isCollege": true
+    },
+    {
+      "city": "Florida St.",
+      "nickname": "Seminoles",
+      "abbreviation": "FSU",
+      "nameMatchList": ["Florida St. Seminoles"],
+      "logoPath": "img/team-logos/ncaa/seminoles.png",
+      "isCollege": true
+    },
+    {
+      "city": "Georgia",
+      "nickname": "Bulldogs",
+      "abbreviation": "UGA",
+      "nameMatchList": ["Georgia Bulldogs"],
+      "logoPath": "img/team-logos/ncaa/georgia-bulldogs.png",
+      "isCollege": true
+    },
+    {
+      "city": "Houston",
+      "nickname": "Cougars",
+      "abbreviation": "HOU",
+      "nameMatchList": ["Houston Cougars"],
+      "logoPath": "img/team-logos/ncaa/cougars.png",
+      "isCollege": true
+    },
+    {
+      "city": "Iowa",
+      "nickname": "Hawkeyes",
+      "abbreviation": "IOWA",
+      "nameMatchList": ["Iowa Hawkeyes"],
+      "logoPath": "img/team-logos/ncaa/hawkeyes.png",
+      "isCollege": true
+    },
+    {
+      "city": "LSU",
+      "nickname": "Tigers",
+      "abbreviation": "LSU",
+      "nameMatchList": ["LSU Tigers"],
+      "logoPath": "img/team-logos/ncaa/lsu-tigers.png",
+      "isCollege": true
+    },
+    {
+      "city": "Miami",
+      "nickname": "Hurricanes",
+      "abbreviation": "MIA",
+      "nameMatchList": ["Miami Hurricanes"],
+      "logoPath": "img/team-logos/ncaa/hurricanes.png",
+      "isCollege": true
+    },
+    {
+      "city": "Michigan",
+      "nickname": "Wolverines",
+      "abbreviation": "MICH",
+      "nameMatchList": ["Michigan Wolverines"],
+      "logoPath": "img/team-logos/ncaa/wolverines.png",
+      "isCollege": true
+    },
+    {
+      "city": "Michigan St.",
+      "nickname": "Spartans",
+      "abbreviation": "MSU",
+      "nameMatchList": ["Michigan St. Spartans"],
+      "logoPath": "img/team-logos/ncaa/spartans.png",
+      "isCollege": true
+    },
+    {
+      "city": "Mississippi St.",
+      "nickname": "Bulldogs",
+      "abbreviation": "MSST",
+      "nameMatchList": ["Mississippi St. Bulldogs"],
+      "logoPath": "img/team-logos/ncaa/msst-bulldogs.png",
+      "isCollege": true
+    },
+    {
+      "city": "Ohio St.",
+      "nickname": "Buckeyes",
+      "abbreviation": "OSU",
+      "nameMatchList": ["Ohio St. Buckeyes"],
+      "logoPath": "img/team-logos/ncaa/buckeyes.png",
+      "isCollege": true
+    },
+    {
+      "city": "Oklahoma",
+      "nickname": "Sooners",
+      "abbreviation": "OU",
+      "nameMatchList": ["Oklahoma Sooners"],
+      "logoPath": "img/team-logos/ncaa/sooners.png",
+      "isCollege": true
+    },
+    {
+      "city": "Ole Miss",
+      "nickname": "Rebels",
+      "abbreviation": "MISS",
+      "nameMatchList": ["Ole Miss Rebels"],
+      "logoPath": "img/team-logos/ncaa/rebels.png",
+      "isCollege": true
+    },
+    {
+      "city": "Oregon",
+      "nickname": "Ducks",
+      "abbreviation": "ORE",
+      "nameMatchList": ["Oregon Ducks"],
+      "logoPath": "img/team-logos/ncaa/ducks.png",
+      "isCollege": true
+    },
+    {
+      "city": "Penn St.",
+      "nickname": "Nittany Lions",
+      "abbreviation": "PSU",
+      "nameMatchList": ["Penn St. Nittany Lions"],
+      "logoPath": "img/team-logos/ncaa/nittany-lions.png",
+      "isCollege": true
+    },
+    {
+      "city": "TCU",
+      "nickname": "Horned Frogs",
+      "abbreviation": "TCU",
+      "nameMatchList": ["TCU Horned Frogs"],
+      "logoPath": "img/team-logos/ncaa/horned-frogs.png",
+      "isCollege": true
+    },
+    {
+      "city": "Tennessee",
+      "nickname": "Volunteers",
+      "abbreviation": "TENN",
+      "nameMatchList": ["Tennessee Volunteers"],
+      "logoPath": "img/team-logos/ncaa/volunteers.png",
+      "isCollege": true
+    },
+    {
+      "city": "Texas",
+      "nickname": "Longhorns",
+      "abbreviation": "TEX",
+      "nameMatchList": ["Texas Longhorns"],
+      "logoPath": "img/team-logos/ncaa/longhorns.png",
+      "isCollege": true
+    },
+    {
+      "city": "UCF",
+      "nickname": "Knights",
+      "abbreviation": "UCF",
+      "nameMatchList": ["UCF Knights"],
+      "logoPath": "img/team-logos/ncaa/knights.png",
+      "isCollege": true
+    },
+    {
+      "city": "UCLA",
+      "nickname": "Bruins",
+      "abbreviation": "UCLA",
+      "nameMatchList": ["UCLA Bruins"],
+      "logoPath": "img/team-logos/ncaa/bruins.png",
+      "isCollege": true
+    },
+    {
+      "city": "USC",
+      "nickname": "Trojans",
+      "abbreviation": "USC",
+      "nameMatchList": ["USC Trojans"],
+      "logoPath": "img/team-logos/ncaa/trojans.png",
+      "isCollege": true
+    },
+    {
+      "city": "Virginia Tech",
+      "nickname": "Hokies",
+      "abbreviation": "VT",
+      "nameMatchList": ["Virginia Tech"],
+      "logoPath": "img/team-logos/ncaa/hokies.png",
+      "isCollege": true
+    },
+    {
+      "city": "Washington",
+      "nickname": "Huskies",
+      "abbreviation": "WASH",
+      "nameMatchList": ["Washington Huskies"],
+      "logoPath": "img/team-logos/ncaa/huskies.png",
+      "isCollege": true
+    },
+    {
+      "city": "West Virginia",
+      "nickname": "Mountaineers",
+      "abbreviation": "WVU",
+      "nameMatchList": ["West Virginia Mountaineers"],
+      "logoPath": "img/team-logos/ncaa/mountaineers.png",
+      "isCollege": true
+    },
+    {
+      "city": "Wisconsin",
+      "nickname": "Badgers",
+      "abbreviation": "WISC",
+      "nameMatchList": ["Wisconsin Badgers"],
+      "logoPath": "img/team-logos/ncaa/badgers.png",
+      "isCollege": true
+    },
+    {
+      "city": "Stanford",
+      "nickname": "Cardinal",
+      "abbreviation": "STAN",
+      "nameMatchList": ["Stanford Cardinal"],
+      "logoPath": "img/team-logos/ncaa/cardinal.png",
+      "isCollege": true
     }
   ]
 }

@@ -377,6 +377,7 @@ function attachGameElement (game) {
   function changeTeamLogo(element, logoPath) {
     if (logoPath) {
       element.src = logoPath;
+      element.classList.remove('hidden');
     }
     else {
       element.classList.add('hidden');
