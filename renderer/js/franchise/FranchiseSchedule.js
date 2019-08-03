@@ -1,4 +1,5 @@
 const moment = require('moment');
+const { ipcRenderer } = require('electron');
 const FranchiseGame = require('./FranchiseGame');
 const EventEmitter = require('events').EventEmitter;
 const utilService = require('../services/utilService');
@@ -48,10 +49,9 @@ class FranchiseSchedule extends EventEmitter {
   parse() {
     delete require.cache[require.resolve(pathToTeamData)]
     this._teamData = require(pathToTeamData);
-    console.log(this._teamData);
     
-    const seasonGameTable = this.file.getTableByIndex(franchiseGameYearService.getTableIndex('SeasonGame', this.file._gameYear));
-    const teamTable = this.file.getTableByIndex(franchiseGameYearService.getTableIndex('Team', this.file._gameYear));
+    const seasonGameTable = this.file.getTableById(franchiseGameYearService.getTableId('SeasonGame', this.file._gameYear));
+    const teamTable = this.file.getTableById(franchiseGameYearService.getTableId('Team', this.file._gameYear));
 
     const seasonGameFields = ['AwayTeam', 'HomeTeam', 'TimeOfDay', 'HomeScore', 'AwayScore', 'SeasonWeek', 'DayOfWeek', 'SeasonWeekType'];
     const teamFields = ['ShortName', 'LongName', 'DisplayName'];
@@ -64,13 +64,14 @@ class FranchiseSchedule extends EventEmitter {
       console.log(teamTable);
 
       teamTable.records.forEach((team, index) => {
-        let teamInMetadata = this._teamData.teams.find((teamDataTeam) => { return teamDataTeam.abbreviation === team.ShortName; });
+        let teamInMetadata = this._getTeamByFullName(`${team.LongName} ${team.DisplayName}`);
         if (!teamInMetadata) {
           this._teamData.teams.push({
             'city': team.LongName,
             'nickname': team.DisplayName,
             'abbreviation': team.ShortName,
-            'logoPath': null,
+            'logoPath': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAQAAACROWYpAAAAHElEQVR42mNkoAAwjmoe1TyqeVTzqOZRzcNZMwB18wAfEFQkPQAAAABJRU5ErkJggg==',
+            'nameMatchList': [`${team.LongName} ${team.DisplayName}`],
             'referenceIndex': index,
             'existsInTeamTable': true
           });
@@ -94,18 +95,20 @@ class FranchiseSchedule extends EventEmitter {
         
         if (record.HomeTeam !== '00000000000000000000000000000000') {
           const recordIndex = utilService.bin2dec(record.HomeTeam.substring(16));
-          game._homeTeam = this._teamData.teams.find((team) => { return team.abbreviation === teamTable.records[recordIndex].ShortName; });
+          game._homeTeam = this._getTeamByFullName(`${teamTable.records[recordIndex].LongName} ${teamTable.records[recordIndex].DisplayName}`);
         }
 
         if (record.AwayTeam !== '00000000000000000000000000000000') {
           const recordIndex = utilService.bin2dec(record.AwayTeam.substring(16));
-          game._awayTeam = this._teamData.teams.find((team) => { return team.abbreviation === teamTable.records[recordIndex].ShortName; });
+          game._awayTeam = this._getTeamByFullName(`${teamTable.records[recordIndex].LongName} ${teamTable.records[recordIndex].DisplayName}`);
         }
 
         this.games.push(game);
 
         game.on('change', () => {
-          that.file.save();
+          if (ipcRenderer.sendSync('getPreferences').general.autoSave[0]) {
+            that.file.save();
+          }
         });
       });
 
@@ -161,6 +164,8 @@ class FranchiseSchedule extends EventEmitter {
 
     const weeksToAdd = file.weeks.filter((week) => { return (week.type === 'preseason' && week.number > 1) || week.type === 'season'});
 
+    const that = this;
+
     weeksToAdd.forEach((week, weekIndex) => {
       if (week.type === 'preseason' && week.number > 1) {
         week.number -= 1;
@@ -169,8 +174,8 @@ class FranchiseSchedule extends EventEmitter {
       let seasonWeek = getSeasonWeekDataByWeekIndexAndType(week.number, week.type);
 
       week.games.forEach((game, gameIndex) => {
-        const awayTeam = getTeamByFullName(game.awayTeam);
-        const homeTeam = getTeamByFullName(game.homeTeam);
+        const awayTeam = that._getTeamByFullName(game.awayTeam);
+        const homeTeam = that._getTeamByFullName(game.homeTeam);
         const day = getDayOfWeekByAbbreviation(game.day);
         const time = moment.utc(game.time, "hh:mm A");
 
@@ -202,9 +207,11 @@ class FranchiseSchedule extends EventEmitter {
       }
     });
 
-    this.file.save().then(() => {
-      console.log('saved!');
-    });
+    if (ipcRenderer.sendSync('getPreferences').general.autoSave[0]) {
+      this.file.save().then(() => {
+        console.log('saved!');
+      });
+    }
 
     // this.emit('change-all', {
     //   startingOffset: PLAYOFF_START_OFFSET,
@@ -212,13 +219,13 @@ class FranchiseSchedule extends EventEmitter {
     //   hexData: this.hexData
     // });
   };
+
+  _getTeamByFullName(name) {
+    return this._teamData.teams.find((team) => { return team.nameMatchList.includes(name); });
+  };
 };
 
 module.exports = FranchiseSchedule;
-
-function getTeamByFullName(name) {
-  return this.teamData.teams.find((team) => { return team.nameMatchList.includes(name); });
-};
 
 function getDayOfWeekByAbbreviation(abbreviation) {
   return dayOfWeekData.days.find((day) => { return day.nameMatchList.includes(abbreviation); });

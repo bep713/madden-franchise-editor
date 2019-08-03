@@ -1,8 +1,10 @@
 const Selectr = require('mobius1-selectr');
-const Handsontable = require('handsontable').default;
+const { ipcRenderer } = require('electron');
 const utilService = require('./utilService');
+const Handsontable = require('handsontable').default;
 
 let tableEditorService = {};
+tableEditorService.name = 'tableEditorService';
 tableEditorService.file = null;
 tableEditorService.hot = null;
 tableEditorService.tableSelector = null;
@@ -22,6 +24,7 @@ const windowResizeListener = () => {
 };
 
 tableEditorService.start = function (file) {
+  addIpcListeners();
   initializeTable();
   addEventListeners();
 
@@ -153,6 +156,14 @@ tableEditorService.loadTable = function () {
 };
 
 module.exports = tableEditorService;
+
+function addIpcListeners() {
+  ipcRenderer.on('preferencesUpdated', (e, preferences) => {
+    tableEditorService.file.settings = {
+      'saveOnChange': preferences.general.autoSave[0]
+    };
+  });
+};
 
 function initializeTable() {
   const container3 = document.querySelector('.table-content-wrapper');

@@ -1,4 +1,5 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain, Menu, shell } = require('electron');
+const preferencesService = require('./renderer/js/services/preferencesService');
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -6,6 +7,8 @@ let mainWindow, workerWindow;
 let workerReady = false;
 let pendingWorkerEvents = [];
 const isDev = process.env.NODE_ENV === 'development';
+
+let fileDependentMenuItems = ['CloseFile', 'RevealInExplorer'];
 
 if (isDev) {
   require('electron-reload')(__dirname, {
@@ -54,9 +57,10 @@ function createWindow () {
 
   workerWindow.webContents.on('did-finish-load', function () {
     workerReady = true;
-
     sendAllPendingWorkerEvents();
   })
+
+  preferencesService.initialize();
 }
 
 // This method will be called when Electron has finished
@@ -89,13 +93,25 @@ function addIpcListeners() {
   ipcMain.on('close-file', function () {
     currentFilePath = '';
     setCurrentWindowTitle(baseWindowTitle);
+    disableFileMenuItems();
   });
   
   ipcMain.on('file-loaded', function (event, file) {
     currentFilePath = file.path;
-    setCurrentWindowTitle(`${baseWindowTitle} - ${currentFilePath}`);
-
     mainWindow.webContents.send('file-loaded', file);
+
+    setCurrentWindowTitle(`${baseWindowTitle} - ${currentFilePath}`);
+    enableFileMenuItems();
+  });
+
+  ipcMain.on('reveal-in-explorer', function () {
+    if (currentFilePath) {
+      shell.showItemInFolder(currentFilePath);
+    }
+  });
+
+  ipcMain.on('save-file', function () {
+    mainWindow.webContents.send('save-file');
   });
   
   ipcMain.on('saving', function () {
@@ -142,4 +158,33 @@ function sendAllPendingWorkerEvents() {
   pendingWorkerEvents.forEach((event) => {
     workerWindow.webContents.send(event.event, event.arg);
   });
+};
+
+function enableFileMenuItems() {
+  enableMenuIds(fileDependentMenuItems);
+};
+
+function disableFileMenuItems() {
+  disableMenuIds(fileDependentMenuItems);
+};
+
+function enableMenuIds(menuItems) {
+  return mutateMenuIds(menuItems, 'enabled', true);
+};
+
+function disableMenuIds(menuItems) {
+  return mutateMenuIds(menuItems, 'enabled', false);
+};
+
+function mutateMenuIds(menuItems, key, value) {
+  const menu = Menu.getApplicationMenu();
+
+  if (menu) {
+    menuItems.forEach((id) => {
+      const item = menu.getMenuItemById(id);
+      if (item) {
+        item[key] = value;
+      }
+    });
+  }
 };

@@ -1,6 +1,5 @@
-const { shell } = require('electron');
+const { shell, ipcRenderer } = require('electron');
 const { Menu, app, BrowserWindow } = require('electron').remote;
-const path = require('path');
 
 let menuService = {};
 
@@ -10,10 +9,27 @@ menuService.initializeMenu = function () {
       label: 'File',
       submenu: [
         {
+          id: 'Save',
+          label: 'Save',
+          accelerator: 'CmdOrCtrl+S',
+          click: menuService.saveFile,
+          enabled: false
+        },
+        {
           id: 'CloseFile',
           label: 'Close File',
           accelerator: 'CmdOrCtrl+Shift+X',
-          click: menuService.closeFile
+          click: menuService.closeFile,
+          enabled: false
+        },
+        {
+          id: 'ShowPreferences',
+          label: 'Preferences',
+          accelerator: 'CmdOrCtrl+Shift+P',
+          click: menuService.openPreferencesWindow
+        },
+        {
+          type: 'separator'
         },
         {
           role: 'quit'
@@ -120,16 +136,16 @@ menuService.initializeMenu = function () {
         {
           role: 'zoomout'
         },
-        // {
-        //   type: 'separator'
-        // },
-        // {
-        //   id: 'RevealInExplorer',
-        //   label: 'Reveal in Explorer',
-        //   accelerator: 'CmdOrCtrl+Shift+E',
-        //   click: menuHelper.doRevealInExplorer,
-        //   enabled: false
-        // }
+        {
+          type: 'separator'
+        },
+        {
+          id: 'RevealInExplorer',
+          label: 'Reveal in Explorer',
+          accelerator: 'CmdOrCtrl+Shift+E',
+          click: menuService.doRevealInExplorer,
+          enabled: false
+        }
       ]
     },
     {
@@ -267,17 +283,48 @@ menuService.initializeMenu = function () {
   Menu.setApplicationMenu(menu)
 };
 
+menuService.saveFile = function () {
+  ipcRenderer.send('save-file');
+};
+
 menuService.closeFile = function (menuItem, browserWindow, event) {
   browserWindow.webContents.send('close-file');
 };
 
-menuService.showOffsetHelper = function () {
-  // let window = new BrowserWindow({ width: 800, height: 600 });
-  // window.on('close', function () { window = null; });
-  // window.loadFile(path.join(__dirname, '../offset-tool.html'));
-  // window.show();
+menuService.doRevealInExplorer = function () {
+  ipcRenderer.send('reveal-in-explorer');
+};
 
+menuService.showOffsetHelper = function () {
   shell.openExternal('https://bep713.github.io/offset-tool/index.html');
 };
 
+menuService.openPreferencesWindow = function () {
+  ipcRenderer.send('showPreferences');
+};
+
+menuService.enableMenuIds = enableMenuIds;
+menuService.disableMenuIds = disableMenuIds;
+
 module.exports = menuService;
+
+function enableMenuIds(menuItems) {
+  return mutateMenuIds(menuItems, 'enabled', true);
+};
+
+function disableMenuIds(menuItems) {
+  return mutateMenuIds(menuItems, 'enabled', false);
+};
+
+function mutateMenuIds(menuItems, key, value) {
+  const menu = Menu.getApplicationMenu();
+
+  if (menu && menuItems) {
+    menuItems.forEach((id) => {
+      const item = menu.getMenuItemById(id);
+      if (item) {
+        item[key] = value;
+      }
+    });
+  }
+};

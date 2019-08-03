@@ -16,6 +16,7 @@ const dayChoices = getDayChoices();
 const scheduleYearChoices = getScheduleChoices();
 
 let scheduleService = {};
+scheduleService.name = 'scheduleEditorService';
 scheduleService.file = null;
 scheduleService.eventEmitter = new EventEmitter();
 

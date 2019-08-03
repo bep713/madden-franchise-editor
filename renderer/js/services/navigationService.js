@@ -11,13 +11,16 @@ const welcomeService = require('./welcomeService');
 const scheduleService = require('./scheduleService');
 const tableEditorService = require('./tableEditorService');
 const schemaViewerService = require('./schemaViewerService');
+
+const services = [welcomeService, scheduleService, tableEditorService, schemaViewerService];
 const navigationData = require('../../../data/navigation.json');
 
 const PATH_TO_DOCUMENTS = app.getPath('documents');
-const MADDEN_SAVE_BASE_FOLDER = `${PATH_TO_DOCUMENTS}\\Madden NFL 19\\settings`;
+const MADDEN_SAVE_BASE_FOLDER = `${PATH_TO_DOCUMENTS}\\Madden NFL 20\\settings`;
 
 setupEvents();
 setupMenu();
+attachServicesToNavigationData();
 addIpcListeners();
 
 let navigationService = {};
@@ -61,36 +64,33 @@ navigationService.generateNavigation = function (activeItem) {
 };
 
 navigationService.onHomeClicked = function () {
-  navigationService.runCloseFunction();
+  onNavigate(welcomeService);
   navigationService.loadPage('welcome.html');
-  navigationService.currentlyOpenService = welcomeService;
+
   welcomeService.start(navigationService.currentlyOpenedFile);
 };
 
 navigationService.onScheduleEditorClicked = function () {
-  navigationService.runCloseFunction();
+  onNavigate(scheduleService);
   navigationService.loadPage('schedule.html');
   appendNavigation('schedule-editor');
 
-  navigationService.currentlyOpenService = scheduleService;
   scheduleService.loadSchedule(navigationService.currentlyOpenedFile.data);
 };
 
 navigationService.onTableEditorClicked = function () {
-  navigationService.runCloseFunction();
+  onNavigate(tableEditorService);
   navigationService.loadPage('table-editor.html');
   appendNavigation('table-editor');
 
-  navigationService.currentlyOpenService = tableEditorService;
   tableEditorService.start(navigationService.currentlyOpenedFile.data);
 };
 
 navigationService.onSchemaViewerClicked = function () {
-  navigationService.runCloseFunction();
+  onNavigate(schemaViewerService);
   navigationService.loadPage('schema-viewer.html');
   appendNavigation('schema-viewer');
 
-  navigationService.currentlyOpenService = schemaViewerService;
   schemaViewerService.start(navigationService.currentlyOpenedFile.data);
 };
 
@@ -114,14 +114,28 @@ module.exports = navigationService;
 function DEV_openFile() {
   // welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-2019');
   // welcomeService.eventEmitter.emit('open-file', 'D:\\Projects\\Madden 20\\CAREER-BEPFRANCHISE');
-  welcomeService.eventEmitter.emit('open-file', `${MADDEN_SAVE_BASE_FOLDER}\\CAREER-CFBM19_BASE-AUTOSAVE`);
+  welcomeService.eventEmitter.emit('open-file', `${MADDEN_SAVE_BASE_FOLDER}\\CAREER-BASE20`);
 
   setTimeout(() => {
     navigationService.onScheduleEditorClicked();
   }, 0);
 };
 
+function onNavigate(service) {
+  navigationService.runCloseFunction();
+  navigationService.currentlyOpenService = service;
+
+  if (service.navigationData.menu) {
+    menuService.enableMenuIds(service.navigationData.menu.enable);
+    menuService.disableMenuIds(service.navigationData.menu.disable);
+  }
+};
+
 function addIpcListeners() {
+  ipcRenderer.on('save-file', function () {
+    navigationService.currentlyOpenedFile.data.save();
+  });
+
   ipcRenderer.on('close-file', function () {
     navigationService.currentlyOpenedFile.path = null;
     navigationService.currentlyOpenedFile.data = null;
@@ -185,6 +199,12 @@ function setupEvents() {
 
 function setupMenu() {
   menuService.initializeMenu();  
+};
+
+function attachServicesToNavigationData() {
+  services.forEach((service) => {
+    service.navigationData = navigationData.items.find((nav) => { return nav.service === service.name; });
+  });
 };
 
 function appendNavigation(activeItemId) {

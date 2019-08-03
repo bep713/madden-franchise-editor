@@ -1,8 +1,8 @@
-const data = require('../../../data/gameYearTableIndexData.json');
+const data = require('../../../data/gameYearTableIdData.json');
 
 const franchiseGameYearService = {};
 
-franchiseGameYearService.getTableIndex = (name, year) => {
+franchiseGameYearService.getTableId = (name, year) => {
   if (data[name] === null) { return -1; }
   else return data[name][year];
 };

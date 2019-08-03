@@ -4,17 +4,19 @@ const dialog = remote.dialog;
 
 const EventEmitter = require('events').EventEmitter;
 
-const PATH_TO_DOCUMENTS = app.getPath('documents');
-const MADDEN_SAVE_BASE_FOLDER = `${PATH_TO_DOCUMENTS}\\Madden NFL 19\\settings`;
+// const PATH_TO_DOCUMENTS = app.getPath('documents');
+// const MADDEN_SAVE_BASE_FOLDER = `${PATH_TO_DOCUMENTS}\\Madden NFL 20\\settings`;
 
 const utilService = require('./utilService');
 
 let welcomeService = {};
+welcomeService.name = 'welcomeService';
 welcomeService.eventEmitter = new EventEmitter();
 
 addLoadedFileListener();
 
 welcomeService.start = function (file) {
+  addVersionNumber();
   addListeners();
 
   if (file.gameYear) {
@@ -25,6 +27,11 @@ welcomeService.start = function (file) {
 };
 
 module.exports = welcomeService;
+
+function addVersionNumber() {
+  const version = document.querySelector('.version');
+  version.innerHTML = `v${app.getVersion()} BETA`;
+};
 
 function addListeners() {
   addOpenFileListener();
@@ -96,7 +103,7 @@ function addOpenSchemaViewerListener() {
 function openFile () {
   const filePath = dialog.showOpenDialog({
     title: 'Select franchise file to open',
-    defaultPath: MADDEN_SAVE_BASE_FOLDER,
+    defaultPath: ipcRenderer.sendSync('getPreferences').general.defaultDirectory,
     filters: [{
       name: 'Franchise file',
       extensions: ['*']

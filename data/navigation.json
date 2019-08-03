@@ -4,25 +4,41 @@
       "id": "home",
       "text": "Home",
       "clickListener": "onHomeClicked",
-      "availableVersions": [19,20]
+      "service": "welcomeService",
+      "availableVersions": [19,20],
+      "menu": {
+        "disable": ["Save"]
+      }
     },
     {
       "id": "schedule-editor",
       "text": "Schedule Editor",
+      "service": "scheduleEditorService",
       "clickListener": "onScheduleEditorClicked",
-      "availableVersions": [19, 20]
+      "availableVersions": [19, 20],
+      "menu": {
+        "enable": ["Save"]
+      }
     },
     {
       "id": "table-editor",
       "text": "Table Editor",
+      "service": "tableEditorService",
       "clickListener": "onTableEditorClicked",
-      "availableVersions": [19,20]
+      "availableVersions": [19,20],
+      "menu": {
+        "enable": ["Save"]
+      }
     },
     {
       "id": "schema-viewer",
       "text": "Schema Viewer",
+      "service": "schemaViewerService",
       "clickListener": "onSchemaViewerClicked",
-      "availableVersions": [19,20]
+      "availableVersions": [19,20],
+      "menu": {
+        "disable": ["Save"]
+      }
     }
   ]
 }

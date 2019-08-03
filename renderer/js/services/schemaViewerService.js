@@ -1,4 +1,5 @@
 let schemaViewerService = {};
+schemaViewerService.name = 'schemaViewerService';
 schemaViewerService.file = null;
 schemaViewerService.numberOfSchemasToShow = 100;
 schemaViewerService.fields = null;

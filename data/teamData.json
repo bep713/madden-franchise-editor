@@ -342,7 +342,7 @@
       "city": "Boise St.",
       "nickname": "Broncos",
       "abbreviation": "BOISE",
-      "nameMatchList": ["Boise St. Broncos"],
+      "nameMatchList": ["Boise St. Broncos", "Boise St Broncos", "Boise State Broncos"],
       "logoPath": "img/team-logos/ncaa/boise-st-broncos.png",
       "isCollege": true
     },
@@ -366,7 +366,7 @@
       "city": "Florida St.",
       "nickname": "Seminoles",
       "abbreviation": "FSU",
-      "nameMatchList": ["Florida St. Seminoles"],
+      "nameMatchList": ["Florida St. Seminoles", "Florida St Seminoles", "Florida State Seminoles", "FSU Seminoles"],
       "logoPath": "img/team-logos/ncaa/seminoles.png",
       "isCollege": true
     },
@@ -398,7 +398,7 @@
       "city": "LSU",
       "nickname": "Tigers",
       "abbreviation": "LSU",
-      "nameMatchList": ["LSU Tigers"],
+      "nameMatchList": ["LSU Tigers", "Louisiana State Tigers", "Louisiana St. Tigers", "Louisiana St Tigers"],
       "logoPath": "img/team-logos/ncaa/lsu-tigers.png",
       "isCollege": true
     },
@@ -422,7 +422,7 @@
       "city": "Michigan St.",
       "nickname": "Spartans",
       "abbreviation": "MSU",
-      "nameMatchList": ["Michigan St. Spartans"],
+      "nameMatchList": ["Michigan St. Spartans", "Michigan State Spartans", "Michigan St Spartans"],
       "logoPath": "img/team-logos/ncaa/spartans.png",
       "isCollege": true
     },
@@ -430,7 +430,7 @@
       "city": "Mississippi St.",
       "nickname": "Bulldogs",
       "abbreviation": "MSST",
-      "nameMatchList": ["Mississippi St. Bulldogs"],
+      "nameMatchList": ["Mississippi St. Bulldogs", "Mississippi State Bulldogs", "Mississippi St Bulldogs"],
       "logoPath": "img/team-logos/ncaa/msst-bulldogs.png",
       "isCollege": true
     },
@@ -438,7 +438,7 @@
       "city": "Ohio St.",
       "nickname": "Buckeyes",
       "abbreviation": "OSU",
-      "nameMatchList": ["Ohio St. Buckeyes"],
+      "nameMatchList": ["Ohio St. Buckeyes", "Ohio State Buckeyes", "OSU Buckeyes", "Ohio St Buckeyes"],
       "logoPath": "img/team-logos/ncaa/buckeyes.png",
       "isCollege": true
     },
@@ -470,7 +470,7 @@
       "city": "Penn St.",
       "nickname": "Nittany Lions",
       "abbreviation": "PSU",
-      "nameMatchList": ["Penn St. Nittany Lions"],
+      "nameMatchList": ["Penn St. Nittany Lions", "Penn State Nittany Lions", "PSU Nittany Lions", "Penn St Nittany Lions"],
       "logoPath": "img/team-logos/ncaa/nittany-lions.png",
       "isCollege": true
     },
@@ -526,7 +526,7 @@
       "city": "Virginia Tech",
       "nickname": "Hokies",
       "abbreviation": "VT",
-      "nameMatchList": ["Virginia Tech"],
+      "nameMatchList": ["Virginia Tech Hokies"],
       "logoPath": "img/team-logos/ncaa/hokies.png",
       "isCollege": true
     },
