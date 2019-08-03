@@ -26,6 +26,10 @@ welcomeService.start = function (file) {
   }
 };
 
+welcomeService.onClose = function () {
+  ipcRenderer.removeListener('file-loaded', onFileLoaded);
+};
+
 module.exports = welcomeService;
 
 function addVersionNumber() {
@@ -49,10 +53,12 @@ function addOpenFileListener() {
 };
 
 function addLoadedFileListener() {
-  ipcRenderer.on('file-loaded', (event, file) => {
-    toggleNavigationLinks(file.gameYear);
-    toggleMaddenIcons(file.gameYear);
-  });
+  ipcRenderer.on('file-loaded', onFileLoaded);
+};
+
+function onFileLoaded (event, file) {
+  toggleNavigationLinks(file.gameYear);
+  toggleMaddenIcons(file.gameYear);
 };
 
 function toggleNavigationLinks(gameYear) {
@@ -113,11 +119,17 @@ function openFile () {
   if (filePath) {
     utilService.show(document.querySelector('.loader-wrapper'));
     welcomeService.eventEmitter.emit('open-file', filePath[0]);
-    showOpenedFileLinks();
 
-    setTimeout(() => {
-      utilService.hide(document.querySelector('.loader-wrapper'));
-    }, 50);
+    const editorToOpen = ipcRenderer.sendSync('getPreferences').general.defaultEditor;
+
+    if (editorToOpen && editorToOpen !== 'open-home') {
+      welcomeService.eventEmitter.emit(editorToOpen);
+    } else {
+      showOpenedFileLinks();
+      setTimeout(() => {
+        utilService.hide(document.querySelector('.loader-wrapper'));
+      }, 50);
+    }
   }
 };
 

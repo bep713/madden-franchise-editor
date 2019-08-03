@@ -58,7 +58,8 @@ tableEditorService.onClose = function () {
   };
   tableEditorService.file = null;
   tableEditorService.initialTableSelect = null;
-
+  
+  ipcRenderer.removeListener('preferencesUpdated', onPreferencesUpdated);
   window.removeEventListener('resize', windowResizeListener);
 };
 
@@ -158,11 +159,13 @@ tableEditorService.loadTable = function () {
 module.exports = tableEditorService;
 
 function addIpcListeners() {
-  ipcRenderer.on('preferencesUpdated', (e, preferences) => {
-    tableEditorService.file.settings = {
-      'saveOnChange': preferences.general.autoSave[0]
-    };
-  });
+  ipcRenderer.on('preferencesUpdated', onPreferencesUpdated);
+};
+
+function onPreferencesUpdated(e, preferences) {
+  tableEditorService.file.settings = {
+    'saveOnChange': preferences.general.autoSave[0]
+  };
 };
 
 function initializeTable() {

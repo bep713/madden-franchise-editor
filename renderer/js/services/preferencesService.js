@@ -13,6 +13,7 @@ preferencesService.initialize = function () {
     'defaults': {
         'general': {
             'defaultDirectory': path.resolve(app.getPath('documents'), 'Madden NFL 20\\settings'),
+            'defaultEditor': 'welcomeService',
             'autoSave': [
                 true
             ]
@@ -26,7 +27,6 @@ preferencesService.initialize = function () {
             'form': {
                 'groups': [
                     {
-                        'label': 'General settings',
                         'fields': [
                             {
                                 'label': 'Default directory',
@@ -41,7 +41,19 @@ preferencesService.initialize = function () {
                                 'options': [
                                     { 'label': 'Auto-Save', 'value': true }
                                 ],
-                                'help': 'If checked, the app will save after any change is made'
+                                'help': 'If checked, the app will save after any change is made.'
+                            },
+                            {
+                                'label': 'Auto-Open',
+                                'key': 'defaultEditor',
+                                'type': 'dropdown',
+                                'options': [
+                                    { 'label': 'Home screen', 'value': 'open-home' },
+                                    { 'label': 'Schedule editor', 'value': 'open-schedule' },
+                                    { 'label': 'Table editor', 'value': 'open-table-editor' },
+                                    { 'label': 'Schema viewer', 'value': 'open-schema-viewer' }
+                                ],
+                                'help': 'Choose the editor to open when you open a new file.'
                             }
                         ]
                     }

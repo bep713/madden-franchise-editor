@@ -6,10 +6,18 @@
 
 .filters {
   display: flex;
+  flex-wrap: wrap;
 
   .filter {
-    + .filter {
-      margin-left: 50px;
+    margin-right: 20px;
+    margin-bottom: 10px;
+
+    @media(min-width: $breakpoint-lg) {
+      margin-right: 50px;
+    }
+
+    &:last-child {
+      margin-right: 0;
     }
   }
 }
@@ -35,6 +43,7 @@
   .headers {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
+    grid-gap: 0 30px;
     padding: 10px 0;
     border-bottom: 1px solid #D1D1D1;
   }
@@ -48,7 +57,13 @@
   .result {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
+    grid-gap: 0 30px;
     padding: 20px 0;
+
+    > div {
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
   }
 }
 

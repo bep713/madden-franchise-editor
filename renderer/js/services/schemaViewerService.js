@@ -1,3 +1,5 @@
+const utilService = require('./utilService');
+
 let schemaViewerService = {};
 schemaViewerService.name = 'schemaViewerService';
 schemaViewerService.file = null;
@@ -7,15 +9,19 @@ schemaViewerService.visibleFields = null;
 schemaViewerService.currentOffset = 0;
 
 schemaViewerService.start = function (file) {
+  utilService.show(document.querySelector('.loader-wrapper'));
+  schemaViewerService.currentOffset = 0;
   addListeners();
 
   if (file.isLoaded) {
     schemaViewerService.file = file;
     schemaViewerService.loadFields();
+    utilService.hide(document.querySelector('.loader-wrapper'));
   } else {
-    file.on('tables-done', function () {
+    file.on('ready', function () {
       schemaViewerService.file = file;
       schemaViewerService.loadFields();
+      utilService.hide(document.querySelector('.loader-wrapper'));
     });
   }
 };
