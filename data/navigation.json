@@ -7,7 +7,7 @@
       "service": "welcomeService",
       "availableVersions": [19,20],
       "menu": {
-        "disable": ["Save"]
+        "disable": ["Save", "Export", "Import"]
       }
     },
     {
@@ -17,7 +17,8 @@
       "clickListener": "onScheduleEditorClicked",
       "availableVersions": [19, 20],
       "menu": {
-        "enable": ["Save"]
+        "enable": ["Save"],
+        "disable": ["Export", "Import"]
       }
     },
     {
@@ -27,7 +28,7 @@
       "clickListener": "onTableEditorClicked",
       "availableVersions": [19,20],
       "menu": {
-        "enable": ["Save"]
+        "enable": ["Save", "Export", "Import"]
       }
     },
     {
@@ -37,7 +38,7 @@
       "clickListener": "onSchemaViewerClicked",
       "availableVersions": [19,20],
       "menu": {
-        "disable": ["Save"]
+        "disable": ["Save", "Export", "Import"]
       }
     }
   ]

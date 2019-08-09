@@ -12,7 +12,8 @@ let fileDependentMenuItems = ['CloseFile', 'RevealInExplorer'];
 
 if (isDev) {
   require('electron-reload')(__dirname, {
-    ignored: /node_modules|[\/\\]\.|temp/
+    ignored: /node_modules|[\/\\]\.|temp/,
+    // electron: path.join(__dirname, 'node_modules', '.bin', 'electron')
   });
 }
 
@@ -112,6 +113,14 @@ function addIpcListeners() {
 
   ipcMain.on('save-file', function () {
     mainWindow.webContents.send('save-file');
+  });
+
+  ipcMain.on('import-file', function () {
+    mainWindow.webContents.send('import-file');
+  });
+
+  ipcMain.on('export-file', function () {
+    mainWindow.webContents.send('export-file');
   });
   
   ipcMain.on('saving', function () {

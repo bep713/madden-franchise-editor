@@ -117,7 +117,7 @@ function DEV_openFile() {
   welcomeService.eventEmitter.emit('open-file', `${MADDEN_SAVE_BASE_FOLDER}\\CAREER-BASE20`);
 
   setTimeout(() => {
-    navigationService.onScheduleEditorClicked();
+    navigationService.onTableEditorClicked();
   }, 0);
 };
 

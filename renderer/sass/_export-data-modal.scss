@@ -1,0 +1,16 @@
+.format-selection-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-gap: 10px;
+}
+
+.format-choice {
+  padding: 20px;
+  text-align: center;
+  border: 1px solid black;
+  cursor: pointer;
+
+  &:hover {
+    background: darken($modal-bg-color, 10%);
+  }
+}

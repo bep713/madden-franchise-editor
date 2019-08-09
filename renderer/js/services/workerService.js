@@ -1,18 +1,13 @@
-const { ipcRenderer } = require('electron');
-const FranchiseSchema = require('../franchise/FranchiseSchema');
+const { ipcRenderer, remote, shell } = require('electron');
+const dialog = remote.dialog;
+const app = remote.app;
+
+const externalDataService = require('./externalDataService');
 
 let workerService = {};
 
 workerService.start = function () {
-
   
-  ipcRenderer.on('read-schema', function (path) {
-    // const schema = new FranchiseSchema();
-
-    schema.on('done', function () {
-      ipcRenderer.send('read-schema-done', schema);
-    });
-  });
 };
 
 module.exports = workerService;

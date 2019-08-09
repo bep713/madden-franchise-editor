@@ -1,4 +1,4 @@
-const { remote, ipcRenderer } = require('electron');
+const { ipcRenderer, remote } = require('electron');
 const app = remote.app;
 const dialog = remote.dialog;
 

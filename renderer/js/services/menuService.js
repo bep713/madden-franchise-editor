@@ -9,6 +9,20 @@ menuService.initializeMenu = function () {
       label: 'File',
       submenu: [
         {
+          id: 'Import',
+          label: 'Import',
+          accelerator: 'CmdOrCtrl+I',
+          click: menuService.importFile,
+          enabled: false
+        },
+        {
+          id: 'Export',
+          label: 'Export',
+          accelerator: 'CmdOrCtrl+E',
+          click: menuService.exportFile,
+          enabled: false
+        },
+        {
           id: 'Save',
           label: 'Save',
           accelerator: 'CmdOrCtrl+S',
@@ -281,6 +295,14 @@ menuService.initializeMenu = function () {
 
   const menu = Menu.buildFromTemplate(template)
   Menu.setApplicationMenu(menu)
+};
+
+menuService.importFile = function () {
+  ipcRenderer.send('import-file');
+};
+
+menuService.exportFile = function () {
+  ipcRenderer.send('export-file');
 };
 
 menuService.saveFile = function () {

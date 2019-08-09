@@ -1,7 +1,11 @@
+const { ipcRenderer, remote, shell } = require('electron');
+const app = remote.app;
+const dialog = remote.dialog;
+const crypto = require('crypto');
 const Selectr = require('mobius1-selectr');
-const { ipcRenderer } = require('electron');
 const utilService = require('./utilService');
 const Handsontable = require('handsontable').default;
+const externalDataService = require('./externalDataService');
 
 let tableEditorService = {};
 tableEditorService.name = 'tableEditorService';
@@ -39,7 +43,7 @@ tableEditorService.start = function (file) {
   function runStartTasks() {
     tableEditorService.file = file;
     file.settings = {
-      'saveOnChange': true
+      'saveOnChange': ipcRenderer.sendSync('getPreferences').general.autoSave[0]
     };
 
     tableEditorService.loadTable();
@@ -60,6 +64,8 @@ tableEditorService.onClose = function () {
   tableEditorService.initialTableSelect = null;
   
   ipcRenderer.removeListener('preferencesUpdated', onPreferencesUpdated);
+  ipcRenderer.removeListener('export-file', onExportFile);
+  ipcRenderer.removeListener('import-file', onImportFile);
   window.removeEventListener('resize', windowResizeListener);
 };
 
@@ -160,12 +166,103 @@ module.exports = tableEditorService;
 
 function addIpcListeners() {
   ipcRenderer.on('preferencesUpdated', onPreferencesUpdated);
+  ipcRenderer.on('export-file', onExportFile);
+  ipcRenderer.on('import-file', onImportFile);
 };
 
 function onPreferencesUpdated(e, preferences) {
   tableEditorService.file.settings = {
     'saveOnChange': preferences.general.autoSave[0]
   };
+};
+
+function onExportFile() {
+  let filePath = dialog.showSaveDialog(remote.getCurrentWindow(), {
+    'title': 'Select destination file for table export',
+    'defaultPath': app.getPath('documents'),
+    'filters': [
+      {name: 'Excel workbook', extensions: ['xlsx']},
+      {name: 'CSV (comma-delimited)', extensions: ['csv']},
+      {name: 'Excel Macro-Enabled Workbook', extensions: ['xlsm']},
+      {name: 'Excel Binary Workbook', extensions: ['xlsb']},
+      {name: 'Excel 97-2003 Workbook', extensions: ['xls']},
+      {name: 'OpenDocument Spreadsheet', extensions: ['ods']},
+      {name: 'UTF-16 Unicode Text', extensions: ['txt']}]
+  });
+
+  if (filePath) {
+    utilService.show(loader);
+
+    setTimeout(() => {
+      externalDataService.exportTableData({
+        'outputFilePath': filePath
+      }, tableEditorService.selectedTable).then(() => {
+        utilService.hide(loader);
+        shell.openItem(filePath);
+      });
+    }, 0)
+  }
+};
+
+function onImportFile() {
+  let filePath = dialog.showOpenDialog(remote.getCurrentWindow(), {
+    'title': 'Select destination file for table export',
+    'defaultPath': app.getPath('documents'),
+    'filters': [
+      {name: 'Excel workbook', extensions: ['xlsx']},
+      {name: 'CSV (comma-delimited)', extensions: ['csv']},
+      {name: 'Excel Macro-Enabled Workbook', extensions: ['xlsm']},
+      {name: 'Excel Binary Workbook', extensions: ['xlsb']},
+      {name: 'Excel 97-2003 Workbook', extensions: ['xls']},
+      {name: 'OpenDocument Spreadsheet', extensions: ['ods']},
+      {name: 'UTF-16 Unicode Text', extensions: ['txt']}]
+  });
+
+  if (filePath) {
+    utilService.show(loader);
+
+    setTimeout(() => {
+      // console.time('total import process');
+      // console.time('import the file');
+      externalDataService.importTableData({
+        'inputFilePath': filePath[0]
+      }).then((table) => {
+        // console.timeEnd('import the file');
+        const flipSaveOnChange = tableEditorService.file.settings.saveOnChange;
+        tableEditorService.file.settings = {
+          'saveOnChange': false
+        };
+
+        // console.time('change records');
+        // do not allow rows to be added.
+        const trimmedTable = table.slice(0, tableEditorService.selectedTable.records.length);
+        trimmedTable.forEach((record, index) => {
+          let franchiseRecord = tableEditorService.selectedTable.records[index];
+
+          Object.keys(record).forEach((key) => {
+            if (franchiseRecord[key] !== record[key]) {
+              // console.time('set val');
+              franchiseRecord[key] = record[key];
+              // console.timeEnd('set val');
+            }
+          });
+        });
+        // console.timeEnd('change records');
+
+        if (flipSaveOnChange) {
+          tableEditorService.file.save();
+          tableEditorService.file.settings = {
+            'saveOnChange': true
+          };
+        }
+
+        // console.time('loadTable')
+        loadTable(tableEditorService.selectedTable);
+        // console.timeEnd('loadTable')
+        // console.timeEnd('total import process');
+      });
+    }, 10)
+  }
 };
 
 function initializeTable() {
@@ -184,6 +281,11 @@ function initializeTable() {
 
 function processChanges(changes) {
   if (changes) {
+    const flipSaveOnChange = tableEditorService.file.settings.saveOnChange;
+    tableEditorService.file.settings = {
+      'saveOnChange': false
+    };
+
     changes.forEach((change) => {
       const recordIndex = change[0];
       const key = change[1];
@@ -191,6 +293,13 @@ function processChanges(changes) {
 
       tableEditorService.selectedTable.records[recordIndex].getFieldByKey(key).value = newValue;
     });
+
+    if (flipSaveOnChange) {
+      tableEditorService.file.save();
+      tableEditorService.file.settings = {
+        'saveOnChange': true
+      };
+    }
   }
 };
 
@@ -302,13 +411,39 @@ function loadTable(table) {
   tableEditorService.hot.updateSettings({
     data: data,
     colHeaders: headers,
-    columns: columns
+    columns: columns,
+    colWidths: calculateColumnWidths(columns, table)
   });
 
   tableEditorService.hot.selectCell(tableEditorService.rowIndexToSelect, tableEditorService.columnIndexToSelect);
 
   utilService.hide(loader);
 };
+
+function calculateColumnWidths(columns, table) {
+  let widths = columns.map((col, index) => {
+    const offset = table.offsetTable[index];
+    const colMinWidth = ((col.data.length * 9) + 26);
+    let calculatedWidth = 0;
+
+    if (offset.isReference || offset.enum) {
+      calculatedWidth = 350;
+    }
+    else if (offset.maxLength) {
+      calculatedWidth = (offset.maxLength * 9) + 26;
+    }
+    else if (offset.type === 'bool') {
+      calculatedWidth = 80;
+    }
+    else {
+      calculatedWidth = (offset.length * 9) + 26;
+    }
+
+    return colMinWidth > calculatedWidth ? colMinWidth : calculatedWidth;
+  });
+  
+  return widths;
+}
 
 function formatTable(table) {
   return table.records.map((record) => {
