@@ -13,7 +13,7 @@ preferencesService.initialize = function () {
     'defaults': {
         'general': {
             'defaultDirectory': path.resolve(app.getPath('documents'), 'Madden NFL 20\\settings'),
-            'defaultEditor': 'welcomeService',
+            'defaultEditor': 'open-home',
             'autoSave': [
                 true
             ]
