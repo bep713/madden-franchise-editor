@@ -75,7 +75,6 @@ tableEditorService.onClose = function () {
 // };
 
 tableEditorService.loadTable = function () {
-  // const filteredChoices = tableEditorService.file.tables.filter((table) => { return table.schema; });
   const tableChoices = tableEditorService.file.tables.map((table, index) => {
     return {
       'value': table.header.tableId,
@@ -83,11 +82,9 @@ tableEditorService.loadTable = function () {
     };
   });
 
-  // const initialTableToLoad = '1 - OverallPercentage';
-
-  // tableChoices.find((choice) => {
-  //   return choice.text === initialTableToLoad;
-  // }).selected = true;
+  if (tableChoices.length === 0) {
+    console.log('cannot load the table editor because the file appears to be corrupt.');
+  }
 
   const tableSelector = document.querySelector('.table-selector');
   tableEditorService.tableSelector = new Selectr(tableSelector, {

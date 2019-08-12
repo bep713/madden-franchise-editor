@@ -8006,6 +8006,9 @@
             <attribute name="winningStreak" idx="4" type="bool" default="False" />
             <attribute name="streakLength" idx="5" type="int" minValue="0" maxValue="100" default="0" />
         </schema>
+        <schema name="Reaction" numMembers="1" base="none()">
+            <attribute name="Handle" idx="0" type="bool()" />
+        </schema>
         <schema name="AbilityFlagTable" numMembers="57" defaultStoreCapacity="27" assetId="45006" defaultStoreGroupId="2" isRecordPersistent="true" defaultStoreGroupName="Tuning" defaultStoreOptimizationId="1" defaultStoreOptimizationName="Default_">
             <attribute name="Acceleration" idx="0" type="bool" default="False" />
             <attribute name="Agility" idx="1" type="bool" default="False" />
