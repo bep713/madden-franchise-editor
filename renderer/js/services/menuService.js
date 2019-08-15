@@ -182,6 +182,13 @@ menuService.initializeMenu = function () {
           accelerator: 'CmdOrCtrl+Shift+O',
           click: menuService.showOffsetHelper,
           enabled: true
+        },
+        {
+          id: 'LogTable',
+          label: 'Log table to console',
+          accelerator: 'CmdOrCtrl+L',
+          click: menuService.logTable,
+          enabled: false
         }
       ]
     }
@@ -319,6 +326,10 @@ menuService.doRevealInExplorer = function () {
 
 menuService.showOffsetHelper = function () {
   shell.openExternal('https://bep713.github.io/offset-tool/index.html');
+};
+
+menuService.logTable = function () {
+  ipcRenderer.send('log-table');
 };
 
 menuService.openPreferencesWindow = function () {

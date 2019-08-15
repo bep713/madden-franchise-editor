@@ -142,6 +142,10 @@ function addIpcListeners() {
   ipcMain.on('read-schema-done', function (event, arg) {
     passOrDelayMainIpcEvent('read-schema-done', arg);
   });
+
+  ipcMain.on('log-table', function () {
+    mainWindow.webContents.send('log-table');
+  });
 }
 
 function passOrDelayWorkerIpcEvent(event, ...arg) {

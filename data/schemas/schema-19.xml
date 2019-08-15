@@ -8007,6 +8007,7 @@
             <attribute name="streakLength" idx="5" type="int" minValue="0" maxValue="100" default="0" />
         </schema>
         <schema name="Reaction" numMembers="1" base="none()">
+            <attribute name="EventRecord" idx="1" type="record" />
             <attribute name="Handle" idx="0" type="bool()" />
         </schema>
         <schema name="AbilityFlagTable" numMembers="57" defaultStoreCapacity="27" assetId="45006" defaultStoreGroupId="2" isRecordPersistent="true" defaultStoreGroupName="Tuning" defaultStoreOptimizationId="1" defaultStoreOptimizationName="Default_">

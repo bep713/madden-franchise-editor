@@ -60,8 +60,8 @@ class FranchiseSchedule extends EventEmitter {
   
     let tablesLoaded = Promise.all([seasonGameTable.readRecords(seasonGameFields), teamTable.readRecords(teamFields)]);
     tablesLoaded.then(() => {
-      console.log(seasonGameTable);
-      console.log(teamTable);
+      // console.log(seasonGameTable);
+      // console.log(teamTable);
 
       teamTable.records.forEach((team, index) => {
         let teamInMetadata = this._getTeamByFullName(`${team.LongName} ${team.DisplayName}`);

@@ -7,7 +7,7 @@
       "service": "welcomeService",
       "availableVersions": [19,20],
       "menu": {
-        "disable": ["Save", "Export", "Import"]
+        "disable": ["Save", "Export", "Import", "LogTable"]
       }
     },
     {
@@ -18,7 +18,7 @@
       "availableVersions": [19, 20],
       "menu": {
         "enable": ["Save"],
-        "disable": ["Export", "Import"]
+        "disable": ["Export", "Import", "LogTable"]
       }
     },
     {
@@ -28,7 +28,7 @@
       "clickListener": "onTableEditorClicked",
       "availableVersions": [19,20],
       "menu": {
-        "enable": ["Save", "Export", "Import"]
+        "enable": ["Save", "Export", "Import", "LogTable"]
       }
     },
     {
@@ -38,7 +38,7 @@
       "clickListener": "onSchemaViewerClicked",
       "availableVersions": [19,20],
       "menu": {
-        "disable": ["Save", "Export", "Import"]
+        "disable": ["Save", "Export", "Import", "LogTable"]
       }
     }
   ]

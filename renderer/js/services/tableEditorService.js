@@ -123,7 +123,7 @@ tableEditorService.loadTable = function () {
         backLink.classList.remove('disabled');
       }
 
-      console.log(table);
+      // console.log(table);
     }, 100);
   });
   
@@ -134,7 +134,7 @@ tableEditorService.loadTable = function () {
     tableEditorService.tableSelector.setValue(tableChoices[tableEditorService.initialTableToSelect.tableId].value);
     const table = tableEditorService.file.getTableByIndex(tableEditorService.initialTableToSelect.tableId);
     table.readRecords().then(loadTable);
-    console.log(table);
+    // console.log(table);
 
     tableEditorService.navSteps.push({
       'tableId': tableEditorService.initialTableToSelect.tableId,
@@ -149,7 +149,7 @@ tableEditorService.loadTable = function () {
     const seasonGame = tableEditorService.file.getAllTablesByName(tableChoices[1].text.substring(tableChoices[1].text.indexOf(' ') + 3));
     tableEditorService.selectedTable = seasonGame[seasonGame.length - 1];
     seasonGame[seasonGame.length - 1].readRecords().then(loadTable);
-    console.log(seasonGame[seasonGame.length - 1]);
+    // console.log(seasonGame[seasonGame.length - 1]);
 
     tableEditorService.navSteps.push({
       'tableId': tableEditorService.selectedTable.header.tableId,
@@ -165,6 +165,7 @@ function addIpcListeners() {
   ipcRenderer.on('preferencesUpdated', onPreferencesUpdated);
   ipcRenderer.on('export-file', onExportFile);
   ipcRenderer.on('import-file', onImportFile);
+  ipcRenderer.on('log-table', onLogTable);
 };
 
 function onPreferencesUpdated(e, preferences) {
@@ -260,6 +261,10 @@ function onImportFile() {
       });
     }, 10)
   }
+};
+
+function onLogTable() {
+  console.log(tableEditorService.selectedTable);
 };
 
 function initializeTable() {
