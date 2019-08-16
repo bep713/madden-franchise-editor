@@ -211,7 +211,7 @@ function onExportFile() {
 
 function onImportFile() {
   let filePath = dialog.showOpenDialog(remote.getCurrentWindow(), {
-    'title': 'Select destination file for table export',
+    'title': 'Select file for table import',
     'defaultPath': app.getPath('documents'),
     'filters': [
       {name: 'Excel workbook', extensions: ['xlsx']},
