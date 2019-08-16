@@ -66,6 +66,7 @@ tableEditorService.onClose = function () {
   ipcRenderer.removeListener('preferencesUpdated', onPreferencesUpdated);
   ipcRenderer.removeListener('export-file', onExportFile);
   ipcRenderer.removeListener('import-file', onImportFile);
+  ipcRenderer.removeListener('log-table', onLogTable);
   window.removeEventListener('resize', windowResizeListener);
 };
 
