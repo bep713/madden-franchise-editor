@@ -128,11 +128,27 @@ function addIpcListeners() {
   });
   
   ipcMain.on('saved', function () {
-    setCurrentWindowTitle(`${baseWindowTitle} - ${currentFilePath} - Saved`);
-  
-    setTimeout(() => {
-      setCurrentWindowTitle(`${baseWindowTitle} - ${currentFilePath}`);
-    }, 2000);
+    setTemporaryWindowTitle('Saved');
+  });
+
+  ipcMain.on('exporting', function () {
+    setCurrentWindowTitle(`${baseWindowTitle} - ${currentFilePath} - Exporting...`);
+  });
+
+  ipcMain.on('exported', function () {
+    setTemporaryWindowTitle('Exported successfully');
+  });
+
+  ipcMain.on('export-error', function () {
+    setTemporaryWindowTitle('Export failed');
+  });
+
+  ipcMain.on('importing', function () {
+    setCurrentWindowTitle(`${baseWindowTitle} - ${currentFilePath} - Importing...`);
+  });
+
+  ipcMain.on('imported', function () {
+    setTemporaryWindowTitle('Imported successfully');
   });
   
   ipcMain.on('read-schema', function (event, arg) {
@@ -147,6 +163,13 @@ function addIpcListeners() {
     mainWindow.webContents.send('log-table');
   });
 }
+
+function setTemporaryWindowTitle(message) {
+  setCurrentWindowTitle(`${baseWindowTitle} - ${currentFilePath} - ${message}`);
+  setTimeout(() => {
+    setCurrentWindowTitle(`${baseWindowTitle} - ${currentFilePath}`);
+  }, 2500);
+};
 
 function passOrDelayWorkerIpcEvent(event, ...arg) {
   if (workerReady) {

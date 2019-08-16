@@ -40,8 +40,15 @@ externalDataService.exportTableData = function (options, table) {
       'skipHeader': true
     });
 
-    xlsx.utils.book_append_sheet(wb, ws);    
-    xlsx.writeFile(wb, options.outputFilePath);
+    xlsx.utils.book_append_sheet(wb, ws);
+
+    try {
+      xlsx.writeFile(wb, options.outputFilePath);
+    }
+    catch (err) {
+      reject(err);
+    }
+
     resolve();
   });
 };

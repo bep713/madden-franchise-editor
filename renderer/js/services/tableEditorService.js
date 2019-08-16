@@ -193,11 +193,17 @@ function onExportFile() {
     utilService.show(loader);
 
     setTimeout(() => {
+      ipcRenderer.send('exporting');
       externalDataService.exportTableData({
         'outputFilePath': filePath
       }, tableEditorService.selectedTable).then(() => {
         utilService.hide(loader);
+        ipcRenderer.send('exported');
         shell.openItem(filePath);
+      }).catch((err) => {
+        ipcRenderer.send('export-error');
+        dialog.showErrorBox('Unable to export', 'Unable to export the file because it is currently open in another program. Try closing the file in Excel before exporting.');
+        utilService.hide(loader);
       });
     }, 0)
   }
@@ -221,18 +227,15 @@ function onImportFile() {
     utilService.show(loader);
 
     setTimeout(() => {
-      // console.time('total import process');
-      // console.time('import the file');
+      ipcRenderer.send('importing');
       externalDataService.importTableData({
         'inputFilePath': filePath[0]
       }).then((table) => {
-        // console.timeEnd('import the file');
         const flipSaveOnChange = tableEditorService.file.settings.saveOnChange;
         tableEditorService.file.settings = {
           'saveOnChange': false
         };
 
-        // console.time('change records');
         // do not allow rows to be added.
         const trimmedTable = table.slice(0, tableEditorService.selectedTable.records.length);
         trimmedTable.forEach((record, index) => {
@@ -240,13 +243,12 @@ function onImportFile() {
 
           Object.keys(record).forEach((key) => {
             if (franchiseRecord[key] !== record[key]) {
-              // console.time('set val');
               franchiseRecord[key] = record[key];
-              // console.timeEnd('set val');
             }
           });
         });
-        // console.timeEnd('change records');
+
+        ipcRenderer.send('imported');
 
         if (flipSaveOnChange) {
           tableEditorService.file.save();
@@ -255,10 +257,7 @@ function onImportFile() {
           };
         }
 
-        // console.time('loadTable')
         loadTable(tableEditorService.selectedTable);
-        // console.timeEnd('loadTable')
-        // console.timeEnd('total import process');
       });
     }, 10)
   }
