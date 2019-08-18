@@ -107,24 +107,22 @@ tableEditorService.loadTable = function () {
 
         tableEditorService.rowIndexToSelect = 0;
         tableEditorService.columnIndexToSelect = 0;
+
+        tableEditorService.selectedTable = table;
+
+        tableEditorService.navSteps.push({
+          'tableId': tableId,
+          'recordIndex': tableEditorService.hot.getSelectedLast()[0],
+          'column': tableEditorService.hot.getSelectedLast()[1]
+        });
+
+        if (tableEditorService.navSteps.length >= 2) {
+          backLink.classList.remove('disabled');
+        }
       }).catch((err) => {
         console.log(err);
         loadTable(table);
       });
-      
-      tableEditorService.selectedTable = table;
-
-      tableEditorService.navSteps.push({
-        'tableId': tableId,
-        'recordIndex': 0,
-        'column': 0
-      });
-
-      if (tableEditorService.navSteps.length >= 1) {
-        backLink.classList.remove('disabled');
-      }
-
-      // console.log(table);
     }, 100);
   });
   
@@ -134,26 +132,26 @@ tableEditorService.loadTable = function () {
 
     tableEditorService.tableSelector.setValue(tableEditorService.initialTableToSelect.tableId);
 
-    tableEditorService.navSteps.push({
-      'tableId': tableEditorService.initialTableToSelect.tableId,
-      'recordIndex': tableEditorService.initialTableToSelect.recordIndex,
-      'column': 0
-    });
+    // tableEditorService.navSteps.push({
+    //   'tableId': tableEditorService.initialTableToSelect.tableId,
+    //   'recordIndex': tableEditorService.initialTableToSelect.recordIndex,
+    //   'column': 0
+    // });
 
     tableEditorService.initialTableToSelect = null;
   } else {
     tableEditorService.tableSelector.setValue(tableChoices[1].value);
 
-    const seasonGame = tableEditorService.file.getAllTablesByName(tableChoices[1].text.substring(tableChoices[1].text.indexOf(' ') + 3));
-    tableEditorService.selectedTable = seasonGame[seasonGame.length - 1];
-    seasonGame[seasonGame.length - 1].readRecords().then(loadTable);
+    const tableToLoad = tableEditorService.file.getAllTablesByName(tableChoices[1].text.substring(tableChoices[1].text.indexOf(' ') + 3));
+    tableEditorService.selectedTable = tableToLoad[tableToLoad.length - 1];
+    // tableToLoad[tableToLoad.length - 1].readRecords().then(loadTable);
     // console.log(seasonGame[seasonGame.length - 1]);
 
-    tableEditorService.navSteps.push({
-      'tableId': tableEditorService.selectedTable.header.tableId,
-      'recordIndex': 0,
-      'column': 0
-    });
+    // tableEditorService.navSteps.push({
+    //   'tableId': tableEditorService.selectedTable.header.tableId,
+    //   'recordIndex': 0,
+    //   'column': 0
+    // });
   }
 };
 
@@ -393,6 +391,7 @@ function addEventListeners() {
       tableEditorService.selectedTable = table;
 
       setTimeout(() => {
+        console.log(tableEditorService.navSteps);
         if (tableEditorService.navSteps.length === 1) {
           backLink.classList.add('disabled');
         }
@@ -501,6 +500,7 @@ function referenceRenderer(instance, td, row, col, prop, value, cellProperties) 
         td.appendChild(referenceLink);
 
         referenceLink.addEventListener('click', function () {
+          console.log(tableEditorService.navSteps);
           tableEditorService.navSteps[tableEditorService.navSteps.length - 1].column = col;
           tableEditorService.navSteps[tableEditorService.navSteps.length - 1].recordIndex = row;
 
