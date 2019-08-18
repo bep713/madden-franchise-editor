@@ -132,10 +132,7 @@ tableEditorService.loadTable = function () {
     tableEditorService.rowIndexToSelect = tableEditorService.initialTableToSelect.recordIndex;
     tableEditorService.columnIndexToSelect = 0;
 
-    tableEditorService.tableSelector.setValue(tableChoices[tableEditorService.initialTableToSelect.tableId].value);
-    const table = tableEditorService.file.getTableByIndex(tableEditorService.initialTableToSelect.tableId);
-    table.readRecords().then(loadTable);
-    // console.log(table);
+    tableEditorService.tableSelector.setValue(tableEditorService.initialTableToSelect.tableId);
 
     tableEditorService.navSteps.push({
       'tableId': tableEditorService.initialTableToSelect.tableId,
