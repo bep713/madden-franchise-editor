@@ -18,13 +18,36 @@ tableEditorService.navSteps = [];
 tableEditorService.rowIndexToSelect = 0;
 tableEditorService.columnIndexToSelect = 0;
 tableEditorService.initialTableSelect = null;
+tableEditorService.currentlySelectedRow = 0;
+tableEditorService.currentlySelectedColumn = 0;
 
 let loader;
 
-const windowResizeListener = () => {
+function windowResizeListener () {
   tableEditorService.hot.updateSettings({
     width: document.querySelector('.table-wrapper').offsetWidth
   });
+};
+
+function modalCloseListener (e) {
+  if (e.which === 27) {
+    const modalsToHide = document.querySelectorAll('.modal:not(.hidden)');
+    modalsToHide.forEach((modal) => {
+      modal.classList.add('hidden');
+    });
+
+    const underlay = document.querySelector('.underlay');
+    underlay.classList.add('hidden');
+
+    tableEditorService.hot.selectCell(tableEditorService.currentlySelectedRow, tableEditorService.currentlySelectedColumn);
+  }
+};
+
+function onKeyOpenJumpToColumnModal (e) {
+  if (e.which === 74 && e.ctrlKey) {
+    tableEditorService.hot.deselectCell();
+    document.querySelector('.jump-to-column').click();
+  }
 };
 
 tableEditorService.start = function (file) {
@@ -62,18 +85,17 @@ tableEditorService.onClose = function () {
   };
   tableEditorService.file = null;
   tableEditorService.initialTableSelect = null;
+  tableEditorService.currentlySelectedRow = 0;
+  tableEditorService.currentlySelectedColumn = 0;
   
   ipcRenderer.removeListener('preferencesUpdated', onPreferencesUpdated);
   ipcRenderer.removeListener('export-file', onExportFile);
   ipcRenderer.removeListener('import-file', onImportFile);
   ipcRenderer.removeListener('log-table', onLogTable);
   window.removeEventListener('resize', windowResizeListener);
+  window.removeEventListener('keydown', modalCloseListener);
+  window.removeEventListener('keydown', onKeyOpenJumpToColumnModal);
 };
-
-// tableEditorService.onFileReady = function (file) {
-//   tableEditorService.file = file;
-//   tableEditorService.loadTable();
-// };
 
 tableEditorService.loadTable = function () {
   const tableChoices = tableEditorService.file.tables.map((table, index) => {
@@ -131,27 +153,12 @@ tableEditorService.loadTable = function () {
     tableEditorService.columnIndexToSelect = 0;
 
     tableEditorService.tableSelector.setValue(tableEditorService.initialTableToSelect.tableId);
-
-    // tableEditorService.navSteps.push({
-    //   'tableId': tableEditorService.initialTableToSelect.tableId,
-    //   'recordIndex': tableEditorService.initialTableToSelect.recordIndex,
-    //   'column': 0
-    // });
-
     tableEditorService.initialTableToSelect = null;
   } else {
     tableEditorService.tableSelector.setValue(tableChoices[1].value);
 
     const tableToLoad = tableEditorService.file.getAllTablesByName(tableChoices[1].text.substring(tableChoices[1].text.indexOf(' ') + 3));
     tableEditorService.selectedTable = tableToLoad[tableToLoad.length - 1];
-    // tableToLoad[tableToLoad.length - 1].readRecords().then(loadTable);
-    // console.log(seasonGame[seasonGame.length - 1]);
-
-    // tableEditorService.navSteps.push({
-    //   'tableId': tableEditorService.selectedTable.header.tableId,
-    //   'recordIndex': 0,
-    //   'column': 0
-    // });
   }
 };
 
@@ -270,10 +277,16 @@ function initializeTable() {
     manualColumnResize: true,
     manualRowResize: true,
     afterChange: processChanges,
+    afterSelection: processSelection,
     rowHeaders: function (index) {
       return index;
     }
   });
+};
+
+function processSelection(row, col, row2, col2) {
+  tableEditorService.currentlySelectedRow = row;
+  tableEditorService.currentlySelectedColumn = col;
 };
 
 function processChanges(changes) {
@@ -288,7 +301,12 @@ function processChanges(changes) {
       const key = change[1];
       const newValue = change[3];
 
-      tableEditorService.selectedTable.records[recordIndex].getFieldByKey(key).value = newValue;
+      try {
+        tableEditorService.selectedTable.records[recordIndex].getFieldByKey(key).value = newValue;
+      }
+      catch (err) {
+        console.log(err);
+      }
     });
 
     if (flipSaveOnChange) {
@@ -306,7 +324,9 @@ function addEventListeners() {
   const jumpRow = document.querySelector('.jump-row');
   loader = document.querySelector('.loader-wrapper');
 
-  window.addEventListener('resize', windowResizeListener)
+  window.addEventListener('resize', windowResizeListener);
+  window.addEventListener('keydown', modalCloseListener);
+  window.addEventListener('keydown', onKeyOpenJumpToColumnModal);
 
   const toggleTypesButton = document.querySelector('.toggle-types');
   toggleTypesButton.addEventListener('click', function () {
@@ -321,7 +341,7 @@ function addEventListeners() {
   const columnSelect = document.querySelector('#available-columns');
   let columnSelectr = new Selectr(columnSelect, {
     data: null
-  });;
+  });
 
   const closeModalButton = document.querySelector('.close-modal');
   closeModalButton.addEventListener('click', function () {
@@ -330,7 +350,13 @@ function addEventListeners() {
   });
 
   const jumpToColumnButton = document.querySelector('.jump-to-column');
-  jumpToColumnButton.addEventListener('click', function () {
+  jumpToColumnButton.addEventListener('click', jumpToColumnListener);
+
+  const goJumpToColumnButton = document.querySelector('.btn-go-jump-to-column');
+  goJumpToColumnButton.addEventListener('click', goJumpToColumnListener);
+
+  function jumpToColumnListener() {
+    jumpRow.value = tableEditorService.currentlySelectedRow;
     const headers = formatHeaders(tableEditorService.selectedTable);
     const options = headers.map((header) => {
       return {
@@ -346,32 +372,52 @@ function addEventListeners() {
       columnSelect.focus();
     }, 200);
 
+    window.addEventListener('keydown', onEnterJumpToColumn);
+
     jumpToColumnModal.classList.remove('hidden');
     underlay.classList.remove('hidden');
-  });
 
-  const goJumpToColumnButton = document.querySelector('.btn-go-jump-to-column');
-  goJumpToColumnButton.addEventListener('click', function () {
+    setTimeout(() => {
+      document.querySelector('.modal .selectr-selected').click();
+
+      setTimeout(() => {
+        document.querySelector('.modal .selectr-input').focus();
+      }, 200);
+    }, 50);
+  };
+
+  function onEnterJumpToColumn (e) {
+    if (e.which === 13) {
+      goJumpToColumnListener();
+    }
+  };
+  
+  function goJumpToColumnListener () {
     const value = columnSelectr.getValue();
-    const index = columnSelectr.data.findIndex((opt) => { return opt.value === value; });
-
+    let index = columnSelectr.data.findIndex((opt) => { return opt.value === value; });
+  
+    if (index === -1) {
+      index = 0;
+    }
+  
     jumpToColumnModal.classList.add('hidden');
     underlay.classList.add('hidden');
-
+  
     let row = parseInt(jumpRow.value);
-
+  
     if (!row || row < 0) {
       row = 0;
     }
-
+  
     tableEditorService.navSteps.push({
       'tableId': tableEditorService.selectedTable.header.tableId,
       'recordIndex': row,
       'column': index
     });
-
+  
+    window.removeEventListener('keypress', onEnterJumpToColumn);
     tableEditorService.hot.selectCell(row, index);
-  }); 
+  };
 
   const backLink = document.querySelector('.back-link');
   backLink.addEventListener('click', function () {
@@ -475,8 +521,8 @@ function formatColumns(table) {
         'data': offset.name,
         'renderer': offset.isReference ? referenceRenderer : offset.enum || offset.type === 'bool' ? 'dropdown' : 'text',
         'wordWrap': false,
-        'editor': offset.enum || offset.type === 'bool' ? 'select' : 'text',
-        'selectOptions': offset.enum ? offset.enum.members.map((member) => { return member.name; }) : offset.type === 'bool' ? ['true', 'false'] : []
+        'editor': offset.enum || offset.type === 'bool' ? 'dropdown' : 'text',
+        'source': offset.enum ? offset.enum.members.map((member) => { return member.name; }) : offset.type === 'bool' ? ['true', 'false'] : []
       };
     });
   } else {
@@ -500,7 +546,6 @@ function referenceRenderer(instance, td, row, col, prop, value, cellProperties) 
         td.appendChild(referenceLink);
 
         referenceLink.addEventListener('click', function () {
-          console.log(tableEditorService.navSteps);
           tableEditorService.navSteps[tableEditorService.navSteps.length - 1].column = col;
           tableEditorService.navSteps[tableEditorService.navSteps.length - 1].recordIndex = row;
 

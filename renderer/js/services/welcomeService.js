@@ -107,7 +107,7 @@ function addOpenSchemaViewerListener() {
 };
 
 function openFile () {
-  const filePath = dialog.showOpenDialog({
+  const filePath = dialog.showOpenDialog(remote.getCurrentWindow(), {
     title: 'Select franchise file to open',
     defaultPath: ipcRenderer.sendSync('getPreferences').general.defaultDirectory,
     filters: [{
