@@ -299,22 +299,30 @@ function processChanges(changes) {
     changes.forEach((change) => {
       const recordIndex = change[0];
       const key = change[1];
+      const oldValue = change[2];
       const newValue = change[3];
 
+      const colNumber = tableEditorService.selectedTable.offsetTable.findIndex((offset) => { return offset.name === key; });
+
       try {
-        tableEditorService.selectedTable.records[recordIndex].getFieldByKey(key).value = newValue;
+        let field = tableEditorService.selectedTable.records[recordIndex].getFieldByKey(key);
+        field.value = newValue;
+
+        if (field.value !== newValue) {
+          tableEditorService.hot.setDataAtCell(recordIndex, colNumber, field.value);
+        }
+
+        if (flipSaveOnChange) {
+          tableEditorService.file.save();
+          tableEditorService.file.settings = {
+            'saveOnChange': true
+          };
+        }
       }
       catch (err) {
-        console.log(err);
+        tableEditorService.hot.setDataAtCell(recordIndex, colNumber, oldValue)
       }
     });
-
-    if (flipSaveOnChange) {
-      tableEditorService.file.save();
-      tableEditorService.file.settings = {
-        'saveOnChange': true
-      };
-    }
   }
 };
 
