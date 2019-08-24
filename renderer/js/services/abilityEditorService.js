@@ -348,17 +348,25 @@ function formatTable(table) {
   return table.records.map((record) => {
     return record._fields.reduce((accumulator, currentValue) => {
       if (currentValue.key === 'Signature') {
-        const positionSignatureRecordIndex = utilService.bin2dec(currentValue.value.substring(16));
-        const positionSignatureAbility = abilityEditorService.positionSignatureAbilityTable.records[positionSignatureRecordIndex].Ability;
-        const signatureRecordIndex = utilService.bin2dec(positionSignatureAbility.substring(16));
+        const isValidReference = utilService.bin2dec(currentValue.value.substring(0, 15)) !== 0;
+        
+        if (isValidReference) {
+          const positionSignatureRecordIndex = utilService.bin2dec(currentValue.value.substring(16));
+          const positionSignatureAbility = abilityEditorService.positionSignatureAbilityTable.records[positionSignatureRecordIndex].Ability;
+          const signatureRecordIndex = utilService.bin2dec(positionSignatureAbility.substring(16));
 
-        accumulator[currentValue.key] = abilityEditorService.signatureAbilityTable.records[signatureRecordIndex].Name;
+          accumulator[currentValue.key] = abilityEditorService.signatureAbilityTable.records[signatureRecordIndex].Name;
+        }
       }
       else if (currentValue.key === 'Player') {
-        const recordIndex = utilService.bin2dec(currentValue.value.substring(16));
-        const record = abilityEditorService.playerTable.records[recordIndex];
-        const teamAbbreviation = abilityEditorService.teamTable.records.find((teamRecord) => { return teamRecord.TeamIndex === record.TeamIndex; }).ShortName;
-        accumulator[currentValue.key] = `${record.FirstName} ${record.LastName} (${teamAbbreviation})`;
+        const isValidReference = utilService.bin2dec(currentValue.value.substring(0, 15)) !== 0;
+
+        if (isValidReference) {
+          const recordIndex = utilService.bin2dec(currentValue.value.substring(16));
+          const record = abilityEditorService.playerTable.records[recordIndex];
+          const teamAbbreviation = abilityEditorService.teamTable.records.find((teamRecord) => { return teamRecord.TeamIndex === record.TeamIndex; }).ShortName;
+          accumulator[currentValue.key] = `${record.FirstName} ${record.LastName} (${teamAbbreviation})`;
+        }
       }
       else {
         accumulator[currentValue.key] = currentValue.value;
