@@ -51,7 +51,8 @@ preferencesService.initialize = function () {
                                     { 'label': 'Home screen', 'value': 'open-home' },
                                     { 'label': 'Schedule editor', 'value': 'open-schedule' },
                                     { 'label': 'Table editor', 'value': 'open-table-editor' },
-                                    { 'label': 'Schema viewer', 'value': 'open-schema-viewer' }
+                                    { 'label': 'Schema viewer', 'value': 'open-schema-viewer' },
+                                    { 'label': 'Ability editor', 'value': 'open-ability-editor' }
                                 ],
                                 'help': 'Choose the editor to open when you open a new file.'
                             }

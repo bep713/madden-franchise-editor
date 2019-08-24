@@ -42,6 +42,7 @@ function addListeners() {
   addOpenScheduleListener();
   addOpenTableEditorListener();
   addOpenSchemaViewerListener();
+  addOpenAbilityEditorListener();
 };
 
 function addOpenFileListener() {
@@ -62,16 +63,16 @@ function onFileLoaded (event, file) {
 };
 
 function toggleNavigationLinks(gameYear) {
-  // const scheduleLink = document.querySelector('#open-schedule');
+  const abilityLink = document.querySelector('#open-ability-editor');
 
-  // if (scheduleLink) {
-  //   if (gameYear === 20) {
-  //     scheduleLink.classList.add('unavailable');
-  //   }
-  //   else {
-  //     scheduleLink.classList.remove('unavailable');
-  //   }
-  // }
+  if (abilityLink) {
+    if (gameYear === 19) {
+      abilityLink.classList.add('unavailable');
+    }
+    else {
+      abilityLink.classList.remove('unavailable');
+    }
+  }
 };
 
 function toggleMaddenIcons(year) {
@@ -103,6 +104,13 @@ function addOpenSchemaViewerListener() {
   const openTableEditor = document.querySelector('#open-schema-viewer');
   openTableEditor.addEventListener('click', function () {
     welcomeService.eventEmitter.emit('open-schema-viewer');
+  });
+};
+
+function addOpenAbilityEditorListener() {
+  const openAbilityEditor = document.querySelector('#open-ability-editor');
+  openAbilityEditor.addEventListener('click', function () {
+    welcomeService.eventEmitter.emit('open-ability-editor');
   });
 };
 

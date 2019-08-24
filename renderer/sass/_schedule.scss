@@ -25,6 +25,10 @@
         }
       }
     }
+
+    &.info-bar--left {
+      justify-content: flex-start;
+    }
   }
 }
 

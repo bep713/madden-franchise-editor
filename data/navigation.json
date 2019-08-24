@@ -40,6 +40,17 @@
       "menu": {
         "disable": ["Save", "Export", "Import", "LogTable"]
       }
+    },
+    {
+      "id": "ability-editor",
+      "text": "Ability Editor",
+      "service": "abilityEditorService",
+      "clickListener": "onAbilityEditorClicked",
+      "availableVersions": [20],
+      "menu": {
+        "enable": ["Save"],
+        "disable": ["Export", "Import", "LogTable"]
+      }
     }
   ]
 }

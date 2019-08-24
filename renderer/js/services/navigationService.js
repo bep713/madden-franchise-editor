@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { ipcRenderer, remote, webFrame } = require('electron');
+const { ipcRenderer, remote } = require('electron');
 
 const app = remote.app;
 
@@ -11,8 +11,9 @@ const welcomeService = require('./welcomeService');
 const scheduleService = require('./scheduleService');
 const tableEditorService = require('./tableEditorService');
 const schemaViewerService = require('./schemaViewerService');
+const abilityEditorService = require('./abilityEditorService');
 
-const services = [welcomeService, scheduleService, tableEditorService, schemaViewerService];
+const services = [welcomeService, scheduleService, tableEditorService, schemaViewerService, abilityEditorService];
 const navigationData = require('../../../data/navigation.json');
 
 const PATH_TO_DOCUMENTS = app.getPath('documents');
@@ -94,6 +95,14 @@ navigationService.onSchemaViewerClicked = function () {
   schemaViewerService.start(navigationService.currentlyOpenedFile.data);
 };
 
+navigationService.onAbilityEditorClicked = function () {
+  onNavigate(abilityEditorService);
+  navigationService.loadPage('ability-editor.html');
+  appendNavigation('ability-editor');
+
+  abilityEditorService.start(navigationService.currentlyOpenedFile.data);
+};
+
 navigationService.loadPage = function (pagePath) {
   const page = fs.readFileSync(path.join(__dirname, '..\\..\\', pagePath));
   const content = document.querySelector('#content');
@@ -107,17 +116,17 @@ navigationService.runCloseFunction = function () {
   }
 };
 
-// DEV_openFile();
+DEV_openFile();
 
 module.exports = navigationService;
 
 function DEV_openFile() {
   // welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-2019');
   // welcomeService.eventEmitter.emit('open-file', 'D:\\Projects\\Madden 20\\CAREER-BEPFRANCHISE');
-  welcomeService.eventEmitter.emit('open-file', `${MADDEN_SAVE_BASE_FOLDER}\\CAREER-BASE20`);
+  welcomeService.eventEmitter.emit('open-file', `${MADDEN_SAVE_BASE_FOLDER}\\CAREER-AUG21-05h46m36pm`);
 
   setTimeout(() => {
-    navigationService.onTableEditorClicked();
+    navigationService.onAbilityEditorClicked();
   }, 0);
 };
 
@@ -184,6 +193,10 @@ function setupEvents() {
 
   welcomeService.eventEmitter.on('open-schema-viewer', function () {
     navigationService.onSchemaViewerClicked();
+  });
+
+  welcomeService.eventEmitter.on('open-ability-editor', function () {
+    navigationService.onAbilityEditorClicked();
   });
 
   scheduleService.eventEmitter.on('open-table-editor', function (tableId, index) {

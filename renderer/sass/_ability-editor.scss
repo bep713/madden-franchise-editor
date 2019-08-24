@@ -1,0 +1,44 @@
+.left-entry {
+  padding: 15px;
+  background: #555;
+
+  + .left-entry {
+    margin-top: 10px;
+  }
+
+  .player-name-wrapper {
+    color: #FFF;
+    display: flex;
+    flex-direction: column;
+    text-transform: uppercase;
+
+    .last-name {
+      font-size: 18px;
+      margin-top: 3px;
+      font-weight: $font-weight-bold;
+      letter-spacing: 1px;
+    }
+  }
+}
+
+.ability-editor-content {
+  position: absolute;
+  top: 80px;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  display: grid;
+
+  .handsontableInputHolder {
+    border: 1px solid black;
+    background: #FFF;
+  }
+
+  .handsontable.listbox .ht_master table {
+    border: none;
+  }
+
+  .autocompleteEditor {
+    padding-bottom: 17px;
+  }
+}

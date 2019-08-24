@@ -1,7 +1,6 @@
 const { ipcRenderer, remote, shell } = require('electron');
 const app = remote.app;
 const dialog = remote.dialog;
-const crypto = require('crypto');
 const Selectr = require('mobius1-selectr');
 const utilService = require('./utilService');
 const Handsontable = require('handsontable').default;
@@ -311,18 +310,18 @@ function processChanges(changes) {
         if (field.value !== newValue) {
           tableEditorService.hot.setDataAtCell(recordIndex, colNumber, field.value);
         }
-
-        if (flipSaveOnChange) {
-          tableEditorService.file.save();
-          tableEditorService.file.settings = {
-            'saveOnChange': true
-          };
-        }
       }
       catch (err) {
         tableEditorService.hot.setDataAtCell(recordIndex, colNumber, oldValue)
       }
     });
+
+    if (flipSaveOnChange) {
+      tableEditorService.file.save();
+      tableEditorService.file.settings = {
+        'saveOnChange': true
+      };
+    }
   }
 };
 
@@ -445,7 +444,6 @@ function addEventListeners() {
       tableEditorService.selectedTable = table;
 
       setTimeout(() => {
-        console.log(tableEditorService.navSteps);
         if (tableEditorService.navSteps.length === 1) {
           backLink.classList.add('disabled');
         }
