@@ -1,4 +1,3 @@
-const Selectr = require('mobius1-selectr');
 const { ipcRenderer } = require('electron');
 const Handsontable = require('handsontable').default;
 const utilService = require('../services/utilService');
@@ -249,6 +248,11 @@ function processChanges(changes) {
       */
       
       const playerInfo = /(\w+)\s(\w+)\s\((\w+)\)/.exec(newValue);
+      if (!playerInfo) { 
+        resetCellValue(recordIndex, 1, oldValue);
+        return; 
+      }
+
       const firstName = playerInfo[1];
       const lastName = playerInfo[2];
       const shortName = playerInfo[3];
@@ -261,7 +265,10 @@ function processChanges(changes) {
         return record.FirstName === firstName && record.LastName === lastName && record.TeamIndex === teamIndex;
       });
 
-      if (newPlayerIndex === -1) { return; }
+      if (newPlayerIndex === -1) { 
+        resetCellValue(recordIndex, 1, oldValue);
+        return; 
+      }
 
       const newPlayerType = abilityEditorService.playerTable.records[newPlayerIndex].PlayerType;
 
@@ -294,7 +301,10 @@ function processChanges(changes) {
         return record.Name === newValue;
       });
 
-      if (signatureIndex === -1) { return; }
+      if (signatureIndex === -1) { 
+        resetCellValue(recordIndex, 0, oldValue);
+        return; 
+      }
 
       const playerIndex = utilService.bin2dec(abilityEditorService.activeSignatureDataTable.records[recordIndex].Player.substring(16));
       const playerRecord = abilityEditorService.playerTable.records[playerIndex];
@@ -323,6 +333,10 @@ function processChanges(changes) {
     abilityEditorService.file.settings = {
       'saveOnChange': true
     };
+  }
+
+  function resetCellValue(row, col, oldValue) {
+    abilityEditorService.hot.setDataAtCell(row, col, oldValue);
   }
 };
 

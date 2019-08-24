@@ -116,7 +116,7 @@ navigationService.runCloseFunction = function () {
   }
 };
 
-DEV_openFile();
+// DEV_openFile();
 
 module.exports = navigationService;
 
