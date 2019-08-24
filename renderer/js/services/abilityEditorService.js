@@ -43,11 +43,13 @@ abilityEditorService.parseAbilities = function () {
     const playerTable = abilityEditorService.file.getTableById(franchiseGameYearService.getTableId('Player', 20));
     const positionSignatureAbilityTable = abilityEditorService.file.getTableById(4233);
     const signatureAbilityTable = abilityEditorService.file.getTableById(4147);
+    const teamTable = abilityEditorService.file.getTableById(franchiseGameYearService.getTableId('Team', 20));
 
-    abilityEditorService.activeSignatureDataTable = activeSignatureDataTable
-    abilityEditorService.playerTable = playerTable
-    abilityEditorService.positionSignatureAbilityTable = positionSignatureAbilityTable
-    abilityEditorService.signatureAbilityTable = signatureAbilityTable
+    abilityEditorService.activeSignatureDataTable = activeSignatureDataTable;
+    abilityEditorService.playerTable = playerTable;
+    abilityEditorService.positionSignatureAbilityTable = positionSignatureAbilityTable;
+    abilityEditorService.signatureAbilityTable = signatureAbilityTable;
+    abilityEditorService.teamTable = teamTable;
 
     const container3 = document.querySelector('.table-content-wrapper');
     abilityEditorService.hot = new Handsontable(container3, {
@@ -70,9 +72,10 @@ abilityEditorService.parseAbilities = function () {
 
     let readAllRecords = Promise.all([
       activeSignatureDataTable.readRecords(), 
-      playerTable.readRecords(['FirstName', 'LastName', 'TraitDevelopment', 'PlayerType']),
+      playerTable.readRecords(['FirstName', 'LastName', 'TraitDevelopment', 'PlayerType', 'TeamIndex']),
       positionSignatureAbilityTable.readRecords(),
-      signatureAbilityTable.readRecords(['Name', 'Description'])
+      signatureAbilityTable.readRecords(['Name', 'Description']),
+      teamTable.readRecords(['ShortName', 'TeamIndex'])
     ]);
 
     readAllRecords.then(() => {
@@ -244,8 +247,18 @@ function processChanges(changes) {
           2b) If a match is found, change it.
         3) Set the new reference based on the result in #1
       */
+      
+      const playerInfo = /(\w+)\s(\w+)\s\((\w+)\)/.exec(newValue);
+      const firstName = playerInfo[1];
+      const lastName = playerInfo[2];
+      const shortName = playerInfo[3];
+
+      const teamIndex = abilityEditorService.teamTable.records.find((record) => {
+        return record.ShortName === shortName;
+      }).TeamIndex;
+     
       const newPlayerIndex = abilityEditorService.playerTable.records.findIndex((record) => {
-        return `${record.FirstName} ${record.LastName}` === newValue;
+        return record.FirstName === firstName && record.LastName === lastName && record.TeamIndex === teamIndex;
       });
 
       if (newPlayerIndex === -1) { return; }
@@ -329,8 +342,9 @@ function formatTable(table) {
       }
       else if (currentValue.key === 'Player') {
         const recordIndex = utilService.bin2dec(currentValue.value.substring(16));
-        const record = abilityEditorService.playerTable.records[recordIndex]
-        accumulator[currentValue.key] = `${record.FirstName} ${record.LastName}`;
+        const record = abilityEditorService.playerTable.records[recordIndex];
+        const teamAbbreviation = abilityEditorService.teamTable.records.find((teamRecord) => { return teamRecord.TeamIndex === record.TeamIndex; }).ShortName;
+        accumulator[currentValue.key] = `${record.FirstName} ${record.LastName} (${teamAbbreviation})`;
       }
       else {
         accumulator[currentValue.key] = currentValue.value;
@@ -392,7 +406,8 @@ function getSignatureChoices() {
 
 function getPlayerChoices () {
   return abilityEditorService.playerTable.records.map((record) => {
-    return `${record.FirstName} ${record.LastName}`;
+    const teamAbbreviation = abilityEditorService.teamTable.records.find((teamRecord) => { return teamRecord.TeamIndex === record.TeamIndex; }).ShortName;
+    return `${record.FirstName} ${record.LastName} (${teamAbbreviation})`;
   });
 };
 

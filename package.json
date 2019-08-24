@@ -1,6 +1,6 @@
 {
   "name": "madden-franchise-editor",
-  "version": "3.3.1",
+  "version": "3.4.0",
   "description": "An app that can modify Madden franchise file.",
   "main": "main.js",
   "scripts": {
