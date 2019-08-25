@@ -2,12 +2,14 @@ const { ipcRenderer, remote } = require('electron');
 const app = remote.app;
 const dialog = remote.dialog;
 
+const moment = require('moment');
 const EventEmitter = require('events').EventEmitter;
 
 // const PATH_TO_DOCUMENTS = app.getPath('documents');
 // const MADDEN_SAVE_BASE_FOLDER = `${PATH_TO_DOCUMENTS}\\Madden NFL 20\\settings`;
 
 const utilService = require('./utilService');
+const recentFileService = require('./recentFileService');
 
 let welcomeService = {};
 welcomeService.name = 'welcomeService';
@@ -18,6 +20,7 @@ addLoadedFileListener();
 welcomeService.start = function (file) {
   addVersionNumber();
   addListeners();
+  addRecentFiles();
 
   if (file.gameYear) {
     showOpenedFileLinks();
@@ -114,6 +117,54 @@ function addOpenAbilityEditorListener() {
   });
 };
 
+function addRecentFiles() {
+  recentFileService.initialize();
+  const recentFiles = recentFileService.getRecentFiles();
+
+  const recentFilesList = document.querySelector('.load-recent-file ul');
+  const recentFilesPlaceholder = document.querySelector('#no-recent-files');
+
+  if (recentFiles.length === 0) {
+    utilService.show(recentFilesPlaceholder);
+  }
+  else {
+    utilService.hide(recentFilesPlaceholder);
+
+    recentFiles.forEach((file) => {
+      const fileName = file.path.substring(file.path.lastIndexOf('\\') + 1);
+      const remainderOfPath = file.path.substring(0, file.path.lastIndexOf('\\'));
+
+      const filePathDiv = document.createElement('div');
+      filePathDiv.classList.add('file-item');
+
+      const fileNameSpan = document.createElement('span');
+      fileNameSpan.classList.add('file-name', 'link-item');
+      fileNameSpan.innerHTML = fileName;
+
+      fileNameSpan.addEventListener('click', function () {
+        openFileFromPath(file.path);
+      });
+
+      const filePathSpan = document.createElement('span');
+      filePathSpan.classList.add('file-path');
+      filePathSpan.innerHTML = `(${remainderOfPath})`;
+
+      const fileAccessTime = document.createElement('span');
+      fileAccessTime.classList.add('file-access-time');
+      fileAccessTime.innerHTML = moment(file.time).format('MM/DD/YYYY hh:mm A');
+
+      filePathDiv.appendChild(fileNameSpan);
+      filePathDiv.appendChild(filePathSpan);
+      filePathDiv.appendChild(fileAccessTime);
+
+      const item = document.createElement('li');
+      item.appendChild(filePathDiv);
+
+      recentFilesList.appendChild(item);
+    });
+  }
+};
+
 function openFile () {
   const filePath = dialog.showOpenDialog(remote.getCurrentWindow(), {
     title: 'Select franchise file to open',
@@ -125,20 +176,27 @@ function openFile () {
   });
 
   if (filePath) {
-    utilService.show(document.querySelector('.loader-wrapper'));
-    welcomeService.eventEmitter.emit('open-file', filePath[0]);
+    openFileFromPath(filePath[0]);
+  }
+};
 
+function openFileFromPath(filePath) {
+  utilService.show(document.querySelector('.loader-wrapper'));
+
+  setTimeout(() => {
+    welcomeService.eventEmitter.emit('open-file', filePath);
+    recentFileService.addFile(filePath);
     const editorToOpen = ipcRenderer.sendSync('getPreferences').general.defaultEditor;
-
     if (editorToOpen && editorToOpen !== 'open-home') {
       welcomeService.eventEmitter.emit(editorToOpen);
-    } else {
+    }
+    else {
       showOpenedFileLinks();
       setTimeout(() => {
         utilService.hide(document.querySelector('.loader-wrapper'));
       }, 50);
     }
-  }
+  }, 50);
 };
 
 function showOpenedFileLinks() {

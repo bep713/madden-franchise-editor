@@ -121,3 +121,15 @@ $brand-color: $brand-primary;
     margin-top: 50px;
   }
 }
+
+.file-item {
+  span {
+    + span {
+      margin-left: 5px;
+    }
+  }
+}
+
+.file-access-time {
+  font-style: italic;
+}
