@@ -1,3 +1,4 @@
+const chokidar = require('chokidar');
 const { app, BrowserWindow, ipcMain, Menu, shell } = require('electron');
 const preferencesService = require('./renderer/js/services/preferencesService');
 
@@ -21,6 +22,9 @@ const homePage = 'renderer/index.html';
 const workerPage = 'renderer/worker.html';
 const baseWindowTitle = 'Madden Franchise Editor';
 let currentFilePath = '';
+let waitForFileSaved = false;
+let pendingSaves = [];
+let baseFileWatcher;
 
 function createWindow () {
 
@@ -41,6 +45,7 @@ function createWindow () {
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
     mainWindow = null;
+    baseFileWatcher.close();
     app.quit();
   })
 
@@ -93,8 +98,10 @@ addIpcListeners();
 function addIpcListeners() {
   ipcMain.on('close-file', function () {
     currentFilePath = '';
+    pendingSaves = [];
     setCurrentWindowTitle(baseWindowTitle);
     disableFileMenuItems();
+    baseFileWatcher.close();
   });
   
   ipcMain.on('file-loaded', function (event, file) {
@@ -103,6 +110,7 @@ function addIpcListeners() {
 
     setCurrentWindowTitle(`${baseWindowTitle} - ${currentFilePath}`);
     enableFileMenuItems();
+    watchFile(currentFilePath);
   });
 
   ipcMain.on('reveal-in-explorer', function () {
@@ -125,10 +133,15 @@ function addIpcListeners() {
   
   ipcMain.on('saving', function () {
     setCurrentWindowTitle(`${baseWindowTitle} - ${currentFilePath} - Saving...`);
+    pendingSaves.push({
+      'time': Date.now()
+    })
   });
   
   ipcMain.on('saved', function () {
     setTemporaryWindowTitle('Saved');
+    waitForFileSaved = false;
+    pendingSaves.pop();
   });
 
   ipcMain.on('exporting', function () {
@@ -161,6 +174,11 @@ function addIpcListeners() {
 
   ipcMain.on('log-table', function () {
     mainWindow.webContents.send('log-table');
+  });
+
+  ipcMain.on('reload-file', function () {
+    setTemporaryWindowTitle('Reloading...');
+    mainWindow.webContents.send('reload-file', currentFilePath);
   });
 }
 
@@ -223,4 +241,17 @@ function mutateMenuIds(menuItems, key, value) {
       }
     });
   }
+};
+
+function watchFile(filePath) {
+  if (baseFileWatcher) {
+    baseFileWatcher.close();
+  }
+  
+  baseFileWatcher = chokidar.watch(filePath)
+    .on('change', (event, path) => {
+      if (!waitForFileSaved && pendingSaves.length === 0) {
+        mainWindow.webContents.send('file-changed', path);
+      }
+    });
 };

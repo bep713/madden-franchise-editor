@@ -2,6 +2,7 @@ $brand-primary: #e98819;
 $brand-black: #333;
 $brand-link-color: #0079c1;
 
+$breakpoint-sm: 500px;
 $breakpoint-md: 768px;
 $breakpoint-lg: 1024px;
 $breakpoint-xlg: 1280px;
@@ -19,12 +20,17 @@ body {
   font-size: $font-base-size;
   margin: 0;
   padding: 0 20px;
+  overflow: hidden;
 }
 
 h1 {
-  font-size: 1.5em;
+  font-size: 1.2em;
   -webkit-margin-before: 0.83em;
   -webkit-margin-after: 0.83em;
+
+  @media(min-width: $breakpoint-md) {
+    font-size: 1.5em;
+  }
 }
 
 :focus {

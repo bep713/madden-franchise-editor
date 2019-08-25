@@ -1,10 +1,29 @@
 .navigation {
   display: flex;
+  flex-grow: 2;
+
+  .selectr-container {
+    margin: -10px 20px -9px 0;
+
+    @media (min-width: $breakpoint-md) {
+      display: none;
+    }
+  }
+
+  .selectr-selected {
+    padding: 8.5px 28px 8.5px 14px;
+    border: 1px solid #888;
+  }
 }
 
 .nav-item {
+  display: none;
   color: $welcome-link-color;
   cursor: pointer;
+
+  @media (min-width: $breakpoint-md) {
+    display: inherit;
+  }
 
   &.active {
     color: $brand-black;

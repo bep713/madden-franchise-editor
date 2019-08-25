@@ -17,7 +17,7 @@ let welcomeService = {};
 welcomeService.name = 'welcomeService';
 welcomeService.eventEmitter = new EventEmitter();
 
-addLoadedFileListener();
+addIpcListeners();
 
 welcomeService.start = function (file) {
   addVersionNumber();
@@ -58,8 +58,11 @@ function addOpenFileListener() {
   openDifferentFileButton.addEventListener('click', openFile);
 };
 
-function addLoadedFileListener() {
+function addIpcListeners() {
   ipcRenderer.on('file-loaded', onFileLoaded);
+  ipcRenderer.on('reload-file', (event, filePath) => {
+    openFileFromPath(filePath);
+  });
 };
 
 function onFileLoaded (event, file) {
