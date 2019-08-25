@@ -34,14 +34,20 @@ function addIpcListeners() {
 function addEventListeners() {
   if (!reloadFileService.reloadWrapper) { return; }
   
-  const primaryAction = reloadFileService.reloadWrapper.querySelector('.primary-button');
-  primaryAction.addEventListener('click', function () {
+  const reloadAction = reloadFileService.reloadWrapper.querySelector('.primary-button');
+  reloadAction.addEventListener('click', function () {
     ipcRenderer.send('reload-file');
     hideReloadWrapper();
   });
 
-  const secondaryAction = reloadFileService.reloadWrapper.querySelector('.action-button');
-  secondaryAction.addEventListener('click', function () {
+  const saveNewAction = reloadFileService.reloadWrapper.querySelector('.save-new-action');
+  saveNewAction.addEventListener('click', function () {
+    ipcRenderer.send('save-new-file');
+    hideReloadWrapper();
+  });
+
+  const dismissAction = reloadFileService.reloadWrapper.querySelector('.dismiss-action');
+  dismissAction.addEventListener('click', function () {
     hideReloadWrapper();
   });
 };

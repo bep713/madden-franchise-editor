@@ -180,6 +180,10 @@ function addIpcListeners() {
     setTemporaryWindowTitle('Reloading...');
     mainWindow.webContents.send('reload-file', currentFilePath);
   });
+
+  ipcMain.on('save-new-file', function () {
+    mainWindow.webContents.send('save-new-file');
+  });
 }
 
 function setTemporaryWindowTitle(message) {

@@ -3,6 +3,7 @@ const path = require('path');
 const { ipcRenderer, remote } = require('electron');
 
 const app = remote.app;
+const dialog = remote.dialog;
 
 const Selectr = require('mobius1-selectr');
 const FranchiseFile = require('madden-franchise');
@@ -181,6 +182,24 @@ function addIpcListeners() {
     navigationService.onHomeClicked();
 
     ipcRenderer.send('close-file');
+  });
+
+  ipcRenderer.on('save-new-file', function () {
+    const savePath = dialog.showSaveDialog(remote.getCurrentWindow(), {
+      'title': 'Save as...',
+      'defaultPath': ipcRenderer.sendSync('getPreferences').general.defaultDirectory
+    });
+    
+    if (savePath) {
+      navigationService.currentlyOpenedFile.data.filePath = savePath;
+      ipcRenderer.send('file-loaded', {
+        'path': savePath,
+        'gameYear': navigationService.currentlyOpenedFile.data._gameYear
+      });
+
+      welcomeService.addRecentFile(savePath);
+      navigationService.currentlyOpenedFile.data.save();
+    }
   });
 };
 

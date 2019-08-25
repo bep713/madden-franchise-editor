@@ -1,12 +1,16 @@
 .table-wrapper {
   display: grid;
-  grid-template-rows: 40px 1fr;
+  grid-template-rows: 80px 1fr;
   // height: 90vh;
   position: absolute;
   top: 80px;
   left: 20px;
   right: 20px;
   bottom: 20px;
+
+  @media (min-width: $breakpoint-md) {
+    grid-template-rows: 40px 1fr;
+  }
 }
 
 .table-content-wrapper {
@@ -22,8 +26,23 @@ td.active-row {
 
 .table-list {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   margin-bottom: 10px;
+
+  @media (min-width: $breakpoint-md) {
+    flex-wrap: nowrap;
+    justify-content: inherit;
+  }
+
+  .selectr-container {
+    order: 2;
+
+    @media (min-width: $breakpoint-md) {
+      order: 0;
+    }
+  }
 
   .selectr-selected {
     border: 1px solid $brand-black;

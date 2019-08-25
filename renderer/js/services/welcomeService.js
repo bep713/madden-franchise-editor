@@ -31,6 +31,11 @@ welcomeService.start = function (file) {
   }
 };
 
+welcomeService.addRecentFile = (filePath) => {
+  recentFileService.addFile(filePath);
+  refreshRecentFilesList();
+};
+
 welcomeService.onClose = function () {
   ipcRenderer.removeListener('file-loaded', onFileLoaded);
 };
