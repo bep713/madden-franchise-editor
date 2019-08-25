@@ -115,6 +115,10 @@ abilityEditorService.parseAbilities = function () {
           for (let j = 0; j < columns.length; j++) {
             abilityEditorService.hot.setCellMeta(index, j, 'recordNumber', meta.recordNumber);
             abilityEditorService.hot.setCellMeta(index, j, 'tableId', meta.tableId);
+
+            if (abilityEditorService.hot.getDataAtCell(index, j) === null) {
+              abilityEditorService.hot.setCellMeta(index, j, 'readOnly', true);
+            }
           }
         });
       }, abilityEditorService.hot);
