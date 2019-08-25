@@ -50,8 +50,10 @@ class FranchiseSchedule extends EventEmitter {
     delete require.cache[require.resolve(pathToTeamData)]
     this._teamData = require(pathToTeamData);
     
-    const seasonGameTable = this.file.getTableById(franchiseGameYearService.getTableId('SeasonGame', this.file._gameYear));
-    const teamTable = this.file.getTableById(franchiseGameYearService.getTableId('Team', this.file._gameYear));
+    const seasonGameTable = this.file.getTableByName('SeasonGame');
+    const teamTable = this.file.tables.find((table) => {
+      return table.name === 'Team' && table.header.data1RecordCount > 1;
+    });
 
     const seasonGameFields = ['AwayTeam', 'HomeTeam', 'TimeOfDay', 'HomeScore', 'AwayScore', 'SeasonWeek', 'DayOfWeek', 'SeasonWeekType'];
     const teamFields = ['ShortName', 'LongName', 'DisplayName'];
