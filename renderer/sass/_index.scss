@@ -9,11 +9,8 @@ $brand-color: $brand-primary;
 }
 
 .welcome {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  right: 0;
-  left: 0;
+  min-height: 100vh;
+  margin: 0 -20px;
 
   font-family: 'Roboto', sans-serif;
   padding: 40px;

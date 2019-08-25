@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 const { ipcRenderer, remote } = require('electron');
 const app = remote.app;
 const dialog = remote.dialog;
@@ -119,8 +121,11 @@ function addOpenAbilityEditorListener() {
 
 function addRecentFiles() {
   recentFileService.initialize();
-  const recentFiles = recentFileService.getRecentFiles();
+  refreshRecentFilesList();
+};
 
+function refreshRecentFilesList() {
+  const recentFiles = recentFileService.getRecentFiles();
   const recentFilesList = document.querySelector('.load-recent-file ul');
   const recentFilesPlaceholder = document.querySelector('#no-recent-files');
 
@@ -129,6 +134,10 @@ function addRecentFiles() {
   }
   else {
     utilService.hide(recentFilesPlaceholder);
+    
+    document.querySelectorAll('.load-recent-file ul li:not(#no-recent-files').forEach((item) => {
+      item.parentNode.removeChild(item);
+    });
 
     recentFiles.forEach((file) => {
       const fileName = file.path.substring(file.path.lastIndexOf('\\') + 1);
@@ -140,7 +149,6 @@ function addRecentFiles() {
       const fileNameSpan = document.createElement('span');
       fileNameSpan.classList.add('file-name', 'link-item');
       fileNameSpan.innerHTML = fileName;
-
       fileNameSpan.addEventListener('click', function () {
         openFileFromPath(file.path);
       });
@@ -181,22 +189,28 @@ function openFile () {
 };
 
 function openFileFromPath(filePath) {
-  utilService.show(document.querySelector('.loader-wrapper'));
+  if (fs.existsSync(filePath)) {
+    utilService.show(document.querySelector('.loader-wrapper'));
 
-  setTimeout(() => {
-    welcomeService.eventEmitter.emit('open-file', filePath);
-    recentFileService.addFile(filePath);
-    const editorToOpen = ipcRenderer.sendSync('getPreferences').general.defaultEditor;
-    if (editorToOpen && editorToOpen !== 'open-home') {
-      welcomeService.eventEmitter.emit(editorToOpen);
-    }
-    else {
-      showOpenedFileLinks();
-      setTimeout(() => {
-        utilService.hide(document.querySelector('.loader-wrapper'));
-      }, 50);
-    }
-  }, 50);
+    setTimeout(() => {
+      welcomeService.eventEmitter.emit('open-file', filePath);
+      recentFileService.addFile(filePath);
+      const editorToOpen = ipcRenderer.sendSync('getPreferences').general.defaultEditor;
+      if (editorToOpen && editorToOpen !== 'open-home') {
+        welcomeService.eventEmitter.emit(editorToOpen);
+      }
+      else {
+        showOpenedFileLinks();
+        setTimeout(() => {
+          utilService.hide(document.querySelector('.loader-wrapper'));
+        }, 50);
+      }
+    }, 50);
+  } else {
+    dialog.showErrorBox('File not found', 'Could not find the selected file. You may have renamed or deleted it.');
+    recentFileService.removeFile(filePath);
+    refreshRecentFilesList();
+  }
 };
 
 function showOpenedFileLinks() {

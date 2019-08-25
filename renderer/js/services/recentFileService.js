@@ -39,11 +39,18 @@ recentFileService.addFile = (filePath) => {
     }
   }
 
-  fs.writeFile(PATH_TO_RECENT_FILES, JSON.stringify(recentFileService.recentFiles), function (err) {
-    if (err) {
-      console.log(err);
-    }
+  writeToRecentFilesStore(recentFileService.recentFiles);
+};
+
+recentFileService.removeFile = (filePath) => {
+  const indexInRecents = recentFileService.recentFiles.findIndex((file) => {
+    return file.path === filePath;
   });
+
+  if (indexInRecents >= 0) {
+    recentFileService.recentFiles.splice(indexInRecents, 1);
+    writeToRecentFilesStore(recentFileService.recentFiles);
+  }
 };
 
 recentFileService.getRecentFiles = () => {
@@ -51,3 +58,11 @@ recentFileService.getRecentFiles = () => {
 };
 
 module.exports = recentFileService;
+
+function writeToRecentFilesStore(data) {
+  fs.writeFile(PATH_TO_RECENT_FILES, JSON.stringify(data), function (err) {
+    if (err) {
+      console.log(err);
+    }
+  });
+};
