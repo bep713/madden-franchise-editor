@@ -98,6 +98,7 @@ tableEditorService.onClose = function () {
 
 tableEditorService.loadTable = function () {
   const tableChoices = tableEditorService.file.tables.map((table, index) => {
+    // console.log(table.name);
     return {
       'value': table.header.tableId,
       'text': `${index} - ${table.name}`
@@ -543,11 +544,11 @@ function referenceRenderer(instance, td, row, col, prop, value, cellProperties) 
     const otherTableFlag = value[0];
 
     if (otherTableFlag === '0') {
-      const tableIndex = utilService.bin2dec(value.substring(3,15));
+      const tableId = utilService.bin2dec(value.substring(2,15));
       const recordIndex = utilService.bin2dec(value.substring(16));
-      const table = tableEditorService.file.getTableByIndex(tableIndex);
+      const table = tableEditorService.file.getTableById(tableId);
 
-      if (tableIndex > 0 && table) {
+      if (tableId > 0 && table) {
         referenceLink.innerHTML = `${table.name} - ${recordIndex}`;
         td.appendChild(referenceLink);
 

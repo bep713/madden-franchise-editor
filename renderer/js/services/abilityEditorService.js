@@ -38,13 +38,21 @@ abilityEditorService.parseAbilities = function () {
   }, 10);
 
   setTimeout(() => {
-    const activeSignatureDataTable = abilityEditorService.file.getTableById(7177);
-    const playerTable = abilityEditorService.file.getTableById(franchiseGameYearService.getTableId('Player', 20));
-    const positionSignatureAbilityTable = abilityEditorService.file.getTableById(4233);
-    const signatureAbilityTable = abilityEditorService.file.getTableById(4147);
-    const teamTable = abilityEditorService.file.getTableById(franchiseGameYearService.getTableId('Team', 20));
+    const activeSignatureDataTables = abilityEditorService.file.getAllTablesByName('ActiveSignatureData');
+    const activeSignatureDataTable = activeSignatureDataTables[0];
+    const activeSignatureDataTable1 = activeSignatureDataTables[1];
+
+    const playerTable = abilityEditorService.file.getTableByName('Player');
+    const positionSignatureAbilityTable = abilityEditorService.file.getTableByName('PositionSignatureAbility');
+    const signatureAbilityTable = abilityEditorService.file.getTableByName('SignatureAbility');
+    // const teamTable = abilityEditorService.file.getTableById(franchiseGameYearService.getTableId('Team', 20));
+
+    const teamTable = abilityEditorService.file.tables.find((table) => {
+      return table.name === 'Team' && table.header.data1RecordCount > 1;
+    });
 
     abilityEditorService.activeSignatureDataTable = activeSignatureDataTable;
+    abilityEditorService.activeSignatureDataTable1 = activeSignatureDataTable1;
     abilityEditorService.playerTable = playerTable;
     abilityEditorService.positionSignatureAbilityTable = positionSignatureAbilityTable;
     abilityEditorService.signatureAbilityTable = signatureAbilityTable;
@@ -70,7 +78,8 @@ abilityEditorService.parseAbilities = function () {
     // let playerPromise = playerTable.readRecords(['FirstName', 'LastName', 'TeamIndex', 'Position', 'TraitDevelopment', 'PlayerType']);
 
     let readAllRecords = Promise.all([
-      activeSignatureDataTable.readRecords(), 
+      activeSignatureDataTable.readRecords(),
+      activeSignatureDataTable1.readRecords(),
       playerTable.readRecords(['FirstName', 'LastName', 'TraitDevelopment', 'PlayerType', 'TeamIndex']),
       positionSignatureAbilityTable.readRecords(),
       signatureAbilityTable.readRecords(['Name', 'Description']),
@@ -78,16 +87,52 @@ abilityEditorService.parseAbilities = function () {
     ]);
 
     readAllRecords.then(() => {
-      const data = formatTable(activeSignatureDataTable);
+      const data1 = formatTable(activeSignatureDataTable);
+      const data2 = formatTable(activeSignatureDataTable1);
+      const data = data1.concat(data2);
+
+      let metadata1 = [];
+      let metadata2 = [];
+
+      for (let i = 0; i < data1.length; i++) {
+        metadata1.push({
+          'tableId': activeSignatureDataTable.header.tableId,
+          'recordNumber': i
+        });
+      }
+
+      for (let i = 0; i < data2.length; i++) {
+        metadata2.push({
+          'tableId': activeSignatureDataTable1.header.tableId,
+          'recordNumber': i
+        });
+      }
+
+      const metadata = metadata1.concat(metadata2);
+
+      Handsontable.hooks.once('afterCellMetaReset', () => {
+        metadata.forEach((meta, index) => {
+          for (let j = 0; j < columns.length; j++) {
+            abilityEditorService.hot.setCellMeta(index, j, 'recordNumber', meta.recordNumber);
+            abilityEditorService.hot.setCellMeta(index, j, 'tableId', meta.tableId);
+          }
+        });
+      }, abilityEditorService.hot);
+
       const headers = formatHeaders(activeSignatureDataTable);
       const columns = formatColumns(activeSignatureDataTable);
 
-      abilityEditorService.hot.loadData(data);
       abilityEditorService.hot.updateSettings({
         data: data,
         colHeaders: headers,
         columns: columns,
-        colWidths: calculateColumnWidths(columns, activeSignatureDataTable)
+        colWidths: calculateColumnWidths(columns, activeSignatureDataTable),
+        columnSorting: {
+          initialConfig: {
+            column: 1,
+            sortOrder: 'asc'
+          }
+        }
       });
 
       abilityEditorService.hot.selectCell(abilityEditorService.rowIndexToSelect, abilityEditorService.columnIndexToSelect);
@@ -238,6 +283,9 @@ function processChanges(changes) {
     const oldValue = change[2];
     const newValue = change[3];
 
+    const meta = abilityEditorService.hot.getCellMeta(recordIndex, abilityEditorService.hot.propToCol(column));
+    const activeSignatureDataTable = abilityEditorService.file.getTableById(meta.tableId);
+
     if (column === 'Player') {
       /* when we change the player, we need to
         1) Find the player index in the player table
@@ -247,7 +295,7 @@ function processChanges(changes) {
         3) Set the new reference based on the result in #1
       */
       
-      const playerInfo = /(\w+)\s(\w+)\s\((\w+)\)/.exec(newValue);
+      const playerInfo = /(\S+)\s(\S+(?:(?=\s\()|(?!\s\()\s\S+))\s\((\S+)\)/.exec(newValue);
       if (!playerInfo) { 
         resetCellValue(recordIndex, 1, oldValue);
         return; 
@@ -260,19 +308,34 @@ function processChanges(changes) {
       const teamIndex = abilityEditorService.teamTable.records.find((record) => {
         return record.ShortName === shortName;
       }).TeamIndex;
+
+      let newPlayerIndex;
      
-      const newPlayerIndex = abilityEditorService.playerTable.records.findIndex((record) => {
+      newPlayerIndex = abilityEditorService.playerTable.records.findIndex((record) => {
         return record.FirstName === firstName && record.LastName === lastName && record.TeamIndex === teamIndex;
       });
 
-      if (newPlayerIndex === -1) { 
-        resetCellValue(recordIndex, 1, oldValue);
-        return; 
+      if (newPlayerIndex === -1) {
+        // check if there's a space in the last name. If so, retry with the 'second name' as part of the first name (rare) Ex: Shaun Dion Hamilton. Shaun Dion is the first name.
+        // Usually, the last name is the one with a space. Ex: Leighton Vander Esch or Melvin Gordon III.
+        const newFirstName = firstName + ' ' + lastName.substring(0, lastName.indexOf(' '));
+        const newLastName = lastName.substring(lastName.indexOf(' ') + 1);
+
+        console.log(newFirstName, newLastName);
+        
+        newPlayerIndex = abilityEditorService.playerTable.records.findIndex((record) => {
+          return record.FirstName === newFirstName && record.LastName === newLastName && record.TeamIndex === teamIndex;
+        });
+
+        if (newPlayerIndex === -1) {
+          resetCellValue(recordIndex, 1, oldValue);
+          return; 
+        }
       }
 
       const newPlayerType = abilityEditorService.playerTable.records[newPlayerIndex].PlayerType;
 
-      const positionSignatureAbilityIndex = utilService.bin2dec(abilityEditorService.activeSignatureDataTable.records[recordIndex].Signature.substring(16));
+      const positionSignatureAbilityIndex = utilService.bin2dec(activeSignatureDataTable.records[meta.recordNumber].Signature.substring(16));
       const positionSignatureAbility = abilityEditorService.positionSignatureAbilityTable.records[positionSignatureAbilityIndex];
       const positionSignatureAbilityTypeRequirement = positionSignatureAbility.ArchetypeRequirement;
 
@@ -284,12 +347,12 @@ function processChanges(changes) {
 
         if (newPositionSignatureAbilityIndex >= 0) {
           const newPositionSignatureReference = utilService.dec2bin(abilityEditorService.positionSignatureAbilityTable.header.tableId, 15) + utilService.dec2bin(newPositionSignatureAbilityIndex, 17);
-          abilityEditorService.activeSignatureDataTable.records[recordIndex].Signature = newPositionSignatureReference;
+          activeSignatureDataTable.records[meta.recordNumber].Signature = newPositionSignatureReference;
         }
       }
 
       const newReference = utilService.dec2bin(franchiseGameYearService.getTableId('Player', 20), 15) + utilService.dec2bin(newPlayerIndex, 17);
-      abilityEditorService.activeSignatureDataTable.records[recordIndex].Player = newReference;
+      activeSignatureDataTable.records[meta.recordNumber].Player = newReference;
 
     } else if (column === 'Signature') {
       /* when we change signature, we need to
@@ -306,7 +369,7 @@ function processChanges(changes) {
         return; 
       }
 
-      const playerIndex = utilService.bin2dec(abilityEditorService.activeSignatureDataTable.records[recordIndex].Player.substring(16));
+      const playerIndex = utilService.bin2dec(activeSignatureDataTable.records[meta.recordNumber].Player.substring(16));
       const playerRecord = abilityEditorService.playerTable.records[playerIndex];
       const playerArchetype = playerRecord.PlayerType;
 
@@ -323,7 +386,7 @@ function processChanges(changes) {
 
       if (positionSignatureAbilityIndex >= 0) {
         const newReference = utilService.dec2bin(abilityEditorService.positionSignatureAbilityTable.header.tableId, 15) + utilService.dec2bin(positionSignatureAbilityIndex, 17);
-        abilityEditorService.activeSignatureDataTable.records[recordIndex].Signature = newReference;
+        activeSignatureDataTable.records[meta.recordNumber].Signature = newReference;
       }
     }
   });
@@ -348,8 +411,8 @@ function formatTable(table) {
   return table.records.map((record) => {
     return record._fields.reduce((accumulator, currentValue) => {
       if (currentValue.key === 'Signature') {
-        const isValidReference = utilService.bin2dec(currentValue.value.substring(0, 15)) !== 0;
-        
+        const isValidReference = utilService.bin2dec(record.Signature.substring(0, 15)) !== 0;
+
         if (isValidReference) {
           const positionSignatureRecordIndex = utilService.bin2dec(currentValue.value.substring(16));
           const positionSignatureAbility = abilityEditorService.positionSignatureAbilityTable.records[positionSignatureRecordIndex].Ability;
@@ -359,7 +422,7 @@ function formatTable(table) {
         }
       }
       else if (currentValue.key === 'Player') {
-        const isValidReference = utilService.bin2dec(currentValue.value.substring(0, 15)) !== 0;
+        const isValidReference = utilService.bin2dec(record.Player.substring(0, 15)) !== 0;
 
         if (isValidReference) {
           const recordIndex = utilService.bin2dec(currentValue.value.substring(16));
@@ -421,13 +484,17 @@ function formatColumns(table) {
 };
 
 function getSignatureChoices() {
-  return abilityEditorService.signatureAbilityTable.records.map((record) => {
+  return abilityEditorService.signatureAbilityTable.records.filter((record) => {
+    return record.getFieldByKey('Name').unformattedValue !== '00000000000000000000000000000000';
+  }).map((record) => {
     return record.Name;
   });
 };
 
 function getPlayerChoices () {
-  return abilityEditorService.playerTable.records.map((record) => {
+  return abilityEditorService.playerTable.records.filter((record) => {
+    return record.getFieldByKey('LastName').unformattedValue != '00000000000000000000000000000000';
+  }).map((record) => {
     const teamAbbreviation = abilityEditorService.teamTable.records.find((teamRecord) => { return teamRecord.TeamIndex === record.TeamIndex; }).ShortName;
     return `${record.FirstName} ${record.LastName} (${teamAbbreviation})`;
   });
@@ -456,50 +523,4 @@ function calculateColumnWidths(columns, table) {
   });
   
   return widths;
-};
-
-function referenceRenderer(instance, td, row, col, prop, value, cellProperties) {
-  if (value && value.length === 32) {
-    utilService.removeChildNodes(td);
-    const referenceLink = document.createElement('a');
-    const otherTableFlag = value[0];
-
-    if (otherTableFlag === '0') {
-      const tableIndex = utilService.bin2dec(value.substring(3,15));
-      const recordIndex = utilService.bin2dec(value.substring(16));
-      const table = abilityEditorService.file.getTableByIndex(tableIndex);
-
-      if (tableIndex > 0 && table) {
-        referenceLink.innerHTML = `${table.name} - ${recordIndex}`;
-        td.appendChild(referenceLink);
-
-        referenceLink.addEventListener('click', function () {
-          // abilityEditorService.navSteps[abilityEditorService.navSteps.length - 1].column = col;
-          // abilityEditorService.navSteps[abilityEditorService.navSteps.length - 1].recordIndex = row;
-
-          // abilityEditorService.rowIndexToSelect = recordIndex;
-          // abilityEditorService.columnIndexToSelect = 0;
-
-          if (table.header.tableId != abilityEditorService.tableSelector.getValue()) {
-            abilityEditorService.tableSelector.setValue(table.header.tableId);
-          } 
-          else {
-            abilityEditorService.hot.selectCell(recordIndex, 0);
-          }
-
-          // setTimeout(() => {
-            // abilityEditorService.navSteps[abilityEditorService.navSteps.length - 1].recordIndex = recordIndex;
-          // }, 1000);
-        });
-      } else {
-        td.innerHTML = value;
-      }
-    } else {
-      td.innerHTML = value;
-    }
-  } else {
-    td.innerHTML = value;
-  }
-
-  return td;
 };
