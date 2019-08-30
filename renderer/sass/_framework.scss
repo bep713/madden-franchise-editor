@@ -19,8 +19,13 @@ body {
   font-family: $font-base-family;
   font-size: $font-base-size;
   margin: 0;
-  padding: 0 20px;
   overflow: hidden;
+}
+
+#content {
+  overflow: auto;
+  padding: 0 20px;
+  height: 100vh;
 }
 
 h1 {

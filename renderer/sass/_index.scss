@@ -149,7 +149,7 @@ $brand-color: $brand-primary;
   justify-content: space-between;
   flex-direction: column;
 
-  @media(min-width: $breakpoint-sm) {
+  @media(min-width: $breakpoint-md) {
     flex-direction: row;
   }
 
@@ -157,14 +157,10 @@ $brand-color: $brand-primary;
     margin-top: 15px;
     text-align: right;
 
-    @media(min-width: $breakpoint-sm) {
-      margin-top: 0;
-      flex-basis: 60%;
-      align-self: center;
-    }
-
     @media(min-width: $breakpoint-md) {
+      margin-top: 0;
       flex-basis: 50%;
+      align-self: center;
     }
 
     @media(min-width: $breakpoint-lg) {

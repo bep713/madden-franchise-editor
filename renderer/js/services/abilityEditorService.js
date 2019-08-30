@@ -324,8 +324,6 @@ function processChanges(changes) {
         // Usually, the last name is the one with a space. Ex: Leighton Vander Esch or Melvin Gordon III.
         const newFirstName = firstName + ' ' + lastName.substring(0, lastName.indexOf(' '));
         const newLastName = lastName.substring(lastName.indexOf(' ') + 1);
-
-        console.log(newFirstName, newLastName);
         
         newPlayerIndex = abilityEditorService.playerTable.records.findIndex((record) => {
           return record.FirstName === newFirstName && record.LastName === newLastName && record.TeamIndex === teamIndex;
