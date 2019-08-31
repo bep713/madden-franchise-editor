@@ -16,9 +16,6 @@ preferencesService.initialize = function () {
             'defaultEditor': 'open-home',
             'autoSave': [
                 true
-            ],
-            'checkForUpdates': [
-                false
             ]
         }
     },
