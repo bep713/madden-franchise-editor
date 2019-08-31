@@ -74,7 +74,8 @@ function addIpcListeners() {
     }, 3500);
   });
 
-  ipcRenderer.on('update-error', function () {
+  ipcRenderer.on('update-error', function (event, err) {
+    console.log(err);
     if (!updateService.updateErrorElement) { return; }
     showElement(updateService.updateErrorElement);
   });

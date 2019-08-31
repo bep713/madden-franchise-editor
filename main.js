@@ -269,8 +269,7 @@ function addAutoUpdaterListeners() {
   });
 
   autoUpdater.on('error', (err) => {
-    console.log('ERROR: ', err);
-    mainWindow.webContents.send('update-error');
+    mainWindow.webContents.send('update-error', err);
   });
 
   autoUpdater.on('download-progress', (progressObj) => {
