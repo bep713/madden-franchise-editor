@@ -15,6 +15,7 @@ updateService.initialize = () => {
   const noUpdatesAvailableWrapper = document.querySelector(`.${NO_UPDATES_AVAILABLE_BASE_CLASS}`);
   const checkingForUpdatesWrapper = document.querySelector(`.${CHECKING_FOR_UPDATES_BASE_CLASS}`);
   const updateErrorWrapper = document.querySelector('.update-error-wrapper');
+  const downloadProgressWrapper = document.querySelector('.download-progress-wrapper');
 
   updateService.notificationElement = updateWrapper;
   hideElementImmediately(updateWrapper);
@@ -30,6 +31,9 @@ updateService.initialize = () => {
 
   updateService.updateErrorElement = updateErrorWrapper;
   hideElementImmediately(updateErrorWrapper);
+
+  updateService.downloadProgressElement = downloadProgressWrapper;
+  hideElementImmediately(downloadProgressWrapper);
 
   addEventListeners();
 };
@@ -74,6 +78,23 @@ function addIpcListeners() {
     if (!updateService.updateErrorElement) { return; }
     showElement(updateService.updateErrorElement);
   });
+
+  ipcRenderer.on('update-downloading', function () {
+    if (!updateService.downloadProgressElement) { return; }
+    hideNotificationElement(updateService.notificationElement);
+    showElement(updateService.downloadProgressElement);
+  });
+
+  ipcRenderer.on('update-progress', function (event, progressObj) {
+    if (!updateService.downloadProgressElement) { return; }
+    updateService.downloadProgressElement.querySelector('.percent-complete').innerHTML = `${progressObj.percent.toFixed(2)}%`;
+  });
+
+  ipcRenderer.on('update-downloaded', function () {
+    if (!updateService.downloadProgressElement) { return; }
+    updateService.downloadProgressElement.querySelector('.notification-text').innerHTML = 'Installing...';
+    updateService.downloadProgressElement.querySelector('.percent-complete').innerHTML = '';
+  });
 };
 
 function showElement(element) {
@@ -90,8 +111,9 @@ function addEventListeners() {
   
   const reloadAction = updateService.notificationElement.querySelector('.primary-button');
   reloadAction.addEventListener('click', function () {
+    hideNotificationElement(updateService.checkingForUpdatesElement);
     ipcRenderer.send('install-update');
-    hideNotificationElements();
+    // hideNotificationElements();
   });
 
   const dismissAction = updateService.notificationElement.querySelector('.dismiss-action');

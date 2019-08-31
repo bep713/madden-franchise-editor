@@ -201,6 +201,11 @@ menuService.initializeMenu = function () {
           click: menuService.openProjectHomepage
         },
         {
+          id: 'Credits',
+          label: 'Credits',
+          click: menuService.openCredits
+        },
+        {
           id: 'CheckForUpdate',
           label: 'Check for Update',
           click: menuService.checkForUpdate
@@ -357,6 +362,10 @@ menuService.checkForUpdate = function () {
 
 menuService.openProjectHomepage = function () {
   shell.openExternal('https://github.com/bep713/madden-franchise-editor');
+};
+
+menuService.openCredits = function () {
+  ipcRenderer.send('show-credits');
 };
 
 menuService.enableMenuIds = enableMenuIds;

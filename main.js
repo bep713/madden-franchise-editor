@@ -23,6 +23,8 @@ if (isDev) {
 
 const homePage = 'renderer/index.html';
 const workerPage = 'renderer/worker.html';
+const creditsPage = 'renderer/credits.html';
+
 const baseWindowTitle = 'Madden Franchise Editor';
 let currentFilePath = '';
 let waitForFileSaved = false;
@@ -91,6 +93,7 @@ function createWindow () {
 
   preferencesService.initialize();
   autoUpdater.autoInstallOnAppQuit = false;
+  autoUpdater.autoDownload = false;
 }
 
 // This method will be called when Electron has finished
@@ -227,7 +230,24 @@ function addIpcListeners() {
   });
 
   ipcMain.on('install-update', function () {
-    autoUpdater.quitAndInstall();
+    mainWindow.webContents.send('update-downloading');
+    autoUpdater.downloadUpdate().then(() => {
+      autoUpdater.quitAndInstall();
+    });
+  });
+
+  ipcMain.on('show-credits', function () {
+    let creditsWindow = new BrowserWindow({
+      width: 1000,
+      height: 500,
+      parent: mainWindow
+    });
+
+    creditsWindow.loadFile(creditsPage);
+
+    creditsWindow.on('closed', function () {
+      creditsWindow = null;
+    });
   });
 };
 
@@ -241,7 +261,7 @@ function addAutoUpdaterListeners() {
   });
 
   autoUpdater.on('update-available', (info) => {
-
+    mainWindow.webContents.send('update-ready');
   });
 
   autoUpdater.on('update-not-available', (info) => {
@@ -249,6 +269,7 @@ function addAutoUpdaterListeners() {
   });
 
   autoUpdater.on('error', (err) => {
+    console.log('ERROR: ', err);
     mainWindow.webContents.send('update-error');
   });
 
@@ -256,11 +277,11 @@ function addAutoUpdaterListeners() {
     let log_message = "Download speed: " + progressObj.bytesPerSecond;
     log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
     log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
-    sendStatusToWindow(log_message);
+    mainWindow.webContents.send('update-progress', progressObj);
   });
 
   autoUpdater.on('update-downloaded', (info) => {
-    mainWindow.webContents.send('update-ready');
+    mainWindow.webContents.send('update-downloaded');
   });
 };
 
