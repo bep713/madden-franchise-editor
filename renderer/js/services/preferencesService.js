@@ -16,6 +16,9 @@ preferencesService.initialize = function () {
             'defaultEditor': 'open-home',
             'autoSave': [
                 true
+            ],
+            'checkForUpdates': [
+                false
             ]
         }
     },
@@ -33,6 +36,15 @@ preferencesService.initialize = function () {
                                 'key': 'defaultDirectory',
                                 'type': 'directory',
                                 'help': 'The directory to open when you choose to open a file.'
+                            },
+                            {
+                                'label': 'Automatically check for updates',
+                                'key': 'checkForUpdates',
+                                'type': 'checkbox',
+                                'options': [
+                                    { 'label': 'Check for updates on app start', 'value': true }
+                                ],
+                                'help': 'If checked, the app will check to see if a new release has been made each time you start the app. You can manually check by clicking About -> Check for update at the top menu.'
                             },
                             {
                                 'label': 'Auto-Save',

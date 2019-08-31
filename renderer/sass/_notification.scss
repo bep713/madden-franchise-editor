@@ -1,0 +1,123 @@
+.notification-wrapper {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 20px;
+  background: $welcome-link-color;
+  color: #FFF;
+  z-index: 1000;
+  transition: transform 300ms ease-in-out;
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+
+  &.notification-wrapper--green {
+    background: $success-primary;
+  }
+
+  &.notification-wrapper--red {
+    background: $error-primary;
+  }
+
+  @media(min-width: $breakpoint-md) {
+    flex-direction: row;
+  }
+
+  .action-buttons {
+    margin-top: 15px;
+    text-align: right;
+
+    @media(min-width: $breakpoint-md) {
+      margin-top: 0;
+      flex-basis: 50%;
+      align-self: center;
+    }
+
+    @media(min-width: $breakpoint-lg) {
+      flex-basis: inherit;
+    }
+
+    &.action-buttons--sm {
+      @media(min-width: $breakpoint-md) {
+        flex-basis: inherit;
+      }
+    }
+  }
+
+  .action-button {
+    background: transparent;
+    border: none;
+    color: #FFF;
+    text-transform: uppercase;
+    padding: 10px;
+    margin: -10px 0;
+
+    &:hover,
+    &:focus {
+      color: #FFF;
+    }
+
+    &:active,
+    &:focus {
+      outline-color: #FFF;
+    }
+
+    + .action-button {
+      margin-left: 10px;
+    }
+  }
+
+  .primary-button {
+    background-color: #FFF;
+    color: $welcome-link-color;
+    border-radius: 4px;
+
+    &:hover,
+    &:focus {
+      color: $welcome-link-color;
+      background-color: darken(#FFF, 5%);
+    }
+
+    &:active {
+      background-color: darken(#FFF, 15%);
+    }
+
+    &:active,
+    &:focus {
+      outline-color: transparent;
+    }
+  }
+}
+
+.notification-text {
+  @media(min-width: $breakpoint-sm) {
+    flex-basis: 40%;
+  }
+
+  @media(min-width: $breakpoint-md) {
+    flex-basis: 50%;
+  }
+
+  @media(min-width: $breakpoint-lg) {
+    flex-basis: inherit;
+  }
+
+  &.notification-text--lg {
+    @media(min-width: $breakpoint-sm) {
+      flex-basis: inherit;
+    }
+  
+    @media(min-width: $breakpoint-md) {
+      flex-basis: inherit;
+    }
+  
+    @media(min-width: $breakpoint-lg) {
+      flex-basis: inherit;
+    }
+  }
+}
+
+.notification-wrapper--hidden {
+  transform: translateY(90px);
+}

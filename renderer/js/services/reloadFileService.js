@@ -1,7 +1,7 @@
 const { ipcRenderer } = require('electron');
 const HIDDEN_CLASS = 'hidden';
 const BASE_CLASS = 'reload-wrapper';
-const WRAPPER_HIDDEN_CLASS = 'reload-wrapper--hidden';
+const WRAPPER_HIDDEN_CLASS = 'notification-wrapper--hidden';
 
 let reloadFileService = {};
 addIpcListeners();

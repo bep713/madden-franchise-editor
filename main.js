@@ -1,11 +1,14 @@
 const chokidar = require('chokidar');
 const { app, BrowserWindow, ipcMain, Menu, shell } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const preferencesService = require('./renderer/js/services/preferencesService');
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow, workerWindow;
+let mainReady = false;
 let workerReady = false;
+let pendingMainEvents = [];
 let pendingWorkerEvents = [];
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -51,7 +54,23 @@ function createWindow () {
     }
     
     app.quit();
-  })
+  });
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainReady = true;
+    sendAllPendingMainEvents();
+
+    const checkForUpdates = preferencesService.preferences.value('general.checkForUpdates');
+
+    if (checkForUpdates !== undefined && checkForUpdates.length === 1 && checkForUpdates[0] === true) {
+      if (isDev) {
+        autoUpdater.checkForUpdates();
+      }
+      else {
+        autoUpdater.checkForUpdatesAndNotify(); 
+      }
+    }
+  });
 
   workerWindow = new BrowserWindow({ width: 1000, height: 500, show: isDev });
 
@@ -68,9 +87,10 @@ function createWindow () {
   workerWindow.webContents.on('did-finish-load', function () {
     workerReady = true;
     sendAllPendingWorkerEvents();
-  })
+  });
 
   preferencesService.initialize();
+  autoUpdater.autoInstallOnAppQuit = false;
 }
 
 // This method will be called when Electron has finished
@@ -80,12 +100,18 @@ app.on('ready', createWindow)
 
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {
+  mainReady = false;
+  workerReady = false;
+
+  pendingMainEvents = [];
+  pendingWorkerEvents = [];
+
   // On macOS it is common for applications and their menu bar
   // to stay active until the user quits explicitly with Cmd + Q
   if (process.platform !== 'darwin') {
     app.quit()
   }
-})
+});
 
 app.on('activate', () => {
   // On macOS it's common to re-create a window in the app when the
@@ -93,9 +119,11 @@ app.on('activate', () => {
   if (mainWindow === null) {
     createWindow()
   }
-})
+});
 
 addIpcListeners();
+addAutoUpdaterListeners();
+
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
 
@@ -188,7 +216,53 @@ function addIpcListeners() {
   ipcMain.on('save-new-file', function () {
     mainWindow.webContents.send('save-new-file');
   });
-}
+
+  ipcMain.on('check-for-update', function () {
+    if (isDev) {
+      autoUpdater.checkForUpdates();
+    } 
+    else {
+      autoUpdater.checkForUpdatesAndNotify();
+    }
+  });
+
+  ipcMain.on('install-update', function () {
+    autoUpdater.quitAndInstall();
+  });
+};
+
+function addAutoUpdaterListeners() {
+  function sendStatusToWindow(text) {
+    // mainWindow.webContents.send('message', text);
+  }
+
+  autoUpdater.on('checking-for-update', () => {
+    mainWindow.webContents.send('checking-for-updates');
+  });
+
+  autoUpdater.on('update-available', (info) => {
+
+  });
+
+  autoUpdater.on('update-not-available', (info) => {
+    mainWindow.webContents.send('update-not-available');
+  });
+
+  autoUpdater.on('error', (err) => {
+    mainWindow.webContents.send('update-error');
+  });
+
+  autoUpdater.on('download-progress', (progressObj) => {
+    let log_message = "Download speed: " + progressObj.bytesPerSecond;
+    log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
+    log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
+    sendStatusToWindow(log_message);
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    mainWindow.webContents.send('update-ready');
+  });
+};
 
 function setTemporaryWindowTitle(message) {
   setCurrentWindowTitle(`${baseWindowTitle} - ${currentFilePath} - ${message}`);
@@ -209,7 +283,14 @@ function passOrDelayWorkerIpcEvent(event, ...arg) {
 };
 
 function passOrDelayMainIpcEvent(event, ...arg) {
-  mainWindow.webContents.send(event, arg);
+  if (mainReady) {
+    mainWindow.webContents.send(event, arg);
+  } else {
+    pendingMainEvents.push({
+      'event': event,
+      'args': arg
+    });
+  }
 };
 
 function setCurrentWindowTitle(title) {
@@ -220,6 +301,16 @@ function sendAllPendingWorkerEvents() {
   pendingWorkerEvents.forEach((event) => {
     workerWindow.webContents.send(event.event, event.arg);
   });
+
+  pendingWorkerEvents = [];
+};
+
+function sendAllPendingMainEvents() {
+  pendingMainEvents.forEach((event) => {
+    mainWindow.webContents.send(event.event, event.arg);
+  });
+
+  pendingMainEvents = [];
 };
 
 function enableFileMenuItems() {

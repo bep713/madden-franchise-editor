@@ -9,6 +9,7 @@ const Selectr = require('mobius1-selectr');
 const FranchiseFile = require('madden-franchise');
 
 const menuService = require('./menuService.js');
+const updateService = require('./updateService');
 const welcomeService = require('./welcomeService');
 const scheduleService = require('./scheduleService');
 const reloadFileService = require('./reloadFileService');
@@ -26,6 +27,10 @@ setupEvents();
 setupMenu();
 attachServicesToNavigationData();
 addIpcListeners();
+
+reloadFileService.initialize();
+updateService.initialize();
+conditionallyShowCheckForUpdatesNotification();
 
 let navigationService = {};
 navigationService.currentlyOpenedFile = {
@@ -167,10 +172,14 @@ function onNavigate(service) {
 };
 
 function postGenerateNavigation() {
-  reloadFileService.initialize();
+  
 };
 
 function addIpcListeners() {
+  ipcRenderer.on('show-check-for-update-notification', function () {
+    console.log('show checkf or update notification');
+  });
+  
   ipcRenderer.on('save-file', function () {
     navigationService.currentlyOpenedFile.data.save();
   });
@@ -288,4 +297,11 @@ function backupFile(franchiseFile) {
       throw err;
     }
   });
+};
+
+function conditionallyShowCheckForUpdatesNotification() {
+  const checkForUpdates = ipcRenderer.sendSync('getPreferences').general.checkForUpdates;
+  if (checkForUpdates === undefined || checkForUpdates === null) {
+    updateService.showCheckForUpdatesNotification();
+  }
 };

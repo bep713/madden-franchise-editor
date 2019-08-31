@@ -44,7 +44,7 @@ module.exports = welcomeService;
 
 function addVersionNumber() {
   const version = document.querySelector('.version');
-  version.innerHTML = `v${app.getVersion()} BETA`;
+  version.innerHTML = `v${app.getVersion()}`;
 };
 
 function addListeners() {
@@ -67,6 +67,10 @@ function addIpcListeners() {
   ipcRenderer.on('file-loaded', onFileLoaded);
   ipcRenderer.on('reload-file', (event, filePath) => {
     openFileFromPath(filePath);
+  });
+
+  ipcRenderer.on('message', function (event, message) {
+    console.log(message);
   });
 };
 
@@ -231,3 +235,4 @@ function showOpenedFileLinks() {
   const fileActions = document.querySelector('.file-actions');
   utilService.show(fileActions);
 };
+

@@ -15,6 +15,43 @@
         <div class="loader"></div>
       </div>
     </div>
+    <div class="notifications">
+      <div class="notification-wrapper notification-wrapper--hidden checking-for-updates-wrapper hidden">
+        <span class="notification-text notification-text--lg">Checking for updates...</span>
+      </div>
+      <div class="notification-wrapper notification-wrapper--hidden update-wrapper hidden">
+        <span class="notification-text notification-text--lg">There is a new update available. It will take less than 5 minutes to install.</span>
+        <div class="action-buttons action-buttons--sm">
+          <button class="dismiss-action action-button">Dismiss</button>
+          <button class="update-action action-button primary-button">Update</button>
+        </div>
+      </div>
+      <div class="notification-wrapper notification-wrapper--hidden update-error-wrapper hidden notification-wrapper--red">
+          <span class="notification-text notification-text--lg">There was an unexpected error when trying to update.</span>
+          <div class="action-buttons action-buttons--sm">
+            <button class="dismiss-action action-button">Dismiss</button>
+            <button class="update-action action-button primary-button">Update manually</button>
+          </div>
+        </div>
+      <div class="notification-wrapper notification-wrapper--hidden no-updates-available-wrapper hidden notification-wrapper--green">
+        <span class="notification-text notification-text--lg">There are no updates available, you are running the latest verison.</span>
+      </div>
+      <div class="notification-wrapper notification-wrapper--hidden reload-wrapper hidden">
+        <span class="notification-text">This save file has been modified outside of this program. Do you want to reload the file?</span>
+        <div class="action-buttons">
+          <button class="dismiss-action action-button">Dismiss</button>
+          <button class="save-new-action action-button">Branch and save new</button>
+          <button class="reload-action action-button primary-button">Reload</button>
+        </div>
+      </div>
+      <div class="notification-wrapper notification-wrapper--hidden first-update-wrapper hidden">
+        <span class="notification-text notification-text--lg">Automatically check if an update is available when you open this app?</span>
+        <div class="action-buttons action-buttons--sm">
+          <button class="dismiss-action action-button">No</button>
+          <button class="update-action action-button primary-button">Yes</button>
+        </div>
+      </div>
+    </div>
     <script src="js/index.js"></script>
     <script src="../node_modules/handsontable/dist/handsontable.full.min.js"></script>
     <script src="../node_modules/mobius1-selectr/dist/selectr.min.js"></script>

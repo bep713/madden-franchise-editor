@@ -185,10 +185,25 @@ menuService.initializeMenu = function () {
         },
         {
           id: 'LogTable',
-          label: 'Log table to console',
+          label: 'Log Table to Console',
           accelerator: 'CmdOrCtrl+L',
           click: menuService.logTable,
           enabled: false
+        }
+      ]
+    },
+    {
+      label: 'About',
+      submenu: [
+        {
+          id: 'OpenProjectHomepage',
+          label: 'Open Project Homepage',
+          click: menuService.openProjectHomepage
+        },
+        {
+          id: 'CheckForUpdate',
+          label: 'Check for Update',
+          click: menuService.checkForUpdate
         }
       ]
     }
@@ -334,6 +349,14 @@ menuService.logTable = function () {
 
 menuService.openPreferencesWindow = function () {
   ipcRenderer.send('showPreferences');
+};
+
+menuService.checkForUpdate = function () {
+  ipcRenderer.send('check-for-update');
+};
+
+menuService.openProjectHomepage = function () {
+  shell.openExternal('https://github.com/bep713/madden-franchise-editor');
 };
 
 menuService.enableMenuIds = enableMenuIds;
