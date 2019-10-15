@@ -8,6 +8,7 @@ const dialog = remote.dialog;
 const Selectr = require('mobius1-selectr');
 const FranchiseFile = require('madden-franchise');
 
+const utilService = require('./utilService');
 const menuService = require('./menuService.js');
 const updateService = require('./updateService');
 const welcomeService = require('./welcomeService');
@@ -147,17 +148,17 @@ navigationService.runCloseFunction = function () {
   }
 };
 
-// DEV_openFile();
+DEV_openFile();
 
 module.exports = navigationService;
 
 function DEV_openFile() {
   // welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-2019');
   // welcomeService.eventEmitter.emit('open-file', 'D:\\Projects\\Madden 20\\CAREER-BEPFRANCHISE');
-  welcomeService.eventEmitter.emit('open-file', `${MADDEN_SAVE_BASE_FOLDER}\\CAREER-AUG21-05h46m36pm`);
+  welcomeService.eventEmitter.emit('open-file', `${MADDEN_SAVE_BASE_FOLDER}\\CAREER-OCT08-07h37m09p-AUTOSAVE`);
 
   setTimeout(() => {
-    navigationService.onAbilityEditorClicked();
+    navigationService.onSchemaViewerClicked();
   }, 0);
 };
 
@@ -194,7 +195,7 @@ function addIpcListeners() {
   });
 
   ipcRenderer.on('save-new-file', function () {
-    const savePath = dialog.showSaveDialog(remote.getCurrentWindow(), {
+    const savePath = dialog.showSaveDialogSync(remote.getCurrentWindow(), {
       'title': 'Save as...',
       'defaultPath': ipcRenderer.sendSync('getPreferences').general.defaultDirectory
     });
@@ -265,6 +266,34 @@ function setupEvents() {
 
     navigationService.runCloseFunction();
     navigationService.onTableEditorClicked();
+  });
+
+  schemaViewerService.eventEmitter.on('change-schema', function () {
+    const customSchemaFile = dialog.showOpenDialogSync(remote.getCurrentWindow(), {
+      'title': 'Open custom schema file...',
+      'defaultPath': ipcRenderer.sendSync('getPreferences').general.defaultDirectory,
+      'filters': [{
+        name: 'Franchise schema',
+        extensions: ['gz', 'xml', 'ftx']
+      }]
+    });
+
+    if (customSchemaFile) {
+      utilService.show(document.querySelector('.loader-wrapper'));
+      
+      setTimeout(() => {
+        navigationService.currentlyOpenedFile.data = new FranchiseFile(navigationService.currentlyOpenedFile.path, {
+          'schemaOverride': {
+            'path': customSchemaFile[0]
+          }
+        });
+
+        navigationService.currentlyOpenedFile.data.on('ready', () => {
+          navigationService.onSchemaViewerClicked();
+          utilService.hide(document.querySelector('.loader-wrapper'));
+        });
+      }, 10)
+    }
   });
 };
 

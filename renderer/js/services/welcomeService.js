@@ -186,7 +186,7 @@ function refreshRecentFilesList() {
 };
 
 function openFile () {
-  const filePath = dialog.showOpenDialog(remote.getCurrentWindow(), {
+  const filePath = dialog.showOpenDialogSync(remote.getCurrentWindow(), {
     title: 'Select franchise file to open',
     defaultPath: ipcRenderer.sendSync('getPreferences').general.defaultDirectory,
     filters: [{

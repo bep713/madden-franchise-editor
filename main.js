@@ -34,7 +34,7 @@ let baseFileWatcher;
 function createWindow () {
 
   // Create the browser window.
-  mainWindow = new BrowserWindow({ width: 1600, height: 900 })
+  mainWindow = new BrowserWindow({ width: 1600, height: 900, webPreferences: { nodeIntegration: true }})
 
   // and load the index.html of the app.
   mainWindow.loadFile(homePage)
@@ -74,7 +74,7 @@ function createWindow () {
     }
   });
 
-  workerWindow = new BrowserWindow({ width: 1000, height: 500, show: isDev });
+  workerWindow = new BrowserWindow({ width: 1000, height: 500, show: isDev, webPreferences: { nodeIntegration: true }});
 
   workerWindow.loadFile(workerPage);
 

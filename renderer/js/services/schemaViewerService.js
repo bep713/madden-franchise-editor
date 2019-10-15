@@ -1,3 +1,4 @@
+const EventEmitter = require('events');
 const utilService = require('./utilService');
 
 let schemaViewerService = {};
@@ -7,23 +8,30 @@ schemaViewerService.numberOfSchemasToShow = 100;
 schemaViewerService.fields = null;
 schemaViewerService.visibleFields = null;
 schemaViewerService.currentOffset = 0;
+schemaViewerService.schemaInfo = null;
+schemaViewerService.eventEmitter = new EventEmitter();
 
 schemaViewerService.start = function (file) {
   utilService.show(document.querySelector('.loader-wrapper'));
   schemaViewerService.currentOffset = 0;
+  
   addListeners();
 
   if (file.isLoaded) {
-    schemaViewerService.file = file;
-    schemaViewerService.loadFields();
-    utilService.hide(document.querySelector('.loader-wrapper'));
+    schemaViewerService.runStartupTasks(file);
   } else {
     file.on('ready', function () {
-      schemaViewerService.file = file;
-      schemaViewerService.loadFields();
-      utilService.hide(document.querySelector('.loader-wrapper'));
+      schemaViewerService.runStartupTasks(file);
     });
   }
+};
+
+schemaViewerService.runStartupTasks = function (file) {
+  schemaViewerService.file = file;
+  schemaViewerService.schemaInfo = file.schemaList.meta;
+  showSchemaVersionInfo(schemaViewerService.schemaInfo);
+  schemaViewerService.loadFields();
+  utilService.hide(document.querySelector('.loader-wrapper'));
 };
 
 schemaViewerService.loadFields = function () {
@@ -81,6 +89,7 @@ function addListeners() {
   addFieldListener();
   addTableListener();
   addTypeListener();
+  addChangeSchemaListener();
 };
 
 function addLoadMoreListener() {
@@ -117,6 +126,13 @@ function addTypeListener() {
   document.querySelector('#type-filter').addEventListener('input', filterField);
 };
 
+function addChangeSchemaListener() {
+  const changeSchema = document.querySelector('.change-schema');
+  changeSchema.addEventListener('click', function () {
+    schemaViewerService.eventEmitter.emit('change-schema');
+  });
+};
+
 function filterField() {
   clearFields();
   
@@ -142,4 +158,14 @@ function clearFields() {
   while (results.firstChild) {
     results.removeChild(results.firstChild);
   }
+};
+
+function showSchemaVersionInfo() {
+  const major = document.querySelector('.schema-version-wrapper .major');
+  const minor = document.querySelector('.schema-version-wrapper .minor');
+  const year = document.querySelector('.schema-version-wrapper .year');
+
+  major.innerHTML = schemaViewerService.schemaInfo.major;
+  minor.innerHTML = schemaViewerService.schemaInfo.minor;
+  year.innerHTML = 'M' + schemaViewerService.schemaInfo.gameYear;
 };

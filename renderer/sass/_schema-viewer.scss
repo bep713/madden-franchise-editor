@@ -1,3 +1,9 @@
+.filter-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .filter-header {
   h3 {
     margin-top: 0;
@@ -70,4 +76,12 @@
 .load-more {
   padding: 10px;
   width: 100%;
+}
+
+.schema-info {
+  text-align: center;
+}
+
+.schema-version-label {
+  margin-bottom: 6px;
 }

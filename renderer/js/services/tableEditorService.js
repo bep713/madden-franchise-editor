@@ -178,7 +178,7 @@ function onPreferencesUpdated(e, preferences) {
 };
 
 function onExportFile() {
-  let filePath = dialog.showSaveDialog(remote.getCurrentWindow(), {
+  let filePath = dialog.showSaveDialogSync(remote.getCurrentWindow(), {
     'title': 'Select destination file for table export',
     'defaultPath': app.getPath('documents'),
     'filters': [
@@ -212,7 +212,7 @@ function onExportFile() {
 };
 
 function onImportFile() {
-  let filePath = dialog.showOpenDialog(remote.getCurrentWindow(), {
+  let filePath = dialog.showOpenDialogSync(remote.getCurrentWindow(), {
     'title': 'Select file for table import',
     'defaultPath': app.getPath('documents'),
     'filters': [
