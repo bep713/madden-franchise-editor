@@ -1,0 +1,35 @@
+.schema-manager-wrapper {
+  padding: 20px 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 40px;
+}
+
+.schema-list-wrapper {
+  list-style: none;
+  padding-inline-start: 0;
+}
+
+.schema-list-item {
+  padding: 10px;
+  border: 1px solid #e6e6e6;
+
+  &:hover {
+    cursor: pointer;
+    background-color: darken(#fff, 5%)
+  }
+
+  + .schema-list-item {
+    margin-top: 5px;
+  }
+}
+
+.schema-actions {
+  margin-top: 33px;
+
+  .action-button {
+    + .action-button {
+      margin-top: 10px;
+    }
+  }
+}

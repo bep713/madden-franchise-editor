@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const chokidar = require('chokidar');
 const { app, BrowserWindow, ipcMain, Menu, shell } = require('electron');
 const { autoUpdater } = require('electron-updater');
@@ -5,7 +7,7 @@ const preferencesService = require('./renderer/js/services/preferencesService');
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-let mainWindow, workerWindow;
+let mainWindow, workerWindow, schemaWindow;
 let mainReady = false;
 let workerReady = false;
 let pendingMainEvents = [];
@@ -24,6 +26,7 @@ if (isDev) {
 const homePage = 'renderer/index.html';
 const workerPage = 'renderer/worker.html';
 const creditsPage = 'renderer/credits.html';
+const schemaPage = 'renderer/schema-manager.html';
 
 const baseWindowTitle = 'Madden Franchise Editor';
 let currentFilePath = '';
@@ -249,7 +252,40 @@ function addIpcListeners() {
       creditsWindow = null;
     });
   });
+
+  ipcMain.on('show-schema-manager', function () {
+    createSchemaWindow();
+  });
+
+  ipcMain.on('load-schema', function (event, arg) {
+    mainWindow.webContents.send('load-schema', arg);
+  });
+
+  ipcMain.on('load-schema-done', function (event, arg) {
+    schemaWindow.webContents.send('load-schema-done', arg);
+  });
 };
+
+function createSchemaWindow() {
+  schemaWindow = new BrowserWindow({
+    width: 600,
+    height: 650,
+    webPreferences: {
+      nodeIntegration: true
+    }
+  });
+
+  if (isDev) {
+    schemaWindow.webContents.openDevTools();
+  }
+
+  schemaWindow.setMenuBarVisibility(false);
+  schemaWindow.loadFile(schemaPage);
+
+  schemaWindow.on('closed', function () {
+    schemaWindow = null;
+  });
+}
 
 function addAutoUpdaterListeners() {
   function sendStatusToWindow(text) {

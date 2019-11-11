@@ -14,6 +14,7 @@ const updateService = require('./updateService');
 const welcomeService = require('./welcomeService');
 const scheduleService = require('./scheduleService');
 const reloadFileService = require('./reloadFileService');
+const savedSchemaService = require('./savedSchemaService');
 const tableEditorService = require('./tableEditorService');
 const schemaViewerService = require('./schemaViewerService');
 const abilityEditorService = require('./abilityEditorService');
@@ -159,10 +160,10 @@ module.exports = navigationService;
 function DEV_openFile() {
   // welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-2019');
   // welcomeService.eventEmitter.emit('open-file', 'D:\\Projects\\Madden 20\\CAREER-BEPFRANCHISE');
-  welcomeService.eventEmitter.emit('open-file', `${MADDEN_SAVE_BASE_FOLDER}\\CAREER-NOV06-10h56m18am`);
+  // welcomeService.eventEmitter.emit('open-file', `${MADDEN_SAVE_BASE_FOLDER}\\CAREER-NOV06-10h56m18am`);
 
   setTimeout(() => {
-    navigationService.onSchemaViewerClicked();
+    // navigationService.onSchemaViewerClicked();
   }, 0);
 };
 
@@ -215,12 +216,52 @@ function addIpcListeners() {
       navigationService.currentlyOpenedFile.data.save();
     }
   });
+
+  ipcRenderer.on('load-schema', function (_, args) {
+    utilService.show(document.querySelector('.loader-wrapper'));
+      
+    setTimeout(() => {
+      navigationService.currentlyOpenedFile.data = new FranchiseFile(navigationService.currentlyOpenedFile.path, {
+        'schemaOverride': {
+          'path': args.path
+        }
+      });
+
+      navigationService.currentlyOpenedFile.data.on('error', (err) => {
+        ipcRenderer.send('load-schema-done', {
+          'status': 'error',
+          'error': err
+        });
+      });
+
+      navigationService.currentlyOpenedFile.data.on('ready', () => {
+        navigationService.onSchemaViewerClicked();
+
+        if (args.saveSchema) {
+          savedSchemaService.saveSchema(args.path, {
+            'gameYear': navigationService.currentlyOpenedFile.data.schemaList.meta.gameYear,
+            'major': navigationService.currentlyOpenedFile.data.schemaList.meta.major,
+            'minor': navigationService.currentlyOpenedFile.data.schemaList.meta.minor,
+            'fileExtension': path.extname(navigationService.currentlyOpenedFile.data.schemaList.path)
+          })
+        }
+
+        utilService.hide(document.querySelector('.loader-wrapper'));
+
+        ipcRenderer.send('load-schema-done', {
+          'status': 'successful'
+        });
+      });
+    }, 10)
+  })
 };
 
 function setupEvents() {
   welcomeService.eventEmitter.on('open-file', function (file) {
     navigationService.currentlyOpenedFile.path = file;
-    navigationService.currentlyOpenedFile.data = new FranchiseFile(file);
+    navigationService.currentlyOpenedFile.data = new FranchiseFile(file, {
+      'schemaDirectory': savedSchemaService.getSchemaPath()
+    });
     navigationService.currentlyOpenedFile.gameYear = navigationService.currentlyOpenedFile.data._gameYear;
 
     ipcRenderer.send('file-loaded', {
@@ -271,31 +312,7 @@ function setupEvents() {
   });
 
   schemaViewerService.eventEmitter.on('change-schema', function () {
-    const customSchemaFile = dialog.showOpenDialogSync(remote.getCurrentWindow(), {
-      'title': 'Open custom schema file...',
-      'defaultPath': ipcRenderer.sendSync('getPreferences').general.defaultDirectory,
-      'filters': [{
-        name: 'Franchise schema',
-        extensions: ['gz', 'xml', 'ftx']
-      }]
-    });
-
-    if (customSchemaFile) {
-      utilService.show(document.querySelector('.loader-wrapper'));
-      
-      setTimeout(() => {
-        navigationService.currentlyOpenedFile.data = new FranchiseFile(navigationService.currentlyOpenedFile.path, {
-          'schemaOverride': {
-            'path': customSchemaFile[0]
-          }
-        });
-
-        navigationService.currentlyOpenedFile.data.on('ready', () => {
-          navigationService.onSchemaViewerClicked();
-          utilService.hide(document.querySelector('.loader-wrapper'));
-        });
-      }, 10)
-    }
+    ipcRenderer.send('show-schema-manager');
   });
 };
 

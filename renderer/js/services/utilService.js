@@ -174,4 +174,34 @@ utilService.removeChildNodes = function (node) {
   }
 };
 
+utilService.hideNotificationElement = function (element, hiddenClass, wrapperHiddenClass) {
+  const HIDDEN_CLASS = hiddenClass ? hiddenClass : 'hidden';
+  const WRAPPER_HIDDEN_CLASS = wrapperHiddenClass ? wrapperHiddenClass : 'notification-wrapper--hidden';
+
+  if (!element) { return; }
+  element.classList.add(WRAPPER_HIDDEN_CLASS);
+
+  setTimeout(() => {
+    element.classList.add(HIDDEN_CLASS);
+  }, 300);
+};
+
+utilService.showNotificationElement = function (selector, timeToShow, hiddenClass, wrapperHiddenClass) {
+  const HIDDEN_CLASS = hiddenClass ? hiddenClass : 'hidden';
+  const WRAPPER_HIDDEN_CLASS = wrapperHiddenClass ? wrapperHiddenClass : 'notification-wrapper--hidden';
+  
+  const notification = document.querySelector(selector);
+  notification.classList.remove(HIDDEN_CLASS);
+
+  setTimeout(() => {
+    notification.classList.remove(WRAPPER_HIDDEN_CLASS);
+
+    if (timeToShow) {
+      setTimeout(() => {
+        utilService.hideNotificationElement(notification);
+      }, timeToShow);
+    }
+  }, 20);
+}
+
 module.exports = utilService;

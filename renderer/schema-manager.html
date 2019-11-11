@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Schema Manager - Madden Franchise Editor</title>
+  <link rel="stylesheet" href="css/app-manifest.css">
+  <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet">
+</head>
+<body>
+  <div id="content">
+    <div class="loader-wrapper hidden">
+      <div class="loader"></div>
+    </div>
+    <div class="schema-manager-wrapper">
+      <div class="available-schemas">
+        <div class="title">Select a schema</div>
+        <ul class="schema-list-wrapper">
+          
+        </ul>
+      </div>
+      <div class="schema-actions">
+        <div id="add-schema" class="action-button">Add schema from file</div>
+        <div id="search-for-schemas" class="action-button">Search for schemas in the game</div>
+      </div>
+    </div>
+  </div>
+  <div class="notifications">
+    <div class="notification-wrapper notification-wrapper--green schema-loaded notification-wrapper--hidden hidden">
+      <span class="notification-text notification-text--lg">Schema loaded successfully.</span>
+    </div>
+    <div class="notification-wrapper notification-wrapper--red schema-error notification-wrapper--hidden hidden">
+        <span class="notification-text notification-text--lg">There was a problem loading the schema.</span>
+      </div>
+  </div>
+  <script src="js/schemaManager.js"></script>
+</body>
+</html>
