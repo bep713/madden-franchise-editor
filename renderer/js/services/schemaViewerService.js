@@ -29,7 +29,7 @@ schemaViewerService.start = function (file) {
 schemaViewerService.runStartupTasks = function (file) {
   schemaViewerService.file = file;
   schemaViewerService.schemaInfo = file.schemaList.meta;
-  showSchemaVersionInfo(schemaViewerService.schemaInfo);
+  manageSchemaVersionInfo(schemaViewerService.schemaInfo);
   schemaViewerService.loadFields();
   utilService.hide(document.querySelector('.loader-wrapper'));
 };
@@ -160,7 +160,7 @@ function clearFields() {
   }
 };
 
-function showSchemaVersionInfo() {
+function manageSchemaVersionInfo() {
   const major = document.querySelector('.schema-version-wrapper .major');
   const minor = document.querySelector('.schema-version-wrapper .minor');
   const year = document.querySelector('.schema-version-wrapper .year');
@@ -168,4 +168,28 @@ function showSchemaVersionInfo() {
   major.innerHTML = schemaViewerService.schemaInfo.major;
   minor.innerHTML = schemaViewerService.schemaInfo.minor;
   year.innerHTML = 'M' + schemaViewerService.schemaInfo.gameYear;
+
+  const expectedMajor = document.querySelector('.schema-version-wrapper .expected-major');
+  const expectedMinor = document.querySelector('.schema-version-wrapper .expected-minor');
+  const expectedYear = document.querySelector('.schema-version-wrapper .expected-year');
+
+  expectedMajor.innerHTML = schemaViewerService.file.expectedSchemaVersion.major;
+  expectedMinor.innerHTML = schemaViewerService.file.expectedSchemaVersion.minor;
+  expectedYear.innerHTML = 'M' + schemaViewerService.file.expectedSchemaVersion.gameYear;
+
+  const expectedSchema = schemaViewerService.file.expectedSchemaVersion
+  const usedSchema = schemaViewerService.schemaInfo;
+
+  const schemaMatch = expectedSchema.major === usedSchema.major && expectedSchema.minor === usedSchema.minor && expectedSchema.gameYear === usedSchema.gameYear;
+
+  const schemaStatus = document.querySelector('.expected-schema-wrapper .status');
+
+  if (schemaStatus) {
+    if (schemaMatch) {
+      schemaStatus.classList.add('match'); 
+    }
+    else {
+      schemaStatus.classList.add('no-match');
+    }
+  }
 };

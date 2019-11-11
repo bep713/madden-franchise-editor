@@ -55,7 +55,15 @@
           <button class="update-action action-button primary-button">Yes</button>
         </div>
       </div>
+      <div class="notification-wrapper notification-wrapper--hidden schema-mismatch hidden notification-wrapper--red">
+        <span class="notification-text">We cannot find an exact match for this file's schema. Open the schema management page?</span>
+        <div class="action-buttons action-buttons--sm">
+          <button class="dismiss-action action-button">No</button>
+          <button class="navigation-action action-button primary-button">Yes</button>
+        </div>
+      </div>
     </div>
+  </div>
     <script src="js/index.js"></script>
     <script src="../node_modules/handsontable/dist/handsontable.full.min.js"></script>
     <script src="../node_modules/mobius1-selectr/dist/selectr.min.js"></script>

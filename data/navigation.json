@@ -32,16 +32,6 @@
       }
     },
     {
-      "id": "schema-viewer",
-      "text": "Schema Viewer",
-      "service": "schemaViewerService",
-      "clickListener": "onSchemaViewerClicked",
-      "availableVersions": [19,20],
-      "menu": {
-        "disable": ["Save", "Export", "Import", "LogTable"]
-      }
-    },
-    {
       "id": "ability-editor",
       "text": "Ability Editor",
       "service": "abilityEditorService",
@@ -50,6 +40,16 @@
       "menu": {
         "enable": ["Save"],
         "disable": ["Export", "Import", "LogTable"]
+      }
+    },
+    {
+      "id": "schema-management",
+      "text": "Schema Management",
+      "service": "schemaViewerService",
+      "clickListener": "onSchemaViewerClicked",
+      "availableVersions": [19,20],
+      "menu": {
+        "disable": ["Save", "Export", "Import", "LogTable"]
       }
     }
   ]

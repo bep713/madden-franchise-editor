@@ -17,6 +17,7 @@ const reloadFileService = require('./reloadFileService');
 const tableEditorService = require('./tableEditorService');
 const schemaViewerService = require('./schemaViewerService');
 const abilityEditorService = require('./abilityEditorService');
+const schemaMismatchService = require('./schemaMismatchService');
 
 const services = [welcomeService, scheduleService, tableEditorService, schemaViewerService, abilityEditorService];
 const navigationData = require('../../../data/navigation.json');
@@ -31,6 +32,7 @@ addIpcListeners();
 
 reloadFileService.initialize();
 updateService.initialize();
+
 conditionallyShowCheckForUpdatesNotification();
 
 let navigationService = {};
@@ -120,7 +122,7 @@ navigationService.onTableEditorClicked = function () {
 navigationService.onSchemaViewerClicked = function () {
   onNavigate(schemaViewerService);
   navigationService.loadPage('schema-viewer.html');
-  appendNavigation('schema-viewer');
+  appendNavigation('schema-management');
   postGenerateNavigation();
 
   schemaViewerService.start(navigationService.currentlyOpenedFile.data);
@@ -148,14 +150,16 @@ navigationService.runCloseFunction = function () {
   }
 };
 
-// DEV_openFile();
+if (process.env.NODE_ENV === 'development') {
+  DEV_openFile(); 
+}
 
 module.exports = navigationService;
 
 function DEV_openFile() {
   // welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-2019');
   // welcomeService.eventEmitter.emit('open-file', 'D:\\Projects\\Madden 20\\CAREER-BEPFRANCHISE');
-  welcomeService.eventEmitter.emit('open-file', `${MADDEN_SAVE_BASE_FOLDER}\\CAREER-OCT08-07h37m09p-AUTOSAVE`);
+  welcomeService.eventEmitter.emit('open-file', `${MADDEN_SAVE_BASE_FOLDER}\\CAREER-NOV06-10h56m18am`);
 
   setTimeout(() => {
     navigationService.onSchemaViewerClicked();
@@ -225,6 +229,10 @@ function setupEvents() {
     });
 
     backupFile(navigationService.currentlyOpenedFile);
+    schemaMismatchService.initialize(navigationService.currentlyOpenedFile.data);
+    schemaMismatchService.eventEmitter.on('navigate', function () {
+      navigationService.onSchemaViewerClicked();
+    });
 
     navigationService.currentlyOpenedFile.data.on('saving', function () {
       ipcRenderer.send('saving');
@@ -233,12 +241,6 @@ function setupEvents() {
   
     navigationService.currentlyOpenedFile.data.on('saved', function (game) {
       ipcRenderer.send('saved');
-    });
-
-    navigationService.currentlyOpenedFile.data.on('tables-done', function () {
-      // const file = navigationService.currentlyOpenedFile.data;
-      // tableEditorService.onFileReady(file);
-      // schemaViewerService.onFileReady(file);
     });
   });
 

@@ -23,7 +23,7 @@
     }
 
     &:last-child {
-      margin-right: 0;
+      // margin-right: 0;
     }
   }
 }
@@ -79,9 +79,37 @@
 }
 
 .schema-info {
-  text-align: center;
+  flex-shrink: 0;
+  
+  >div {
+    display: grid;
+    grid-template-columns: 1fr 0.75fr 0.5fr;
+    grid-column-gap: 10px;
+    
+    + div {
+      margin-top: 5px;
+    }
+  }
+
+  .status {
+    &.match {
+      &:before {
+        content: "✓";
+        color: green;
+      }
+    }
+
+    &.no-match {
+      &:before {
+        content: "X";
+        color: red;
+      }
+    }
+  }
 }
 
-.schema-version-label {
-  margin-bottom: 6px;
+.schema-version-wrapper {
+  .year, .expected-year {
+    margin-right: 5px;
+  }
 }
