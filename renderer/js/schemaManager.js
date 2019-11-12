@@ -5,6 +5,8 @@ const app = remote.app;
 const utilService = require('./js/services/utilService');
 const savedSchemaService = require('./js/services/savedSchemaService');
 
+let schemaInformation;
+
 setupListeners();
 setupIpcListeners();
 setupSchemaService();
@@ -48,6 +50,21 @@ function setupIpcListeners() {
       showSchemaErrorNotification();
     }
   });
+
+  ipcRenderer.on('get-schema-info-response', function (_, arg) {
+    schemaInformation = arg;
+
+    const loadedSchema = document.querySelector(`.schema-list-wrapper li[data-game-year="${schemaInformation.loaded.gameYear}"][data-major="${schemaInformation.loaded.major}"][data-minor="${schemaInformation.loaded.minor}"]`);
+    const expectedSchema = document.querySelector(`.schema-list-wrapper li[data-game-year="${schemaInformation.expected.gameYear}"][data-major="${schemaInformation.expected.major}"][data-minor="${schemaInformation.expected.minor}"]`);
+
+    if (loadedSchema) {
+      loadedSchema.classList.add('loaded-schema');
+    }
+
+    if (expectedSchema) {
+      expectedSchema.classList.add('expected-schema');
+    }
+  });
 };
 
 function setupSchemaService () {
@@ -75,8 +92,14 @@ function parseAvailableSchemas() {
       }, 20);
     });
 
+    listItem.dataset.gameYear = schema.gameYear;
+    listItem.dataset.major = schema.major;
+    listItem.dataset.minor = schema.minor;
+
     list.appendChild(listItem);
   });
+
+  ipcRenderer.send('get-schema-info-request');
 };
 
 function showSchemaLoadedNotification() {

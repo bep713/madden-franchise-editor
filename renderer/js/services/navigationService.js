@@ -138,6 +138,10 @@ navigationService.onAbilityEditorClicked = function () {
   abilityEditorService.start(navigationService.currentlyOpenedFile.data);
 };
 
+navigationService.refreshCurrentPage = function () {
+  navigationService[navigationService.currentlyOpenService.navigationData.clickListener]();
+};
+
 navigationService.loadPage = function (pagePath) {
   const page = fs.readFileSync(path.join(__dirname, '..\\..\\', pagePath));
   const content = document.querySelector('#content');
@@ -145,7 +149,6 @@ navigationService.loadPage = function (pagePath) {
 };
 
 navigationService.runCloseFunction = function () {
-
   if (navigationService.currentlyOpenService && navigationService.currentlyOpenService.onClose) {
     navigationService.currentlyOpenService.onClose();
   }
@@ -218,6 +221,7 @@ function addIpcListeners() {
   });
 
   ipcRenderer.on('load-schema', function (_, args) {
+    if (!navigationService.currentlyOpenedFile.path) { return; }
     utilService.show(document.querySelector('.loader-wrapper'));
       
     setTimeout(() => {
@@ -235,7 +239,7 @@ function addIpcListeners() {
       });
 
       navigationService.currentlyOpenedFile.data.on('ready', () => {
-        navigationService.onSchemaViewerClicked();
+        navigationService.refreshCurrentPage();
 
         if (args.saveSchema) {
           savedSchemaService.saveSchema(args.path, {
@@ -252,8 +256,15 @@ function addIpcListeners() {
           'status': 'successful'
         });
       });
-    }, 10)
-  })
+    }, 10);
+  });
+
+  ipcRenderer.on('get-schema-info-request', function () {
+    ipcRenderer.send('get-schema-info-response', {
+      'expected': navigationService.currentlyOpenedFile.data.expectedSchemaVersion,
+      'loaded': navigationService.currentlyOpenedFile.data.schemaList.meta
+    });
+  });
 };
 
 function setupEvents() {

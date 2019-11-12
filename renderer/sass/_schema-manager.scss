@@ -19,6 +19,23 @@
     background-color: darken(#fff, 5%)
   }
 
+  &.loaded-schema {
+    background-color: #d1d1d1;
+
+    &:hover {
+      cursor: default;
+      pointer-events: none;
+    }
+  }
+
+  &.expected-schema {
+    &:before {
+      content: "✓";
+      color: green;
+      margin-right: 5px;
+    }
+  }
+
   + .schema-list-item {
     margin-top: 5px;
   }

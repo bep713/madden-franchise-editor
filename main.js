@@ -139,6 +139,11 @@ function addIpcListeners() {
     pendingSaves = [];
     setCurrentWindowTitle(baseWindowTitle);
     disableFileMenuItems();
+
+    if (schemaWindow) {
+      schemaWindow.close();
+    }
+
     baseFileWatcher.close();
   });
   
@@ -178,8 +183,11 @@ function addIpcListeners() {
   
   ipcMain.on('saved', function () {
     setTemporaryWindowTitle('Saved');
-    waitForFileSaved = false;
-    pendingSaves.pop();
+
+    setTimeout(() => {
+      waitForFileSaved = false;
+      pendingSaves.pop();
+    }, 500);
   });
 
   ipcMain.on('exporting', function () {
@@ -264,9 +272,22 @@ function addIpcListeners() {
   ipcMain.on('load-schema-done', function (event, arg) {
     schemaWindow.webContents.send('load-schema-done', arg);
   });
+
+  ipcMain.on('get-schema-info-request', function () {
+    mainWindow.webContents.send('get-schema-info-request');
+  });
+
+  ipcMain.on('get-schema-info-response', function (event, arg) {
+    schemaWindow.webContents.send('get-schema-info-response', arg);
+  });
 };
 
 function createSchemaWindow() {
+  if (schemaWindow) { 
+    schemaWindow.moveTop();
+    return;
+  }
+
   schemaWindow = new BrowserWindow({
     width: 600,
     height: 650,
