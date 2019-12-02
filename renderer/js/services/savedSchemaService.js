@@ -20,8 +20,25 @@ savedSchemaService.getSavedSchemas = () => {
   return schemaPicker.retrieveSchemas(PATH_TO_SCHEMA_FILES);
 };
 
+savedSchemaService.schemaExists = (meta) => {
+  const schemas = savedSchemaService.getSavedSchemas();
+  return schemas.find((schema) => { return schema.gameYear === meta.gameYear && schema.major === meta.major && schema.minor === meta.minor });
+};
+
 savedSchemaService.saveSchema = (pathToSchema, meta) => {
   fs.createReadStream(pathToSchema).pipe(fs.createWriteStream(path.join(PATH_TO_SCHEMA_FILES, `M${meta.gameYear}_${meta.major}_${meta.minor}${meta.fileExtension}`)));
+};
+
+savedSchemaService.saveSchemaData = (data, meta) => {
+  return new Promise((resolve, reject) => {
+    fs.writeFile(path.join(PATH_TO_SCHEMA_FILES, `M${meta.gameYear}_${meta.major}_${meta.minor}${meta.fileExtension}`), data, function (err) {
+      if (err) {
+        reject(err);
+      }
+
+      resolve();
+    });
+  });
 };
 
 savedSchemaService.getSchemaPath = () => {

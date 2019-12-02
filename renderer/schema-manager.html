@@ -12,7 +12,8 @@
 <body>
   <div id="content">
     <div class="loader-wrapper hidden">
-      <div class="loader"></div>
+      <div class="loader loader--filled-bg"></div>
+      <div class="progress-message">0%</div>
     </div>
     <div class="schema-manager-wrapper">
       <div class="available-schemas">
@@ -23,7 +24,11 @@
       </div>
       <div class="schema-actions">
         <div id="add-schema" class="action-button">Add schema from file</div>
-        <div id="search-for-schemas" class="action-button">Search for schemas in the game</div>
+        <div class="schema-search-wrapper">
+          <div class="search-header">Search for schemas in the game files</div>
+          <div id="search-for-schemas-quick" class="action-button">Quick scan</div>
+          <div id="search-for-schemas-full" class="action-button">Complete scan (takes awhile)</div>
+        </div>
       </div>
     </div>
   </div>

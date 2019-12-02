@@ -50,3 +50,31 @@
     }
   }
 }
+
+.schema-search-wrapper {
+  margin-top: 10px;
+
+  .search-header {
+    margin-bottom: 10px;
+  }
+
+  .action-button {
+    margin-left: 10px;
+
+    + .action-button {
+      margin-top: 10px;
+    }
+  }
+}
+
+.progress-message {
+  position: absolute;
+  top: calc(50% - 32px);
+  left: 2px;
+  right: 0;
+  text-align: center;
+}
+
+.loader--filled-bg {
+  background: #FFFFFF;
+}

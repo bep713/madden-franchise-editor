@@ -2,8 +2,11 @@ const { ipcRenderer, remote, shell } = require('electron');
 const dialog = remote.dialog;
 const app = remote.app;
 
+const fs = require('fs');
+const path = require('path');
 const utilService = require('./js/services/utilService');
 const savedSchemaService = require('./js/services/savedSchemaService');
+const schemaSearchService = require('./js/services/schemaSearchService');
 
 let schemaInformation;
 
@@ -14,7 +17,6 @@ parseAvailableSchemas();
 
 function setupListeners() {
   const addSchema = document.querySelector('#add-schema');
-
   addSchema.addEventListener('click', () => {
     const customSchemaFile = dialog.showOpenDialogSync(remote.getCurrentWindow(), {
       'title': 'Open custom schema file...',
@@ -36,7 +38,97 @@ function setupListeners() {
       }, 20);
     }
   });
+
+  const searchSchemas = document.querySelector('#search-for-schemas-full');
+  searchSchemas.addEventListener('click', () => {
+    const maddenInstallDirectory = dialog.showOpenDialogSync(remote.getCurrentWindow(), {
+      'title': 'Select Madden Executable',
+      'defaultPath': 'C:\\Program Files (x86)\\Origin Games',
+      'properties': ['openFile'],
+      'filters': [{
+        name: 'Game executable',
+        extensions: ['exe']
+      }]
+    });
+          
+    if (maddenInstallDirectory) {
+      utilService.show(document.querySelector('.loader-wrapper'));
+      
+      setTimeout(() => {
+        console.time('search');
+        getCompleteScanDirectories(maddenInstallDirectory[0]).then((dirs) => {
+          saveSchemas(dirs);
+        });
+      }, 20);
+    }
+  });
+
+  const searchSchemasQuick = document.querySelector('#search-for-schemas-quick');
+  searchSchemasQuick.addEventListener('click', () => {
+    
+    // if (isDev()) {
+      // getQuickScanDirectories('C:\\Program Files (x86)\\Origin Games\\Madden NFL 20\\Madden20.exe').then((dirs) => {
+        // saveSchemas(dirs);
+        // });
+        // }
+        // else {
+    const maddenInstallDirectory = dialog.showOpenDialogSync(remote.getCurrentWindow(), {
+      'title': 'Select Madden Executable',
+      'defaultPath': 'C:\\Program Files (x86)\\Origin Games',
+      'properties': ['openFile'],
+      'filters': [{
+        name: 'Game executable',
+        extensions: ['exe']
+      }]
+    });
+          
+    if (maddenInstallDirectory) {
+      utilService.show(document.querySelector('.loader-wrapper'));
+    
+      setTimeout(() => {
+        console.time('search');
+        getQuickScanDirectories(maddenInstallDirectory[0]).then((dirs) => {
+          saveSchemas(dirs);
+        });
+      }, 20);
+    }
+  });
+
+  function saveSchemas(directoriesToSearch) {
+    let dirsDone = 0;
+    updateProgressMessage(0);
+
+    schemaSearchService.search(directoriesToSearch)
+      .then((schemas) => {
+        let newSchemas = [];
+
+        schemas.forEach((schema) => {
+          if (!savedSchemaService.schemaExists(schema.meta)) {
+            savedSchemaService.saveSchemaData(schema.data, schema.meta);
+          }
+        });
+        
+        parseAvailableSchemas();
+        schemaSearchService.eventEmitter.off('directory-done', updateLoadingMessage);
+        console.timeEnd('search');
+        utilService.hide(document.querySelector('.loader-wrapper'));
+      });
+
+    schemaSearchService.eventEmitter.on('directory-done', updateLoadingMessage);
+
+    function updateLoadingMessage (data) {
+      dirsDone += 1;
+      const progress = (dirsDone / directoriesToSearch.length) * 100;
+      updateProgressMessage(progress);
+    };
+  };
 };
+
+
+function updateProgressMessage(progress) {
+  const progressElement = document.querySelector('.progress-message');
+  progressElement.innerHTML = `${progress.toFixed(0)}%`;
+}
 
 function setupIpcListeners() {
   ipcRenderer.on('load-schema-done', function (_, arg) {
@@ -63,6 +155,10 @@ function setupIpcListeners() {
 
     if (expectedSchema) {
       expectedSchema.classList.add('expected-schema');
+
+      if (loadedSchema && loadedSchema !== expectedSchema) {
+        expectedSchema.click();
+      }
     }
   });
 };
@@ -73,6 +169,17 @@ function setupSchemaService () {
 
 function parseAvailableSchemas() {
   const schemas = savedSchemaService.getSavedSchemas();
+  schemas.sort((a, b) => {
+    if (a.gameYear !== b.gameYear) {
+      return a.gameYear - b.gameYear;
+    }
+    else if (a.major !== b.major) {
+      return a.major - b.major;
+    }
+    else {
+      return a.minor - b.minor;
+    }
+  })
   const list = document.querySelector('.schema-list-wrapper');
   list.innerHTML = '';
 
@@ -102,10 +209,51 @@ function parseAvailableSchemas() {
   ipcRenderer.send('get-schema-info-request');
 };
 
-function showSchemaLoadedNotification() {
+function showSchemaLoadedNotification () {
   utilService.showNotificationElement('.schema-loaded', 3500);
 };
 
-function showSchemaErrorNotification() {
+function showSchemaErrorNotification () {
   utilService.showNotificationElement('.schema-error', 3500);
+};
+
+function isDev () {
+  return process.env.NODE_ENV === 'development';
+};
+
+function getQuickScanDirectories(pathToExecutable) {
+  // just patch - 00
+  return new Promise((resolve, reject) => {
+    resolve([path.join(pathToExecutable, '../patch/Win32/superbundlelayout/madden_installpackage_00')]);
+  });
+};
+
+function getCompleteScanDirectories(pathToExecutable) {
+  // all
+  return new Promise((resolve, reject) => {
+    const gameDirectory = path.join(pathToExecutable, '..');
+    const dirsToSearch = ['Data', 'Patch'];
+    let dataDirectoryPromises = [];
+  
+    dirsToSearch.forEach((dir) => {
+      dataDirectoryPromises.push(searchForCasDirectories(gameDirectory, dir));
+    });
+  
+    Promise.all(dataDirectoryPromises).then((dirs) => {
+      resolve(dirs.flat());
+    });
+  });
+};
+
+function searchForCasDirectories(gameDirectory, dir) {
+  return new Promise((resolve, reject) => {
+    const patchDirectory = path.join(gameDirectory, dir);
+    const patchBundle = path.join(patchDirectory, 'Win32/superbundlelayout');
+  
+    fs.readdir(patchBundle, function (err, folders) {
+      resolve(folders.map((folder) => {
+        return path.join(patchBundle, folder);
+      }));
+    });
+  });
 };
