@@ -163,10 +163,10 @@ module.exports = navigationService;
 function DEV_openFile() {
   // welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-2019');
   // welcomeService.eventEmitter.emit('open-file', 'D:\\Projects\\Madden 20\\CAREER-BEPFRANCHISE');
-  // welcomeService.eventEmitter.emit('open-file', `${MADDEN_SAVE_BASE_FOLDER}\\CAREER-NOV06-10h56m18am`);
+  welcomeService.eventEmitter.emit('open-file', `${MADDEN_SAVE_BASE_FOLDER}\\CAREER-NOV20-07h13m59pm`);
 
   setTimeout(() => {
-    // navigationService.onSchemaViewerClicked();
+    navigationService.onAbilityEditorClicked();
   }, 0);
 };
 
@@ -285,6 +285,10 @@ function setupEvents() {
     schemaMismatchService.eventEmitter.on('navigate', function () {
       navigationService.onSchemaViewerClicked();
     });
+
+    schemaMismatchService.eventEmitter.on('schema-quick-search', function () {
+      ipcRenderer.send('schema-quick-search');
+    })
 
     navigationService.currentlyOpenedFile.data.on('saving', function () {
       ipcRenderer.send('saving');

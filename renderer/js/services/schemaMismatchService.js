@@ -37,6 +37,9 @@ function addFileListeners(file) {
     
     if (expectedSchema.major !== usedSchema.major || expectedSchema.minor !== usedSchema.minor || expectedSchema.gameYear !== usedSchema.gameYear) {
       if (!schemaMismatchService.reloadWrapper) { return }
+      
+      schemaMismatchService.eventEmitter.emit('schema-quick-search');
+
       schemaMismatchService.reloadWrapper.classList.remove(HIDDEN_CLASS);
 
       setTimeout(() => {

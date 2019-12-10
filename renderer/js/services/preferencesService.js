@@ -17,6 +17,10 @@ preferencesService.initialize = function () {
             'autoSave': [
                 true
             ]
+        },
+        'gameVersions': {
+            'madden19': 'C:\\Program Files (x86)\\Origin Games\\Madden NFL 19',
+            'madden20': 'C:\\Program Files (x86)\\Origin Games\\Madden NFL 20'
         }
     },
     'sections': [
@@ -64,6 +68,29 @@ preferencesService.initialize = function () {
                                     { 'label': 'Ability editor', 'value': 'open-ability-editor' }
                                 ],
                                 'help': 'Choose the editor to open when you open a new file.'
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            'id': 'gameVersions',
+            'label': 'Game Directories',
+            'icon': 'folder-15',
+            'form': {
+                'groups': [
+                    {
+                        'fields': [
+                            {
+                                'label': 'Madden 19 game directory',
+                                'key': 'madden19',
+                                'type': 'directory'
+                            },
+                            {
+                                'label': 'Madden 20 game directory',
+                                'key': 'madden20',
+                                'type': 'directory'
                             }
                         ]
                     }

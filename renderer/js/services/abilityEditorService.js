@@ -43,9 +43,8 @@ abilityEditorService.parseAbilities = function () {
     const activeSignatureDataTable1 = activeSignatureDataTables[1];
 
     const playerTable = abilityEditorService.file.getTableByName('Player');
-    const positionSignatureAbilityTable = abilityEditorService.file.getTableByName('PositionSignatureAbility');
-    const signatureAbilityTable = abilityEditorService.file.getTableByName('SignatureAbility');
-    // const teamTable = abilityEditorService.file.getTableById(franchiseGameYearService.getTableId('Team', 20));
+    const positionSignatureAbilityTables = abilityEditorService.file.getAllTablesByName('PositionSignatureAbility');
+    const signatureAbilityTables = abilityEditorService.file.getAllTablesByName('SignatureAbility');
 
     const teamTable = abilityEditorService.file.tables.find((table) => {
       return table.name === 'Team' && table.header.data1RecordCount > 1;
@@ -54,8 +53,8 @@ abilityEditorService.parseAbilities = function () {
     abilityEditorService.activeSignatureDataTable = activeSignatureDataTable;
     abilityEditorService.activeSignatureDataTable1 = activeSignatureDataTable1;
     abilityEditorService.playerTable = playerTable;
-    abilityEditorService.positionSignatureAbilityTable = positionSignatureAbilityTable;
-    abilityEditorService.signatureAbilityTable = signatureAbilityTable;
+    abilityEditorService.positionSignatureAbilityTables = positionSignatureAbilityTables;
+    abilityEditorService.signatureAbilityTables = signatureAbilityTables;
     abilityEditorService.teamTable = teamTable;
 
     const container3 = document.querySelector('.table-content-wrapper');
@@ -76,14 +75,25 @@ abilityEditorService.parseAbilities = function () {
     // let teamPromise = teamTable.readRecords(['ShortName', 'LongName', 'DisplayName', 'TEAM_TYPE']);
     // let activeSignatureDataTablePromise = activeSignatureDataTable.readRecords();
     // let playerPromise = playerTable.readRecords(['FirstName', 'LastName', 'TeamIndex', 'Position', 'TraitDevelopment', 'PlayerType']);
+    
+    let signatureAbilitiesRecords = [];
+    let positionSignatureAbilityRecords = [];
+
+    signatureAbilityTables.forEach((table) => {
+      signatureAbilitiesRecords.push(table.readRecords(['Name', 'Description']));
+    });
+
+    positionSignatureAbilityTables.forEach((table) => {
+      positionSignatureAbilityRecords.push(table.readRecords());
+    });
 
     let readAllRecords = Promise.all([
       activeSignatureDataTable.readRecords(),
       activeSignatureDataTable1.readRecords(),
       playerTable.readRecords(['FirstName', 'LastName', 'TraitDevelopment', 'PlayerType', 'TeamIndex']),
-      positionSignatureAbilityTable.readRecords(),
-      signatureAbilityTable.readRecords(['Name', 'Description']),
-      teamTable.readRecords(['ShortName', 'TeamIndex'])
+      teamTable.readRecords(['ShortName', 'TeamIndex']),
+      ...signatureAbilitiesRecords,
+      ...positionSignatureAbilityRecords
     ]);
 
     readAllRecords.then(() => {
@@ -250,8 +260,8 @@ abilityEditorService.onClose = function () {
 
   abilityEditorService.activeSignatureDataTable = null;
   abilityEditorService.playerTable = null;
-  abilityEditorService.positionSignatureAbilityTable = null;
-  abilityEditorService.signatureAbilityTable = null;
+  abilityEditorService.positionSignatureAbilityTables = null;
+  abilityEditorService.signatureAbilityTables = null;
 
   window.removeEventListener('resize', windowResizeListener);
 };
@@ -337,18 +347,21 @@ function processChanges(changes) {
 
       const newPlayerType = abilityEditorService.playerTable.records[newPlayerIndex].PlayerType;
 
+      const positionSignatureAbilityTableId = utilService.bin2dec(activeSignatureDataTable.records[meta.recordNumber].Signature.substring(0, 15));
       const positionSignatureAbilityIndex = utilService.bin2dec(activeSignatureDataTable.records[meta.recordNumber].Signature.substring(16));
-      const positionSignatureAbility = abilityEditorService.positionSignatureAbilityTable.records[positionSignatureAbilityIndex];
+      const positionSignatureAbilityTable = abilityEditorService.file.getTableById(positionSignatureAbilityTableId);
+
+      const positionSignatureAbility = positionSignatureAbilityTable.records[positionSignatureAbilityIndex];
       const positionSignatureAbilityTypeRequirement = positionSignatureAbility.ArchetypeRequirement;
 
       if (positionSignatureAbilityTypeRequirement !== newPlayerType) {
-        const newPositionSignatureAbilityIndex = abilityEditorService.positionSignatureAbilityTable.records.findIndex((record) => {
+        const newPositionSignatureAbilityIndex = positionSignatureAbilityTable.records.findIndex((record) => {
           return (record.Ability === positionSignatureAbility.Ability
               && record.ArchetypeRequirement === newPlayerType);
         });
 
         if (newPositionSignatureAbilityIndex >= 0) {
-          const newPositionSignatureReference = utilService.dec2bin(abilityEditorService.positionSignatureAbilityTable.header.tableId, 15) + utilService.dec2bin(newPositionSignatureAbilityIndex, 17);
+          const newPositionSignatureReference = utilService.dec2bin(positionSignatureAbilityTable.header.tableId, 15) + utilService.dec2bin(newPositionSignatureAbilityIndex, 17);
           activeSignatureDataTable.records[meta.recordNumber].Signature = newPositionSignatureReference;
         }
       }
@@ -362,11 +375,22 @@ function processChanges(changes) {
         2) Find the index of the signature in the PositionSignatureAbilityTable, and select the appropriate record per Player Type if applicable
         3) Calculate the new reference based on the result in #2
       */
-      const signatureIndex = abilityEditorService.signatureAbilityTable.records.findIndex((record) => {
-        return record.Name === newValue;
+
+      let signatureIndex;
+
+      const signatureAbilityTableToUse = abilityEditorService.signatureAbilityTables.find((table) => {
+        signatureIndex = table.records.findIndex((record) => {
+          return record.Name === newValue;
+        });
+
+        if (signatureIndex > -1) {
+          return true;
+        }
+
+        return false;
       });
 
-      if (signatureIndex === -1) { 
+      if (!signatureAbilityTableToUse || signatureIndex === -1) { 
         resetCellValue(recordIndex, 0, oldValue);
         return; 
       }
@@ -375,19 +399,27 @@ function processChanges(changes) {
       const playerRecord = abilityEditorService.playerTable.records[playerIndex];
       const playerArchetype = playerRecord.PlayerType;
 
-      positionSignatureAbilityIndex = abilityEditorService.positionSignatureAbilityTable.records.findIndex((record) => {
-        return (record.Ability == utilService.dec2bin(abilityEditorService.signatureAbilityTable.header.tableId, 15) + utilService.dec2bin(signatureIndex, 17)
-          && record.ArchetypeRequirement === playerArchetype);
+      let positionSignatureAbilityIndex;
+
+      const positionSignatureAbilityTableToUse = abilityEditorService.positionSignatureAbilityTables.find((table) => {
+        positionSignatureAbilityIndex = table.records.findIndex((record) => {
+          return (record.Ability == utilService.dec2bin(signatureAbilityTableToUse.header.tableId, 15) + utilService.dec2bin(signatureIndex, 17)
+            && record.ArchetypeRequirement === playerArchetype);
+        });
+
+        if (positionSignatureAbilityIndex > -1) {
+          return true;
+        }
+        
+        positionSignatureAbilityIndex = table.records.findIndex((record) => {
+          return record.Ability == utilService.dec2bin(signatureAbilityTableToUse.header.tableId, 15) + utilService.dec2bin(signatureIndex, 17);
+        });
+
+        return positionSignatureAbilityIndex > -1;
       });
 
-      if (positionSignatureAbilityIndex === -1) {
-        positionSignatureAbilityIndex = abilityEditorService.positionSignatureAbilityTable.records.findIndex((record) => {
-          return record.Ability == utilService.dec2bin(abilityEditorService.signatureAbilityTable.header.tableId, 15) + utilService.dec2bin(signatureIndex, 17);
-        });
-      }
-
       if (positionSignatureAbilityIndex >= 0) {
-        const newReference = utilService.dec2bin(abilityEditorService.positionSignatureAbilityTable.header.tableId, 15) + utilService.dec2bin(positionSignatureAbilityIndex, 17);
+        const newReference = utilService.dec2bin(positionSignatureAbilityTableToUse.header.tableId, 15) + utilService.dec2bin(positionSignatureAbilityIndex, 17);
         activeSignatureDataTable.records[meta.recordNumber].Signature = newReference;
       }
     }
@@ -416,11 +448,17 @@ function formatTable(table) {
         const isValidReference = utilService.bin2dec(record.Signature.substring(0, 15)) !== 0;
 
         if (isValidReference) {
+          const positionSignatureTableId = utilService.bin2dec(currentValue.value.substring(0, 15));
           const positionSignatureRecordIndex = utilService.bin2dec(currentValue.value.substring(16));
-          const positionSignatureAbility = abilityEditorService.positionSignatureAbilityTable.records[positionSignatureRecordIndex].Ability;
+          const positionSignatureTableToUse = abilityEditorService.file.getTableById(positionSignatureTableId);
+
+          const positionSignatureAbility = positionSignatureTableToUse.records[positionSignatureRecordIndex].Ability;
+          const signatureAbilityTableId = utilService.bin2dec(positionSignatureAbility.substring(0, 15));
           const signatureRecordIndex = utilService.bin2dec(positionSignatureAbility.substring(16));
 
-          accumulator[currentValue.key] = abilityEditorService.signatureAbilityTable.records[signatureRecordIndex].Name;
+          const signatureTableToUse = abilityEditorService.file.getTableById(signatureAbilityTableId);
+
+          accumulator[currentValue.key] = signatureTableToUse.records[signatureRecordIndex].Name;
         }
       }
       else if (currentValue.key === 'Player') {
@@ -486,11 +524,13 @@ function formatColumns(table) {
 };
 
 function getSignatureChoices() {
-  return abilityEditorService.signatureAbilityTable.records.filter((record) => {
-    return record.getFieldByKey('Name').unformattedValue !== '00000000000000000000000000000000';
-  }).map((record) => {
-    return record.Name;
-  });
+  return abilityEditorService.signatureAbilityTables.map((table) => {
+    return table.records.filter((record) => {
+      return record.getFieldByKey('Name').unformattedValue !== '00000000000000000000000000000000';
+    }).map((record) => {
+      return record.Name;
+    });
+  }).flat();
 };
 
 function getPlayerChoices () {
@@ -525,4 +565,11 @@ function calculateColumnWidths(columns, table) {
   });
   
   return widths;
+};
+
+function buildSignatureAbilityTableMeta (tables) {
+  // let meta = {
+  //   'tables': tables,
+  //   'findIndex': function (
+  // }
 };

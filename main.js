@@ -53,6 +53,8 @@ function createWindow () {
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
     mainWindow = null;
+    workerWindow = null;
+    schemaWindow = null;
 
     if (baseFileWatcher) {
       baseFileWatcher.close();
@@ -97,6 +99,8 @@ function createWindow () {
   preferencesService.initialize();
   autoUpdater.autoInstallOnAppQuit = false;
   autoUpdater.autoDownload = false;
+
+  createSchemaWindow(false);
 }
 
 // This method will be called when Electron has finished
@@ -282,15 +286,17 @@ function addIpcListeners() {
   });
 };
 
-function createSchemaWindow() {
+function createSchemaWindow(show) {
   if (schemaWindow) { 
     schemaWindow.moveTop();
+    schemaWindow.show();
     return;
   }
 
   schemaWindow = new BrowserWindow({
     width: 600,
     height: 650,
+    show: show !== null ? show : true,
     webPreferences: {
       nodeIntegration: true
     }
@@ -300,8 +306,15 @@ function createSchemaWindow() {
     schemaWindow.webContents.openDevTools();
   }
 
-  schemaWindow.setMenuBarVisibility(false);
+  schemaWindow.removeMenu();
+  schemaWindow.fullScreenable = false;
+  schemaWindow.maximizable = false;
   schemaWindow.loadFile(schemaPage);
+
+  schemaWindow.on('close', function (e) {
+    schemaWindow.hide();
+    e.preventDefault();
+  });
 
   schemaWindow.on('closed', function () {
     schemaWindow = null;
