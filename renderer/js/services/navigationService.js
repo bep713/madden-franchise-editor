@@ -163,11 +163,11 @@ module.exports = navigationService;
 function DEV_openFile() {
   // welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-2019');
   // welcomeService.eventEmitter.emit('open-file', 'D:\\Projects\\Madden 20\\CAREER-BEPFRANCHISE');
-  welcomeService.eventEmitter.emit('open-file', `${MADDEN_SAVE_BASE_FOLDER}\\CAREER-NOV20-07h13m59pm`);
+  // welcomeService.eventEmitter.emit('open-file', `${MADDEN_SAVE_BASE_FOLDER}\\CAREER-NOV20-07h13m59pm`);
 
-  setTimeout(() => {
-    navigationService.onAbilityEditorClicked();
-  }, 0);
+  // setTimeout(() => {
+    // navigationService.onAbilityEditorClicked();
+  // }, 0);
 };
 
 function onNavigate(service) {

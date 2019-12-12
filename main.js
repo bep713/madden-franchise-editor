@@ -1,5 +1,3 @@
-const fs = require('fs');
-const path = require('path');
 const chokidar = require('chokidar');
 const { app, BrowserWindow, ipcMain, Menu, shell } = require('electron');
 const { autoUpdater } = require('electron-updater');
@@ -7,7 +5,7 @@ const preferencesService = require('./renderer/js/services/preferencesService');
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-let mainWindow, workerWindow, schemaWindow;
+let mainWindow, workerWindow, schemaWindow, settingsWindow;
 let mainReady = false;
 let workerReady = false;
 let pendingMainEvents = [];
@@ -27,6 +25,7 @@ const homePage = 'renderer/index.html';
 const workerPage = 'renderer/worker.html';
 const creditsPage = 'renderer/credits.html';
 const schemaPage = 'renderer/schema-manager.html';
+const settingsPage = 'renderer/settings-manager.html';
 
 const baseWindowTitle = 'Madden Franchise Editor';
 let currentFilePath = '';
@@ -101,6 +100,7 @@ function createWindow () {
   autoUpdater.autoDownload = false;
 
   createSchemaWindow(false);
+  createSettingsWindow(false);
 }
 
 // This method will be called when Electron has finished
@@ -319,7 +319,33 @@ function createSchemaWindow(show) {
   schemaWindow.on('closed', function () {
     schemaWindow = null;
   });
-}
+};
+
+function createSettingsWindow() {
+  settingsWindow = new BrowserWindow({
+    width: 1100,
+    height: 650,
+    show: true,
+    frame: true,
+    webPreferences: {
+      nodeIntegration: true
+    }
+  });
+
+  if (isDev) {
+    settingsWindow.webContents.openDevTools();
+    settingsWindow.width = settingsWindow.width + 500;
+  }
+
+  settingsWindow.removeMenu();
+  settingsWindow.fullScreenable = false;
+  settingsWindow.maximizable = false;
+  settingsWindow.loadFile(settingsPage);
+
+  settingsWindow.on('closed', function () {
+    settingsWindow = null;
+  });
+};
 
 function addAutoUpdaterListeners() {
   function sendStatusToWindow(text) {
