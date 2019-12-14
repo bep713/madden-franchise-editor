@@ -71,7 +71,7 @@ function addEventListeners() {
   const viewTableEditor = document.querySelector('#view-table-editor');
   viewTableEditor.addEventListener('click', function () {
     const gameOffset = parseInt(contextMenu.getAttribute('data-game'));
-    scheduleService.eventEmitter.emit('open-table-editor', franchiseGameYearService.getTableId('SeasonGame', scheduleService.file.file._gameYear), gameOffset);
+    scheduleService.eventEmitter.emit('open-table-editor', scheduleService.file.file.getTableByName('SeasonGame').header.tableId, gameOffset);
   });
 
   // const hexSaveButton = document.querySelector('#save-hex');
