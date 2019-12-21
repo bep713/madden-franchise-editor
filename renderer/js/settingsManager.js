@@ -47,7 +47,7 @@ function showPages(pages) {
             backButton.classList.add('hidden');
         }
         else if ((index + 1) === pages.length) {
-            continueButton.innerHTML = 'Close';
+            continueButton.innerHTML = continueButton.innerHTML.replace('continue', 'close').replace('Continue', 'Close');
         }
 
         backButton.addEventListener('click', () => {

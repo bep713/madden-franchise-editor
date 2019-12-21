@@ -24,16 +24,17 @@ preferencesService.getPreferenceKeys = function () {
             ]
         },
         'gameVersions': {
-            'madden19': 'C:\\Program Files (x86)\\Origin Games\\Madden NFL 19',
-            'madden20': 'C:\\Program Files (x86)\\Origin Games\\Madden NFL 20'
+            'madden19Directory': 'C:\\Program Files (x86)\\Origin Games\\Madden NFL 19',
+            'madden20Directory': 'C:\\Program Files (x86)\\Origin Games\\Madden NFL 20'
         },
         'settingsManager': {
-            'gameSettings': {
+            'general': {
                 'defaultDirectorySet': false,
                 'defaultEditorSet': false,
+                'checkForUpdatesSet': false,
                 'autoSaveSet': false
             },
-            'gameDirectories': {
+            'gameVersions': {
                 'madden19DirectorySet': false,
                 'madden20DirectorySet': false
             },
@@ -111,12 +112,12 @@ preferencesService.initialize = function () {
                             'fields': [
                                 {
                                     'label': 'Madden 19 game directory',
-                                    'key': 'madden19',
+                                    'key': 'madden19Directory',
                                     'type': 'directory'
                                 },
                                 {
                                     'label': 'Madden 20 game directory',
-                                    'key': 'madden20',
+                                    'key': 'madden20Directory',
                                     'type': 'directory'
                                 }
                             ]

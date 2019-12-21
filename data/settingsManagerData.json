@@ -9,7 +9,7 @@
             "backButtonSelector": ".back-btn"
         },
         {
-            "id": "gameSettings",
+            "id": "general",
             "page": "settings-manager-screens/gameSettings.html",
             "service": "./js/services/settings-manager/gameSettingsService.js",
             "order": 1,
@@ -17,7 +17,7 @@
             "backButtonSelector": ".back-btn"
         },
         {
-            "id": "gameDirectories",
+            "id": "gameVersions",
             "page": "settings-manager-screens/gameVersions.html",
             "service": "./js/services/settings-manager/gameVersionsService.js",
             "order": 2,

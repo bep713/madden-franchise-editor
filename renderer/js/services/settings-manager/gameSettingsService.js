@@ -1,5 +1,5 @@
-const { ipcRenderer, remote } = require('electron');
-const elementCreationUtil = require('./elementCreationUtil');
+const { ipcRenderer } = require('electron');
+const settingsManagerUtil = require('./settingsManagerUtil');
 
 let gameSettingsService = {};
 
@@ -15,54 +15,15 @@ gameSettingsService.initialize = function () {
         return group.fields;
     }).flat();
 
-    const fieldWrapper = document.querySelector('.fields-wrapper');
-    
-    fields.forEach((field) => {
-        const currentValue = getPreferenceKeyValue(field.key);
-        const element = elementCreationUtil.createField(field, currentValue);
-        fieldWrapper.appendChild(element);
+    const oldFieldWrapper = document.querySelector('.old-fields');
+    const newFieldWrapper = document.querySelector('.new-fields');
 
-        element.addEventListener('setting-change', function (e) {
-            setPreferenceKeyValue(field, e.detail);
-        });
-    });
+    settingsManagerUtil.createFields(fields, preferences, 'general', newFieldWrapper, oldFieldWrapper);
 
     const continueButton = document.querySelector('.continue-btn');
     continueButton.addEventListener('click', function () {
         ipcRenderer.sendSync('setPreferences', preferences);
     });
-
-    function getPreferenceKeyValue(key) {
-        if (preferences.general[key]) {
-            return preferences.general[key];
-        }
-        else {
-            console.log('here');
-        }
-    };
-
-    function setPreferenceKeyValue(field, value) {
-        if (preferences.general[field.key] !== null && preferences.general[field.key] !== undefined) {
-            switch(field.type) {
-                case 'checkbox':
-                    if (value) {
-                        preferences.general[field.key] = [value];
-                    } 
-                    else {
-                        preferences.general[field.key] = [];
-                    }
-
-                    break;
-                case 'text':
-                default:
-                    preferences.general[field.key] = value;
-                    break;
-            }
-        }
-        else {
-            console.log('here');
-        }
-    };
 };
 
 gameSettingsService.id = 'gameSettings';

@@ -1,3 +1,8 @@
+.settings-manager {
+    overflow: inherit;
+    background: $welcome-bg-color;
+}
+
 .title-wrapper {
     padding: 20px;
     text-align: center;
@@ -12,7 +17,6 @@
 
 .settings-container-content {
     background: $welcome-bg-color;
-    height: 100vh;
     padding: 40px;
 
     ul {
@@ -135,4 +139,9 @@
 
 .info-message {
     margin-top: 20px;
+}
+
+.field-header {
+    margin-bottom: 20px;
+    font-weight: 600;
 }
