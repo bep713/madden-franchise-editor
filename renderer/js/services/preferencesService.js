@@ -21,6 +21,9 @@ preferencesService.getPreferenceKeys = function () {
             ],
             'autoSave': [
                 true
+            ],
+            'checkForSchemaUpdates': [
+                true
             ]
         },
         'gameVersions': {
@@ -32,7 +35,8 @@ preferencesService.getPreferenceKeys = function () {
                 'defaultDirectorySet': false,
                 'defaultEditorSet': false,
                 'checkForUpdatesSet': false,
-                'autoSaveSet': false
+                'autoSaveSet': false,
+                'checkForSchemaUpdatesSet': false
             },
             'gameVersions': {
                 'madden19DirectorySet': false,
@@ -67,6 +71,19 @@ preferencesService.initialize = function () {
                                     'help': 'The directory to open when you choose to open a file.'
                                 },
                                 {
+                                    'label': 'Editor to open on file load',
+                                    'key': 'defaultEditor',
+                                    'type': 'dropdown',
+                                    'options': [
+                                        { 'label': 'Home screen', 'value': 'open-home' },
+                                        { 'label': 'Schedule editor', 'value': 'open-schedule' },
+                                        { 'label': 'Table editor', 'value': 'open-table-editor' },
+                                        { 'label': 'Schema viewer', 'value': 'open-schema-viewer' },
+                                        { 'label': 'Ability editor', 'value': 'open-ability-editor' }
+                                    ],
+                                    'help': 'Choose the editor to open when you open a new file.'
+                                },
+                                {
                                     'label': 'Automatically check for updates',
                                     'key': 'checkForUpdates',
                                     'type': 'checkbox',
@@ -85,17 +102,12 @@ preferencesService.initialize = function () {
                                     'help': 'If checked, the app will save after any change is made.'
                                 },
                                 {
-                                    'label': 'Editor to open on file load',
-                                    'key': 'defaultEditor',
-                                    'type': 'dropdown',
+                                    'label': 'Automatically re-scan schemas after a game update',
+                                    'key': 'checkForSchemaUpdates',
+                                    'type': 'checkbox',
                                     'options': [
-                                        { 'label': 'Home screen', 'value': 'open-home' },
-                                        { 'label': 'Schedule editor', 'value': 'open-schedule' },
-                                        { 'label': 'Table editor', 'value': 'open-table-editor' },
-                                        { 'label': 'Schema viewer', 'value': 'open-schema-viewer' },
-                                        { 'label': 'Ability editor', 'value': 'open-ability-editor' }
-                                    ],
-                                    'help': 'Choose the editor to open when you open a new file.'
+                                        { 'label': 'Check for game updates', 'value': true }
+                                    ]
                                 }
                             ]
                         }

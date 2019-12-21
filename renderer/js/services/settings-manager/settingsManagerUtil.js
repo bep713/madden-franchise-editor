@@ -14,7 +14,6 @@ settingsManagerUtil.getNewPreferences = function (preferences, category) {
 
 settingsManagerUtil.getFieldMetadata = function (fields, preferences, category) {
     const newPreferences = settingsManagerUtil.getNewPreferences(preferences, category);
-    console.log(newPreferences);
 
     return fields.map((field) => {
         const isNewField = newPreferences.findIndex((pref) => { 

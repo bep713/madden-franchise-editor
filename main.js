@@ -68,7 +68,7 @@ function createWindow () {
 
     const checkForUpdates = preferencesService.preferences.value('general.checkForUpdates');
 
-    if (checkForUpdates !== undefined && checkForUpdates.length === 1 && checkForUpdates[0] === true) {
+    if (checkboxSettingIsEnabled(checkForUpdates)) {
       if (isDev) {
         autoUpdater.checkForUpdates();
       }
@@ -76,6 +76,16 @@ function createWindow () {
         autoUpdater.checkForUpdatesAndNotify(); 
       }
     }
+
+    const checkForSchemas = preferencesService.preferences.value('general.checkForSchemaUpdates');
+
+    if (checkboxSettingIsEnabled(checkForSchemas)) {
+      schemaWindow.webContents.send('schema-quick-scan', 20);
+    }
+
+    function checkboxSettingIsEnabled(setting) {
+      return setting !== undefined && setting.length === 1 && setting[0] === true
+    };
   });
 
   workerWindow = new BrowserWindow({ width: 1000, height: 500, show: isDev, webPreferences: { nodeIntegration: true }});
@@ -277,8 +287,8 @@ function addIpcListeners() {
     schemaWindow.webContents.send('load-schema-done', arg);
   });
 
-  ipcMain.on('get-schema-info-request', function () {
-    mainWindow.webContents.send('get-schema-info-request');
+  ipcMain.on('get-schema-info-request', function (event, arg) {
+    mainWindow.webContents.send('get-schema-info-request', arg);
   });
 
   ipcMain.on('get-schema-info-response', function (event, arg) {
@@ -286,7 +296,7 @@ function addIpcListeners() {
   });
 
   ipcMain.on('show-settings-manager', function () {
-    createSettingsWindow();
+    createSettingsWindow(true);
     settingsWindow.webContents.send('show-all-pages');
   });
 };
@@ -326,7 +336,7 @@ function createSchemaWindow(show) {
   });
 };
 
-function createSettingsWindow() {
+function createSettingsWindow(show) {
   if (settingsWindow) {
     settingsWindow.moveTop();
     settingsWindow.show();
@@ -336,7 +346,7 @@ function createSettingsWindow() {
   settingsWindow = new BrowserWindow({
     width: 1100,
     height: 650,
-    show: false,
+    show: show !== null ? show : false,
     frame: true,
     webPreferences: {
       nodeIntegration: true
@@ -352,6 +362,11 @@ function createSettingsWindow() {
   settingsWindow.fullScreenable = false;
   settingsWindow.maximizable = false;
   settingsWindow.loadFile(settingsPage);
+
+  settingsWindow.on('close', function (e) {
+    settingsWindow.hide();
+    e.preventDefault();
+  });
 
   settingsWindow.on('closed', function () {
     settingsWindow = null;

@@ -143,7 +143,9 @@ function getPagesToShow(preferences) {
     };
 };
 
-function setAllSettingsAsShown(preferences) {
+function setAllSettingsAsShown() {
+    const preferences = ipcRenderer.sendSync('getPreferences');
+    
     for (let page in preferences.settingsManager) {
         for (let key in preferences.settingsManager[page]) {
             preferences.settingsManager[page][key] = true;

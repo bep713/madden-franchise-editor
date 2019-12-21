@@ -259,10 +259,11 @@ function addIpcListeners() {
     }, 10);
   });
 
-  ipcRenderer.on('get-schema-info-request', function () {
+  ipcRenderer.on('get-schema-info-request', function (event, arg) {
     ipcRenderer.send('get-schema-info-response', {
       'expected': navigationService.currentlyOpenedFile.data.expectedSchemaVersion,
-      'loaded': navigationService.currentlyOpenedFile.data.schemaList.meta
+      'loaded': navigationService.currentlyOpenedFile.data.schemaList.meta,
+      'autoSelect': arg
     });
   });
 };

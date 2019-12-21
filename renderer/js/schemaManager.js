@@ -41,9 +41,10 @@ function setupListeners() {
 
   const searchSchemas = document.querySelector('#search-for-schemas-full');
   searchSchemas.addEventListener('click', () => {
+    
     const maddenInstallDirectory = dialog.showOpenDialogSync(remote.getCurrentWindow(), {
       'title': 'Select Madden Executable',
-      'defaultPath': 'C:\\Program Files (x86)\\Origin Games',
+      'defaultPath': ipcRenderer.sendSync('getPreferences').gameVersions.madden20Directory,
       'properties': ['openFile'],
       'filters': [{
         name: 'Game executable',
@@ -66,15 +67,9 @@ function setupListeners() {
   const searchSchemasQuick = document.querySelector('#search-for-schemas-quick');
   searchSchemasQuick.addEventListener('click', () => {
     
-    // if (isDev()) {
-      // getQuickScanDirectories('C:\\Program Files (x86)\\Origin Games\\Madden NFL 20\\Madden20.exe').then((dirs) => {
-        // saveSchemas(dirs);
-        // });
-        // }
-        // else {
     const maddenInstallDirectory = dialog.showOpenDialogSync(remote.getCurrentWindow(), {
       'title': 'Select Madden Executable',
-      'defaultPath': 'C:\\Program Files (x86)\\Origin Games',
+      'defaultPath': ipcRenderer.sendSync('getPreferences').gameVersions.madden20Directory,
       'properties': ['openFile'],
       'filters': [{
         name: 'Game executable',
@@ -83,52 +78,56 @@ function setupListeners() {
     });
           
     if (maddenInstallDirectory) {
-      utilService.show(document.querySelector('.loader-wrapper'));
-    
-      setTimeout(() => {
-        console.time('search');
-        getQuickScanDirectories(maddenInstallDirectory[0]).then((dirs) => {
-          saveSchemas(dirs);
-        });
-      }, 20);
+      quickSchemaScan(maddenInstallDirectory[0]);
     }
   });
 
-  function saveSchemas(directoriesToSearch) {
-    let dirsDone = 0;
-    updateProgressMessage(0);
+};
 
-    schemaSearchService.search(directoriesToSearch)
-      .then((schemas) => {
-        let newSchemas = [];
+function saveSchemas(directoriesToSearch) {
+  let dirsDone = 0;
+  updateProgressMessage(0);
 
-        schemas.forEach((schema) => {
-          if (!savedSchemaService.schemaExists(schema.meta)) {
-            savedSchemaService.saveSchemaData(schema.data, schema.meta);
-          }
-        });
-        
-        parseAvailableSchemas();
-        schemaSearchService.eventEmitter.off('directory-done', updateLoadingMessage);
-        console.timeEnd('search');
-        utilService.hide(document.querySelector('.loader-wrapper'));
+  schemaSearchService.search(directoriesToSearch)
+    .then((schemas) => {
+      let newSchemas = [];
+
+      schemas.forEach((schema) => {
+        if (!savedSchemaService.schemaExists(schema.meta)) {
+          savedSchemaService.saveSchemaData(schema.data, schema.meta);
+        }
       });
+      
+      parseAvailableSchemas(true);
+      schemaSearchService.eventEmitter.off('directory-done', updateLoadingMessage);
+      console.timeEnd('search');
+      utilService.hide(document.querySelector('.loader-wrapper'));
+    });
 
-    schemaSearchService.eventEmitter.on('directory-done', updateLoadingMessage);
+  schemaSearchService.eventEmitter.on('directory-done', updateLoadingMessage);
 
-    function updateLoadingMessage (data) {
-      dirsDone += 1;
-      const progress = (dirsDone / directoriesToSearch.length) * 100;
-      updateProgressMessage(progress);
-    };
+  function updateLoadingMessage (data) {
+    dirsDone += 1;
+    const progress = (dirsDone / directoriesToSearch.length) * 100;
+    updateProgressMessage(progress);
   };
 };
 
+function quickSchemaScan(maddenInstallDirectory) {
+  utilService.show(document.querySelector('.loader-wrapper'));
+
+  setTimeout(() => {
+    console.time('search');
+    getQuickScanDirectories(maddenInstallDirectory).then((dirs) => {
+      saveSchemas(dirs);
+    });
+  }, 20);
+};
 
 function updateProgressMessage(progress) {
   const progressElement = document.querySelector('.progress-message');
   progressElement.innerHTML = `${progress.toFixed(0)}%`;
-}
+};
 
 function setupIpcListeners() {
   ipcRenderer.on('load-schema-done', function (_, arg) {
@@ -156,10 +155,23 @@ function setupIpcListeners() {
     if (expectedSchema) {
       expectedSchema.classList.add('expected-schema');
 
-      if (loadedSchema && loadedSchema !== expectedSchema) {
+      if (loadedSchema && loadedSchema !== expectedSchema && arg.autoSelect) {
         expectedSchema.click();
       }
     }
+  });
+
+  ipcRenderer.on('schema-quick-scan', function (_, arg) {
+    const settingToCheck = `madden${arg}Directory`;
+    const directory = ipcRenderer.sendSync('getPreferences').gameVersions[settingToCheck];
+
+    if (directory === null || directory === undefined || directory.length === 0) {
+      return;
+    }
+
+    console.log(directory);
+
+    quickSchemaScan(directory + '/Madden20.exe');
   });
 };
 
@@ -167,7 +179,7 @@ function setupSchemaService () {
   savedSchemaService.initialize();
 };
 
-function parseAvailableSchemas() {
+function parseAvailableSchemas(autoSelect) {
   const schemas = savedSchemaService.getSavedSchemas();
   schemas.sort((a, b) => {
     if (a.gameYear !== b.gameYear) {
@@ -206,7 +218,7 @@ function parseAvailableSchemas() {
     list.appendChild(listItem);
   });
 
-  ipcRenderer.send('get-schema-info-request');
+  ipcRenderer.send('get-schema-info-request', autoSelect);
 };
 
 function showSchemaLoadedNotification () {

@@ -80,10 +80,12 @@
 }
 
 .text-field-wrapper {
-    display: flex;
+    display: grid;
+    grid-template-columns: 250px 1fr;
     align-items: center;
 
     label {
+        flex-basis: 400px;
         margin-right: 20px;
     }
 
@@ -124,7 +126,8 @@
 }
 
 .dropdown-field-wrapper {
-    display: flex;
+    display: grid;
+    grid-template-columns: 250px 1fr;
     align-items: center;
 
     label {
