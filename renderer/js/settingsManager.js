@@ -20,6 +20,8 @@ if (pagesToShow.length > 0) {
         currentWindow.moveTop();
         showPages(pagesToShow);
     }, 1000);
+} else {
+    currentWindow.hide();
 }
 
 function showPages(pages) {
@@ -32,7 +34,9 @@ function showPages(pages) {
         const currentPage = pages[index];
 
         if (!currentPage) {
+            setAllSettingsAsShown(preferences);
             currentWindow.hide();
+            return;
         }
 
         const currentService = services[index];
@@ -117,4 +121,16 @@ function getPagesToShow(preferences) {
 
         return false;
     };
+};
+
+function setAllSettingsAsShown(preferences) {
+    for (let page in preferences.settingsManager) {
+        for (let key in preferences.settingsManager[page]) {
+            preferences.settingsManager[page][key] = true;
+        }
+    }
+
+    console.log(preferences);
+
+    ipcRenderer.sendSync('setPreferences', preferences);
 };

@@ -26,13 +26,41 @@ settingsManagerUtil.getFieldMetadata = function (fields, preferences, category) 
     });  
 };
 
-settingsManagerUtil.createFields = function (fields, preferences, category, newFieldParent, oldFieldParent) {
+settingsManagerUtil.addListeners = function (preferences) {
+    const savePreferences = function () {
+        ipcRenderer.sendSync('setPreferences', preferences);
+    };
+    
+    const continueButton = document.querySelector('.continue-btn');
+    continueButton.addEventListener('click', savePreferences);
+
+    const previousButton = document.querySelector('.back-btn');
+    previousButton.addEventListener('click', savePreferences);
+};
+
+settingsManagerUtil.createFields = function (category) {
+    const preferenceOptions = ipcRenderer.sendSync('getPreferenceOptions');
+    const preferences = ipcRenderer.sendSync('getPreferences');
+
+    settingsManagerUtil.addListeners(preferences);
+
+    const section = preferenceOptions.sections.find((section) => {
+        return section.id === category;
+    });
+
+    const fields = section.form.groups.map((group) => {
+        return group.fields;
+    }).flat();
+
+    const oldFieldWrapper = document.querySelector('.old-fields');
+    const newFieldWrapper = document.querySelector('.new-fields');
+
     const fieldMetadata = settingsManagerUtil.getFieldMetadata(fields, preferences, category);
 
     fieldMetadata.filter((field) => {
         return field.isNewField;
     }).forEach((field) => {
-        createNewField(field, newFieldParent, category);
+        createNewField(field, newFieldWrapper, category);
     });
 
     const oldFields = fieldMetadata.filter((field) => {
@@ -40,11 +68,11 @@ settingsManagerUtil.createFields = function (fields, preferences, category, newF
     });
     
     if (oldFields.length === 0) {
-        oldFieldParent.classList.add('hidden');
+        oldFieldWrapper.classList.add('hidden');
     }
     else {
         oldFields.forEach((field) => {
-            createNewField(field, oldFieldParent, category);
+            createNewField(field, oldFieldWrapper, category);
         });
     }
 
