@@ -57,11 +57,18 @@ settingsManagerUtil.createFields = function (category) {
 
     const fieldMetadata = settingsManagerUtil.getFieldMetadata(fields, preferences, category);
 
-    fieldMetadata.filter((field) => {
+    const newFields = fieldMetadata.filter((field) => {
         return field.isNewField;
-    }).forEach((field) => {
-        createNewField(field, newFieldWrapper, category);
     });
+
+    if (newFields.length === 0) {
+        newFieldWrapper.classList.add('hidden');
+    }
+    else {
+        newFields.forEach((field) => {
+            createNewField(field, newFieldWrapper, category);
+        });
+    }
 
     const oldFields = fieldMetadata.filter((field) => {
         return field.isNewField === false;

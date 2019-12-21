@@ -11,6 +11,8 @@ const currentWindow = remote.getCurrentWindow();
 const preferences = ipcRenderer.sendSync('getPreferences');
 
 initializeSettingsManager(preferences);
+addIpcListeners();
+
 const pagesToShow = getPagesToShow(preferences);
 
 if (pagesToShow.length > 0) {
@@ -23,6 +25,24 @@ if (pagesToShow.length > 0) {
 } else {
     currentWindow.hide();
 }
+
+function addIpcListeners() {
+    ipcRenderer.on('show-all-pages', () => {
+        let pagesToShow = [];
+        
+        for (let page in preferences.settingsManager) {
+            pagesToShow.push(page);
+        }
+
+        pagesToShow = pagesToShow.map((page) => {
+            return pageData.items.find((data) => { return data.id === page; });
+        }).sort((a, b) => { 
+            return a.order - b.order;
+        });
+
+        showPages(pagesToShow);
+    });
+};
 
 function showPages(pages) {
     let currentIndex = 0;
@@ -129,8 +149,6 @@ function setAllSettingsAsShown(preferences) {
             preferences.settingsManager[page][key] = true;
         }
     }
-
-    console.log(preferences);
 
     ipcRenderer.sendSync('setPreferences', preferences);
 };

@@ -209,6 +209,11 @@ menuService.initializeMenu = function () {
           id: 'CheckForUpdate',
           label: 'Check for Update',
           click: menuService.checkForUpdate
+        },
+        {
+          id: 'ViewReleaseNotes',
+          label: 'View Release Notes',
+          click: menuService.viewReleaseNotes
         }
       ]
     }
@@ -367,6 +372,10 @@ menuService.openProjectHomepage = function () {
 menuService.openCredits = function () {
   ipcRenderer.send('show-credits');
 };
+
+menuService.viewReleaseNotes = function () {
+  ipcRenderer.send('show-settings-manager');
+}
 
 menuService.enableMenuIds = enableMenuIds;
 menuService.disableMenuIds = disableMenuIds;

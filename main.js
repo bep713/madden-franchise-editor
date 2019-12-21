@@ -284,6 +284,11 @@ function addIpcListeners() {
   ipcMain.on('get-schema-info-response', function (event, arg) {
     schemaWindow.webContents.send('get-schema-info-response', arg);
   });
+
+  ipcMain.on('show-settings-manager', function () {
+    createSettingsWindow();
+    settingsWindow.webContents.send('show-all-pages');
+  });
 };
 
 function createSchemaWindow(show) {
@@ -322,6 +327,12 @@ function createSchemaWindow(show) {
 };
 
 function createSettingsWindow() {
+  if (settingsWindow) {
+    settingsWindow.moveTop();
+    settingsWindow.show();
+    return;
+  }
+
   settingsWindow = new BrowserWindow({
     width: 1100,
     height: 650,
