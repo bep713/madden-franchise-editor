@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg
+    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:cc="http://creativecommons.org/ns#"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+    xmlns:svg="http://www.w3.org/2000/svg"
+    xmlns:ns1="http://sozi.baierouge.fr"
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+    id="svg2"
+    sodipodi:docname="folder.svg"
+    viewBox="0 0 450 400"
+    version="1.1"
+    inkscape:version="0.48.0 r9654"
+  >
+  <sodipodi:namedview
+      id="base"
+      bordercolor="#666666"
+      inkscape:pageshadow="2"
+      inkscape:window-y="0"
+      pagecolor="#ffffff"
+      inkscape:window-height="856"
+      inkscape:window-maximized="0"
+      inkscape:zoom="0.45815216"
+      inkscape:window-x="64"
+      showgrid="false"
+      borderopacity="1.0"
+      inkscape:current-layer="layer1"
+      inkscape:cx="313.71702"
+      inkscape:cy="622.88242"
+      inkscape:window-width="1376"
+      inkscape:pageopacity="0.0"
+      inkscape:document-units="px"
+  />
+  <g
+      id="layer1"
+      inkscape:label="Layer 1"
+      inkscape:groupmode="layer"
+      transform="translate(0 -652.36)"
+    >
+    <g
+        id="g4898"
+        transform="translate(-619.88 477.99)"
+      >
+      <path
+          id="use4730"
+          sodipodi:nodetypes="cccccscccccsccccc"
+          style="fill:#c2ab7a"
+          inkscape:connector-curvature="0"
+          d="m731.97 207.13c-6.4106 0.0007-13.78-0.01-22.281 0l-27.907 0.3103c-33.052 0.38-35.684 0.071-37.749 8.0945-0.74313 2.0746-2.197 4.954-3.2188 6.2657-1.7923 2.3008-1.875 7.8495-1.875 160.48 0 87.009 0.31952 158.51 0.6875 158.87 0.36798 0.3678 92.956 0.5451 205.75 0.4063l205.06-0.25 0.2813-152.72c0.2455-148.06 0.1884-152.76-1.625-154.5-1.0287-0.9857-2.4309-3.4774-3.0938-5.5313-0.6628-2.0539-2.4023-4.6761-3.875-5.8437-2.619-2.077-3.2547-2.1144-29.969-1.625-75.333 0.4671-148.74 1.1489-228.44 0.7031-2.7526-0.9083-3.916-2.088-5.8438-6.2657-3.5538-7.701-1.0317-8.4104-45.906-8.4048z"
+      />
+      <path
+          id="use4732"
+          sodipodi:nodetypes="sczsccccccccccsss"
+          style="color:#000000;fill:#d2bb89"
+          inkscape:connector-curvature="0"
+          d="m792.83 240.58c-17.018 0-23.375 5.7326-29.982 19.395-28.486 0.3177-98.985 0.4485-104.08 0.4485-5.0954 0-18.406 8.2154-18.406 18.406v31.875 212.53 18.375h18.406 110.69 261.53 18.406v-18.375-212.53-31.875-19.844c0-10.191-8.2153-18.406-18.406-18.406z"
+      />
+    </g
+    >
+  </g
+  >
+  <metadata
+    >
+    <rdf:RDF
+      >
+      <cc:Work
+        >
+        <dc:format
+          >image/svg+xml</dc:format
+        >
+        <dc:type
+            rdf:resource="http://purl.org/dc/dcmitype/StillImage"
+        />
+        <cc:license
+            rdf:resource="http://creativecommons.org/licenses/publicdomain/"
+        />
+        <dc:publisher
+          >
+          <cc:Agent
+              rdf:about="http://openclipart.org/"
+            >
+            <dc:title
+              >Openclipart</dc:title
+            >
+          </cc:Agent
+          >
+        </dc:publisher
+        >
+        <dc:title
+          >Manilla folder</dc:title
+        >
+        <dc:date
+          >2010-10-01T23:58:15</dc:date
+        >
+        <dc:description
+          >A simple folder</dc:description
+        >
+        <dc:source
+          >https://openclipart.org/detail/88081/manilla-folder-by-snifty</dc:source
+        >
+        <dc:creator
+          >
+          <cc:Agent
+            >
+            <dc:title
+              >snifty</dc:title
+            >
+          </cc:Agent
+          >
+        </dc:creator
+        >
+        <dc:subject
+          >
+          <rdf:Bag
+            >
+            <rdf:li
+              >folder</rdf:li
+            >
+            <rdf:li
+              >manilla folder</rdf:li
+            >
+          </rdf:Bag
+          >
+        </dc:subject
+        >
+      </cc:Work
+      >
+      <cc:License
+          rdf:about="http://creativecommons.org/licenses/publicdomain/"
+        >
+        <cc:permits
+            rdf:resource="http://creativecommons.org/ns#Reproduction"
+        />
+        <cc:permits
+            rdf:resource="http://creativecommons.org/ns#Distribution"
+        />
+        <cc:permits
+            rdf:resource="http://creativecommons.org/ns#DerivativeWorks"
+        />
+      </cc:License
+      >
+    </rdf:RDF
+    >
+  </metadata
+  >
+</svg
+>

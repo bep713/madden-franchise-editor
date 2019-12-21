@@ -60,7 +60,7 @@ preferencesService.initialize = function () {
                         {
                             'fields': [
                                 {
-                                    'label': 'Default directory',
+                                    'label': 'Default game save directory',
                                     'key': 'defaultDirectory',
                                     'type': 'directory',
                                     'help': 'The directory to open when you choose to open a file.'
@@ -75,7 +75,7 @@ preferencesService.initialize = function () {
                                     'help': 'If checked, the app will check to see if a new release has been made each time you start the app. You can manually check by clicking About -> Check for update at the top menu.'
                                 },
                                 {
-                                    'label': 'Auto-Save',
+                                    'label': 'Save the file after any change',
                                     'key': 'autoSave',
                                     'type': 'checkbox',
                                     'options': [
@@ -84,7 +84,7 @@ preferencesService.initialize = function () {
                                     'help': 'If checked, the app will save after any change is made.'
                                 },
                                 {
-                                    'label': 'Auto-Open',
+                                    'label': 'Editor to open on file load',
                                     'key': 'defaultEditor',
                                     'type': 'dropdown',
                                     'options': [

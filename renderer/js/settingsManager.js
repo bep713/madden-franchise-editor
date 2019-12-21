@@ -80,7 +80,7 @@ function initializeSettingsManager(preferences) {
 
 function setMissingKeys(schema, objectToCheck) {
     for (let category in schema) {
-        if (!objectToCheck[category]) {
+        if (objectToCheck[category] === null || objectToCheck[category] === undefined) {
             objectToCheck[category] = schema[category];
         }
         else {
