@@ -55,7 +55,7 @@ class FranchiseSchedule extends EventEmitter {
       return table.name === 'Team' && table.header.data1RecordCount > 1;
     });
 
-    const seasonGameFields = ['AwayTeam', 'HomeTeam', 'TimeOfDay', 'HomeScore', 'AwayScore', 'SeasonWeek', 'DayOfWeek', 'SeasonWeekType'];
+    const seasonGameFields = ['AwayTeam', 'HomeTeam', 'TimeOfDay', 'HomeScore', 'AwayScore', 'SeasonWeek', 'DayOfWeek', 'SeasonWeekType', 'IsPractice'];
     const teamFields = ['ShortName', 'LongName', 'DisplayName'];
 
     const that = this;
@@ -93,6 +93,10 @@ class FranchiseSchedule extends EventEmitter {
       });
 
       seasonGameTable.records.forEach((record, index) => {
+        if (record.IsPractice) {
+          return;
+        }
+
         let game = new FranchiseGame(record, index);
         
         if (record.HomeTeam !== '00000000000000000000000000000000') {
