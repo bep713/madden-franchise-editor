@@ -17,6 +17,10 @@ schemaSearchService.search = (directoriesToSearch) => {
         schemaSearchService.eventEmitter.emit('directory-done', {
           'directory': dir
         });
+      })
+      .catch((err) => {
+        reject(err);
+        return;
       });
     });
 
@@ -33,7 +37,10 @@ module.exports = schemaSearchService;
 function readInstallPackageFiles (directory) {
   return new Promise((resolve, reject) => {
     fs.readdir(directory, function (err, files) {
-      if (err) { reject(err); }
+      if (err) { 
+        reject(err); 
+        return;
+      }
       
       let fileSchemaPromises = [];
 

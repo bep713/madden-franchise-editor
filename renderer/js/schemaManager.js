@@ -107,6 +107,7 @@ function saveSchemas(directoriesToSearch) {
     })
     .catch(() => {
       isCurrentlySearching = false;
+      utilService.hide(document.querySelector('.loader-wrapper'));
     });
 
   schemaSearchService.eventEmitter.on('directory-scan', (numFiles) => {
