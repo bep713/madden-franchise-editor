@@ -268,6 +268,15 @@ function addIpcListeners() {
       });
     }
   });
+
+  ipcRenderer.on('currently-searching-response', function (event, arg) {
+    if (!arg) {
+      schemaMismatchService.initialize(navigationService.currentlyOpenedFile.data);
+      schemaMismatchService.eventEmitter.on('navigate', function () {
+        navigationService.onSchemaViewerClicked();
+      });
+    }
+  });
 };
 
 function setupEvents() {
@@ -284,14 +293,12 @@ function setupEvents() {
     });
 
     backupFile(navigationService.currentlyOpenedFile);
-    schemaMismatchService.initialize(navigationService.currentlyOpenedFile.data);
-    schemaMismatchService.eventEmitter.on('navigate', function () {
-      navigationService.onSchemaViewerClicked();
-    });
+
+    ipcRenderer.send('is-currently-searching');
 
     schemaMismatchService.eventEmitter.on('schema-quick-search', function () {
       ipcRenderer.send('schema-quick-search');
-    })
+    });
 
     navigationService.currentlyOpenedFile.data.on('saving', function () {
       ipcRenderer.send('saving');

@@ -300,6 +300,14 @@ function addIpcListeners() {
     createSettingsWindow(true);
     settingsWindow.webContents.send('show-all-pages');
   });
+
+  ipcMain.on('is-currently-searching', () => {
+    schemaWindow.webContents.send('is-currently-searching');
+  });
+
+  ipcMain.on('currently-searching-response', (event, arg) => {
+    mainWindow.webContents.send('currently-searching-response', arg);
+  });
 };
 
 function createSchemaWindow(show) {

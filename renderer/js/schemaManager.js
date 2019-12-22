@@ -9,6 +9,7 @@ const savedSchemaService = require('./js/services/savedSchemaService');
 const schemaSearchService = require('./js/services/schemaSearchService');
 
 let schemaInformation;
+let isCurrentlySearching = false;
 
 setupListeners();
 setupIpcListeners();
@@ -88,11 +89,10 @@ function saveSchemas(directoriesToSearch) {
   let filesDone = 0;
   let filesToSearch = 0;
   updateProgressMessage(0);
+  isCurrentlySearching = true;
 
   schemaSearchService.search(directoriesToSearch)
     .then((schemas) => {
-      let newSchemas = [];
-
       schemas.forEach((schema) => {
         if (!savedSchemaService.schemaExists(schema.meta)) {
           savedSchemaService.saveSchemaData(schema.data, schema.meta);
@@ -103,6 +103,10 @@ function saveSchemas(directoriesToSearch) {
       schemaSearchService.eventEmitter.off('file-done', updateLoadingMessage);
       console.timeEnd('search');
       utilService.hide(document.querySelector('.loader-wrapper'));
+      isCurrentlySearching = false;
+    })
+    .catch(() => {
+      isCurrentlySearching = false;
     });
 
   schemaSearchService.eventEmitter.on('directory-scan', (numFiles) => {
@@ -177,6 +181,10 @@ function setupIpcListeners() {
     }
 
     quickSchemaScan(directory + '/Madden20.exe');
+  });
+
+  ipcRenderer.on('is-currently-searching', function () {
+    ipcRenderer.send('currently-searching-response', isCurrentlySearching);
   });
 };
 
