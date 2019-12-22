@@ -36,9 +36,19 @@ function readInstallPackageFiles (directory) {
       if (err) { reject(err); }
       
       let fileSchemaPromises = [];
+
+      schemaSearchService.eventEmitter.emit('directory-scan', {
+        'fileCount': files.length
+      });
       
       files.forEach((file) => {
-        fileSchemaPromises.push(getSchemasInFile(path.join(directory, file)));
+        const promise = getSchemasInFile(path.join(directory, file));
+        fileSchemaPromises.push(promise);
+        promise.then(() => {
+          schemaSearchService.eventEmitter.emit('file-done', {
+            'file': file
+          });
+        });
       });
 
       Promise.all(fileSchemaPromises).then((promises) => {

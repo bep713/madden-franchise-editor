@@ -275,8 +275,9 @@ function addIpcListeners() {
     });
   });
 
-  ipcMain.on('show-schema-manager', function () {
+  ipcMain.on('show-schema-manager', function (event, arg) {
     createSchemaWindow();
+    schemaWindow.webContents.send('get-schema-info-response', arg)
   });
 
   ipcMain.on('load-schema', function (event, arg) {

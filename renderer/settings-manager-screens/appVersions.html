@@ -1,6 +1,6 @@
 <div class="app-versions-container settings-container">
     <div class="title-wrapper">
-        <h1 class="title">What's new in v3.8.0</h1>
+        <h1 class="title">What's new in <span class="version"></span></h1>
     </div>
     <div class="settings-container-content">
         <ul>
@@ -15,8 +15,10 @@
             </li>
             <li>
                 <div class="list-content">
-                    <div class="header">Schema management</div>
+                    <div class="header">Handling game updates</div>
                     <ul class="inner-list">
+                        <p class="list-paragraph">One thing that I didn't consider was Madden updating their schema throughout the year. 
+                            The below changes will allow the app to auto-adjust to the new changes as the game updates.</p>
                         <li>Added a schema management system that allows you to save custom schemas.</li>
                         <li>Added a service that allows you to scan the game files for updated schemas.</li>
                         <li>Added an alert message that shows when you open a file without an exact schema match saved.</li>
@@ -33,6 +35,7 @@
                 </div>
             </li>
         </ul>
+        <div class="info-message">View old release notes on the <a href="https://github.com/bep713/madden-franchise-editor/releases" target="_blank">project homepage.</a></div>
         <div class="continue-wrapper">
             <button class="back-btn btn">Previous</button>
             <button class="continue-btn btn">Continue to new settings</button>

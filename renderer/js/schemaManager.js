@@ -85,7 +85,8 @@ function setupListeners() {
 };
 
 function saveSchemas(directoriesToSearch) {
-  let dirsDone = 0;
+  let filesDone = 0;
+  let filesToSearch = 0;
   updateProgressMessage(0);
 
   schemaSearchService.search(directoriesToSearch)
@@ -99,16 +100,22 @@ function saveSchemas(directoriesToSearch) {
       });
       
       parseAvailableSchemas(true);
-      schemaSearchService.eventEmitter.off('directory-done', updateLoadingMessage);
+      schemaSearchService.eventEmitter.off('file-done', updateLoadingMessage);
       console.timeEnd('search');
       utilService.hide(document.querySelector('.loader-wrapper'));
     });
 
-  schemaSearchService.eventEmitter.on('directory-done', updateLoadingMessage);
+  schemaSearchService.eventEmitter.on('directory-scan', (numFiles) => {
+    filesToSearch += numFiles.fileCount;
+    updateLoadingMessage();
+    filesDone -= 1;
+  });
+
+  schemaSearchService.eventEmitter.on('file-done', updateLoadingMessage)
 
   function updateLoadingMessage (data) {
-    dirsDone += 1;
-    const progress = (dirsDone / directoriesToSearch.length) * 100;
+    filesDone += 1;
+    const progress = (filesDone / filesToSearch) * 100;
     updateProgressMessage(progress);
   };
 };
@@ -168,8 +175,6 @@ function setupIpcListeners() {
     if (directory === null || directory === undefined || directory.length === 0) {
       return;
     }
-
-    console.log(directory);
 
     quickSchemaScan(directory + '/Madden20.exe');
   });

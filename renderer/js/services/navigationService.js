@@ -260,11 +260,13 @@ function addIpcListeners() {
   });
 
   ipcRenderer.on('get-schema-info-request', function (event, arg) {
-    ipcRenderer.send('get-schema-info-response', {
-      'expected': navigationService.currentlyOpenedFile.data.expectedSchemaVersion,
-      'loaded': navigationService.currentlyOpenedFile.data.schemaList.meta,
-      'autoSelect': arg
-    });
+    if (navigationService.currentlyOpenedFile.data) {
+      ipcRenderer.send('get-schema-info-response', {
+        'expected': navigationService.currentlyOpenedFile.data.expectedSchemaVersion,
+        'loaded': navigationService.currentlyOpenedFile.data.schemaList.meta,
+        'autoSelect': arg
+      });
+    }
   });
 };
 
@@ -328,7 +330,10 @@ function setupEvents() {
   });
 
   schemaViewerService.eventEmitter.on('change-schema', function () {
-    ipcRenderer.send('show-schema-manager');
+    ipcRenderer.send('show-schema-manager', {
+      'expected': navigationService.currentlyOpenedFile.data.expectedSchemaVersion,
+      'loaded': navigationService.currentlyOpenedFile.data.schemaList.meta
+    });
   });
 };
 

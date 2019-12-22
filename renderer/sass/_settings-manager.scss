@@ -15,9 +15,14 @@
     }
 }
 
+.list-paragraph {
+    max-width: 550px;
+    line-height: 1.5;
+}
+
 .settings-container-content {
     background: $welcome-bg-color;
-    padding: 40px;
+    padding: 40px 40px 100px 40px;
 
     ul {
         padding: 0;
@@ -27,7 +32,7 @@
 
     li {
         + li {
-            margin-top: 20px;
+            margin-top: 40px;
         }
     }
 
@@ -47,25 +52,32 @@
             }
         }
     }
+}
 
-    .continue-wrapper {
-        margin-top: 40px;
-        display: flex;
-        justify-content: space-between;
-    }
-
+.continue-wrapper {
+    display: flex;
+    justify-content: space-between;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 10px 20px;
+    background-color: #fff;
+    border-top: 1px solid $brand-link-color;
+    
     .btn {
         border: 1px solid $brand-link-color;
         border-radius: 2px;
         background: $welcome-bg-color;
         padding: 15px;
         cursor: pointer;
-
+    
         &:hover {
             background: darken($welcome-bg-color, 3);
         }
     }
 }
+
 
 .fields-wrapper {
     margin-top: 20px;

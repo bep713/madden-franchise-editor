@@ -43,7 +43,7 @@ preferencesService.getPreferenceKeys = function () {
                 'madden20DirectorySet': false
             },
             'appVersions': {
-                '3_8_0': false
+                '4_0_0': false
             }
         }
     }
@@ -84,7 +84,7 @@ preferencesService.initialize = function () {
                                     'help': 'Choose the editor to open when you open a new file.'
                                 },
                                 {
-                                    'label': 'Automatically check for updates',
+                                    'label': 'Automatically check for application updates',
                                     'key': 'checkForUpdates',
                                     'type': 'checkbox',
                                     'options': [
@@ -102,7 +102,7 @@ preferencesService.initialize = function () {
                                     'help': 'If checked, the app will save after any change is made.'
                                 },
                                 {
-                                    'label': 'Automatically re-scan schemas after a game update',
+                                    'label': 'Automatically re-scan schemas after a Madden update',
                                     'key': 'checkForSchemaUpdates',
                                     'type': 'checkbox',
                                     'options': [
