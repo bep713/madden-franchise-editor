@@ -31,7 +31,7 @@
     "electron-updater": "^4.1.2",
     "handsontable": "^6.2.2",
     "lz4": "^0.6.3",
-    "madden-franchise": "^1.1.10",
+    "madden-franchise": "^1.1.12",
     "mobius1-selectr": "^2.4.13",
     "moment": "^2.24.0",
     "xlsx": "^0.15.1"
