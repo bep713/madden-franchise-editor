@@ -16,11 +16,12 @@ const scheduleService = require('./scheduleService');
 const reloadFileService = require('./reloadFileService');
 const savedSchemaService = require('./savedSchemaService');
 const tableEditorService = require('./tableEditorService');
+const leagueEditorService = require('./leagueEditorService');
 const schemaViewerService = require('./schemaViewerService');
 const abilityEditorService = require('./abilityEditorService');
 const schemaMismatchService = require('./schemaMismatchService');
 
-const services = [welcomeService, scheduleService, tableEditorService, schemaViewerService, abilityEditorService];
+const services = [welcomeService, scheduleService, tableEditorService, schemaViewerService, abilityEditorService, leagueEditorService];
 const navigationData = require('../../../data/navigation.json');
 
 const PATH_TO_DOCUMENTS = app.getPath('documents');
@@ -138,6 +139,15 @@ navigationService.onAbilityEditorClicked = function () {
   abilityEditorService.start(navigationService.currentlyOpenedFile.data);
 };
 
+navigationService.onLeagueEditorClicked = function () {
+  onNavigate(leagueEditorService);
+  navigationService.loadPage('league-editor.html');
+  appendNavigation('league-editor');
+  postGenerateNavigation();
+
+  leagueEditorService.start(navigationService.currentlyOpenedFile.data);
+};
+
 navigationService.refreshCurrentPage = function () {
   navigationService[navigationService.currentlyOpenService.navigationData.clickListener]();
 };
@@ -163,11 +173,11 @@ module.exports = navigationService;
 function DEV_openFile() {
   // welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-2019');
   // welcomeService.eventEmitter.emit('open-file', 'D:\\Projects\\Madden 20\\CAREER-BEPFRANCHISE');
-  // welcomeService.eventEmitter.emit('open-file', `${MADDEN_SAVE_BASE_FOLDER}\\CAREER-NOV20-07h13m59pm`);
+  welcomeService.eventEmitter.emit('open-file', `${MADDEN_SAVE_BASE_FOLDER}\\CAREER-NOV20-07h13m59pm`);
 
-  // setTimeout(() => {
-    // navigationService.onAbilityEditorClicked();
-  // }, 0);
+  setTimeout(() => {
+    navigationService.onLeagueEditorClicked();
+  }, 0);
 };
 
 function onNavigate(service) {

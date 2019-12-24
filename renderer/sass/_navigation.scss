@@ -1,3 +1,5 @@
+$navigation-breakpoint: 900px;
+
 .navigation {
   display: flex;
   flex-grow: 2;
@@ -5,7 +7,7 @@
   .selectr-container {
     margin: -10px 20px -9px 0;
 
-    @media (min-width: $breakpoint-md) {
+    @media (min-width: $navigation-breakpoint) {
       display: none;
     }
   }
@@ -21,7 +23,7 @@
   color: $welcome-link-color;
   cursor: pointer;
 
-  @media (min-width: $breakpoint-md) {
+  @media (min-width: $navigation-breakpoint) {
     display: inherit;
   }
 

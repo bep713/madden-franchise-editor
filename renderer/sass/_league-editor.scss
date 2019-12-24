@@ -1,0 +1,50 @@
+.search-wrapper {
+    display: grid;
+    grid-template-rows: 50px 1fr;
+}
+
+.editor-search {
+    border-radius: 5px;
+    border: 1px solid #888;
+    box-shadow: -5px 8px 12px -12px rgba(0,0,0,0.25);
+    padding-left: 10px;
+    font-size: 18px;
+    letter-spacing: 1px;
+    width: 65%;
+    margin: 0 auto;
+}
+
+.search-results {
+    width: 65%;
+    margin: 20px auto 0 auto;
+
+    .result-wrapper {
+        border: 1px solid #d1d1d1;
+        padding: 10px;
+
+        +.result-wrapper {
+            margin-top: 15px;
+        }
+    }
+
+    .secondary-line {
+        margin-top: 15px;
+        font-size: 0.867em;
+        color: #888;
+    }
+
+    .secondary-text {
+        margin-left: 5px;
+
+        &:before {
+            content: "\2022";
+            margin-right: 5px;
+        }
+
+        &:empty {
+            &:before {
+                display: none;
+            }
+        }
+    }
+}
