@@ -4,13 +4,19 @@ class Team extends FranchiseRecord {
     constructor(record) {
         super(record);
         this._city = record.LongName;
-        this._abbreviation = record.DisplayName;
+        this._abbreviation = record.LongName === record.DisplayName ? '' : record.DisplayName;
         this._teamIndex = record.TeamIndex;
         this._players = [];
         this._coach = null;
+        this._primaryColor = {
+            'r': record.TEAM_BACKGROUNDCOLORR,
+            'g': record.TEAM_BACKGROUNDCOLORG,
+            'b': record.TEAM_BACKGROUNDCOLORB
+        };
         this.searchTextAttributes = ['city', 'abbreviation'];
         this.mainLineAttributes = ['city', 'abbreviation'];
         this.type = 'Team';
+        this._iconPath = `img/team-logos/nfl/${this.abbreviation}.png`;
     };
 
     get city () {
@@ -47,6 +53,10 @@ class Team extends FranchiseRecord {
 
     set coach (coach) {
         this._coach = coach;
+    };
+
+    get primaryColor() {
+        return this._primaryColor;
     };
 
     addPlayer (player) {

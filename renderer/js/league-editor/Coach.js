@@ -7,7 +7,13 @@ class Coach extends FranchiseRecordEmployablePerson {
         this.mainLineAttributes = ['firstName', 'lastName'];
         this.secondLineAttributes = ['team.city', 'team.abbreviation'];
         this.type = 'Coach';
-    }
+        this._portraitId = record.Portrait;
+        this._iconPath = `img/coach-portraits/${this._portraitId}.png`;
+    };
+
+    get portraitId () {
+        return this._portraitId;
+    };
 };
 
 module.exports = Coach;

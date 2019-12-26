@@ -21,30 +21,41 @@
     .result-wrapper {
         border: 1px solid #d1d1d1;
         padding: 10px;
+        display: flex;
+        align-items: flex-end;
 
         +.result-wrapper {
             margin-top: 15px;
         }
     }
 
+    .icon {
+        width: 55px;
+    }
+
+    .text-wrapper {
+        margin-left: 10px;
+    }
+
     .secondary-line {
-        margin-top: 15px;
+        margin-top: 10px;
         font-size: 0.867em;
         color: #888;
     }
 
     .secondary-text {
-        margin-left: 5px;
-
-        &:before {
-            content: "\2022";
-            margin-right: 5px;
-        }
-
         &:empty {
             &:before {
                 display: none;
             }
+        }
+    }
+
+    .separator {
+        &:before {
+            content: "\2022";
+            margin-left: 5px;
+            margin-right: 5px;
         }
     }
 }

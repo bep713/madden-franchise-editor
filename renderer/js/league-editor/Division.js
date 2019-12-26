@@ -8,6 +8,13 @@ class Division extends FranchiseRecord {
         this.searchTextAttributes = ['name'];
         this.mainLineAttributes = ['name'];
         this.type = 'Division';
+        
+        if (this._name.indexOf('AFC') > -1) {
+            this._iconPath = 'img/team-logos/nfl/afc.png'
+        }
+        else {
+            this._iconPath = 'img/team-logos/nfl/nfc.png';
+        }
     };
 
     get teams () {

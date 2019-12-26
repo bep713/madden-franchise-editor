@@ -9,8 +9,8 @@ class SearchableRecord {
     };
 
     get searchText() {
-        return this._searchTextAttributes.reduce((prev, accum) => {
-            return prev + byString(this, accum) + ' ';
+        return this._searchTextAttributes.reduce((prev, cur) => {
+            return prev + byString(this, cur) + ' ';
         }, '');
     };
 
@@ -19,8 +19,8 @@ class SearchableRecord {
     };
 
     get mainLineText () {
-        return this._mainLineAttributes.reduce((prev, accum) => {
-            return prev + byString(this, accum) + ' ';
+        return this._mainLineAttributes.reduce((prev, cur) => {
+            return prev + byString(this, cur) + ' ';
         }, '');
     };
 
@@ -29,8 +29,13 @@ class SearchableRecord {
     };
 
     get secondaryLineText () {
-        return this._secondLineAttributes.reduce((prev, accum) => {
-            return prev + byString(this, accum) + ' ';
+        return this._secondLineAttributes.reduce((prev, cur) => {
+            if (cur === 'separator') {
+                return prev.slice(0, -1) + '<span class="separator"></span>';
+            }
+            else {
+                return prev + byString(this, cur) + ' ';
+            }
         }, '');
     };
 
@@ -44,6 +49,10 @@ class SearchableRecord {
 
     set type (type) {
         this._type = type;
+    };
+
+    get iconPath () {
+        return this._iconPath;
     };
 };
 

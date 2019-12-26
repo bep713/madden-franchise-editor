@@ -3,10 +3,21 @@ const FranchiseRecordEmployablePerson = require('./abstract/FranchiseRecordEmplo
 class Player extends FranchiseRecordEmployablePerson {
     constructor(record) {
         super(record);
-        this.searchTextAttributes = ['firstName', 'lastName', 'team.searchText'];
+        this._position = record.Position;
+        this._portraitId = record.PLYR_PORTRAIT;
+        this.searchTextAttributes = ['firstName', 'lastName', 'team.searchText', 'position'];
         this.mainLineAttributes = ['firstName', 'lastName'];
-        this.secondLineAttributes = ['team.city', 'team.abbreviation'];
+        this.secondLineAttributes = ['team.city', 'team.abbreviation', 'separator', 'position'];
         this.type = 'Player';
+        this._iconPath = `https://madden-assets-cdn.pulse.ea.com/madden19/portraits/64/${this._portraitId}.png`
+    };
+
+    get position () {
+        return this._position;
+    };
+
+    get portraitId () {
+        return this._portraitId;
     };
 };
 

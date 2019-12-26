@@ -68,20 +68,42 @@ function addEventListeners() {
 function parseResultList(resultList) {
     utilService.removeChildNodes(leagueEditorService.resultWrapper);
     
-    resultList.forEach((result) => {
+    resultList.slice(0, 24).forEach((result) => {
         const resultWrapper = document.createElement('div');
         resultWrapper.classList.add('result-wrapper');
+
+        const iconElem = document.createElement('img');
+        iconElem.src = result.iconPath;
+        iconElem.classList.add('icon');
+
+        iconElem.addEventListener('error', () => {
+            iconElem.classList.add('hidden');
+        });
+
+        const textWrapper = document.createElement('div');
+        textWrapper.classList.add('text-wrapper');
 
         const mainLineElem = document.createElement('div');
         mainLineElem.classList.add('main-line');
         mainLineElem.innerHTML = result.mainLineText;
 
+        const resultSecondLineText = result.secondaryLineText;
+
+        let secondaryLineText = '<span class="type">' + result.type + '</span>';
+        if (resultSecondLineText) {
+            secondaryLineText += '<span class="separator"></span><span class="secondary-text">' + result.secondaryLineText + '</span>';
+        }
+
         const secondaryLineElem = document.createElement('div');
         secondaryLineElem.classList.add('secondary-line');
-        secondaryLineElem.innerHTML = '<span class="type">' + result.type + '</span><span class="secondary-text">' + result.secondaryLineText + '</span>';
+        secondaryLineElem.innerHTML = secondaryLineText;
 
-        resultWrapper.appendChild(mainLineElem);
-        resultWrapper.appendChild(secondaryLineElem);
+        textWrapper.appendChild(mainLineElem);
+        textWrapper.appendChild(secondaryLineElem);
+
+        resultWrapper.appendChild(iconElem);
+        resultWrapper.appendChild(textWrapper);
+
         leagueEditorService.resultWrapper.appendChild(resultWrapper);
     });
 };
@@ -96,15 +118,15 @@ function loadTables() {
     let recordPromises = [];
 
     leagueEditorService.playerTables.forEach((table) => {
-        recordPromises.push(table.readRecords(['FirstName', 'LastName', 'TeamIndex', 'Age']));
+        recordPromises.push(table.readRecords(['FirstName', 'LastName', 'TeamIndex', 'Age', 'Position', 'PLYR_PORTRAIT']));
     });
 
     leagueEditorService.coachTables.forEach((table) => {
-        recordPromises.push(table.readRecords(['FirstName', 'LastName', 'TeamIndex', 'Age']));
+        recordPromises.push(table.readRecords(['FirstName', 'LastName', 'TeamIndex', 'Age', 'Portrait']));
     });
 
     leagueEditorService.teamTables.forEach((table) => {
-        recordPromises.push(table.readRecords(['LongName', 'DisplayName', 'TEAM_ORDER', 'TeamIndex']));
+        recordPromises.push(table.readRecords(['LongName', 'DisplayName', 'TEAM_ORDER', 'TeamIndex', 'TEAM_BACKGROUNDCOLORR', 'TEAM_BACKGROUNDCOLORG', 'TEAM_BACKGROUNDCOLORB']));
     });
 
     leagueEditorService.divisionTables.forEach((table) => {
@@ -177,7 +199,7 @@ function parseRecords() {
 
     leagueEditorService.teamTables.forEach((table) => {
         const filteredItems = table.records.filter((record) => {
-            return record.TEAM_ORDER < 50 || record.LongName === 'Free Agents';
+            return (record.TEAM_ORDER < 50 && record.DisplayName.length > 0) || record.LongName === 'Free Agents';
         });
 
         const teams = filteredItems.map((item) => {
