@@ -10,10 +10,6 @@ class Coach extends FranchiseRecordEmployablePerson {
         this._portraitId = record.Portrait;
         this._iconPath = `img/coach-portraits/${this._portraitId}.png`;
     };
-
-    get portraitId () {
-        return this._portraitId;
-    };
 };
 
 module.exports = Coach;

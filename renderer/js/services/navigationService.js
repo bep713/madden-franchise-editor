@@ -173,10 +173,11 @@ module.exports = navigationService;
 function DEV_openFile() {
   // welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-2019');
   // welcomeService.eventEmitter.emit('open-file', 'D:\\Projects\\Madden 20\\CAREER-BEPFRANCHISE');
-  welcomeService.eventEmitter.emit('open-file', `${MADDEN_SAVE_BASE_FOLDER}\\CAREER-NOV20-07h13m59pm`);
+  // welcomeService.eventEmitter.emit('open-file', `D:\\Projects\\Madden 20\\FranchiseData\\Franchise-Tuning-binary.FTC`);
 
   setTimeout(() => {
-    navigationService.onLeagueEditorClicked();
+    // ipcRenderer.send('show-preferences-window');
+    // navigationService.onTableEditorClicked();
   }, 0);
 };
 
@@ -292,9 +293,7 @@ function addIpcListeners() {
 function setupEvents() {
   welcomeService.eventEmitter.on('open-file', function (file) {
     navigationService.currentlyOpenedFile.path = file;
-    navigationService.currentlyOpenedFile.data = new FranchiseFile(file, {
-      'schemaDirectory': savedSchemaService.getSchemaPath()
-    });
+    navigationService.currentlyOpenedFile.data = createNewFranchiseFile(file);
     navigationService.currentlyOpenedFile.gameYear = navigationService.currentlyOpenedFile.data._gameYear;
 
     ipcRenderer.send('file-loaded', {
@@ -347,11 +346,38 @@ function setupEvents() {
   });
 
   schemaViewerService.eventEmitter.on('change-schema', function () {
-    ipcRenderer.send('show-schema-manager', {
-      'expected': navigationService.currentlyOpenedFile.data.expectedSchemaVersion,
-      'loaded': navigationService.currentlyOpenedFile.data.schemaList.meta
-    });
+    showSchemaManager();
   });
+};
+
+function showSchemaManager() {
+  ipcRenderer.send('show-schema-manager', {
+    'expected': navigationService.currentlyOpenedFile.data.expectedSchemaVersion,
+    'loaded': navigationService.currentlyOpenedFile.data.schemaList.meta
+  });
+}
+
+function createNewFranchiseFile(file) {
+  let newFile;
+
+  newFile = new FranchiseFile(file, {
+    'schemaDirectory': savedSchemaService.getSchemaPath()
+  });
+
+  newFile.once('error', pickSchema);
+  newFile.on('ready', () => {
+    newFile.off('error', pickSchema);
+  });
+
+  return newFile;
+
+  function pickSchema() {
+    remote.dialog.showMessageBoxSync(remote.getCurrentWindow(), {
+      'message': 'The selected file does not contain schema data. Please select one on the following screen.'
+    });
+    
+    showSchemaManager();
+  };
 };
 
 function setupMenu() {

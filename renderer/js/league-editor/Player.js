@@ -15,10 +15,6 @@ class Player extends FranchiseRecordEmployablePerson {
     get position () {
         return this._position;
     };
-
-    get portraitId () {
-        return this._portraitId;
-    };
 };
 
 module.exports = Player;

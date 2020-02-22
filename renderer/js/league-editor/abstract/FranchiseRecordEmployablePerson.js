@@ -23,6 +23,10 @@ class FranchiseRecordEmployedPerson extends FranchiseRecordPerson {
         this._team = team;
         this.teamIndex = team.teamIndex;
     };
+
+    get portraitId () {
+        return this._portraitId;
+    };
 };
 
 module.exports = FranchiseRecordEmployedPerson;

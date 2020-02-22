@@ -1,5 +1,7 @@
 const Fuse = require('fuse.js');
+const debug = require('debug')('mfe');
 const utilService = require('./utilService');
+const ASTParser = require('madden-file-tools/streams/ASTParser');
 
 const Team = require('../league-editor/Team');
 const Coach = require('../league-editor/Coach');
@@ -14,6 +16,11 @@ leagueEditorService.searchBar = null;
 leagueEditorService.file = null;
 leagueEditorService.loadingSpinner = null;
 leagueEditorService.resultWrapper = null;
+leagueEditorService.portraits = {
+    'player': null,
+    'coach': null,
+    'fd': null
+};
 leagueEditorService.playerTables = [];
 leagueEditorService.coachTables = [];
 leagueEditorService.teamTables = [];
@@ -48,10 +55,21 @@ function runStartTasks() {
 
     leagueEditorService.resultWrapper = document.querySelector('.search-results');
 
+    parsePortraitMetadata();
     addEventListeners();
+
     setTimeout(() => {
         loadTables();
     }, 10);
+};
+
+function parsePortraitMetadata() {
+    const parser = new ASTParser();
+    parser.extract = false;
+
+    parser.on('done', function () {
+        leagueEditorService.portraits.player = parser._file;
+    });
 };
 
 function addEventListeners() {
@@ -59,7 +77,7 @@ function addEventListeners() {
 
     searchBar.addEventListener('input', () => {
         new Promise((resolve, reject) => {
-            const result = leagueEditorService.fuse.search(searchBar.value);
+            const result = leagueEditorService.fuse.search(searchBar.value).slice(0, 10);
             parseResultList(result);
         });
     });
@@ -68,18 +86,18 @@ function addEventListeners() {
 function parseResultList(resultList) {
     utilService.removeChildNodes(leagueEditorService.resultWrapper);
     
-    resultList.slice(0, 24).forEach((result) => {
+    resultList.forEach((result) => {
         const resultWrapper = document.createElement('div');
         resultWrapper.classList.add('result-wrapper');
 
         const iconElem = document.createElement('img');
-        iconElem.src = result.iconPath;
+        iconElem.src = 'D:\\Projects\\Madden 20\\test-webp\\' + result.portraitId + '.webp';
         iconElem.classList.add('icon');
-
+        
         iconElem.addEventListener('error', () => {
             iconElem.classList.add('hidden');
         });
-
+            
         const textWrapper = document.createElement('div');
         textWrapper.classList.add('text-wrapper');
 

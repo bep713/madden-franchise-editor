@@ -27,7 +27,7 @@ if (pagesToShow.length > 0) {
 }
 
 function addIpcListeners() {
-    ipcRenderer.on('show-all-pages', () => {
+    ipcRenderer.on('show-release-notes-dialog', () => {
         let pagesToShow = [];
         
         for (let page in preferences.settingsManager) {
@@ -41,6 +41,10 @@ function addIpcListeners() {
         });
 
         showPages(pagesToShow);
+    });
+
+    ipcRenderer.on('show-settings-dialog', () => {
+        
     });
 };
 

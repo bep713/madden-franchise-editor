@@ -22,17 +22,6 @@
       }
     },
     {
-      "id": "league-editor",
-      "text": "League Editor",
-      "service": "leagueEditorService",
-      "clickListener": "onLeagueEditorClicked",
-      "availableVersions": [19, 20],
-      "menu": {
-        "enable": ["Save"],
-        "disable": ["Export", "Import", "LogTable"]
-      }
-    },
-    {
       "id": "table-editor",
       "text": "Table Editor",
       "service": "tableEditorService",
@@ -61,6 +50,19 @@
       "availableVersions": [19,20],
       "menu": {
         "disable": ["Save", "Export", "Import", "LogTable"]
+      }
+    }
+  ],
+  "hiddenItems": [
+    {
+      "id": "league-editor",
+      "text": "League Editor",
+      "service": "leagueEditorService",
+      "clickListener": "onLeagueEditorClicked",
+      "availableVersions": [19, 20],
+      "menu": {
+        "enable": ["Save"],
+        "disable": ["Export", "Import", "LogTable"]
       }
     }
   ]

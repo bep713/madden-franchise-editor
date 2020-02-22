@@ -375,7 +375,7 @@ menuService.openCredits = function () {
 
 menuService.viewReleaseNotes = function () {
   ipcRenderer.send('show-settings-manager');
-}
+};
 
 menuService.enableMenuIds = enableMenuIds;
 menuService.disableMenuIds = disableMenuIds;

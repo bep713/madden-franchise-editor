@@ -1,3 +1,4 @@
+const path = require('path');
 const chokidar = require('chokidar');
 const { app, BrowserWindow, ipcMain, Menu, shell } = require('electron');
 const { autoUpdater } = require('electron-updater');
@@ -14,10 +15,9 @@ const isDev = process.env.NODE_ENV === 'development';
 
 let fileDependentMenuItems = ['CloseFile', 'RevealInExplorer'];
 
-if (isDev) {
+if (isDev) { 
   require('electron-reload')(__dirname, {
-    ignored: /node_modules|[\/\\]\.|temp/,
-    // electron: path.join(__dirname, 'node_modules', '.bin', 'electron')
+    ignored: /node_modules\/(?!madden-franchise)|[\/\\]\.|temp/
   });
 }
 
@@ -298,7 +298,12 @@ function addIpcListeners() {
 
   ipcMain.on('show-settings-manager', function () {
     createSettingsWindow(true);
-    settingsWindow.webContents.send('show-all-pages');
+    settingsWindow.webContents.send('show-release-notes-dialog');
+  });
+
+  ipcMain.on('show-preferences-window', function () {
+    createSettingsWindow(true);
+    settingsWindow.webContents.send('show-settings-dialog');
   });
 
   ipcMain.on('is-currently-searching', () => {
