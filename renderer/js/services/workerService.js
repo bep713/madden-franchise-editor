@@ -7,7 +7,7 @@ const zlib = require('zlib');
 const sharp = require('sharp');
 const dxt = require('dxt-js');
 const through2 = require('through2');
-const debug = require('debug')('worker-service');
+// const debug = require('debug')('worker-service');
 
 const DDSFile = require('madden-file-tools/filetypes/DDSFile');
 const DDSParser = require('madden-file-tools/streams/DDSParser');

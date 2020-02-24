@@ -1,5 +1,5 @@
 const Fuse = require('fuse.js');
-const debug = require('debug')('mfe');
+// const debug = require('debug')('mfe');
 const utilService = require('./utilService');
 const ASTParser = require('madden-file-tools/streams/ASTParser');
 
