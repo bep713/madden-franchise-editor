@@ -74,8 +74,14 @@ function showPages(pages) {
         if (index === 0) {
             backButton.classList.add('hidden');
         }
-        else if ((index + 1) === pages.length) {
-            continueButton.innerHTML = continueButton.innerHTML.replace('continue', 'close').replace('Continue', 'Close');
+        
+        if ((index + 1) === pages.length) {
+            if (currentPage.id === 'appVersions') {
+                continueButton.innerHTML = 'Close';
+            }
+            else {
+                continueButton.innerHTML = continueButton.innerHTML.replace('continue', 'close').replace('Continue', 'Close');
+            }
         }
 
         backButton.addEventListener('click', () => {
