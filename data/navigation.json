@@ -6,6 +6,7 @@
       "clickListener": "onHomeClicked",
       "service": "welcomeService",
       "availableVersions": [19,20],
+      "availableFormats": ["franchise", "franchise-common"],
       "menu": {
         "disable": ["Save", "Export", "Import", "LogTable"]
       }
@@ -16,6 +17,7 @@
       "service": "scheduleEditorService",
       "clickListener": "onScheduleEditorClicked",
       "availableVersions": [19, 20],
+      "availableFormats": ["franchise"],
       "menu": {
         "enable": ["Save"],
         "disable": ["Export", "Import", "LogTable"]
@@ -26,6 +28,7 @@
       "text": "Table Editor",
       "service": "tableEditorService",
       "clickListener": "onTableEditorClicked",
+      "availableFormats": ["franchise", "franchise-common"],
       "availableVersions": [19,20],
       "menu": {
         "enable": ["Save", "Export", "Import", "LogTable"]
@@ -37,6 +40,7 @@
       "service": "abilityEditorService",
       "clickListener": "onAbilityEditorClicked",
       "availableVersions": [20],
+      "availableFormats": ["franchise"],
       "menu": {
         "enable": ["Save"],
         "disable": ["Export", "Import", "LogTable"]
@@ -48,6 +52,7 @@
       "service": "schemaViewerService",
       "clickListener": "onSchemaViewerClicked",
       "availableVersions": [19,20],
+      "availableFormats": ["franchise", "franchise-common"],
       "menu": {
         "disable": ["Save", "Export", "Import", "LogTable"]
       }
@@ -60,6 +65,7 @@
       "service": "leagueEditorService",
       "clickListener": "onLeagueEditorClicked",
       "availableVersions": [19, 20],
+      "availableFormats": ["franchise"],
       "menu": {
         "enable": ["Save"],
         "disable": ["Export", "Import", "LogTable"]

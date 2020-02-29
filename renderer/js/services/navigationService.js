@@ -41,7 +41,8 @@ let navigationService = {};
 navigationService.currentlyOpenedFile = {
   path: null,
   data: null,
-  gameYear: null
+  gameYear: null,
+  type: null
 };
 
 navigationService.currentlyOpenService = null;
@@ -51,7 +52,8 @@ navigationService.generateNavigation = function (activeItem) {
   const rightActionButtons = document.querySelector('.right-action-buttons');
 
   const applicableNavigationData = navigationData.items.filter((navigation) => {
-    return navigation.availableVersions.includes(navigationService.currentlyOpenedFile.data._gameYear);
+    return (navigation.availableVersions.includes(navigationService.currentlyOpenedFile.data._gameYear)
+      && navigation.availableFormats.includes(navigationService.currentlyOpenedFile.data.type.format));
   });
 
   applicableNavigationData.forEach((item) => {
@@ -208,6 +210,7 @@ function addIpcListeners() {
     navigationService.currentlyOpenedFile.path = null;
     navigationService.currentlyOpenedFile.data = null;
     navigationService.currentlyOpenedFile.gameYear = null;
+    navigationService.currentlyOpenedFile.type = null;
     navigationService.onHomeClicked();
 
     ipcRenderer.send('close-file');
@@ -295,10 +298,11 @@ function setupEvents() {
     navigationService.currentlyOpenedFile.path = file;
     navigationService.currentlyOpenedFile.data = createNewFranchiseFile(file);
     navigationService.currentlyOpenedFile.gameYear = navigationService.currentlyOpenedFile.data._gameYear;
+    navigationService.currentlyOpenedFile.type = navigationService.currentlyOpenedFile.data.type;
 
     ipcRenderer.send('file-loaded', {
       'path': navigationService.currentlyOpenedFile.path,
-      'gameYear': navigationService.currentlyOpenedFile.gameYear
+      'type': navigationService.currentlyOpenedFile.type
     });
 
     backupFile(navigationService.currentlyOpenedFile);

@@ -257,6 +257,7 @@ function addIpcListeners() {
   ipcMain.on('install-update', function () {
     mainWindow.webContents.send('update-downloading');
     autoUpdater.downloadUpdate().then(() => {
+      console.log('here');
       autoUpdater.quitAndInstall();
     });
   });

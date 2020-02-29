@@ -1,7 +1,7 @@
 const Fuse = require('fuse.js');
 // const debug = require('debug')('mfe');
 const utilService = require('./utilService');
-const ASTParser = require('madden-file-tools/streams/ASTParser');
+// const ASTParser = require('madden-file-tools/streams/ASTParser');
 
 const Team = require('../league-editor/Team');
 const Coach = require('../league-editor/Coach');

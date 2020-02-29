@@ -17,17 +17,20 @@ let welcomeService = {};
 welcomeService.name = 'welcomeService';
 welcomeService.eventEmitter = new EventEmitter();
 
-addIpcListeners();
+addGlobalIpcListeners();
 
 welcomeService.start = function (file) {
+  addTemporaryIpcListeners();
   addVersionNumber();
   addListeners();
   addRecentFiles();
+  hideOpenedFileLinks();
 
-  if (file.gameYear) {
+  if (file.type) {
+    console.log(file);
     showOpenedFileLinks();
-    toggleNavigationLinks(file.gameYear);
-    toggleMaddenIcons(file.gameYear);
+    toggleNavigationLinks(file.type);
+    toggleMaddenIcons(file.type.year);
   }
 };
 
@@ -38,6 +41,7 @@ welcomeService.addRecentFile = (filePath) => {
 
 welcomeService.onClose = function () {
   ipcRenderer.removeListener('file-loaded', onFileLoaded);
+  ipcRenderer.removeListener('close-file', onFileClosed);
 };
 
 module.exports = welcomeService;
@@ -63,8 +67,7 @@ function addOpenFileListener() {
   openDifferentFileButton.addEventListener('click', openFile);
 };
 
-function addIpcListeners() {
-  ipcRenderer.on('file-loaded', onFileLoaded);
+function addGlobalIpcListeners() {
   ipcRenderer.on('reload-file', (event, filePath) => {
     openFileFromPath(filePath);
   });
@@ -74,21 +77,37 @@ function addIpcListeners() {
   });
 };
 
-function onFileLoaded (event, file) {
-  toggleNavigationLinks(file.gameYear);
-  toggleMaddenIcons(file.gameYear);
+function addTemporaryIpcListeners() {
+  ipcRenderer.on('file-loaded', onFileLoaded);
+  ipcRenderer.on('close-file', onFileClosed);
 };
 
-function toggleNavigationLinks(gameYear) {
+function onFileLoaded (event, file) {
+  toggleNavigationLinks(file.type);
+  toggleMaddenIcons(file.type.year);
+};
+
+function onFileClosed (event) {
+  hideOpenedFileLinks();
+};
+
+function toggleNavigationLinks(type) {
+  const scheduleLink = document.querySelector('#open-schedule');
   const abilityLink = document.querySelector('#open-ability-editor');
 
-  if (abilityLink) {
-    if (gameYear === 19) {
-      abilityLink.classList.add('unavailable');
-    }
-    else {
-      abilityLink.classList.remove('unavailable');
-    }
+  if (type.format === 'franchise-common') {
+    abilityLink.classList.add('unavailable');
+    scheduleLink.classList.add('unavailable');
+  }
+
+  else if (type.year === 19) {
+    abilityLink.classList.add('unavailable');
+    scheduleLink.classList.remove('unavailable');
+  }
+
+  else {
+    abilityLink.classList.remove('unavailable');
+    scheduleLink.classList.remove('unavailable');
   }
 };
 
@@ -236,3 +255,13 @@ function showOpenedFileLinks() {
   utilService.show(fileActions);
 };
 
+function hideOpenedFileLinks() {
+  const openFileButton = document.querySelector('#open-file');
+  utilService.show(openFileButton);
+
+  const openDifferentFileButton = document.querySelector('#open-different-file');
+  utilService.hide(openDifferentFileButton);
+
+  const fileActions = document.querySelector('.file-actions');
+  utilService.hide(fileActions);
+};

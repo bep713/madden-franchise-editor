@@ -102,7 +102,7 @@ $brand-color: $brand-primary;
       pointer-events: none;
 
       &:after {
-        content: '<- Not yet available for this year';
+        content: '<- Not available for the currently opened file';
         margin-left: 15px;
       }
     }
