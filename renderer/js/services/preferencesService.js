@@ -44,7 +44,8 @@ preferencesService.getPreferenceKeys = function () {
             },
             'appVersions': {
                 '4_0_0': false,
-                '4_1_0': false
+                '4_1_0': false,
+                '4_1_1': false
             }
         }
     }
