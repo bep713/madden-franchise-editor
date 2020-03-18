@@ -1,6 +1,8 @@
 const { ipcRenderer, remote, shell } = require('electron');
+const d3 = require('d3');
 const app = remote.app;
 const dialog = remote.dialog;
+const d3Drag = require('d3-drag');
 const Selectr = require('mobius1-selectr');
 const utilService = require('./utilService');
 const Handsontable = require('handsontable').default;
@@ -52,6 +54,7 @@ function onKeyOpenJumpToColumnModal (e) {
 tableEditorService.start = function (file) {
   addIpcListeners();
   initializeTable();
+  initializeCustomEditors();
   addEventListeners();
 
   if (file.isLoaded) {
@@ -526,7 +529,7 @@ function formatColumns(table) {
     return table.offsetTable.map((offset) => {
       return {
         'data': offset.name,
-        'renderer': offset.isReference ? referenceRenderer : offset.enum || offset.type === 'bool' ? 'dropdown' : 'text',
+        'renderer': offset.type === 'Spline' ? referenceRenderer : offset.isReference ? referenceRenderer : offset.enum || offset.type === 'bool' ? 'dropdown' : 'text',
         'wordWrap': false,
         'editor': offset.enum || offset.type === 'bool' ? 'dropdown' : 'text',
         'source': offset.enum ? offset.enum.members.map((member) => { return member.name; }) : offset.type === 'bool' ? ['true', 'false'] : []
@@ -583,6 +586,29 @@ function referenceRenderer(instance, td, row, col, prop, value, cellProperties) 
   return td;
 };
 
+function splineRenderer(instance, td, row, col, prop, value, cellProperties) {  
+  referenceRenderer(instance, td, row, col, prop, value, cellProperties);
+
+  td.classList.add('table-cell--button');
+  const splineEditorButton = document.createElement('button');
+  splineEditorButton.classList.add('table-cell-button', 'table-cell-button--right', 'edit-spline-button');
+
+  splineEditorButton.addEventListener('click', splineClickListener);
+  splineEditorButton.addEventListener('mousedown', function (e) { e.stopPropagation(); });
+
+  function splineClickListener(e) {
+    e.stopPropagation();
+
+    // splineSvg.append('circle')
+    //   .attr('cx', 2).attr('cy', 2).attr('r', 10).style('fill', 'red');
+
+    const splineGraphWrapper = document.querySelector('.spline-editor-wrapper');
+    splineGraphWrapper.classList.remove('hidden');
+  };
+
+  td.appendChild(splineEditorButton);
+};
+
 function enumRenderer(instance, td, row, col, prop, value, cellProperties) {
   const colEnum = tableEditorService.selectedTable.records[0].getFieldByKey(prop).offset.enum;
 
@@ -596,4 +622,38 @@ function enumRenderer(instance, td, row, col, prop, value, cellProperties) {
   }
 
   return td;
+};
+
+function initializeCustomEditors() {
+  initializeSplineEditor();
+};
+
+function initializeSplineEditor() {
+  var margin = {top: 10, right: 40, bottom: 30, left: 30},
+        width = 450 - margin.left - margin.right,
+        height = 400 - margin.top - margin.bottom;
+
+    const splineSvg = d3.select('#spline-editor-area')
+      .append('svg')
+        .attr('width', width + margin.left + margin.right)
+        .attr('height', height + margin.top + margin.bottom)
+      .append('g')
+        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+    const x = d3.scaleLinear()
+      .domain([0, 100])
+      .range([0, width]);
+
+    splineSvg
+      .append('g')
+      .attr('transform', 'translate(0,' + height + ')')
+      .call(d3.axisBottom(x));
+
+    const y = d3.scaleLinear()
+      .domain([0, 100])
+      .range([0, height]);
+
+    splineSvg
+      .append('g')
+      .call(d3.axisLeft(y));
 };

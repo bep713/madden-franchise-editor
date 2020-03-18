@@ -173,13 +173,13 @@ if (process.env.NODE_ENV === 'development') {
 module.exports = navigationService;
 
 function DEV_openFile() {
-  // welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-2019');
-  // welcomeService.eventEmitter.emit('open-file', 'D:\\Projects\\Madden 20\\CAREER-BEPFRANCHISE');
+  welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-TESTNEW');
+  // welcomeService.eventEmitter.emit('open-file', 'D:\\Projects\\Madden 20\\CAREER-TESTNEW');
   // welcomeService.eventEmitter.emit('open-file', `D:\\Projects\\Madden 20\\FranchiseData\\Franchise-Tuning-binary.FTC`);
 
   setTimeout(() => {
     // ipcRenderer.send('show-preferences-window');
-    // navigationService.onTableEditorClicked();
+    navigationService.onTableEditorClicked();
   }, 0);
 };
 
@@ -299,6 +299,12 @@ function setupEvents() {
     navigationService.currentlyOpenedFile.data = createNewFranchiseFile(file);
     navigationService.currentlyOpenedFile.gameYear = navigationService.currentlyOpenedFile.data._gameYear;
     navigationService.currentlyOpenedFile.type = navigationService.currentlyOpenedFile.data.type;
+
+    const table = navigationService.currentlyOpenedFile.data.tables.filter((table) => {
+      return table.header.tableStoreName === 'ArrayBucket_FranchiseStatic_000072';
+    });
+
+    console.log(table);
 
     ipcRenderer.send('file-loaded', {
       'path': navigationService.currentlyOpenedFile.path,
