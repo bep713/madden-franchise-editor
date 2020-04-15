@@ -5,7 +5,7 @@ const { ipcRenderer, remote } = require('electron');
 const app = remote.app;
 const dialog = remote.dialog;
 
-const Selectr = require('mobius1-selectr');
+const Selectr = require('../libs/selectr/selectr');
 const FranchiseFile = require('madden-franchise');
 
 const utilService = require('./utilService');
@@ -173,7 +173,7 @@ if (process.env.NODE_ENV === 'development') {
 module.exports = navigationService;
 
 function DEV_openFile() {
-  welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-TESTNEW');
+  welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-M03TEST_MOD');
   // welcomeService.eventEmitter.emit('open-file', 'D:\\Projects\\Madden 20\\CAREER-TESTNEW');
   // welcomeService.eventEmitter.emit('open-file', `D:\\Projects\\Madden 20\\FranchiseData\\Franchise-Tuning-binary.FTC`);
 

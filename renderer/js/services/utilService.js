@@ -202,6 +202,10 @@ utilService.showNotificationElement = function (selector, timeToShow, hiddenClas
       }, timeToShow);
     }
   }, 20);
-}
+};
+
+utilService.calculateReferenceBinary = function (tableId, row) {
+  return utilService.dec2bin(tableId, 15) + utilService.dec2bin(row, 17);
+};
 
 module.exports = utilService;

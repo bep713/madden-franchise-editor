@@ -1,9 +1,9 @@
 const { ipcRenderer, remote, shell } = require('electron');
-const d3 = require('d3');
+// const d3 = require('d3');
 const app = remote.app;
 const dialog = remote.dialog;
-const d3Drag = require('d3-drag');
-const Selectr = require('mobius1-selectr');
+// const d3Drag = require('d3-drag');
+const Selectr = require('../libs/selectr/selectr');
 const utilService = require('./utilService');
 const Handsontable = require('handsontable').default;
 const externalDataService = require('./externalDataService');
@@ -21,6 +21,7 @@ tableEditorService.columnIndexToSelect = 0;
 tableEditorService.initialTableSelect = null;
 tableEditorService.currentlySelectedRow = 0;
 tableEditorService.currentlySelectedColumn = 0;
+tableEditorService.referenceEditorSelector = null;
 
 let loader;
 
@@ -54,7 +55,7 @@ function onKeyOpenJumpToColumnModal (e) {
 tableEditorService.start = function (file) {
   addIpcListeners();
   initializeTable();
-  initializeCustomEditors();
+  // initializeCustomEditors();
   addEventListeners();
 
   if (file.isLoaded) {
@@ -104,7 +105,8 @@ tableEditorService.loadTable = function () {
     // console.log(table.name);
     return {
       'value': table.header.tableId,
-      'text': `${index} - ${table.name}`
+      'text': `${index} - (${table.header.tableId}) ${table.name}`,
+      'data-search-params': [index, table.header.tableId, table.name]
     };
   });
 
@@ -150,6 +152,8 @@ tableEditorService.loadTable = function () {
       });
     }, 100);
   });
+
+  initializeCustomEditors();
   
   if (tableEditorService.initialTableToSelect) {
     tableEditorService.rowIndexToSelect = tableEditorService.initialTableToSelect.recordIndex;
@@ -481,7 +485,8 @@ function calculateColumnWidths(columns, table) {
     let calculatedWidth = 0;
 
     if (offset.isReference || offset.enum) {
-      calculatedWidth = 350;
+      const typeLength = ((offset.type.length + 6) * 9) + 35;
+      calculatedWidth = typeLength > 350 ? typeLength : 350;
     }
     else if (offset.maxLength) {
       calculatedWidth = (offset.maxLength * 9) + 26;
@@ -543,17 +548,21 @@ function formatColumns(table) {
 function referenceRenderer(instance, td, row, col, prop, value, cellProperties) {
   if (value && value.length === 32) {
     utilService.removeChildNodes(td);
-    const referenceLink = document.createElement('a');
     const otherTableFlag = value[0];
-
+    
     if (otherTableFlag === '0') {
       const tableId = utilService.bin2dec(value.substring(2,15));
       const recordIndex = utilService.bin2dec(value.substring(16));
       const table = tableEditorService.file.getTableById(tableId);
-
+      
       if (tableId > 0 && table) {
+        cellProperties.editor = false;
+        
+        const referenceWrapper = document.createElement('div');
+
+        const referenceLink = document.createElement('a');
         referenceLink.innerHTML = `${table.name} - ${recordIndex}`;
-        td.appendChild(referenceLink);
+        referenceWrapper.appendChild(referenceLink);
 
         referenceLink.addEventListener('click', function () {
           tableEditorService.navSteps[tableEditorService.navSteps.length - 1].column = col;
@@ -573,6 +582,51 @@ function referenceRenderer(instance, td, row, col, prop, value, cellProperties) 
             tableEditorService.navSteps[tableEditorService.navSteps.length - 1].recordIndex = recordIndex;
           }, 1000);
         });
+
+        referenceWrapper.classList.add('table-cell--with-button', 'table-cell-button--show-on-hover');
+        const referenceEditorButton = document.createElement('button');
+        referenceEditorButton.classList.add('table-cell-button', 'table-cell-button--right', 'edit-button');
+        referenceWrapper.appendChild(referenceEditorButton);
+
+        referenceEditorButton.addEventListener('click', referenceEditorOnClick);
+        // referenceEditorButton.addEventListener('mousedown', function (e) { e.stopPropagation(); });
+
+        function referenceEditorOnClick() {
+          const referenceEditorWrapper = document.getElementById('reference-editor-wrapper');
+          referenceEditorWrapper.classList.remove('hidden');
+          referenceEditorWrapper.dataset.selectedRow = row;
+          referenceEditorWrapper.dataset.selectedCol = col;
+
+          const referenceEditorContent = document.getElementById('reference-editor-content');
+          const referenceEditorHighlight = document.getElementById('reference-editor-highlight');
+
+          const referenceEditorClientRect = referenceEditorContent.getBoundingClientRect();
+          const tdClientRect = td.getBoundingClientRect();
+          const windowClientRect = document.body.getBoundingClientRect();
+          
+          const referenceEditorShouldDisplayOnTop = (tdClientRect.bottom + referenceEditorClientRect.height) >= (windowClientRect.bottom - 20);
+
+          if (referenceEditorShouldDisplayOnTop) {
+            referenceEditorContent.style.top = (tdClientRect.top - referenceEditorClientRect.height) + 'px';
+          }
+          else {
+            referenceEditorContent.style.top = tdClientRect.bottom + 'px';
+          }
+
+          referenceEditorContent.style.left = tdClientRect.left + 'px';
+
+          referenceEditorHighlight.style.top = tdClientRect.top + 'px';
+          referenceEditorHighlight.style.left = tdClientRect.left + 'px';
+          referenceEditorHighlight.style.width = tdClientRect.width + 'px';
+          referenceEditorHighlight.style.height = tdClientRect.height + 'px';
+
+          tableEditorService.referenceEditorSelector.setValue(tableId);
+          
+          const rowInput = document.getElementById('reference-editor-row');
+          rowInput.value = recordIndex;
+        };
+
+        td.appendChild(referenceWrapper);
       } else {
         td.innerHTML = value;
       }
@@ -599,9 +653,6 @@ function splineRenderer(instance, td, row, col, prop, value, cellProperties) {
   function splineClickListener(e) {
     e.stopPropagation();
 
-    // splineSvg.append('circle')
-    //   .attr('cx', 2).attr('cy', 2).attr('r', 10).style('fill', 'red');
-
     const splineGraphWrapper = document.querySelector('.spline-editor-wrapper');
     splineGraphWrapper.classList.remove('hidden');
   };
@@ -625,7 +676,38 @@ function enumRenderer(instance, td, row, col, prop, value, cellProperties) {
 };
 
 function initializeCustomEditors() {
-  initializeSplineEditor();
+  initializeReferenceEditor();
+};
+
+function initializeReferenceEditor() {
+  const referenceEditorWrapper = document.getElementById('reference-editor-wrapper');
+  tableEditorService.referenceEditorWrapper = referenceEditorWrapper;
+
+  const referenceEditorSelector = document.getElementById('reference-editor-table');
+  tableEditorService.referenceEditorSelector = new Selectr(referenceEditorSelector, {
+    data: tableEditorService.tableSelector.data
+  });
+
+  const closeButton = referenceEditorWrapper.querySelector('.close');
+  closeButton.addEventListener('click', () => {
+    referenceEditorWrapper.classList.add('hidden');
+  });
+
+  const underlay = referenceEditorWrapper.querySelector('.reference-editor-underlay');
+  underlay.addEventListener('click', () => {
+    referenceEditorWrapper.classList.add('hidden');
+  });
+
+  const change = document.getElementById('btn-change-reference');
+  change.addEventListener('click', () => {
+    const tableId = tableEditorService.referenceEditorSelector.getValue();
+    const row = document.getElementById('reference-editor-row').value;
+    const newReference = utilService.calculateReferenceBinary(tableId, row);
+
+    const hotRow = parseInt(referenceEditorWrapper.dataset.selectedRow);
+    const hotCol = parseInt(referenceEditorWrapper.dataset.selectedCol)
+    tableEditorService.hot.setDataAtCell(hotRow, hotCol, newReference);
+  });
 };
 
 function initializeSplineEditor() {

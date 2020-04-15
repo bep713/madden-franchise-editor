@@ -3,7 +3,7 @@ const EventEmitter = require('events');
 const { ipcRenderer, remote } = require('electron');
 const app = remote.app;
 
-const Selectr = require('mobius1-selectr');
+const Selectr = require('../libs/selectr/selectr');
 const utilService = require('./utilService');
 const teamData = require('../../../data/teamData.json');
 const dayOfWeekData = require('../../../data/dayOfWeekData.json');

@@ -6,7 +6,9 @@
   }
 
   .selectr-selected {
-    border-color: $brand-black;
+    border-color: darkgray;
+    background-color: white;
+    border-radius: 0;
     padding-top: 10px;
     padding-bottom: 10px;
   }

@@ -90,23 +90,36 @@ td.active-row {
   }
 }
 
-.table-cell--button {
+.table-cell--with-button {
   display: flex;
   justify-content: space-between;
+
+  &.table-cell-button--show-on-hover {
+    button {
+      display: none;
+    }
+  
+    &:hover {
+      button {
+        display: inherit;
+      }
+    }
+  }
 }
 
 .table-cell-button {
   &.table-cell-button--right {
     align-self: center;
-    height: 100%;
+    height: 15px;
     background-color: transparent;
     background-repeat: no-repeat;
     background-position: center;
     border: none;
   }
+
 }
 
-.edit-spline-button {
+.edit-button {
   background-image: url(../img/table-cell-edit.svg);
   background-size: 15px 15px;
   background-position: center center;
@@ -124,4 +137,8 @@ td.active-row {
   left: 75px;
   z-index: 104;
   background-color: #fff;
+}
+
+.handsontable td.active-row {
+  background-color: #f1f1f1;
 }

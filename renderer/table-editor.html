@@ -11,7 +11,7 @@
   <div class="content">
     <div class="table-wrapper">
       <div class="table-list">
-        <div class="action-button back-link disabled">< Back</div>
+        <div class="action-button back-link disabled">&lt; Back</div>
         <select class="table-selector"></select>
         <div class="toggle-types table-action-link action-button">Toggle types</div>
         <div class="jump-to-column table-action-link action-button">Jump to column</div>
@@ -35,8 +35,29 @@
       </div>
     </div>
   </div>
-  <div class="spline-editor-wrapper hidden">
+  <div class="spline-editor-wrapper">
     <div id="spline-editor-area"></div>
+  </div>
+  <div id="reference-editor-wrapper" class="reference-editor-wrapper hidden">
+    <div class="reference-editor-underlay"></div>
+    <div id="reference-editor-highlight" class="reference-editor-highlight"></div>
+    <div id="reference-editor-content" class="reference-editor-content">
+      <div class="reference-title-wrapper">
+        Edit cell reference
+        <button class="close">X</button>
+      </div>
+      <div class="reference-values-wrapper">
+        <div class="table-reference filter">
+          <label for="reference-editor-table">Table</label>
+          <select id="reference-editor-table" class="filter-input"></select>
+        </div>
+        <div class="row-reference filter">
+          <label for="reference-editor-row">Row Index</label>
+          <input type="number" min="0" id="reference-editor-row" class="filter-input" />
+        </div>
+        <button id="btn-change-reference" class="form-button form-button--no-bg-color">Change</button>
+      </div>
+    </div>
   </div>
   <div class="underlay hidden"></div>
   <div class="loader-wrapper hidden">
