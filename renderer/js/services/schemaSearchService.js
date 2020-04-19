@@ -199,23 +199,18 @@ function getSchemasInFile (file) {
     });
 
     function parseSchema(schema) {
-      const uncompressedSchema = schemaGenerationService.generate(schema);
-      const schemaHeader = uncompressedSchema.slice(0, 226).toString();
-    
-      const schemaRegex = /databaseName="Madden(\d+).+" dataMajorVersion="(\d+)" dataMinorVersion="(\d+)"/;
-      const regexResult = schemaRegex.exec(schemaHeader);
-    
-      if (regexResult) {
-        schemas.push({
-          'meta': {
-            'gameYear': parseInt(regexResult[1]),
-            'major': parseInt(regexResult[2]),
-            'minor': parseInt(regexResult[3]),
-            'fileExtension': '.xml'
-          },
-          'data': uncompressedSchema
+      schemaGenerationService.generate(schema)
+        .then((gzipSchema) => {
+          schemas.push({
+            'meta': {
+              'gameYear': gzipSchema.meta.gameYear,
+              'major': gzipSchema.meta.major,
+              'minor': gzipSchema.meta.minor,
+              'fileExtension': '.gz'
+            },
+            'data': gzipSchema.data
+          });
         });
-      }
     };
 
     function checkPartialMatch (chunk, check) {

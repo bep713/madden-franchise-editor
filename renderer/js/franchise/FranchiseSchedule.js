@@ -5,27 +5,18 @@ const EventEmitter = require('events').EventEmitter;
 const utilService = require('../services/utilService');
 const dayOfWeekData = require('../../../data/dayOfWeekData.json');
 const seasonWeekData = require('../../../data/seasonWeekData.json');
-const franchiseGameYearService = require('../services/franchiseGameYearService');
+const maddenFranchiseUtil = require('madden-franchise/services/utilService');
 
 const pathToTeamData = '../../../data/teamData.json';
-
-const PLAYOFF_START_OFFSET = 0x1CEB09;
-const PRESEASON_START_OFFSET = 0x1CEEA1;
-const WEEK_ONE_START_OFFSET = 0x1D05FD;
-const SEASON_END_OFFSET = 0x1D61FD;
-const SUPERBOWL_START_OFFSET = 0x1D61FD;
-const SEASON_GAME_MAX_OFFSET = 0x1D6DD9;
-const GAME_SIZE = 0x5C;
 
 class FranchiseSchedule extends EventEmitter {
   constructor(file) {
     super();
     this.NUMBER_WEEKS_SEASON = 25;
-    // this.data = data;
     this.file = file;
     this.games = [];
+    this.startTimes = null;
     this._teamData = require(pathToTeamData);
-    // this.initializeWeeks();
 
     if (!file.isLoaded) {
       file.on('ready', () => {
@@ -36,16 +27,6 @@ class FranchiseSchedule extends EventEmitter {
     }
   };
 
-  // initializeWeeks() {
-  //   for(let i = 0; i < NUMBER_WEEKS_SEASON; i++) {
-  //     this.weeks.push({
-  //       'weekTitle': getWeekTitle(i),
-  //       'weekType': getWeekType(i),
-  //       'games': []
-  //     });
-  //   }
-  // };
-
   parse() {
     delete require.cache[require.resolve(pathToTeamData)]
     this._teamData = require(pathToTeamData);
@@ -54,93 +35,116 @@ class FranchiseSchedule extends EventEmitter {
     const teamTable = this.file.tables.find((table) => {
       return table.name === 'Team' && table.header.data1RecordCount > 1;
     });
+    const schedulerTable = this.file.getTableByName('Scheduler');
+    const appointmentTable = this.file.getTableByName('Scheduler.Appointment');
+    const gameEventTable = this.file.getTableByName('GameEvent');
 
-    const seasonGameFields = ['AwayTeam', 'HomeTeam', 'TimeOfDay', 'HomeScore', 'AwayScore', 'SeasonWeek', 'DayOfWeek', 'SeasonWeekType', 'IsPractice'];
+    const seasonGameFields = ['AwayTeam', 'HomeTeam', 'TimeOfDay', 'HomeScore', 'AwayScore', 'SeasonWeek', 'SeasonGameNum', 'DayOfWeek', 'SeasonWeekType', 'IsPractice'];
     const teamFields = ['ShortName', 'LongName', 'DisplayName'];
+    const appointmentFields = ['StartEvent', 'StartOccurrenceTime', 'Name']
 
     const that = this;
+
+    let schedulerLoaded = schedulerTable.readRecords();
+
+    schedulerLoaded.then(() => {
+      const epochReferenceData = maddenFranchiseUtil.getReferenceData(schedulerTable.records[0].Epoch);
+      const epochTable = this.file.getTableById(epochReferenceData.tableId);
+
+      let tablesLoaded = Promise.all([seasonGameTable.readRecords(seasonGameFields), teamTable.readRecords(teamFields),
+        epochTable.readRecords(), appointmentTable.readRecords(appointmentFields), gameEventTable.readRecords()]);
   
-    let tablesLoaded = Promise.all([seasonGameTable.readRecords(seasonGameFields), teamTable.readRecords(teamFields)]);
-    tablesLoaded.then(() => {
-      // console.log(seasonGameTable);
-      // console.log(teamTable);
+      tablesLoaded.then(() => {  
+        this.startTimes = getStartTimes(schedulerTable, epochTable, epochReferenceData);
 
-      teamTable.records.forEach((team, index) => {
-        let teamInMetadata = this._getTeamByFullName(`${team.LongName} ${team.DisplayName}`);
-        if (!teamInMetadata) {
-          this._teamData.teams.push({
-            'city': team.LongName,
-            'nickname': team.DisplayName,
-            'abbreviation': team.ShortName,
-            'logoPath': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAQAAACROWYpAAAAHElEQVR42mNkoAAwjmoe1TyqeVTzqOZRzcNZMwB18wAfEFQkPQAAAABJRU5ErkJggg==',
-            'nameMatchList': [`${team.LongName} ${team.DisplayName}`],
-            'referenceIndex': index,
-            'existsInTeamTable': true
-          });
-        } else {
-          teamInMetadata.referenceIndex = index;
-          teamInMetadata.existsInTeamTable = true;
-        }
-      });
-
-      this._teamData.teams = this._teamData.teams.sort((a, b) => {
-        var nameA = a.abbreviation;
-        var nameB = b.abbreviation;
-
-        if (nameA < nameB) { return -1; }
-        else if (nameA > nameB) { return 1; }
-        else { return 0; }
-      });
-
-      seasonGameTable.records.forEach((record, index) => {
-        if (record.IsPractice) {
-          return;
-        }
-
-        let game = new FranchiseGame(record, index);
-        
-        if (record.HomeTeam !== '00000000000000000000000000000000') {
-          const recordIndex = utilService.bin2dec(record.HomeTeam.substring(16));
-          game._homeTeam = this._getTeamByFullName(`${teamTable.records[recordIndex].LongName} ${teamTable.records[recordIndex].DisplayName}`);
-        }
-
-        if (record.AwayTeam !== '00000000000000000000000000000000') {
-          const recordIndex = utilService.bin2dec(record.AwayTeam.substring(16));
-          game._awayTeam = this._getTeamByFullName(`${teamTable.records[recordIndex].LongName} ${teamTable.records[recordIndex].DisplayName}`);
-        }
-
-        this.games.push(game);
-
-        game.on('change', () => {
-          if (ipcRenderer.sendSync('getPreferences').general.autoSave[0]) {
-            that.file.save();
+        // In case someone has added in custom teams that aren't in our metadata,
+        // we read the team table to get information about them.
+        // They won't have their logo, but they should have all other attributes.
+  
+        teamTable.records.forEach((team, index) => {
+          let teamInMetadata = this._getTeamByFullName(`${team.LongName} ${team.DisplayName}`);
+          if (!teamInMetadata) {
+            this._teamData.teams.push({
+              'city': team.LongName,
+              'nickname': team.DisplayName,
+              'abbreviation': team.ShortName,
+              'logoPath': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAQAAACROWYpAAAAHElEQVR42mNkoAAwjmoe1TyqeVTzqOZRzcNZMwB18wAfEFQkPQAAAABJRU5ErkJggg==',
+              'nameMatchList': [`${team.LongName} ${team.DisplayName}`],
+              'referenceIndex': index,
+              'existsInTeamTable': true
+            });
+          } else {
+            teamInMetadata.referenceIndex = index;
+            teamInMetadata.existsInTeamTable = true;
           }
         });
+  
+        this._teamData.teams = this._teamData.teams.sort((a, b) => {
+          var nameA = a.abbreviation;
+          var nameB = b.abbreviation;
+  
+          if (nameA < nameB) { return -1; }
+          else if (nameA > nameB) { return 1; }
+          else { return 0; }
+        });
+  
+        // We want to map all appointments to their season games.
+        // To do this, we loop through all appointment records and filter
+        // the records which have a referenced GameEvent as their StartEvent.
+  
+        // We then follow the GameEvent reference and follow the SeasonGame reference
+        // to get the SeasonGame index. The appointmentMap variable will be used when
+        // iterating through each SeasonGame (after this block) to create
+        // the correct association.
+  
+        let appointmentMap = {};
+  
+        appointmentTable.records
+          .filter((record) => {
+            return maddenFranchiseUtil.getReferenceData(record.StartEvent).tableId === gameEventTable.header.tableId;
+          })
+          .forEach((record) => {
+            const referencedGameEvent = this.file.getReferencedRecord(record.StartEvent);
+            const referencedSeasonGame = this.file.getReferencedRecord(referencedGameEvent.SeasonGame);
+  
+            appointmentMap[referencedSeasonGame.index] = record;
+          });
+  
+        seasonGameTable.records.forEach((record, index) => {
+          if (record.IsPractice) {
+            return;
+          }
+  
+          let game = new FranchiseGame(record, index);
+          
+          if (record.HomeTeam !== '00000000000000000000000000000000') {
+            const recordIndex = utilService.bin2dec(record.HomeTeam.substring(16));
+            game._homeTeam = this._getTeamByFullName(`${teamTable.records[recordIndex].LongName} ${teamTable.records[recordIndex].DisplayName}`);
+          }
+  
+          if (record.AwayTeam !== '00000000000000000000000000000000') {
+            const recordIndex = utilService.bin2dec(record.AwayTeam.substring(16));
+            game._awayTeam = this._getTeamByFullName(`${teamTable.records[recordIndex].LongName} ${teamTable.records[recordIndex].DisplayName}`);
+          }
+  
+          game.appointment = appointmentMap[record.index];
+          this.games.push(game);
+  
+          game.on('change', () => {
+            if (ipcRenderer.sendSync('getPreferences').general.autoSave[0]) {
+              that.file.save();
+            }
+          });
+        });
+  
+        this.emit('ready');
       });
-
-      this.emit('ready');
     });
-
-    // for (var i = PLAYOFF_START_OFFSET; i <= SUPERBOWL_START_OFFSET; i += GAME_SIZE) {
-    //   const game = new FranchiseGame(this.data.slice(i, i + GAME_SIZE), i);
-    //   this.games.push(game);
-
-    //   const that = this;
-    //   game.on('change', function () {
-    //     that.emit('change', this);
-    //   });
-    // }
   };
 
   get teamData () {
     return this._teamData.teams.filter((team) => { return team.existsInTeamTable; });
   };
-
-  // get hexData () {
-  //   return this.games.reduce((accumulator, current) => {
-  //     return Buffer.concat([accumulator, current.hexData]);
-  //   }, Buffer.from([]));
-  // };
 
   getGameByOffset(offset) {
     return this.games.find((game) => {
@@ -162,28 +166,48 @@ class FranchiseSchedule extends EventEmitter {
     let currentIndex = 0;
     let gamesToReplace;
 
+    let weekStartTime = moment(this.startTimes.preseasonStart.utc()).subtract(this.startTimes.epochStart.utc().unix(), 's');
+
+    // Get a list of games in the franchise file to replace
+    // These may not be in order, so we will sort based on season week
     if (hasPreseasonGames) {
       gamesToReplace = this.games.filter((game) => { return (game.gameRecord.SeasonWeekType === 'PreSeason' || game.gameRecord.SeasonWeekType === 'RegularSeason') && game.homeTeam !== null && game.awayTeam !== null; });
     } else {
       gamesToReplace = this.games.filter((game) => { return game.gameRecord.SeasonWeekType === 'RegularSeason' && game.homeTeam !== null && game.awayTeam !== null; });
+
+      // if there are no preseason games in the schedule,
+      // skip 4 weeks on the weekly start time.
+      weekStartTime.add(4, 'w');
     }
+
+    gamesToReplace.sort((a, b) => {
+      return a.gameRecord.SeasonWeek - b.gameRecord.SeasonWeek;
+    });
 
     const weeksToAdd = file.weeks.filter((week) => { return (week.type === 'preseason' && week.number > 1) || week.type === 'season'});
 
     const that = this;
 
+    // Get all weeks in the JSON file
     weeksToAdd.forEach((week, weekIndex) => {
       if (week.type === 'preseason' && week.number > 1) {
         week.number -= 1;
       }
 
+      // Get metadata for the iteration week
       let seasonWeek = getSeasonWeekDataByWeekIndexAndType(week.number, week.type);
 
+      // Get all games in the JSON file in the selected week
+      // These should be in order.
       week.games.forEach((game, gameIndex) => {
         const awayTeam = that._getTeamByFullName(game.awayTeam);
         const homeTeam = that._getTeamByFullName(game.homeTeam);
         const day = getDayOfWeekByAbbreviation(game.day);
         const time = moment.utc(game.time, "hh:mm A");
+        
+        const gameMinutesSinceMidnight = time.hours() * 60 + time.minutes();
+        const daysToAdd = getDaysToAdd(day.name);
+        const gameEpochTime = moment(weekStartTime).add(daysToAdd, 'd').add(gameMinutesSinceMidnight, 'm');
 
         let currentGame = gamesToReplace[currentIndex];
         const changeListeners = currentGame.listeners('change');
@@ -197,8 +221,10 @@ class FranchiseSchedule extends EventEmitter {
           currentGame.homeTeam = homeTeam;
           currentGame.dayOfWeek = day;
           currentGame.seasonWeek = seasonWeek;
+          currentGame.seasonGameNum = gameIndex;
           currentGame.seasonWeekType = seasonWeek;
           currentGame.time = time;
+          currentGame.epochTime = gameEpochTime.unix();
         }
 
         changeListeners.forEach((listener) => {
@@ -211,6 +237,9 @@ class FranchiseSchedule extends EventEmitter {
       if (week.type === 'preseason') {
         week.number += 1;
       }
+
+      // add a week to the start time for next loop iteration
+      weekStartTime.add(1, 'w');
     });
 
     if (ipcRenderer.sendSync('getPreferences').general.autoSave[0]) {
@@ -218,12 +247,6 @@ class FranchiseSchedule extends EventEmitter {
         console.log('saved!');
       });
     }
-
-    // this.emit('change-all', {
-    //   startingOffset: PLAYOFF_START_OFFSET,
-    //   endingOffset: SUPERBOWL_START_OFFSET + GAME_SIZE,
-    //   hexData: this.hexData
-    // });
   };
 
   _getTeamByFullName(name) {
@@ -239,4 +262,49 @@ function getDayOfWeekByAbbreviation(abbreviation) {
 
 function getSeasonWeekDataByWeekIndexAndType(index, type) {
   return seasonWeekData.weeks.find((week) => { return week.weekIndex == index - 1 && week.weekType === type; });
+};
+
+function getStartTimes(schedulerTable, epochTable, epochReferenceData) {
+  const epochRecord = epochTable.records[epochReferenceData.rowNumber];
+  const epochYear = epochRecord.Year + 1900;
+  const epochMonth = utilService.bin2dec(epochRecord.getFieldByKey('Month').unformattedValue);
+  const epochStart = moment([epochYear, epochMonth, epochRecord.DayOfMonth, epochRecord.Hour, epochRecord.Minute, epochRecord.Second]);
+
+  const currentTime = moment.unix(schedulerTable.records[0].CurrentTime).utc().add(epochStart.unix(), 's');
+  const numYears = currentTime.year() - epochYear;
+  const currentYear = epochYear + numYears;
+
+  const thursdayOfAugust1Week = moment([currentYear, 7]).startOf('isoweek').add(3, 'd');
+  let preseasonStart = moment([currentYear, 7]).startOf('isoweek').add(3, 'd').add(1, 'w');
+
+  // if (thursdayOfAugust1Week.month() == preseasonStart.month()) {
+  //   preseasonStart.subtract(1, 'w');
+  // }
+
+  const regularSeasonStart = moment(preseasonStart).add(4, 'w');
+
+  return {
+    'epochStart': epochStart,
+    'preseasonStart': preseasonStart,
+    'regularSeasonStart': regularSeasonStart
+  };
+};
+
+function getDaysToAdd(day) {
+  switch(day) {
+    case 'Thursday':
+      return 0;
+    case 'Friday':
+      return 1;
+    case 'Saturday':
+      return 2;
+    case 'Sunday':
+      return 3;
+    case 'Monday':
+      return 4;
+    case 'Tuesday':
+      return 5;
+    case 'Wednesday':
+      return 6;
+  }
 };

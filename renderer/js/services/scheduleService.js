@@ -74,67 +74,6 @@ function addEventListeners() {
     scheduleService.eventEmitter.emit('open-table-editor', scheduleService.file.file.getTableByName('SeasonGame').header.tableId, gameOffset);
   });
 
-  // const hexSaveButton = document.querySelector('#save-hex');
-  // hexSaveButton.addEventListener('click', function () {
-  //   hideHexView();
-
-  //   const textArea = document.querySelector('.hex-view-wrapper textarea');
-  //   const newDataString = textArea.value;
-
-  //   const gameOffset = contextMenu.getAttribute('data-game');
-  //   const game = scheduleService.file.schedule.getGameByOffset(gameOffset);
-
-  //   if (isShowingHex(newDataString)) {
-  //     const newDataHex = newDataString.split(' ');
-  //     const newDataArr = newDataHex.map(function (data) {
-  //       return parseInt(data, 16);
-  //     });
-
-  //     const newData = Buffer.from(newDataArr);
-  //     game.data = newData;
-  //   }
-  //   else if (isShowingBinary(newDataString)) {
-  //     const newDataArr = utilService.binaryBlockToDecimalBlock(newDataString);
-  //     const newData = Buffer.from(newDataArr);
-  //     game.data = newData;
-  //   }
-
-  //   const currentWeek = document.querySelector('.week.active').getAttribute('data-week');
-  //   scheduleService.loadGamesByWeek(currentWeek);
-
-  //   function isShowingHex(newDataString) {
-  //     return newDataString.length === 275;
-  //   };
-
-  //   function isShowingBinary(newDataString) {
-  //     return newDataString.length === 736;
-  //   };
-  // });
-
-  // const viewEditHex = document.querySelector('#view-edit-hex');
-  // viewEditHex.addEventListener('click', function (e) {
-  //   const gameOffset = contextMenu.getAttribute('data-game');
-  //   const game = scheduleService.file.schedule.getGameByOffset(gameOffset);
-
-  //   const hexUnformatted = game.hexData.toString('hex').toUpperCase();
-  //   const data = chunk(hexUnformatted, 2).join(' ')
-  //   const header = game.gameDescription;
-
-  //   populateHexViewWrapper(e, data, header);
-  // });
-
-  // const viewEditBinary = document.querySelector('#view-edit-binary');
-  // viewEditBinary.addEventListener('click', function (e) {
-  //   const gameOffset = contextMenu.getAttribute('data-game');
-  //   const game = scheduleService.file.schedule.getGameByOffset(gameOffset);
-  //   const header = game.gameDescription;
-
-  //   populateHexViewWrapper(e, game.data, header);
-
-  //   const textArea = document.querySelector('.hex-view-wrapper textarea');
-  //   textArea.maxLength = 736;
-  // });
-
   const modalClose = document.querySelectorAll('.modal-header .close-modal');
   modalClose.forEach((modalClose) => {
     modalClose.addEventListener('click', closeModals);
@@ -440,15 +379,6 @@ function getScheduleChoices() {
     };
   });
 };
-
-// function selectrCustomOptionRenderer(option) {
-//   const team = getTeamByAbbreviation(option.text);
-//   var template = [
-//     `<div class='my-template'>${team.city} ${team.nickname}</div>`
-//   ];
-
-//   return template.join('');
-// };
 
 function getTeamByAbbreviation(teamList, abbreviation) {
   return teamList.find((team) => { return team.abbreviation === abbreviation; });

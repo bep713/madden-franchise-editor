@@ -109,8 +109,8 @@ function createWindow () {
   autoUpdater.autoInstallOnAppQuit = false;
   autoUpdater.autoDownload = false;
 
-  createSchemaWindow(false);
-  createSettingsWindow(false);
+  createSchemaWindow(isDev);
+  createSettingsWindow(isDev);
 }
 
 // This method will be called when Electron has finished
