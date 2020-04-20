@@ -39,7 +39,7 @@ class FranchiseSchedule extends EventEmitter {
     const appointmentTable = this.file.getTableByName('Scheduler.Appointment');
     const gameEventTable = this.file.getTableByName('GameEvent');
 
-    const seasonGameFields = ['AwayTeam', 'HomeTeam', 'TimeOfDay', 'HomeScore', 'AwayScore', 'SeasonWeek', 'SeasonGameNum', 'DayOfWeek', 'SeasonWeekType', 'IsPractice'];
+    const seasonGameFields = ['AwayTeam', 'HomeTeam', 'TimeOfDay', 'HomeScore', 'AwayScore', 'SeasonWeek', 'SeasonGameNum', 'SeasonYear', 'DayOfWeek', 'SeasonWeekType', 'IsPractice'];
     const teamFields = ['ShortName', 'LongName', 'DisplayName'];
     const appointmentFields = ['StartEvent', 'StartOccurrenceTime', 'Name']
 
@@ -111,7 +111,7 @@ class FranchiseSchedule extends EventEmitter {
           });
   
         seasonGameTable.records.forEach((record, index) => {
-          if (record.IsPractice) {
+          if (record.IsPractice || record.SeasonYear !== this.startTimes.seasonYear) {
             return;
           }
   
@@ -274,19 +274,15 @@ function getStartTimes(schedulerTable, epochTable, epochReferenceData) {
   const numYears = currentTime.year() - epochYear;
   const currentYear = epochYear + numYears;
 
-  const thursdayOfAugust1Week = moment([currentYear, 7]).startOf('isoweek').add(3, 'd');
-  let preseasonStart = moment([currentYear, 7]).startOf('isoweek').add(3, 'd').add(1, 'w');
-
-  // if (thursdayOfAugust1Week.month() == preseasonStart.month()) {
-  //   preseasonStart.subtract(1, 'w');
-  // }
-
+  const preseasonStart = moment([currentYear, 7]).startOf('isoweek').add(3, 'd').add(1, 'w');
   const regularSeasonStart = moment(preseasonStart).add(4, 'w');
 
   return {
+    'currentTime': currentTime,
+    'seasonYear': numYears,
     'epochStart': epochStart,
     'preseasonStart': preseasonStart,
-    'regularSeasonStart': regularSeasonStart
+    'regularSeasonStart': regularSeasonStart,
   };
 };
 
