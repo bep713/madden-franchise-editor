@@ -6,20 +6,48 @@
         <ul>
             <li>
                 <div class="list-content">
-                    <div class="header">Base spline editor support</div>
+                    <div class="header">Schedule Editor Fixes</div>
                     <ul class="inner-list">
-                        <li>A spline is simply a scatter plot. It will lead to a table with an X & Y, each referencing int[] tables.</li>
-                        <li>Added ability to edit int[] tables without crashing the editor.</li>
-                        <li>Added ability to navigate to int[] tables as any other reference.</li>
-                        <li>A much easier spline editor will be released shortly (hopefully!)</li>
+                        <li>Fixed an issue where replacing schedules would result in teams playing two games per week, and sometimes no games per week.</li>
+                        <li>Fixed an issue where games in later seasons would be replaced in the wrong week, resulting in some games played at incorrect times.</li>
+                        <li>Replacing all games will now correctly parse the game time and populate the Scheduler.Appointment table start time.</li>
                     </ul>
                 </div>
             </li>
             <li>
                 <div class="list-content">
-                    <div class="header">Fixed in-game updater</div>
+                    <div class="header">Easy Reference editor</div>
                     <ul class="inner-list">
-                        <li>Updated Electron version to fix the bug causing the update checker to fail.</li>
+                        <li>Added an easy table reference editor to the table editor. Hover over a cell with a reference to another table and click the edit button to see it.</li>
+                        <li>You can easily customize the reference target table and index from the modal popup.</li>
+                    </ul>
+                </div>
+            </li>
+            <li>
+                <div class="list-content">
+                    <div class="header">General table editor updates</div>
+                    <ul class="inner-list">
+                        <li>Added each table's table id in parentheses in the table picker dropdown.</li>
+                        <li>Added ability to search for only the table index, only the table id, or only the table name.</li>
+                        <li>If you search for an exact match of any of the above, the table will be brought to the top of the results.</li>
+                        <li>You can also search for array tables (Ex: Player[]) as long as you put the starting '[' and ending ']' in the search. If you only put one '[' the search will not work.</li>
+                        <li>Fixed an issue where some table column widths were off. This will not be perfect but should be better.</li>
+                    </ul>
+                </div>
+            </li>
+            <li>
+                <div class="list-content">
+                    <div class="header">New schemas added</div>
+                    <ul class="inner-list">
+                        <li>Request - this schema has the correct attributes but incorrect order. Please be careful editing any of these tables.</li>
+                        <li>Scheduler - contains list of game appointments, epoch time, and current time. Essential for simming games correctly.</li>
+                        <li>Scheduler.DateTime - this schema allows you to customize an appointment's date or time. Doesn't have a big effect on games, though.</li>
+                        <li>Scheduler.Appointment - All games (and other things in the season) have appointments. This table is used to determine which games to sim and when.</li>
+                        <li>Scheduler.RelativeAppt - This schema contains attributes for editing relative appointments for the Scheduler.Appointment table.</li>
+                        <li>Scheduler.RelativeApptDateTime - Same as above but with a date/time.</li>
+                        <li>SeasonScheduleManager - the top level element/class for schedules</li>
+                        <li>SeasonScheduleManager.SeasonScheduleTunableData - items related to schedule generation after each offseason. The attributes may not be in the correct order.</li>
+                        <li>SeasonScheduleManager.SeasonScheduleWeeklyGameInfo - these control generated schedule start times on each day of the week.</li>
                     </ul>
                 </div>
             </li>
