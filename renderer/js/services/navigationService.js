@@ -155,7 +155,7 @@ navigationService.refreshCurrentPage = function () {
 };
 
 navigationService.loadPage = function (pagePath) {
-  const page = fs.readFileSync(path.join(__dirname, '..\\..\\', pagePath));
+  const page = fs.readFileSync(path.join(__dirname, '..\\..\\views\\', pagePath));
   const content = document.querySelector('#content');
   content.innerHTML = page;
 };
@@ -174,14 +174,14 @@ module.exports = navigationService;
 
 function DEV_openFile() {
   // welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-M03TEST_MOD');
-  welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-SCHEDULETEST_Replace');
+  // welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-SCHEDULETEST_Replace');
   // welcomeService.eventEmitter.emit('open-file', 'D:\\Projects\\Madden 20\\CAREER-TESTNEW');
   // welcomeService.eventEmitter.emit('open-file', `D:\\Projects\\Madden 20\\FranchiseData\\Franchise-Tuning-binary.FTC`);
 
   setTimeout(() => {
     // ipcRenderer.send('show-preferences-window');
     // navigationService.onTableEditorClicked();
-    navigationService.onScheduleEditorClicked();
+    // navigationService.onScheduleEditorClicked();
   }, 0);
 };
 

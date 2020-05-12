@@ -21,11 +21,11 @@ if (isDev) {
   });
 }
 
-const homePage = 'renderer/index.html';
-const workerPage = 'renderer/worker.html';
-const creditsPage = 'renderer/credits.html';
-const schemaPage = 'renderer/schema-manager.html';
-const settingsPage = 'renderer/settings-manager.html';
+const homePage = 'renderer/views/index.html';
+const workerPage = 'renderer/views/worker.html';
+const creditsPage = 'renderer/views/credits.html';
+const schemaPage = 'renderer/views/schema-manager.html';
+const settingsPage = 'renderer/views/settings-manager.html';
 
 const baseWindowTitle = 'Madden Franchise Editor';
 let currentFilePath = '';

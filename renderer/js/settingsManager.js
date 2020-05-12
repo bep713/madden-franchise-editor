@@ -4,9 +4,9 @@ const electron = require('electron');
 const ipcRenderer = electron.ipcRenderer;
 const remote = electron.remote;
 
-const preferencesService = require('./js/services/preferencesService');
+const preferencesService = require('../js/services/preferencesService');
 
-const pageData = require('../data/settingsManagerData.json');
+const pageData = require('../../data/settingsManagerData.json');
 const currentWindow = remote.getCurrentWindow();
 const preferences = ipcRenderer.sendSync('getPreferences');
 

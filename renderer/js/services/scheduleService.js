@@ -1,4 +1,5 @@
 const fs = require('fs');
+const path = require('path');
 const EventEmitter = require('events');
 const { ipcRenderer, remote } = require('electron');
 const app = remote.app;
@@ -316,7 +317,7 @@ function attachGameElement (game) {
 
   function changeTeamLogo(element, logoPath) {
     if (logoPath) {
-      element.src = logoPath;
+      element.src = path.join('../', logoPath);
       element.classList.remove('hidden');
     }
     else {

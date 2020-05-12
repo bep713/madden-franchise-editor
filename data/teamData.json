@@ -220,7 +220,7 @@
       "city": "Oakland",
       "nickname": "Raiders",
       "abbreviation": "OAK",
-      "nameMatchList": ["Oakland Raiders", "Los Angeles Raiders"],
+      "nameMatchList": ["Oakland Raiders", "Los Angeles Raiders", "Las Vegas Raiders"],
       "scheduleId": 27,
       "logoPath": "img/team-logos/nfl/raiders.png",
       "isCollege": false

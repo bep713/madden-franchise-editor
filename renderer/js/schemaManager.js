@@ -4,9 +4,9 @@ const app = remote.app;
 
 const fs = require('fs');
 const path = require('path');
-const utilService = require('./js/services/utilService');
-const savedSchemaService = require('./js/services/savedSchemaService');
-const schemaSearchService = require('./js/services/schemaSearchService');
+const utilService = require('../js/services/utilService');
+const savedSchemaService = require('../js/services/savedSchemaService');
+const schemaSearchService = require('../js/services/schemaSearchService');
 
 let schemaInformation;
 let isCurrentlySearching = false;
