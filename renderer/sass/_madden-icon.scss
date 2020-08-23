@@ -17,10 +17,8 @@
   }
 }
 
-#m19-icon {
-  background-image: url(../img/M19.PNG);
-}
-
-#m20-icon {
-  background-image: url(../img/M20.PNG);
+@for $var from 19 to 22 {
+  #m#{$var}-icon {
+    background-image: url(../img/M#{$var}.PNG);
+  }
 }

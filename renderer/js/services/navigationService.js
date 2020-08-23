@@ -25,7 +25,10 @@ const services = [welcomeService, scheduleService, tableEditorService, schemaVie
 const navigationData = require('../../../data/navigation.json');
 
 const PATH_TO_DOCUMENTS = app.getPath('documents');
-const MADDEN_SAVE_BASE_FOLDER = `${PATH_TO_DOCUMENTS}\\Madden NFL 20\\settings`;
+const MADDEN_SAVE_BASE_FOLDER = {
+  20: `${PATH_TO_DOCUMENTS}\\Madden NFL 20\\settings`,
+  21: `${PATH_TO_DOCUMENTS}\\Madden NFL 21\\saves`
+};
 
 setupEvents();
 setupMenu();
@@ -174,7 +177,8 @@ module.exports = navigationService;
 
 function DEV_openFile() {
   // welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-M03TEST_MOD');
-  welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-SCHEDULETEST_Replace');
+  // welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER[21] + '\\CAREER-SCHEDULETEST_Replace');
+  welcomeService.eventEmitter.emit('open-file', 'C:\\tmp\\M21\\saves\\CAREER-LIONS2021');
   // welcomeService.eventEmitter.emit('open-file', 'D:\\Projects\\Madden 20\\CAREER-TESTNEW');
   // welcomeService.eventEmitter.emit('open-file', `D:\\Projects\\Madden 20\\FranchiseData\\Franchise-Tuning-binary.FTC`);
 
@@ -301,12 +305,6 @@ function setupEvents() {
     navigationService.currentlyOpenedFile.data = createNewFranchiseFile(file);
     navigationService.currentlyOpenedFile.gameYear = navigationService.currentlyOpenedFile.data._gameYear;
     navigationService.currentlyOpenedFile.type = navigationService.currentlyOpenedFile.data.type;
-
-    const table = navigationService.currentlyOpenedFile.data.tables.filter((table) => {
-      return table.header.tableStoreName === 'ArrayBucket_FranchiseStatic_000072';
-    });
-
-    console.log(table);
 
     ipcRenderer.send('file-loaded', {
       'path': navigationService.currentlyOpenedFile.path,

@@ -226,6 +226,15 @@
       "isCollege": false
     },
     {
+      "city": "Las Vegas",
+      "nickname": "Raiders",
+      "abbreviation": "LV",
+      "nameMatchList": ["Las Vegas Raiders"],
+      "scheduleId": 27,
+      "logoPath": "img/team-logos/nfl/raiders.png",
+      "isCollege": false
+    },
+    {
       "city": "Philadelphia",
       "nickname": "Eagles",
       "abbreviation": "PHI",
@@ -286,6 +295,15 @@
       "nameMatchList": ["Washington Redskins"],
       "scheduleId": 30,
       "logoPath": "img/team-logos/nfl/redskins.png",
+      "isCollege": false
+    },
+    {
+      "city": "Washington",
+      "nickname": "Football Team",
+      "abbreviation": "WAS",
+      "nameMatchList": ["Washington Football Team"],
+      "scheduleId": 30,
+      "logoPath": "img/team-logos/nfl/footballTeam.png",
       "isCollege": false
     },
     {

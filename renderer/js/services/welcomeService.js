@@ -27,7 +27,6 @@ welcomeService.start = function (file) {
   hideOpenedFileLinks();
 
   if (file.type) {
-    console.log(file);
     showOpenedFileLinks();
     toggleNavigationLinks(file.type);
     toggleMaddenIcons(file.type.year);
@@ -103,6 +102,10 @@ function toggleNavigationLinks(type) {
   else if (type.year === 19) {
     abilityLink.classList.add('unavailable');
     scheduleLink.classList.remove('unavailable');
+  }
+
+  else if (type.year === 21) {
+    abilityLink.classList.add('unavailable');
   }
 
   else {

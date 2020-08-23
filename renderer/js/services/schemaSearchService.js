@@ -199,6 +199,7 @@ function getSchemasInFile (file) {
     });
 
     function parseSchema(schema) {
+      // schemaGenerationService.writeXmlSchema(schema, 'C://tmp//schema.xml');
       schemaGenerationService.generate(schema)
         .then((gzipSchema) => {
           schemas.push({

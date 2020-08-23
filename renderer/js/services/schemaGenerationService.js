@@ -39,6 +39,21 @@ schemaGenerationService.generate = (data) => {
   });
 };
 
+schemaGenerationService.writeXmlSchema = (data, outputPath) => {
+  return new Promise((resolve, reject) => {
+    const uncompressedSchema = generateUncompressedSchema(data);
+
+    if (fs.existsSync(outputPath)) {
+      outputPath += '_1';
+    }
+
+    fs.writeFile(outputPath, uncompressedSchema, function (err) {
+      if (err) reject(err);
+      resolve();
+    });
+  });
+};
+
 module.exports = schemaGenerationService;
 
 function readChunk(chunk) {

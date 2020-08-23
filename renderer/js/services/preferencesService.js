@@ -14,7 +14,7 @@ preferencesService.getPreferenceKeys = function () {
 
     return {
         'general': {
-            'defaultDirectory': path.resolve(app.getPath('documents'), 'Madden NFL 20\\settings'),
+            'defaultDirectory': path.resolve(app.getPath('documents'), 'Madden NFL 21\\saves'),
             'defaultEditor': 'open-home',
             'checkForUpdates': [
                 true
@@ -28,7 +28,8 @@ preferencesService.getPreferenceKeys = function () {
         },
         'gameVersions': {
             'madden19Directory': 'C:\\Program Files (x86)\\Origin Games\\Madden NFL 19',
-            'madden20Directory': 'C:\\Program Files (x86)\\Origin Games\\Madden NFL 20'
+            'madden20Directory': 'C:\\Program Files (x86)\\Origin Games\\Madden NFL 20',
+            'madden21Directory': 'C:\\Program Files (x86)\\Origin Games\\Madden NFL 21'
         },
         'settingsManager': {
             'general': {
@@ -40,13 +41,15 @@ preferencesService.getPreferenceKeys = function () {
             },
             'gameVersions': {
                 'madden19DirectorySet': false,
-                'madden20DirectorySet': false
+                'madden20DirectorySet': false,
+                'madden21DirectorySet': false
             },
             'appVersions': {
                 '4_0_0': false,
                 '4_1_0': false,
                 '4_1_1': false,
-                '4_2_0': false
+                '4_2_0': false,
+                '4_2_1': false
             }
         }
     }
@@ -133,6 +136,11 @@ preferencesService.initialize = function () {
                                 {
                                     'label': 'Madden 20 game directory',
                                     'key': 'madden20Directory',
+                                    'type': 'directory'
+                                },
+                                {
+                                    'label': 'Madden 21 game directory',
+                                    'key': 'madden21Directory',
                                     'type': 'directory'
                                 }
                             ]

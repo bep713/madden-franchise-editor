@@ -181,7 +181,7 @@ function setupIpcListeners() {
       return;
     }
 
-    quickSchemaScan(directory + '/Madden20.exe');
+    quickSchemaScan(directory + `/Madden${arg}.exe`);
   });
 
   ipcRenderer.on('is-currently-searching', function () {
@@ -248,9 +248,16 @@ function isDev () {
 };
 
 function getQuickScanDirectories(pathToExecutable) {
-  // just patch - 00
+  // try to look in patch - 00 if it exists. If not, look in data - 00
   return new Promise((resolve, reject) => {
-    resolve([path.join(pathToExecutable, '../patch/Win32/superbundlelayout/madden_installpackage_00')]);
+    const patchPath = path.join(pathToExecutable, '../patch/Win32/superbundlelayout/madden_installpackage_00');
+
+    if (fs.existsSync(patchPath)) {
+      resolve([path.join(pathToExecutable, '../patch/Win32/superbundlelayout/madden_installpackage_00')]);
+    }
+    else {
+      resolve([path.join(pathToExecutable, '../data/Win32/superbundlelayout/madden_installpackage_00')]);
+    }
   });
 };
 
@@ -275,11 +282,15 @@ function searchForCasDirectories(gameDirectory, dir) {
   return new Promise((resolve, reject) => {
     const patchDirectory = path.join(gameDirectory, dir);
     const patchBundle = path.join(patchDirectory, 'Win32/superbundlelayout');
-  
-    fs.readdir(patchBundle, function (err, folders) {
-      resolve(folders.map((folder) => {
-        return path.join(patchBundle, folder);
-      }));
-    });
+
+    if (fs.existsSync(patchBundle)) {
+      fs.readdir(patchBundle, function (err, folders) {
+        resolve(folders.map((folder) => {
+          return path.join(patchBundle, folder);
+        }));
+      });
+    } else {
+      resolve([])
+    }
   });
 };
