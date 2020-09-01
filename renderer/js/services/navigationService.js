@@ -184,8 +184,8 @@ function DEV_openFile() {
 
   setTimeout(() => {
     // ipcRenderer.send('show-preferences-window');
-    // navigationService.onTableEditorClicked();
-    navigationService.onScheduleEditorClicked();
+    navigationService.onTableEditorClicked();
+    // navigationService.onScheduleEditorClicked();
   }, 0);
 };
 

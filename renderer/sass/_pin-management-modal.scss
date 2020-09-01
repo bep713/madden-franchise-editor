@@ -1,0 +1,71 @@
+.manage-pins-modal {
+    .manage-pins-content {        
+        max-height: 500px;
+        overflow-y: auto;
+    }
+
+    .pin {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12.5px 20px;
+
+        &:hover {
+            .up-down-buttons {
+                visibility: visible;
+            }
+        }
+
+        .pin-left-content {
+            display: flex;
+            align-items: center;
+
+            > * + * {
+                margin-left: 25px;
+            }
+        }
+
+        .up-down-buttons {
+            visibility: hidden;
+        }
+    }
+
+    
+    .add-new-pin-wrapper {
+        display: flex;
+        align-items: center;
+        margin-top: 15px;
+
+        .action-button {
+            margin-left: 15px;
+        }
+    }
+}
+
+.up-down-buttons {
+    display: flex;
+
+    > span {
+        display: block;
+
+        &:before {
+            font-size: 10px;
+        }
+    }
+
+    .up-button {
+        &:before {
+            content: "▲";
+            display: block;
+        }
+    }
+
+    .down-button {
+        margin-left: 10px;
+
+        &:before {
+            content: "▼";
+            display: block;
+        }
+    }
+}

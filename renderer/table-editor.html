@@ -10,6 +10,13 @@
   </div>
   <div class="content">
     <div class="table-wrapper">
+      <div class="table-pins-wrapper">
+        <span class="pin-icon"></span>
+        <div class="manage action-button">Manage</div>
+        <div class="pins-list">
+          <div class="pin action-button">130 (4226) Player</div>
+        </div>
+      </div>
       <div class="table-list">
         <div class="action-button back-link disabled">&lt; Back</div>
         <select class="table-selector"></select>
@@ -32,6 +39,31 @@
         <select name="available-columns" id="available-columns"></select>
         <input type="text" name="row-index" class="jump-row" value="1">
         <button class="btn btn-go-jump-to-column">Go</button>
+      </div>
+    </div>
+  </div>
+  <div class="manage-pins-modal modal hidden">
+    <div class="modal-header">
+      <h2 class="title">Manage pins</h2>
+      <div class="close-modal">X</div>
+    </div>
+    <div class="modal-content">
+      <p>Pin tables to quickly access them at the top of the table editor</p>
+      <div class="manage-pins-content">
+        <div class="pin">
+          <div class="pin-left-content">
+            <div class="up-down-buttons arrange-pin-buttons">
+              <span class="up-button"></span>
+              <span class="down-button"></span>
+            </div>
+            <span class="pin-name">(130) Player</span>
+          </div>
+          <span class="delete-pin-button action-button">Delete</span>
+        </div>
+      </div>
+      <div class="add-new-pin-wrapper">
+        <select id="manage-pin-table" class="filter-input"></select>
+        <div class="action-button">+ Add new pin</div>
       </div>
     </div>
   </div>

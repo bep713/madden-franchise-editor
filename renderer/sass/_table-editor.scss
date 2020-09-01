@@ -1,6 +1,6 @@
 .table-wrapper {
   display: grid;
-  grid-template-rows: 80px 1fr;
+  grid-template-rows: 40px 80px 1fr;
   // height: 90vh;
   position: absolute;
   top: 80px;
@@ -9,7 +9,7 @@
   bottom: 20px;
 
   @media (min-width: $breakpoint-md) {
-    grid-template-rows: 40px 1fr;
+    grid-template-rows: 40px 40px 1fr;
   }
 }
 
@@ -45,7 +45,7 @@ td.active-row {
   }
 
   .selectr-selected {
-    border: 1px solid $brand-black;
+    border: 1px solid darkgrey;
   }
 }
 
@@ -141,4 +141,34 @@ td.active-row {
 
 .handsontable td.active-row {
   background-color: #f1f1f1;
+}
+
+.table-pins-wrapper {
+  display: grid;
+  grid-template-columns: 20px 95px 1fr;
+  margin-top: -5px;
+  margin-bottom: 10px;
+
+  .pin-icon {
+    background-image: url(../img/pushpin.svg);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 15px 15px;
+    height: 15px;
+    width: 15px;
+  }
+
+  .manage {
+    margin-left: 20px;
+  }
+
+  .pins-list {
+    display: flex;
+    overflow-x: auto;
+    white-space: nowrap;
+
+    > * + * {
+      margin-left: 20px;
+    }
+  }
 }

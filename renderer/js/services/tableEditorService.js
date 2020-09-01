@@ -6,6 +6,7 @@ const dialog = remote.dialog;
 const Selectr = require('../libs/selectr/selectr');
 const utilService = require('./utilService');
 const Handsontable = require('handsontable').default;
+const pinnedTableService = require('./pinnedTableService');
 const externalDataService = require('./externalDataService');
 
 let tableEditorService = {};
@@ -73,6 +74,7 @@ tableEditorService.start = function (file) {
     };
 
     tableEditorService.loadTable();
+    initializePins(file.gameYear);
   }
 };
 
@@ -707,6 +709,27 @@ function initializeReferenceEditor() {
     const hotRow = parseInt(referenceEditorWrapper.dataset.selectedRow);
     const hotCol = parseInt(referenceEditorWrapper.dataset.selectedCol)
     tableEditorService.hot.setDataAtCell(hotRow, hotCol, newReference);
+  });
+};
+
+function initializePins(gameYear) {
+  pinnedTableService.initialize(gameYear);
+  
+  const pinListElement = document.querySelector('.pins-list');
+  utilService.removeChildNodes(pinListElement);
+  console.log(pinnedTableService.applicablePins);
+
+  pinnedTableService.applicablePins.forEach((pin) => {
+    const pinElement = document.createElement('div');
+    pinElement.classList.add('pin', 'action-button');
+    pinElement.innerText = `(${pin.tableId}) ${pin.tableName}`;
+    pinElement.setAttribute('tableId', pin.tableId);
+
+    pinElement.addEventListener('click', function () {
+      tableEditorService.tableSelector.setValue(pin.tableId);
+    });
+
+    pinListElement.appendChild(pinElement);
   });
 };
 
