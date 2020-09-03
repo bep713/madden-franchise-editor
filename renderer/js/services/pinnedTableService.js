@@ -42,10 +42,17 @@ pinnedTableService.addPin = (tableId, tableName) => {
     pinnedTableService.savePins();
 };
 
-pinnedTableService.removePin = (index) => {
-    pinnedTableService.applicablePins = pinnedTableService.applicablePins.splice(index, 1);
-
+pinnedTableService.removePinAtIndex = (index) => {
+    pinnedTableService.applicablePins.splice(index, 1);
     pinnedTableService.savePins();
+};
+
+pinnedTableService.removePin = (tableId) => {
+    const index = pinnedTableService.applicablePins.findIndex((pin) => { return pin.tableId === tableId });
+
+    if (index > -1) {
+        pinnedTableService.removePinAtIndex(index);
+    }
 };
 
 pinnedTableService.getAllPins = () => {
@@ -54,6 +61,10 @@ pinnedTableService.getAllPins = () => {
 
 pinnedTableService.savePins = () => {
     fs.writeFileSync(PATH_TO_PINS, JSON.stringify(pinnedTableService.allPins));
+};
+
+pinnedTableService.findPin = (tableId) => {
+    return pinnedTableService.applicablePins.find((pin) => { return pin.tableId === tableId; });
 };
 
 pinnedTableService.getPinsByGameYear = (gameYear) => {

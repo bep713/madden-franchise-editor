@@ -148,6 +148,9 @@ tableEditorService.loadTable = function () {
         if (tableEditorService.navSteps.length >= 2) {
           backLink.classList.remove('disabled');
         }
+
+        toggleAddPinButton(tableId);
+
       }).catch((err) => {
         console.log(err);
         loadTable(table);
@@ -714,51 +717,122 @@ function initializeReferenceEditor() {
 
 function initializePins(gameYear) {
   pinnedTableService.initialize(gameYear);
+
+  // const managePinsModal = document.querySelector('.manage-pins-modal');
+  // const underlay = document.querySelector('.underlay');
+
+  // const managePinsButton = document.querySelector('.manage-pins');
+  // managePinsButton.addEventListener('click', function () {
+  //   utilService.show(managePinsModal);
+  //   utilService.show(underlay);
+  // });
+
+  // const managePinsModalClose = document.querySelector('.manage-pins-modal .close-modal');
+  // managePinsModalClose.addEventListener('click', function () {
+  //   utilService.hide(managePinsModal);
+  //   utilService.hide(underlay);
+  // });
   
   const pinListElement = document.querySelector('.pins-list');
   utilService.removeChildNodes(pinListElement);
-  console.log(pinnedTableService.applicablePins);
+  pinListElement.appendChild(createAddNewPinButton());
 
   pinnedTableService.applicablePins.forEach((pin) => {
+    const pinElement = createPinElement(pin);
+    pinListElement.appendChild(pinElement);
+  });
+
+  function createPinElement(pin) {
+    const pinWrapper = document.createElement('div');
+    pinWrapper.classList.add('pin-wrapper');
+
     const pinElement = document.createElement('div');
     pinElement.classList.add('pin', 'action-button');
     pinElement.innerText = `(${pin.tableId}) ${pin.tableName}`;
     pinElement.setAttribute('tableId', pin.tableId);
 
+    const deletePinButton = document.createElement('div');
+    deletePinButton.classList.add('delete-pin', 'action-button');
+    
+    deletePinButton.addEventListener('click', function () {
+      pinnedTableService.removePin(pin.tableId);
+      pinWrapper.parentNode.removeChild(pinWrapper);
+      
+      if (tableEditorService.selectedTable.header.tableId === pin.tableId) {
+        toggleAddPinButton(pin.tableId);
+      }
+    });
+    
     pinElement.addEventListener('click', function () {
       tableEditorService.tableSelector.setValue(pin.tableId);
     });
 
-    pinListElement.appendChild(pinElement);
-  });
+    pinWrapper.appendChild(pinElement);
+    pinWrapper.appendChild(deletePinButton);
+
+    return pinWrapper;
+  };
+
+  function createAddNewPinButton() {
+    const addPinButton = document.createElement('div');
+    addPinButton.classList.add('add-new-pin', 'action-button');
+    addPinButton.innerText = '+ Add';
+
+    addPinButton.addEventListener('click', function () {
+      const selectedTableId = tableEditorService.selectedTable.header.tableId;
+      const selectedTableName = tableEditorService.selectedTable.header.name;
+
+      const tableAlreadyPinned = pinnedTableService.findPin(selectedTableId);
+
+      if (!tableAlreadyPinned) {
+        pinnedTableService.addPin(selectedTableId, selectedTableName);
+        pinListElement.appendChild(createPinElement({'tableId': selectedTableId, 'tableName': selectedTableName}), addPinButton);
+        utilService.hide(addPinButton);
+      }
+    });
+
+    return addPinButton;
+  };
 };
 
-function initializeSplineEditor() {
-  var margin = {top: 10, right: 40, bottom: 30, left: 30},
-        width = 450 - margin.left - margin.right,
-        height = 400 - margin.top - margin.bottom;
+function toggleAddPinButton(tableId) {
+  const tableIsPinned = pinnedTableService.findPin(tableId);
+  const addNewPinButton = document.querySelector('.add-new-pin');
 
-    const splineSvg = d3.select('#spline-editor-area')
-      .append('svg')
-        .attr('width', width + margin.left + margin.right)
-        .attr('height', height + margin.top + margin.bottom)
-      .append('g')
-        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-
-    const x = d3.scaleLinear()
-      .domain([0, 100])
-      .range([0, width]);
-
-    splineSvg
-      .append('g')
-      .attr('transform', 'translate(0,' + height + ')')
-      .call(d3.axisBottom(x));
-
-    const y = d3.scaleLinear()
-      .domain([0, 100])
-      .range([0, height]);
-
-    splineSvg
-      .append('g')
-      .call(d3.axisLeft(y));
+  if (tableIsPinned) {
+    utilService.hide(addNewPinButton);
+  }
+  else {
+    utilService.show(addNewPinButton);
+  }
 };
+
+// function initializeSplineEditor() {
+//   var margin = {top: 10, right: 40, bottom: 30, left: 30},
+//         width = 450 - margin.left - margin.right,
+//         height = 400 - margin.top - margin.bottom;
+
+//     const splineSvg = d3.select('#spline-editor-area')
+//       .append('svg')
+//         .attr('width', width + margin.left + margin.right)
+//         .attr('height', height + margin.top + margin.bottom)
+//       .append('g')
+//         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+//     const x = d3.scaleLinear()
+//       .domain([0, 100])
+//       .range([0, width]);
+
+//     splineSvg
+//       .append('g')
+//       .attr('transform', 'translate(0,' + height + ')')
+//       .call(d3.axisBottom(x));
+
+//     const y = d3.scaleLinear()
+//       .domain([0, 100])
+//       .range([0, height]);
+
+//     splineSvg
+//       .append('g')
+//       .call(d3.axisLeft(y));
+// };
