@@ -136,24 +136,31 @@ tableEditorService.loadTable = function () {
 
         tableEditorService.rowIndexToSelect = 0;
         tableEditorService.columnIndexToSelect = 0;
-
-        tableEditorService.selectedTable = table;
-
+        
         tableEditorService.navSteps.push({
           'tableId': tableId,
           'recordIndex': tableEditorService.hot.getSelectedLast()[0],
           'column': tableEditorService.hot.getSelectedLast()[1]
         });
 
+      }).catch((err) => {
+        console.log(err);
+        loadTable(table);
+
+        tableEditorService.navSteps.push({
+          'tableId': tableId,
+          'recordIndex': 0,
+          'column': 0
+        });
+      })
+      .finally(() => {
+        tableEditorService.selectedTable = table;
+        
         if (tableEditorService.navSteps.length >= 2) {
           backLink.classList.remove('disabled');
         }
 
         toggleAddPinButton(tableId);
-
-      }).catch((err) => {
-        console.log(err);
-        loadTable(table);
       });
     }, 100);
   });
@@ -290,6 +297,7 @@ function initializeTable() {
     manualRowResize: true,
     afterChange: processChanges,
     afterSelection: processSelection,
+    columnSorting: true,
     rowHeaders: function (index) {
       return index;
     }
@@ -309,7 +317,7 @@ function processChanges(changes) {
     };
 
     changes.forEach((change) => {
-      const recordIndex = change[0];
+      const recordIndex = tableEditorService.hot.toPhysicalRow(change[0]);
       const key = change[1];
       const oldValue = change[2];
       const newValue = change[3];
@@ -717,21 +725,6 @@ function initializeReferenceEditor() {
 
 function initializePins(gameYear) {
   pinnedTableService.initialize(gameYear);
-
-  // const managePinsModal = document.querySelector('.manage-pins-modal');
-  // const underlay = document.querySelector('.underlay');
-
-  // const managePinsButton = document.querySelector('.manage-pins');
-  // managePinsButton.addEventListener('click', function () {
-  //   utilService.show(managePinsModal);
-  //   utilService.show(underlay);
-  // });
-
-  // const managePinsModalClose = document.querySelector('.manage-pins-modal .close-modal');
-  // managePinsModalClose.addEventListener('click', function () {
-  //   utilService.hide(managePinsModal);
-  //   utilService.hide(underlay);
-  // });
   
   const pinListElement = document.querySelector('.pins-list');
   utilService.removeChildNodes(pinListElement);

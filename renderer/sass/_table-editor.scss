@@ -146,20 +146,17 @@ td.active-row {
 .table-pins-wrapper {
   display: grid;
   grid-template-columns: 20px 1fr;
-  margin-top: -5px;
+  margin-top: -20px;
   margin-bottom: 10px;
 
   .pin-icon {
+    margin-top: 15px;
     background-image: url(../img/pushpin.svg);
     background-repeat: no-repeat;
     background-position: center;
     background-size: 15px 15px;
     height: 15px;
     width: 15px;
-  }
-
-  .manage-pins {
-    margin-left: 20px;
   }
 
   .pins-list {
@@ -194,11 +191,16 @@ td.active-row {
 
   .pin-wrapper {
     display: flex;
+    padding-top: 15px;
 
     &:hover {
       .delete-pin {
         display: block;
       }
     }
+  }
+
+  .add-new-pin {
+    padding-top: 15px;
   }
 }
