@@ -155,7 +155,7 @@ tableEditorService.loadTable = function () {
       })
       .finally(() => {
         tableEditorService.selectedTable = table;
-        
+
         if (tableEditorService.navSteps.length >= 2) {
           backLink.classList.remove('disabled');
         }
@@ -637,6 +637,9 @@ function referenceRenderer(instance, td, row, col, prop, value, cellProperties) 
           
           const rowInput = document.getElementById('reference-editor-row');
           rowInput.value = recordIndex;
+
+          const binaryInput = document.getElementById('reference-editor-binary');
+          binaryInput.value = value;
         };
 
         td.appendChild(referenceWrapper);
@@ -701,6 +704,8 @@ function initializeReferenceEditor() {
     data: tableEditorService.tableSelector.data
   });
 
+  tableEditorService.referenceEditorSelector.on('selectr.change', updateBinaryInput);
+
   const closeButton = referenceEditorWrapper.querySelector('.close');
   closeButton.addEventListener('click', () => {
     referenceEditorWrapper.classList.add('hidden');
@@ -709,6 +714,20 @@ function initializeReferenceEditor() {
   const underlay = referenceEditorWrapper.querySelector('.reference-editor-underlay');
   underlay.addEventListener('click', () => {
     referenceEditorWrapper.classList.add('hidden');
+  });
+
+  const rowIndex = document.getElementById('reference-editor-row');
+  rowIndex.addEventListener('change', updateBinaryInput);
+
+  const binaryInput = document.getElementById('reference-editor-binary');
+  binaryInput.addEventListener('change', () => {
+    const tableId = utilService.bin2dec(binaryInput.value.substring(2,15));
+    const recordIndex = utilService.bin2dec(binaryInput.value.substring(16));
+
+    tableEditorService.referenceEditorSelector.setValue(tableId);
+
+    const rowIndex = document.getElementById('reference-editor-row');
+    rowIndex.value = recordIndex;
   });
 
   const change = document.getElementById('btn-change-reference');
@@ -721,6 +740,13 @@ function initializeReferenceEditor() {
     const hotCol = parseInt(referenceEditorWrapper.dataset.selectedCol)
     tableEditorService.hot.setDataAtCell(hotRow, hotCol, newReference);
   });
+
+  function updateBinaryInput() {
+    const tableId = tableEditorService.referenceEditorSelector.getValue();
+    const newReference = utilService.calculateReferenceBinary(tableId, rowIndex.value);
+    const binaryInput = document.getElementById('reference-editor-binary');
+    binaryInput.value = newReference;
+  };
 };
 
 function initializePins(gameYear) {
