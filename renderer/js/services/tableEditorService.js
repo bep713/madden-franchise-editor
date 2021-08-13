@@ -297,7 +297,7 @@ function initializeTable() {
     manualRowResize: true,
     afterChange: processChanges,
     afterSelection: processSelection,
-    columnSorting: true,
+    // columnSorting: true,
     rowHeaders: function (index) {
       return index;
     }
@@ -700,8 +700,14 @@ function initializeReferenceEditor() {
   tableEditorService.referenceEditorWrapper = referenceEditorWrapper;
 
   const referenceEditorSelector = document.getElementById('reference-editor-table');
+  const data = [...tableEditorService.tableSelector.data, {
+    'value': 0,
+    'text': `no table - null value`,
+    'data-search-params': ['null', 'empty', '0']
+  }];
+
   tableEditorService.referenceEditorSelector = new Selectr(referenceEditorSelector, {
-    data: tableEditorService.tableSelector.data
+    data: data
   });
 
   tableEditorService.referenceEditorSelector.on('selectr.change', updateBinaryInput);

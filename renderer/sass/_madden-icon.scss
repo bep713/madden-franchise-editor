@@ -17,7 +17,7 @@
   }
 }
 
-@for $var from 19 to 22 {
+@for $var from 19 to 23 {
   #m#{$var}-icon {
     background-image: url(../img/M#{$var}.PNG);
   }

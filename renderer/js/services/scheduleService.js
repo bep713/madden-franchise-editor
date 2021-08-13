@@ -83,7 +83,7 @@ function addEventListeners() {
   const yearSelectr = new Selectr(yearSelect, {
     data: scheduleYearChoices
   });
-  yearSelectr.setValue('2019.json');
+  yearSelectr.setValue('2021.json');
 
   const replaceAllButton = document.querySelector('.btn-replace-all');
   replaceAllButton.addEventListener('click', function () {

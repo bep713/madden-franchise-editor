@@ -14,7 +14,7 @@ preferencesService.getPreferenceKeys = function () {
 
     return {
         'general': {
-            'defaultDirectory': path.resolve(app.getPath('documents'), 'Madden NFL 21\\saves'),
+            'defaultDirectory': path.resolve(app.getPath('documents'), 'Madden NFL 22\\saves'),
             'defaultEditor': 'open-home',
             'checkForUpdates': [
                 true
@@ -29,7 +29,8 @@ preferencesService.getPreferenceKeys = function () {
         'gameVersions': {
             'madden19Directory': 'C:\\Program Files (x86)\\Origin Games\\Madden NFL 19',
             'madden20Directory': 'C:\\Program Files (x86)\\Origin Games\\Madden NFL 20',
-            'madden21Directory': 'C:\\Program Files (x86)\\Origin Games\\Madden NFL 21'
+            'madden21Directory': 'C:\\Program Files (x86)\\Origin Games\\Madden NFL 21',
+            'madden22Directory': 'C:\\Program Files (x86)\\Origin Games\\Madden NFL 22'
         },
         'settingsManager': {
             'general': {
@@ -42,14 +43,17 @@ preferencesService.getPreferenceKeys = function () {
             'gameVersions': {
                 'madden19DirectorySet': false,
                 'madden20DirectorySet': false,
-                'madden21DirectorySet': false
+                'madden21DirectorySet': false,
+                'madden22DirectorySet': false
             },
             'appVersions': {
                 '4_0_0': false,
                 '4_1_0': false,
                 '4_1_1': false,
                 '4_2_0': false,
-                '4_2_1': false
+                '4_2_1': false,
+                '4_3_0': false,
+                '4_3_1': false
             }
         }
     }
@@ -141,6 +145,11 @@ preferencesService.initialize = function () {
                                 {
                                     'label': 'Madden 21 game directory',
                                     'key': 'madden21Directory',
+                                    'type': 'directory'
+                                },
+                                {
+                                    'label': 'Madden 22 game directory',
+                                    'key': 'madden22Directory',
                                     'type': 'directory'
                                 }
                             ]

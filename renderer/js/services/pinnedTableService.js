@@ -22,12 +22,22 @@ pinnedTableService.initialize = (gameYear) => {
     pinnedTableService.applicablePins = pinnedTableService.getPinsByGameYear(gameYear);
 
     if (!pinnedTableService.applicablePins) {
-        const pinMeta = {
-            "gameYear": gameYear,
-            "pins": []
-        };
+        const initialPins = getInitialPins();
+        const initialPinsForGameYear = initialPins.find((pin) => { return pin.gameYear === gameYear; });
 
-        pinnedTableService.allPins.push(pinMeta);
+        if (initialPinsForGameYear) {
+            const pinMeta = initialPinsForGameYear;
+            pinnedTableService.allPins.push(pinMeta);
+        }
+        else {
+            const pinMeta = {
+                "gameYear": gameYear,
+                "pins": []
+            };
+    
+            pinnedTableService.allPins.push(pinMeta);
+        }
+
         pinnedTableService.savePins();
         pinnedTableService.applicablePins = pinnedTableService.getPinsByGameYear(gameYear);
     }
@@ -82,6 +92,27 @@ module.exports = pinnedTableService;
 
 function getInitialPins() {
     return [
+        {
+            "gameYear": 22,
+            "pins": [
+                {
+                    "tableId": 4220,
+                    "tableName": "Player"
+                },
+                {
+                    "tableId": 7388,
+                    "tableName": "Team"
+                },
+                {
+                    "tableId": 4688,
+                    "tableName": "Franchise"
+                },
+                {
+                    "tableId": 4269,
+                    "tableName": "League"
+                }
+            ]
+        },
         {
             "gameYear": 21,
             "pins": [

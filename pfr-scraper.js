@@ -2,7 +2,7 @@ const request = require('request');
 const cheerio = require('cheerio');
 const fs = require('fs');
 
-getSchedules(1970, 2019);
+getSchedules(2021, 2021);
 
 function getSchedules(startingYear, endingYear) {
   for (let i = startingYear; i <= endingYear; i++) {

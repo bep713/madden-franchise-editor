@@ -5,7 +5,7 @@
       "text": "Home",
       "clickListener": "onHomeClicked",
       "service": "welcomeService",
-      "availableVersions": [19,20, 21],
+      "availableVersions": [19,20, 21, 22],
       "availableFormats": ["franchise", "franchise-common"],
       "menu": {
         "disable": ["Save", "Export", "Import", "LogTable"]
@@ -16,7 +16,7 @@
       "text": "Schedule Editor",
       "service": "scheduleEditorService",
       "clickListener": "onScheduleEditorClicked",
-      "availableVersions": [19, 20, 21],
+      "availableVersions": [19, 20, 21, 22],
       "availableFormats": ["franchise"],
       "menu": {
         "enable": ["Save"],
@@ -29,7 +29,7 @@
       "service": "tableEditorService",
       "clickListener": "onTableEditorClicked",
       "availableFormats": ["franchise", "franchise-common"],
-      "availableVersions": [19,20, 21],
+      "availableVersions": [19,20, 21, 22],
       "menu": {
         "enable": ["Save", "Export", "Import", "LogTable"]
       }
@@ -51,7 +51,7 @@
       "text": "Schema Management",
       "service": "schemaViewerService",
       "clickListener": "onSchemaViewerClicked",
-      "availableVersions": [19,20, 21],
+      "availableVersions": [19,20, 21, 22],
       "availableFormats": ["franchise", "franchise-common"],
       "menu": {
         "disable": ["Save", "Export", "Import", "LogTable"]
@@ -64,7 +64,7 @@
       "text": "League Editor",
       "service": "leagueEditorService",
       "clickListener": "onLeagueEditorClicked",
-      "availableVersions": [19, 20, 21],
+      "availableVersions": [19, 20, 21, 22],
       "availableFormats": ["franchise"],
       "menu": {
         "enable": ["Save"],
