@@ -27,7 +27,8 @@ const navigationData = require('../../../data/navigation.json');
 const PATH_TO_DOCUMENTS = app.getPath('documents');
 const MADDEN_SAVE_BASE_FOLDER = {
   20: `${PATH_TO_DOCUMENTS}\\Madden NFL 20\\settings`,
-  21: `${PATH_TO_DOCUMENTS}\\Madden NFL 21\\saves`
+  21: `${PATH_TO_DOCUMENTS}\\Madden NFL 21\\saves`,
+  22: `${PATH_TO_DOCUMENTS}\\Madden NFL 22\\saves`
 };
 
 setupEvents();
@@ -178,7 +179,7 @@ module.exports = navigationService;
 function DEV_openFile() {
   // welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-M03TEST_MOD');
   // welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER[21] + '\\CAREER-SCHEDULETEST_Replace');
-  welcomeService.eventEmitter.emit('open-file', 'C:\\tmp\\M21\\saves\\CAREER-LIONS2021');
+  welcomeService.eventEmitter.emit('open-file', `${MADDEN_SAVE_BASE_FOLDER[22]}\\CAREER-OCT16-09h15m21a-AUTOSAVE`);
   // welcomeService.eventEmitter.emit('open-file', 'D:\\Projects\\Madden 20\\CAREER-TESTNEW');
   // welcomeService.eventEmitter.emit('open-file', `D:\\Projects\\Madden 20\\FranchiseData\\Franchise-Tuning-binary.FTC`);
 
