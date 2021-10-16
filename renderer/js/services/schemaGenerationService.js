@@ -54,43 +54,60 @@ schemaGenerationService.writeXmlSchema = (data, outputPath) => {
   });
 };
 
+schemaGenerationService._generateUncompressedSchema = generateUncompressedSchema;
+
 module.exports = schemaGenerationService;
 
-function readChunk(chunk) {
-  let data = chunk.slice(0x8);
-  let uncompressedChunk = Buffer.alloc(0x20000);
-  let uncompressedSize = LZ4.decodeBlock(data, uncompressedChunk);
-  return uncompressedChunk.slice(0, uncompressedSize);
+// function readChunk(chunk) {
+//   let data = chunk.slice(0x8);
+//   let uncompressedChunk = Buffer.alloc(0x20000);
+//   let uncompressedSize = LZ4.decodeBlock(data, uncompressedChunk);
+//   return uncompressedChunk.slice(0, uncompressedSize);
+// };
+
+function decompressBlock(block) {
+  let uncompressedBlock = Buffer.alloc(block.meta.size);
+  let uncompressedSize = LZ4.decodeBlock(block.data, uncompressedBlock);
+  return uncompressedBlock.slice(0, uncompressedSize);
 };
 
-function generateUncompressedSchema(data) {
-  let chunkIndicies = [];
-
-  let currentIndex = 6;
-  while (currentIndex <= data.length) {
-    const chunkSizeHex = data.slice(currentIndex, currentIndex + 2);
-    const chunkSize = utilService.byteArrayToLong(chunkSizeHex, true);
-
-    const start = currentIndex - 6;
-    chunkIndicies.push({
-      'start': start,
-      'end': start + (chunkSize + 8)
-    });
-
-    currentIndex += (chunkSize + 8);
-  }
-  
-  let chunks = [];
-
-  chunkIndicies.forEach((chunkIndex) => {
-    chunks.push(data.slice(chunkIndex.start, chunkIndex.end));
-  });
-
+function generateUncompressedSchema(chunk) {
   let uncompressed = Buffer.alloc(0);
-  chunks.forEach((chunk, idx) => {
-    let formattedChunk = readChunk(chunk);
-    uncompressed = Buffer.concat([uncompressed, formattedChunk]);
+
+  chunk.blocks.forEach((block) => {
+    const uncompressedBlock = decompressBlock(block);
+    uncompressed = Buffer.concat([uncompressed, uncompressedBlock]);
   });
-  
+
   return uncompressed;
+
+  // let chunkIndicies = [];
+
+  // let currentIndex = 6;
+  // while (currentIndex <= data.length) {
+  //   const chunkSizeHex = data.slice(currentIndex, currentIndex + 2);
+  //   const chunkSize = utilService.byteArrayToLong(chunkSizeHex, true);
+
+  //   const start = currentIndex - 6;
+  //   chunkIndicies.push({
+  //     'start': start,
+  //     'end': start + (chunkSize + 8)
+  //   });
+
+  //   currentIndex += (chunkSize + 8);
+  // }
+  
+  // let chunks = [];
+
+  // chunkIndicies.forEach((chunkIndex) => {
+  //   chunks.push(data.slice(chunkIndex.start, chunkIndex.end));
+  // });
+
+  // let uncompressed = Buffer.alloc(0);
+  // chunks.forEach((chunk, idx) => {
+  //   let formattedChunk = readChunk(chunk);
+  //   uncompressed = Buffer.concat([uncompressed, formattedChunk]);
+  // });
+  
+  // return uncompressed;
 }

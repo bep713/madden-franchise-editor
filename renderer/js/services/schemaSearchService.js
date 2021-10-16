@@ -1,7 +1,9 @@
 const fs = require('fs');
 const path = require('path');
+const { pipeline, Writable } = require('stream');
 const EventEmitter = require('events').EventEmitter;
 const schemaGenerationService = require('./schemaGenerationService');
+const CASBlockParser = require('madden-file-tools/streams/CASBlockParser');
 
 let schemaSearchService = {};
 schemaSearchService.eventEmitter = new EventEmitter();
@@ -66,176 +68,218 @@ function readInstallPackageFiles (directory) {
 };
 
 function getSchemasInFile (file) {
-  return new Promise((resolve, reject) => {
-    const rs = fs.createReadStream(file);
+  return new Promise(async (resolve, reject) => {
     let schemas = [];
-    let currentSchema, checkSchema, checkRemainingString, checkBeginning, checkText, checkEnd;
-    const beginningCheck = '000100000970';
-    const schemaCheck = '652D536368656D6173';
-    const endCheck = '3C2F4672616E546B446174613E';
-    const endSchemaLookForward = 13; // length of the above hex string (</FranTkData>) plus the closing '>' not included in the string above.
+    let schemaPromises = [];
+    const parser = new CASBlockParser();
+    const schemaStartCheck = Buffer.from([0x65, 0x2D, 0x53, 0x63, 0x68, 0x65, 0x6D, 0x61, 0x73]);
 
-    rs.on('data', (chunk) => {
-      const chunkBeginningIndex = chunk.indexOf(beginningCheck, 0, 'hex');
-      const hasSchema = chunk.indexOf(schemaCheck, 0, 'hex');
-      const endSchemaIndex = chunk.indexOf(endCheck, 0, 'hex');
+    parser.on('chunk', (chunk) => {
+      if (chunk.blocks.length > 0 
+        && chunk.blocks[0].meta.compressionType === CASBlockParser.COMPRESSION_TYPE.LZ4_BLOCK
+        && chunk.blocks[0].data.indexOf(schemaStartCheck) > -1) {
 
-      if (currentSchema && currentSchema.length > 1000000) {
-        currentSchema = null;
-        checkEnd = false;
-      }
+        schemaPromises.push(new Promise(async (resolve, reject) => {
+          const data = await schemaGenerationService.generate(chunk);
 
-      if (checkRemainingString) {
-        const remainingCheckInChunk = chunk.indexOf(checkRemainingString, 0, 'hex') === 0;
-
-        if (remainingCheckInChunk) {
-          if (checkEnd) {
-            const schema = Buffer.concat([currentSchema, chunk.slice(0, checkRemainingString.length / 2)]);
-            currentSchema = null;
-            parseSchema(schema);
-            checkEnd = false;
-          }
-        }
-        else if (checkBeginning || checkText || !checkEnd) {
-          checkBeginning = false;
-          checkText = false;
-          currentSchema = null;
-        }
-
-        checkRemainingString = null;
-      }
-
-      if (checkSchema) {
-        if (hasSchema === -1) {
-          currentSchema = null;
-        }
-
-        checkSchema = false;
-      }
-
-      if (chunkBeginningIndex > -1 && hasSchema > -1) {
-        if (endSchemaIndex > -1) {
-          if (endSchemaIndex > chunkBeginningIndex && endSchemaIndex > hasSchema) {
-            // schema is entirely contained in the chunk
-            parseSchema(chunk.slice(chunkBeginningIndex, endSchemaIndex + endSchemaLookForward));
-            currentSchema = null;
-          }
-          else {
-            if (currentSchema) {
-              // one schema ends in the chunk while another begins
-              parseSchema(Buffer.concat([currentSchema, chunk.slice(0, endSchemaIndex + endSchemaLookForward)]));
-              currentSchema = null;
-            }
-
-            // find the real chunk start, we already verified that the schema start is in this chunk
-            const newChunkToCheck = chunk.slice(0, hasSchema);
-            const newBeginning = newChunkToCheck.lastIndexOf(beginningCheck, -1, 'hex');
-            currentSchema = chunk.slice(newBeginning);
-          }
-        }
-        else {
-          // need to check if chunk beginning is the real beginning
-          const newChunkToCheck = chunk.slice(0, hasSchema);
-          const newBeginning = newChunkToCheck.lastIndexOf(beginningCheck, -1, 'hex');
-          currentSchema = chunk.slice(newBeginning);
-        }
-      }
-      else if (chunkBeginningIndex > -1 && hasSchema === -1 && (chunk.length - chunkBeginningIndex) <= 50) {
-        // chunk begin is in the schema but the schema check isnt there because the chunk is ending
-
-        const remainingString = checkPartialMatch(chunk, schemaCheck);
-
-        if (remainingString) {
-          checkRemainingString = remainingString;
-          checkText = true;
-        }
-        else {
-          checkSchema = true;
-        }
-
-        currentSchema = chunk.slice(chunkBeginningIndex);
-      }
-      else if (endSchemaIndex > -1 && currentSchema) {
-        // schema ends in the chunk
-        const schema = Buffer.concat([currentSchema, chunk.slice(0, endSchemaIndex + endSchemaLookForward)]);        
-        parseSchema(schema);
-        currentSchema = null;
-      }
-      else if ((currentSchema && endSchemaIndex === -1) || (currentSchema && chunkBeginningIndex === -1 && hasSchema > -1)) {
-        const remainingString = checkPartialMatch(chunk, endCheck);
-
-        if (remainingString) {
-          checkRemainingString = remainingString;
-          currentSchema = Buffer.concat([currentSchema, chunk]);
-          checkEnd = true;
-        }
-        else {
-          // the stream is still going!
-          currentSchema = Buffer.concat([currentSchema, chunk]);
-        }
-      }
-      else {
-        // check any edge cases for the chunk beginning, schema, or end
-
-        if (!currentSchema) {
-          // look for a match with the first 2 chars
-          // look at the next character to see if it matches, etc... until the end
-          // next chunk, look for the entire remaining pattern as the first chars
-          
-          const partialMatch = checkPartialMatch(chunk, beginningCheck);
-          
-          if (partialMatch) {
-            checkRemainingString = partialMatch;
-            checkBeginning = true;
-            checkSchema = true;
-            currentSchema = chunk.slice(((beginningCheck.length - partialMatch.length) / 2) * -1);
-          }
-        }
-      }
-    });
-    
-    rs.on('close', () => {
-      resolve(schemas);
-    });
-
-    function parseSchema(schema) {
-      // schemaGenerationService.writeXmlSchema(schema, 'C://tmp//schema.xml');
-      schemaGenerationService.generate(schema)
-        .then((gzipSchema) => {
-          schemas.push({
-            'meta': {
-              'gameYear': gzipSchema.meta.gameYear,
-              'major': gzipSchema.meta.major,
-              'minor': gzipSchema.meta.minor,
-              'fileExtension': '.gz'
+          resolve({
+            meta: {
+              gameYear: data.meta.gameYear,
+              major: data.meta.major,
+              minor: data.meta.minor,
+              fileExtension: '.gz'
             },
-            'data': gzipSchema.data
+            data: data.data
           });
-        });
-    };
-
-    function checkPartialMatch (chunk, check) {
-      let sliceToCheck = chunk.slice(-1 * (check.length / 2 - 1));
-      const match = sliceToCheck.indexOf(check.slice(0, 2), 0, 'hex');
-      const firstByteMatchedInChunk = match > -1;
-
-      if (firstByteMatchedInChunk) {
-        const matchIsNotLastByteInChunk = match < sliceToCheck.length - 1;
-
-        if (matchIsNotLastByteInChunk) {
-          const matchedRemainingCheck = sliceToCheck.indexOf(check.slice(2, (sliceToCheck.length - match) * 2), 0, 'hex');
-
-          if (matchedRemainingCheck > -1) {
-            return check.slice((sliceToCheck.length - match) * 2);
-          }
-          else {
-            return checkPartialMatch(sliceToCheck.slice(match + 1), check)
-          }
-        }
-        else {
-          return check.slice(2);
-        }
+        }));
       }
-    };
+    });
+  
+    pipeline(
+      fs.createReadStream(file),
+      parser,
+      async (err) => {
+        if (err) {
+          reject(err);
+        }
+
+        schemas = await Promise.all(schemaPromises);
+        resolve(schemas);
+      }
+    );
   });
+
+
+  // return new Promise((resolve, reject) => {
+  //   const rs = fs.createReadStream(file);
+  //   let schemas = [];
+  //   let currentSchema, checkSchema, checkRemainingString, checkBeginning, checkText, checkEnd;
+  //   const beginningCheck = '000100000970';
+  //   const schemaCheck = '652D536368656D6173';
+  //   const endCheck = '3C2F4672616E546B446174613E';
+  //   const endSchemaLookForward = 13; // length of the above hex string (</FranTkData>) plus the closing '>' not included in the string above.
+
+  //   rs.on('data', (chunk) => {
+  //     const chunkBeginningIndex = chunk.indexOf(beginningCheck, 0, 'hex');
+  //     const hasSchema = chunk.indexOf(schemaCheck, 0, 'hex');
+  //     const endSchemaIndex = chunk.indexOf(endCheck, 0, 'hex');
+
+  //     if (currentSchema && currentSchema.length > 1000000) {
+  //       currentSchema = null;
+  //       checkEnd = false;
+  //     }
+
+  //     if (checkRemainingString) {
+  //       const remainingCheckInChunk = chunk.indexOf(checkRemainingString, 0, 'hex') === 0;
+
+  //       if (remainingCheckInChunk) {
+  //         if (checkEnd) {
+  //           const schema = Buffer.concat([currentSchema, chunk.slice(0, checkRemainingString.length / 2)]);
+  //           currentSchema = null;
+  //           parseSchema(schema);
+  //           checkEnd = false;
+  //         }
+  //       }
+  //       else if (checkBeginning || checkText || !checkEnd) {
+  //         checkBeginning = false;
+  //         checkText = false;
+  //         currentSchema = null;
+  //       }
+
+  //       checkRemainingString = null;
+  //     }
+
+  //     if (checkSchema) {
+  //       if (hasSchema === -1) {
+  //         currentSchema = null;
+  //       }
+
+  //       checkSchema = false;
+  //     }
+
+  //     if (chunkBeginningIndex > -1 && hasSchema > -1) {
+  //       if (endSchemaIndex > -1) {
+  //         if (endSchemaIndex > chunkBeginningIndex && endSchemaIndex > hasSchema) {
+  //           // schema is entirely contained in the chunk
+  //           parseSchema(chunk.slice(chunkBeginningIndex, endSchemaIndex + endSchemaLookForward));
+  //           currentSchema = null;
+  //         }
+  //         else {
+  //           if (currentSchema) {
+  //             // one schema ends in the chunk while another begins
+  //             parseSchema(Buffer.concat([currentSchema, chunk.slice(0, endSchemaIndex + endSchemaLookForward)]));
+  //             currentSchema = null;
+  //           }
+
+  //           // find the real chunk start, we already verified that the schema start is in this chunk
+  //           const newChunkToCheck = chunk.slice(0, hasSchema);
+  //           const newBeginning = newChunkToCheck.lastIndexOf(beginningCheck, -1, 'hex');
+  //           currentSchema = chunk.slice(newBeginning);
+  //         }
+  //       }
+  //       else {
+  //         // need to check if chunk beginning is the real beginning
+  //         const newChunkToCheck = chunk.slice(0, hasSchema);
+  //         const newBeginning = newChunkToCheck.lastIndexOf(beginningCheck, -1, 'hex');
+  //         currentSchema = chunk.slice(newBeginning);
+  //       }
+  //     }
+  //     else if (chunkBeginningIndex > -1 && hasSchema === -1 && (chunk.length - chunkBeginningIndex) <= 50) {
+  //       // chunk begin is in the schema but the schema check isnt there because the chunk is ending
+
+  //       const remainingString = checkPartialMatch(chunk, schemaCheck);
+
+  //       if (remainingString) {
+  //         checkRemainingString = remainingString;
+  //         checkText = true;
+  //       }
+  //       else {
+  //         checkSchema = true;
+  //       }
+
+  //       currentSchema = chunk.slice(chunkBeginningIndex);
+  //     }
+  //     else if (endSchemaIndex > -1 && currentSchema) {
+  //       // schema ends in the chunk
+  //       const schema = Buffer.concat([currentSchema, chunk.slice(0, endSchemaIndex + endSchemaLookForward)]);        
+  //       parseSchema(schema);
+  //       currentSchema = null;
+  //     }
+  //     else if ((currentSchema && endSchemaIndex === -1) || (currentSchema && chunkBeginningIndex === -1 && hasSchema > -1)) {
+  //       const remainingString = checkPartialMatch(chunk, endCheck);
+
+  //       if (remainingString) {
+  //         checkRemainingString = remainingString;
+  //         currentSchema = Buffer.concat([currentSchema, chunk]);
+  //         checkEnd = true;
+  //       }
+  //       else {
+  //         // the stream is still going!
+  //         currentSchema = Buffer.concat([currentSchema, chunk]);
+  //       }
+  //     }
+  //     else {
+  //       // check any edge cases for the chunk beginning, schema, or end
+
+  //       if (!currentSchema) {
+  //         // look for a match with the first 2 chars
+  //         // look at the next character to see if it matches, etc... until the end
+  //         // next chunk, look for the entire remaining pattern as the first chars
+          
+  //         const partialMatch = checkPartialMatch(chunk, beginningCheck);
+          
+  //         if (partialMatch) {
+  //           checkRemainingString = partialMatch;
+  //           checkBeginning = true;
+  //           checkSchema = true;
+  //           currentSchema = chunk.slice(((beginningCheck.length - partialMatch.length) / 2) * -1);
+  //         }
+  //       }
+  //     }
+  //   });
+    
+  //   rs.on('close', () => {
+  //     resolve(schemas);
+  //   });
+
+  //   function parseSchema(schema) {
+  //     // schemaGenerationService.writeXmlSchema(schema, 'C://tmp//schema.xml');
+  //     schemaGenerationService.generate(schema)
+  //       .then((gzipSchema) => {
+  //         schemas.push({
+  //           'meta': {
+  //             'gameYear': gzipSchema.meta.gameYear,
+  //             'major': gzipSchema.meta.major,
+  //             'minor': gzipSchema.meta.minor,
+  //             'fileExtension': '.gz'
+  //           },
+  //           'data': gzipSchema.data
+  //         });
+  //       });
+  //   };
+
+  //   function checkPartialMatch (chunk, check) {
+  //     let sliceToCheck = chunk.slice(-1 * (check.length / 2 - 1));
+  //     const match = sliceToCheck.indexOf(check.slice(0, 2), 0, 'hex');
+  //     const firstByteMatchedInChunk = match > -1;
+
+  //     if (firstByteMatchedInChunk) {
+  //       const matchIsNotLastByteInChunk = match < sliceToCheck.length - 1;
+
+  //       if (matchIsNotLastByteInChunk) {
+  //         const matchedRemainingCheck = sliceToCheck.indexOf(check.slice(2, (sliceToCheck.length - match) * 2), 0, 'hex');
+
+  //         if (matchedRemainingCheck > -1) {
+  //           return check.slice((sliceToCheck.length - match) * 2);
+  //         }
+  //         else {
+  //           return checkPartialMatch(sliceToCheck.slice(match + 1), check)
+  //         }
+  //       }
+  //       else {
+  //         return check.slice(2);
+  //       }
+  //     }
+  //   };
+  // });
 };
