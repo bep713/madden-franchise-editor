@@ -178,6 +178,8 @@ function setupIpcListeners() {
     const directory = ipcRenderer.sendSync('getPreferences').gameVersions[settingToCheck];
 
     if (directory === null || directory === undefined || directory.length === 0) {
+      console.warn(`No directory set for Madden ${arg}. Set one on the preferences page (Ctrl+Shift+P to open).\n\nTo scan for a custom directory,` + 
+        `choose the 'Quick scan' option on the schema manager and select your Madden executable file.`);
       return;
     }
 
@@ -250,7 +252,7 @@ function isDev () {
 function getQuickScanDirectories(pathToExecutable) {
   // try to look in patch - 00 if it exists. If not, look in data - 00
   return new Promise((resolve, reject) => {
-    const patchPath = path.join(pathToExecutable, '../patch/Win32/superbundlelayout/madden_installpackage_00');
+    const patchPath = path.join(pathToExecutable, '../patch/Win32/superbundlelayout/madden_installpackage_00/cas_01.cas');
 
     if (fs.existsSync(patchPath)) {
       resolve([path.join(pathToExecutable, '../patch/Win32/superbundlelayout/madden_installpackage_00')]);
