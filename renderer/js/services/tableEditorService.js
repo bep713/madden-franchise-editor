@@ -567,11 +567,11 @@ function referenceRenderer(instance, td, row, col, prop, value, cellProperties) 
       const tableId = utilService.bin2dec(value.substring(2,15));
       const recordIndex = utilService.bin2dec(value.substring(16));
       const table = tableEditorService.file.getTableById(tableId);
+
+      const referenceWrapper = document.createElement('div');
       
       if (tableId > 0 && table) {
         cellProperties.editor = false;
-        
-        const referenceWrapper = document.createElement('div');
 
         const referenceLink = document.createElement('a');
         referenceLink.innerHTML = `${table.name} - ${recordIndex}`;
@@ -595,57 +595,58 @@ function referenceRenderer(instance, td, row, col, prop, value, cellProperties) 
             tableEditorService.navSteps[tableEditorService.navSteps.length - 1].recordIndex = recordIndex;
           }, 1000);
         });
-
-        referenceWrapper.classList.add('table-cell--with-button', 'table-cell-button--show-on-hover');
-        const referenceEditorButton = document.createElement('button');
-        referenceEditorButton.classList.add('table-cell-button', 'table-cell-button--right', 'edit-button');
-        referenceWrapper.appendChild(referenceEditorButton);
-
-        referenceEditorButton.addEventListener('click', referenceEditorOnClick);
-        // referenceEditorButton.addEventListener('mousedown', function (e) { e.stopPropagation(); });
-
-        function referenceEditorOnClick() {
-          const referenceEditorWrapper = document.getElementById('reference-editor-wrapper');
-          referenceEditorWrapper.classList.remove('hidden');
-          referenceEditorWrapper.dataset.selectedRow = row;
-          referenceEditorWrapper.dataset.selectedCol = col;
-
-          const referenceEditorContent = document.getElementById('reference-editor-content');
-          const referenceEditorHighlight = document.getElementById('reference-editor-highlight');
-
-          const referenceEditorClientRect = referenceEditorContent.getBoundingClientRect();
-          const tdClientRect = td.getBoundingClientRect();
-          const windowClientRect = document.body.getBoundingClientRect();
-          
-          const referenceEditorShouldDisplayOnTop = (tdClientRect.bottom + referenceEditorClientRect.height) >= (windowClientRect.bottom - 20);
-
-          if (referenceEditorShouldDisplayOnTop) {
-            referenceEditorContent.style.top = (tdClientRect.top - referenceEditorClientRect.height) + 'px';
-          }
-          else {
-            referenceEditorContent.style.top = tdClientRect.bottom + 'px';
-          }
-
-          referenceEditorContent.style.left = tdClientRect.left + 'px';
-
-          referenceEditorHighlight.style.top = tdClientRect.top + 'px';
-          referenceEditorHighlight.style.left = tdClientRect.left + 'px';
-          referenceEditorHighlight.style.width = tdClientRect.width + 'px';
-          referenceEditorHighlight.style.height = tdClientRect.height + 'px';
-
-          tableEditorService.referenceEditorSelector.setValue(tableId);
-          
-          const rowInput = document.getElementById('reference-editor-row');
-          rowInput.value = recordIndex;
-
-          const binaryInput = document.getElementById('reference-editor-binary');
-          binaryInput.value = value;
-        };
-
-        td.appendChild(referenceWrapper);
       } else {
-        td.innerHTML = value;
+        referenceWrapper.innerHTML = value;
       }
+
+      // Allow user to manually edit the reference
+      referenceWrapper.classList.add('table-cell--with-button', 'table-cell-button--show-on-hover');
+      const referenceEditorButton = document.createElement('button');
+      referenceEditorButton.classList.add('table-cell-button', 'table-cell-button--right', 'edit-button');
+      referenceWrapper.appendChild(referenceEditorButton);
+
+      referenceEditorButton.addEventListener('click', referenceEditorOnClick);
+      // referenceEditorButton.addEventListener('mousedown', function (e) { e.stopPropagation(); });
+
+      function referenceEditorOnClick() {
+        const referenceEditorWrapper = document.getElementById('reference-editor-wrapper');
+        referenceEditorWrapper.classList.remove('hidden');
+        referenceEditorWrapper.dataset.selectedRow = row;
+        referenceEditorWrapper.dataset.selectedCol = col;
+
+        const referenceEditorContent = document.getElementById('reference-editor-content');
+        const referenceEditorHighlight = document.getElementById('reference-editor-highlight');
+
+        const referenceEditorClientRect = referenceEditorContent.getBoundingClientRect();
+        const tdClientRect = td.getBoundingClientRect();
+        const windowClientRect = document.body.getBoundingClientRect();
+        
+        const referenceEditorShouldDisplayOnTop = (tdClientRect.bottom + referenceEditorClientRect.height) >= (windowClientRect.bottom - 20);
+
+        if (referenceEditorShouldDisplayOnTop) {
+          referenceEditorContent.style.top = (tdClientRect.top - referenceEditorClientRect.height) + 'px';
+        }
+        else {
+          referenceEditorContent.style.top = tdClientRect.bottom + 'px';
+        }
+
+        referenceEditorContent.style.left = tdClientRect.left + 'px';
+
+        referenceEditorHighlight.style.top = tdClientRect.top + 'px';
+        referenceEditorHighlight.style.left = tdClientRect.left + 'px';
+        referenceEditorHighlight.style.width = tdClientRect.width + 'px';
+        referenceEditorHighlight.style.height = tdClientRect.height + 'px';
+
+        tableEditorService.referenceEditorSelector.setValue(tableId);
+        
+        const rowInput = document.getElementById('reference-editor-row');
+        rowInput.value = recordIndex;
+
+        const binaryInput = document.getElementById('reference-editor-binary');
+        binaryInput.value = value;
+      };
+
+      td.appendChild(referenceWrapper);
     } else {
       td.innerHTML = value;
     }

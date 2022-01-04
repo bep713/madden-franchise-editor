@@ -249,13 +249,19 @@ function openFileFromPath(filePath) {
 
 function showOpenedFileLinks() {
   const openFileButton = document.querySelector('#open-file');
-  utilService.hide(openFileButton);
+  if (openFileButton) {
+    utilService.hide(openFileButton);
+  }
 
   const openDifferentFileButton = document.querySelector('#open-different-file');
-  utilService.show(openDifferentFileButton);
+  if (openDifferentFileButton) {
+    utilService.show(openDifferentFileButton);
+  }
 
   const fileActions = document.querySelector('.file-actions');
-  utilService.show(fileActions);
+  if (fileActions) {
+    utilService.show(fileActions);
+  }
 };
 
 function hideOpenedFileLinks() {

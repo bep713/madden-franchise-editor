@@ -179,13 +179,13 @@ module.exports = navigationService;
 function DEV_openFile() {
   // welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-M03TEST_MOD');
   // welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER[21] + '\\CAREER-SCHEDULETEST_Replace');
-  welcomeService.eventEmitter.emit('open-file', `${MADDEN_SAVE_BASE_FOLDER[22]}\\CAREER-OCT16-09h15m21a-AUTOSAVE`);
+  // welcomeService.eventEmitter.emit('open-file', `${MADDEN_SAVE_BASE_FOLDER[22]}\\CAREER-TESTT`);
   // welcomeService.eventEmitter.emit('open-file', 'D:\\Projects\\Madden 20\\CAREER-TESTNEW');
   // welcomeService.eventEmitter.emit('open-file', `D:\\Projects\\Madden 20\\FranchiseData\\Franchise-Tuning-binary.FTC`);
 
   setTimeout(() => {
     // ipcRenderer.send('show-preferences-window');
-    navigationService.onTableEditorClicked();
+    // navigationService.onTableEditorClicked();
     // navigationService.onScheduleEditorClicked();
   }, 0);
 };

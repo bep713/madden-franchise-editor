@@ -37,8 +37,8 @@
     "fuse.js": "^3.4.6",
     "handsontable": "^6.2.2",
     "lz4": "^0.6.3",
-    "madden-file-tools": "^2.5.4",
-    "madden-franchise": "^2.2.3",
+    "madden-file-tools": "^2.5.5",
+    "madden-franchise": "^2.2.5",
     "moment": "^2.24.0",
     "xlsx": "^0.15.1"
   },
