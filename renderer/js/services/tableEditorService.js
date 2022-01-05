@@ -223,7 +223,10 @@ function onExportFile() {
       }, tableEditorService.selectedTable).then(() => {
         utilService.hide(loader);
         ipcRenderer.send('exported');
-        shell.openItem(filePath);
+
+        if (ipcRenderer.sendSync('getPreferences').general.openExcelAfterImport[0]) {
+          shell.openItem(filePath);
+        }
       }).catch((err) => {
         ipcRenderer.send('export-error');
         dialog.showErrorBox('Unable to export', 'Unable to export the file because it is currently open in another program. Try closing the file in Excel before exporting.');

@@ -24,6 +24,9 @@ preferencesService.getPreferenceKeys = function () {
             ],
             'checkForSchemaUpdates': [
                 true
+            ],
+            'openExcelAfterImport': [
+                true
             ]
         },
         'gameVersions': {
@@ -38,7 +41,8 @@ preferencesService.getPreferenceKeys = function () {
                 'defaultEditorSet': false,
                 'checkForUpdatesSet': false,
                 'autoSaveSet': false,
-                'checkForSchemaUpdatesSet': false
+                'checkForSchemaUpdatesSet': false,
+                'openExcelAfterImportSet': false
             },
             'gameVersions': {
                 'madden19DirectorySet': false,
@@ -54,7 +58,8 @@ preferencesService.getPreferenceKeys = function () {
                 '4_2_1': false,
                 '4_3_0': false,
                 '4_3_1': false,
-                '4_3_2': false
+                '4_3_2': false,
+                '4_3_3': false,
             }
         }
     }
@@ -118,6 +123,14 @@ preferencesService.initialize = function () {
                                     'type': 'checkbox',
                                     'options': [
                                         { 'label': 'Check for game updates', 'value': true }
+                                    ]
+                                },
+                                {
+                                    'label': 'Open Excel after Table Export',
+                                    'key': 'openExcelAfterImport',
+                                    'type': 'checkbox',
+                                    'options': [
+                                        { 'label': 'Open Excel automatically after import is complete', 'value': true }
                                     ]
                                 }
                             ]
