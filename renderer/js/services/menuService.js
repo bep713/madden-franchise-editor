@@ -189,6 +189,18 @@ menuService.initializeMenu = function () {
           accelerator: 'CmdOrCtrl+L',
           click: menuService.logTable,
           enabled: false
+        },
+        {
+          id: 'ExportRawTable',
+          label: 'Export Raw Table',
+          click: menuService.exportRawTable,
+          enabled: false
+        },
+        {
+          id: 'ExportFRT',
+          label: 'Export FRT File',
+          click: menuService.exportFrt,
+          enabled: false
         }
       ]
     },
@@ -337,6 +349,10 @@ menuService.exportFile = function () {
   ipcRenderer.send('export-file');
 };
 
+menuService.exportFrt = function () {
+  ipcRenderer.send('export-frt');
+};
+
 menuService.saveFile = function () {
   ipcRenderer.send('save-file');
 };
@@ -355,6 +371,10 @@ menuService.showOffsetHelper = function () {
 
 menuService.logTable = function () {
   ipcRenderer.send('log-table');
+};
+
+menuService.exportRawTable = function () {
+  ipcRenderer.send('export-raw-table');
 };
 
 menuService.openPreferencesWindow = function () {

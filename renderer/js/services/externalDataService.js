@@ -53,4 +53,14 @@ externalDataService.exportTableData = function (options, table) {
   });
 };
 
+externalDataService.exportRawTableData = async (options, table) => {
+  if (!options) { reject('Invalid arguments. Please call .exportTableData with (options, FranchiseFileTable)'); }
+  fs.writeFileSync(options.outputFilePath, table.data);
+};
+
+externalDataService.exportFrt = async (options, file) => {
+  if (!options) { reject('Invalid arguments. Please call .exportTableData with (options, FranchiseFile)'); }
+  fs.writeFileSync(options.outputFilePath, file.unpackedFileContents);
+};
+
 module.exports = externalDataService;

@@ -236,6 +236,14 @@ function addIpcListeners() {
     mainWindow.webContents.send('log-table');
   });
 
+  ipcMain.on('export-raw-table', function () {
+    mainWindow.webContents.send('export-raw-table');
+  });
+
+  ipcMain.on('export-frt', function () {
+    mainWindow.webContents.send('export-frt');
+  });
+
   ipcMain.on('reload-file', function () {
     setTemporaryWindowTitle('Reloading...');
     mainWindow.webContents.send('reload-file', currentFilePath);

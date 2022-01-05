@@ -97,6 +97,8 @@ tableEditorService.onClose = function () {
   ipcRenderer.removeListener('export-file', onExportFile);
   ipcRenderer.removeListener('import-file', onImportFile);
   ipcRenderer.removeListener('log-table', onLogTable);
+  ipcRenderer.removeListener('export-raw-table', onExportRawTable);
+  ipcRenderer.removeListener('export-frt', onExportFrt);
   window.removeEventListener('resize', windowResizeListener);
   window.removeEventListener('keydown', modalCloseListener);
   window.removeEventListener('keydown', onKeyOpenJumpToColumnModal);
@@ -188,6 +190,8 @@ function addIpcListeners() {
   ipcRenderer.on('export-file', onExportFile);
   ipcRenderer.on('import-file', onImportFile);
   ipcRenderer.on('log-table', onLogTable);
+  ipcRenderer.on('export-raw-table', onExportRawTable);
+  ipcRenderer.on('export-frt', onExportFrt);
 };
 
 function onPreferencesUpdated(e, preferences) {
@@ -199,7 +203,6 @@ function onPreferencesUpdated(e, preferences) {
 function onExportFile() {
   let filePath = dialog.showSaveDialogSync(remote.getCurrentWindow(), {
     'title': 'Select destination file for table export',
-    'defaultPath': app.getPath('documents'),
     'filters': [
       {name: 'Excel workbook', extensions: ['xlsx']},
       {name: 'CSV (comma-delimited)', extensions: ['csv']},
@@ -233,7 +236,6 @@ function onExportFile() {
 function onImportFile() {
   let filePath = dialog.showOpenDialogSync(remote.getCurrentWindow(), {
     'title': 'Select file for table import',
-    'defaultPath': app.getPath('documents'),
     'filters': [
       {name: 'Excel workbook', extensions: ['xlsx']},
       {name: 'CSV (comma-delimited)', extensions: ['csv']},
@@ -286,6 +288,60 @@ function onImportFile() {
 
 function onLogTable() {
   console.log(tableEditorService.selectedTable);
+};
+
+function onExportRawTable() {
+  let filePath = dialog.showSaveDialogSync(remote.getCurrentWindow(), {
+    'title': 'Select destination file for raw table export',
+    'filters': [
+      {name: 'DAT file', extensions: ['dat']}
+    ]
+  });
+
+  if (filePath) {
+    utilService.show(loader);
+
+    setTimeout(() => {
+      ipcRenderer.send('exporting');
+      externalDataService.exportRawTableData({
+        'outputFilePath': filePath
+      }, tableEditorService.selectedTable).then(() => {
+        utilService.hide(loader);
+        ipcRenderer.send('exported');
+      }).catch((err) => {
+        ipcRenderer.send('export-error');
+        dialog.showErrorBox('Unable to export', 'Unable to export the table because it is currently open in another program. Try closing the file in Excel before exporting.');
+        utilService.hide(loader);
+      });
+    }, 0)
+  }
+};
+
+function onExportFrt() {
+  let filePath = dialog.showSaveDialogSync(remote.getCurrentWindow(), {
+    'title': 'Select destination file for raw FRT file export',
+    'filters': [
+      {name: 'FRT file', extensions: ['frt']}
+    ]
+  });
+
+  if (filePath) {
+    utilService.show(loader);
+
+    setTimeout(() => {
+      ipcRenderer.send('exporting');
+      externalDataService.exportFrt({
+        'outputFilePath': filePath
+      }, tableEditorService.file).then(() => {
+        utilService.hide(loader);
+        ipcRenderer.send('exported');
+      }).catch((err) => {
+        ipcRenderer.send('export-error');
+        dialog.showErrorBox('Unable to export', 'Unable to export FRT because it is currently open in another program. Try closing the file in Excel before exporting.');
+        utilService.hide(loader);
+      });
+    }, 0)
+  }
 };
 
 function initializeTable() {
@@ -701,11 +757,11 @@ function initializeReferenceEditor() {
   tableEditorService.referenceEditorWrapper = referenceEditorWrapper;
 
   const referenceEditorSelector = document.getElementById('reference-editor-table');
-  const data = [...tableEditorService.tableSelector.data, {
+  const data = [{
     'value': 0,
     'text': `no table - null value`,
     'data-search-params': ['null', 'empty', '0']
-  }];
+  }, ...tableEditorService.tableSelector.data];
 
   tableEditorService.referenceEditorSelector = new Selectr(referenceEditorSelector, {
     data: data
