@@ -38,7 +38,7 @@
     "handsontable": "^6.2.2",
     "lz4": "^0.6.3",
     "madden-file-tools": "^2.5.5",
-    "madden-franchise": "^2.2.7",
+    "madden-franchise": "^2.3.6",
     "moment": "^2.24.0",
     "xlsx": "^0.15.1"
   },

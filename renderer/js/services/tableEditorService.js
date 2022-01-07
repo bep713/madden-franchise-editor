@@ -359,7 +359,8 @@ function initializeTable() {
     // columnSorting: true,
     rowHeaders: function (index) {
       return index;
-    }
+    },
+    contextMenu: require('./table-editor/contextMenuService').getContextMenu(tableEditorService)
   });
 };
 
@@ -368,8 +369,8 @@ function processSelection(row, col, row2, col2) {
   tableEditorService.currentlySelectedColumn = col;
 };
 
-function processChanges(changes) {
-  if (changes) {
+function processChanges(changes, source) {
+  if (changes && source !== 'onEmpty') {
     const flipSaveOnChange = tableEditorService.file.settings.saveOnChange;
     tableEditorService.file.settings = {
       'saveOnChange': false
