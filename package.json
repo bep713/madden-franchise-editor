@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "set NODE_ENV=development&& electron .",
-    "build": "electron-build build -w"
+    "build": "electron-builder build -w"
   },
   "author": "bep713",
   "license": "MIT",
