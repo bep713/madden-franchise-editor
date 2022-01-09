@@ -274,6 +274,8 @@ function onImportFile() {
           });
         });
 
+        tableEditorService.selectedTable.recalculateEmptyRecordReferences();
+
         ipcRenderer.send('imported');
 
         if (flipSaveOnChange) {
