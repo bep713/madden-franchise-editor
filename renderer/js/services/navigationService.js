@@ -304,8 +304,19 @@ function setupEvents() {
   welcomeService.eventEmitter.on('open-file', function (file) {
     navigationService.currentlyOpenedFile.path = file;
     navigationService.currentlyOpenedFile.data = createNewFranchiseFile(file);
+    
+    // assume m22 if no game year is set
+    if (!navigationService.currentlyOpenedFile.data._gameYear) {
+      navigationService.currentlyOpenedFile.data._gameYear = 22;
+    }
+
+    if (!navigationService.currentlyOpenedFile.data.type.year) {
+      navigationService.currentlyOpenedFile.data.type.year = 22;
+    }
+
     navigationService.currentlyOpenedFile.gameYear = navigationService.currentlyOpenedFile.data._gameYear;
     navigationService.currentlyOpenedFile.type = navigationService.currentlyOpenedFile.data.type;
+
 
     ipcRenderer.send('file-loaded', {
       'path': navigationService.currentlyOpenedFile.path,

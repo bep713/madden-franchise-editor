@@ -35,7 +35,9 @@ function addFileListeners(file) {
     const expectedSchema = file.expectedSchemaVersion;
     const usedSchema = file.schemaList.meta;
     
-    if (expectedSchema.major !== usedSchema.major || expectedSchema.minor !== usedSchema.minor || expectedSchema.gameYear !== usedSchema.gameYear) {
+    if (expectedSchema.major !== usedSchema.major || expectedSchema.minor !== usedSchema.minor || 
+      (expectedSchema.gameYear && expectedSchema.gameYear !== usedSchema.gameYear)) {
+        
       if (!schemaMismatchService.reloadWrapper) { return }
       
       schemaMismatchService.eventEmitter.emit('schema-quick-search');

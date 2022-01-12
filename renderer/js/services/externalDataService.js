@@ -63,4 +63,10 @@ externalDataService.exportFrt = async (options, file) => {
   fs.writeFileSync(options.outputFilePath, file.unpackedFileContents);
 };
 
+externalDataService.importRawTable = async (options, table) => {
+  if (!options) { reject('Invalid arguments. Please call .exportTableData with (options, FranchiseFileTable)'); }
+  const tableData = await fs.readFileSync(options.filePath);
+  await table.replaceRawData(tableData, true);
+};
+
 module.exports = externalDataService;

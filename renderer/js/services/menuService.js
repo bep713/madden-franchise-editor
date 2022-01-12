@@ -201,6 +201,15 @@ menuService.initializeMenu = function () {
           label: 'Export FRT File',
           click: menuService.exportFrt,
           enabled: false
+        },
+        {
+          type: 'separator'
+        },
+        {
+          id: 'ImportRawTable',
+          label: 'Import Raw Table',
+          click: menuService.importRawTable,
+          enabled: false
         }
       ]
     },
@@ -375,6 +384,10 @@ menuService.logTable = function () {
 
 menuService.exportRawTable = function () {
   ipcRenderer.send('export-raw-table');
+};
+
+menuService.importRawTable = function () {
+  ipcRenderer.send('import-raw-table');
 };
 
 menuService.openPreferencesWindow = function () {

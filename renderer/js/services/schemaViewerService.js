@@ -167,7 +167,14 @@ function manageSchemaVersionInfo() {
 
   major.innerHTML = schemaViewerService.schemaInfo.major;
   minor.innerHTML = schemaViewerService.schemaInfo.minor;
-  year.innerHTML = 'M' + schemaViewerService.schemaInfo.gameYear;
+
+  if (schemaViewerService.schemaInfo.gameYear) {
+    year.innerHTML = 'M' + schemaViewerService.schemaInfo.gameYear;
+    year.classList.remove('hidden');
+  } else {
+    year.innerHTML = 'M20';
+    year.classList.add('hidden');
+  }
 
   const expectedMajor = document.querySelector('.schema-version-wrapper .expected-major');
   const expectedMinor = document.querySelector('.schema-version-wrapper .expected-minor');
@@ -175,12 +182,20 @@ function manageSchemaVersionInfo() {
 
   expectedMajor.innerHTML = schemaViewerService.file.expectedSchemaVersion.major;
   expectedMinor.innerHTML = schemaViewerService.file.expectedSchemaVersion.minor;
-  expectedYear.innerHTML = 'M' + schemaViewerService.file.expectedSchemaVersion.gameYear;
+
+  if (schemaViewerService.file.expectedSchemaVersion.gameYear) {
+    expectedYear.innerHTML = 'M' + schemaViewerService.file.expectedSchemaVersion.gameYear;
+    expectedYear.classList.remove('hidden');
+  }
+  else {
+    expectedYear.innerHTML = 'ANY';
+  }
 
   const expectedSchema = schemaViewerService.file.expectedSchemaVersion
   const usedSchema = schemaViewerService.schemaInfo;
 
-  const schemaMatch = expectedSchema.major === usedSchema.major && expectedSchema.minor === usedSchema.minor && expectedSchema.gameYear === usedSchema.gameYear;
+  let schemaVersionMatch = expectedSchema.major === usedSchema.major && expectedSchema.minor === usedSchema.minor;
+  const schemaMatch = expectedSchema.gameYear ? schemaVersionMatch && expectedSchema.gameYear === usedSchema.gameYear : schemaVersionMatch;
 
   const schemaStatus = document.querySelector('.expected-schema-wrapper .status');
 

@@ -99,6 +99,7 @@ tableEditorService.onClose = function () {
   ipcRenderer.removeListener('log-table', onLogTable);
   ipcRenderer.removeListener('export-raw-table', onExportRawTable);
   ipcRenderer.removeListener('export-frt', onExportFrt);
+  ipcRenderer.removeListener('import-raw-table', onImportRawTable);
   window.removeEventListener('resize', windowResizeListener);
   window.removeEventListener('keydown', modalCloseListener);
   window.removeEventListener('keydown', onKeyOpenJumpToColumnModal);
@@ -192,6 +193,7 @@ function addIpcListeners() {
   ipcRenderer.on('log-table', onLogTable);
   ipcRenderer.on('export-raw-table', onExportRawTable);
   ipcRenderer.on('export-frt', onExportFrt);
+  ipcRenderer.on('import-raw-table', onImportRawTable);
 };
 
 function onPreferencesUpdated(e, preferences) {
@@ -343,6 +345,35 @@ function onExportFrt() {
       }).catch((err) => {
         ipcRenderer.send('export-error');
         dialog.showErrorBox('Unable to export', 'Unable to export FRT because it is currently open in another program. Try closing the file in Excel before exporting.');
+        utilService.hide(loader);
+      });
+    }, 0)
+  }
+};
+
+function onImportRawTable() {
+  let filePath = dialog.showOpenDialogSync(remote.getCurrentWindow(), {
+    'title': 'Select the file to import',
+    'filters': [
+      {name: 'DAT file', extensions: ['dat', '*']},
+    ]
+  });
+
+  if (filePath) {
+    utilService.show(loader);
+
+    setTimeout(() => {
+      ipcRenderer.send('importing');
+
+      externalDataService.importRawTable({
+        filePath: filePath[0]
+      }, tableEditorService.selectedTable).then(() => {
+        loadTable(tableEditorService.selectedTable);
+        utilService.hide(loader);
+        ipcRenderer.send('imported');
+      }).catch((err) => {
+        ipcRenderer.send('import-error');
+        dialog.showErrorBox('Unable to import', 'Unable to import the raw file. Please make sure its in the correct franchise table format.');
         utilService.hide(loader);
       });
     }, 0)

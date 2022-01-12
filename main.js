@@ -244,6 +244,10 @@ function addIpcListeners() {
     mainWindow.webContents.send('export-frt');
   });
 
+  ipcMain.on('import-raw-table', function () {
+    mainWindow.webContents.send('import-raw-table');
+  });
+
   ipcMain.on('reload-file', function () {
     setTemporaryWindowTitle('Reloading...');
     mainWindow.webContents.send('reload-file', currentFilePath);
