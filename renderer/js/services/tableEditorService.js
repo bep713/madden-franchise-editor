@@ -8,6 +8,8 @@ const utilService = require('./utilService');
 const Handsontable = require('handsontable').default;
 const pinnedTableService = require('./pinnedTableService');
 const externalDataService = require('./externalDataService');
+const referenceViewerService = require('./referenceViewerService');
+const contextMenuService = require('./table-editor/contextMenuService');
 
 let tableEditorService = {};
 tableEditorService.name = 'tableEditorService';
@@ -73,7 +75,7 @@ tableEditorService.start = function (file) {
       'saveOnChange': ipcRenderer.sendSync('getPreferences').general.autoSave[0]
     };
 
-    tableEditorService.loadTable();
+    tableEditorService.initialLoadTable();
     initializePins(file.gameYear);
   }
 };
@@ -105,7 +107,7 @@ tableEditorService.onClose = function () {
   window.removeEventListener('keydown', onKeyOpenJumpToColumnModal);
 };
 
-tableEditorService.loadTable = function () {
+tableEditorService.initialLoadTable = function () {
   const tableChoices = tableEditorService.file.tables.map((table, index) => {
     // console.log(table.name);
     return {
@@ -136,34 +138,34 @@ tableEditorService.loadTable = function () {
       table.readRecords().then((table) => {
         loadTable(table);
         tableEditorService.hot.selectCell(tableEditorService.rowIndexToSelect, tableEditorService.columnIndexToSelect);
-
+    
         tableEditorService.rowIndexToSelect = 0;
         tableEditorService.columnIndexToSelect = 0;
         
         tableEditorService.navSteps.push({
-          'tableId': tableId,
+          'tableId': table.header.tableId,
           'recordIndex': tableEditorService.hot.getSelectedLast()[0],
           'column': tableEditorService.hot.getSelectedLast()[1]
         });
-
+    
       }).catch((err) => {
         console.log(err);
         loadTable(table);
-
+    
         tableEditorService.navSteps.push({
-          'tableId': tableId,
+          'tableId': table.header.tableId,
           'recordIndex': 0,
           'column': 0
         });
       })
       .finally(() => {
         tableEditorService.selectedTable = table;
-
+    
         if (tableEditorService.navSteps.length >= 2) {
           backLink.classList.remove('disabled');
         }
-
-        toggleAddPinButton(tableId);
+    
+        toggleAddPinButton(table.header.tableId);
       });
     }, 100);
   });
@@ -182,6 +184,10 @@ tableEditorService.loadTable = function () {
     const tableToLoad = tableEditorService.file.getAllTablesByName(tableChoices[1].text.substring(tableChoices[1].text.indexOf(' ') + 3));
     tableEditorService.selectedTable = tableToLoad[tableToLoad.length - 1];
   }
+};
+
+tableEditorService.showReferenceViewer = (referencedRecordData, references) => {
+  referenceViewerService.showReferenceViewer(referencedRecordData, references);
 };
 
 module.exports = tableEditorService;
@@ -393,7 +399,7 @@ function initializeTable() {
     rowHeaders: function (index) {
       return index;
     },
-    contextMenu: require('./table-editor/contextMenuService').getContextMenu(tableEditorService)
+    contextMenu: contextMenuService.getContextMenu(tableEditorService)
   });
 };
 
@@ -440,6 +446,10 @@ function processChanges(changes, source) {
 };
 
 function addEventListeners() {
+  referenceViewerService.eventEmitter.on('reference-clicked', (referenceData) => {
+    tableEditorService.tableSelector.setValue(referenceData.tableId);
+  });
+
   const jumpToColumnModal = document.querySelector('.jump-to-column-modal');
   const underlay = document.querySelector('.underlay');
   const jumpRow = document.querySelector('.jump-row');

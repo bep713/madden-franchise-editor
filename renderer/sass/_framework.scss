@@ -14,6 +14,10 @@ $font-base-family: "Roboto", sans-serif;
 $font-base-size: 15px;
 $font-weight-bold: 600;
 
+$button-orange: #e9881947;
+$button-orange-hover: #ffd7aa;
+$button-orange-active: darken(#ffd7aa, 5%);
+
 * {
   box-sizing: border-box;
 }

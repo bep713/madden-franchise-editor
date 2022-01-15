@@ -2,6 +2,29 @@ module.exports = {
     getContextMenu(tableEditorService) {
         return {
             items: {
+                'find_references': {
+                    name: () => {
+                        return 'Find references to this record...'
+                    },
+                    disabled: () => {
+                        const selectedRows = tableEditorService.hot.getSelectedLast();
+                        return selectedRows[0] !== selectedRows[2];
+                    },
+                    callback: (key, selection, clickEvent) => {
+                        const selectedTableId = tableEditorService.selectedTable.header.tableId;
+                        const selectedRow = selection[0].end.row;
+
+                        const references = tableEditorService.file.getReferencesToRecord(selectedTableId, selectedRow);
+
+                        const selectedRecordData = {
+                            tableId: selectedTableId,
+                            name: tableEditorService.selectedTable.name,
+                            recordIndex: selectedRow
+                        };
+
+                        tableEditorService.showReferenceViewer(selectedRecordData, references)
+                    }
+                },
                 'empty_row': {
                     name: () => {
                         return 'Set selected record(s) as empty';

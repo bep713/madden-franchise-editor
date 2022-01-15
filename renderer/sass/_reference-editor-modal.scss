@@ -65,18 +65,18 @@
 }
 
 #btn-change-reference {
-    background-color: #e9881947;
+    background-color: $button-orange;
     border-color: $brand-primary;
     width: 100%;
     margin-top: 10px;
 
     &:hover {
-        background-color: #ffd7aa;
+        background-color: $button-orange-hover;
         cursor: pointer;
     }
 
     &:active {
-        background-color: darken(#ffd7aa, 5%);
+        background-color: $button-orange-active;
     }
 }
 

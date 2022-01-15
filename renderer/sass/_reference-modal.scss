@@ -1,0 +1,26 @@
+.reference-modal {
+    max-height: 80%;
+    overflow: auto;
+    
+    .reference-list-wrapper {
+        margin-top: 20px;
+    }
+
+    .reference-link {
+        padding: 15px;
+        background-color: white;
+        cursor: pointer;
+
+        &:hover{
+            background-color: $button-orange-hover;
+        }
+
+        &:active {
+            background-color: $button-orange-active;
+        }
+
+        + .reference-link {
+            margin-top: 10px;
+        }
+    }
+}
