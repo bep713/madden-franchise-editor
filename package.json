@@ -36,7 +36,7 @@
     "electron-preferences": "^2.0.0",
     "electron-updater": "^4.1.2",
     "fuse.js": "^3.4.6",
-    "handsontable": "^6.2.2",
+    "handsontable": "^10.0.0",
     "lz4": "^0.6.3",
     "madden-file-tools": "^2.5.5",
     "madden-franchise": "^2.5.1",
