@@ -41,7 +41,7 @@
     "madden-file-tools": "^2.5.5",
     "madden-franchise": "^2.5.1",
     "moment": "^2.24.0",
-    "xlsx": "^0.15.1"
+    "xlsx": "^0.17.0"
   },
   "build": {
     "appId": "com.github.bep713.maddenfranchiseeditor",
