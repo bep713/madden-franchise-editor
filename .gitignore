@@ -2,3 +2,5 @@ node_modules
 temp
 dist
 resources
+test-results/
+playwright-report/
