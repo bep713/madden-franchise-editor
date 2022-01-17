@@ -1,7 +1,6 @@
-const { ipcRenderer, remote, shell } = require('electron');
+const { ipcRenderer, shell } = require('electron');
 // const d3 = require('d3');
-const app = remote.app;
-const dialog = remote.dialog;
+const { dialog, getCurrentWindow } = require('@electron/remote');
 // const d3Drag = require('d3-drag');
 const Selectr = require('../libs/selectr/selectr');
 const utilService = require('./utilService');
@@ -209,7 +208,7 @@ function onPreferencesUpdated(e, preferences) {
 };
 
 function onExportFile() {
-  let filePath = dialog.showSaveDialogSync(remote.getCurrentWindow(), {
+  let filePath = dialog.showSaveDialogSync(getCurrentWindow(), {
     'title': 'Select destination file for table export',
     'filters': [
       {name: 'Excel workbook', extensions: ['xlsx']},
@@ -245,7 +244,7 @@ function onExportFile() {
 };
 
 function onImportFile() {
-  let filePath = dialog.showOpenDialogSync(remote.getCurrentWindow(), {
+  let filePath = dialog.showOpenDialogSync(getCurrentWindow(), {
     'title': 'Select file for table import',
     'filters': [
       {name: 'Excel workbook', extensions: ['xlsx']},
@@ -304,7 +303,7 @@ function onLogTable() {
 };
 
 function onExportRawTable() {
-  let filePath = dialog.showSaveDialogSync(remote.getCurrentWindow(), {
+  let filePath = dialog.showSaveDialogSync(getCurrentWindow(), {
     'title': 'Select destination file for raw table export',
     'filters': [
       {name: 'DAT file', extensions: ['dat']}
@@ -331,7 +330,7 @@ function onExportRawTable() {
 };
 
 function onExportFrt() {
-  let filePath = dialog.showSaveDialogSync(remote.getCurrentWindow(), {
+  let filePath = dialog.showSaveDialogSync(getCurrentWindow(), {
     'title': 'Select destination file for raw FRT file export',
     'filters': [
       {name: 'FRT file', extensions: ['frt']}
@@ -358,7 +357,7 @@ function onExportFrt() {
 };
 
 function onImportRawTable() {
-  let filePath = dialog.showOpenDialogSync(remote.getCurrentWindow(), {
+  let filePath = dialog.showOpenDialogSync(getCurrentWindow(), {
     'title': 'Select the file to import',
     'filters': [
       {name: 'DAT file', extensions: ['dat', '*']},

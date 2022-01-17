@@ -1,5 +1,4 @@
-const { remote } = require('electron');
-const dialog = remote.dialog;
+const { dialog, getCurrentWindow } = require('@electron/remote');
 
 let elementCreationUtil = {};
 
@@ -94,7 +93,7 @@ elementCreationUtil.createDirectoryField = (field, currentValue) => {
     directoryButton.classList.add('directory-btn');
 
     directoryButton.addEventListener('click', function () {
-        const directory = dialog.showOpenDialogSync(remote.getCurrentWindow(), {
+        const directory = dialog.showOpenDialogSync(getCurrentWindow(), {
             title: 'Select a directory',
             defaultPath: input.value,
             properties: ['openDirectory']

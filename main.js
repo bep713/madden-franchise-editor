@@ -21,6 +21,9 @@ if (isDev) {
   });
 }
 
+const remoteMain = require('@electron/remote/main');
+remoteMain.initialize();
+
 const homePage = 'renderer/index.html';
 const workerPage = 'renderer/worker.html';
 const creditsPage = 'renderer/credits.html';
@@ -36,7 +39,16 @@ let baseFileWatcher;
 function createWindow () {
 
   // Create the browser window.
-  mainWindow = new BrowserWindow({ width: 1600, height: 900, webPreferences: { nodeIntegration: true }})
+  mainWindow = new BrowserWindow({ 
+    width: 1600, 
+    height: 900, 
+    webPreferences: { 
+      nodeIntegration: true, 
+      contextIsolation: false 
+    }
+  });
+
+  remoteMain.enable(mainWindow.webContents);
 
   // and load the index.html of the app.
   mainWindow.loadFile(homePage)
@@ -88,7 +100,18 @@ function createWindow () {
     };
   });
 
-  workerWindow = new BrowserWindow({ width: 1000, height: 500, show: isDev, webPreferences: { nodeIntegration: true }});
+  workerWindow = new BrowserWindow({ 
+    title: 'Worker',
+    width: 1000, 
+    height: 500, 
+    show: isDev, 
+    webPreferences: { 
+      nodeIntegration: true, 
+      contextIsolation: false 
+    }
+  });
+
+  remoteMain.enable(workerWindow.webContents);
 
   workerWindow.loadFile(workerPage);
 
@@ -276,10 +299,13 @@ function addIpcListeners() {
 
   ipcMain.on('show-credits', function () {
     let creditsWindow = new BrowserWindow({
+      title: 'Credits',
       width: 1000,
       height: 500,
       parent: mainWindow
     });
+
+    remoteMain.enable(creditsWindow.webContents);
 
     creditsWindow.loadFile(creditsPage);
 
@@ -336,13 +362,17 @@ function createSchemaWindow(show) {
   }
 
   schemaWindow = new BrowserWindow({
+    title: 'Schema',
     width: 600,
     height: 650,
     show: show !== null ? show : true,
     webPreferences: {
-      nodeIntegration: true
+      nodeIntegration: true,
+      contextIsolation: false
     }
   });
+
+  remoteMain.enable(schemaWindow.webContents);
 
   if (isDev) {
     schemaWindow.webContents.openDevTools();
@@ -371,14 +401,17 @@ function createSettingsWindow(show) {
   }
 
   settingsWindow = new BrowserWindow({
+    title: 'Settings',
     width: 1100,
     height: 650,
     show: show !== null ? show : false,
     frame: true,
     webPreferences: {
-      nodeIntegration: true
+      nodeIntegration: true,
+      contextIsolation: false
     }
   });
+  remoteMain.enable(settingsWindow.webContents);
 
   if (isDev) {
     settingsWindow.webContents.openDevTools();

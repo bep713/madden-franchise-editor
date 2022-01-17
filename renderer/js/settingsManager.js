@@ -2,12 +2,12 @@ const fs = require('fs');
 const path = require('path');
 const electron = require('electron');
 const ipcRenderer = electron.ipcRenderer;
-const remote = electron.remote;
+const { getCurrentWindow } = require('@electron/remote');
 
 const preferencesService = require('./js/services/preferencesService');
 
 const pageData = require('../data/settingsManagerData.json');
-const currentWindow = remote.getCurrentWindow();
+const currentWindow = getCurrentWindow();
 const preferences = ipcRenderer.sendSync('getPreferences');
 
 initializeSettingsManager(preferences);

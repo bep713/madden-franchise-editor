@@ -1,5 +1,5 @@
 const { shell, ipcRenderer } = require('electron');
-const { Menu, app, BrowserWindow } = require('electron').remote;
+const { Menu, app, BrowserWindow } = require('@electron/remote');
 
 let menuService = {};
 

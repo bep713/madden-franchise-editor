@@ -1,6 +1,4 @@
-const { ipcRenderer, remote, shell } = require('electron');
-const dialog = remote.dialog;
-const app = remote.app;
+const { ipcRenderer, shell } = require('electron');
 
 const fs = require('fs');
 const zlib = require('zlib');

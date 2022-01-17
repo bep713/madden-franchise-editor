@@ -1,5 +1,4 @@
-const { remote } = require('electron');
-const app = remote.app;
+const { app } = require('@electron/remote');
 
 let appVersionsService = {};
 

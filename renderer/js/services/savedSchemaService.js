@@ -1,8 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-
-const remote = require('electron').remote;
-const app = remote.app;
+const { app } = require('@electron/remote');
 
 const schemaPicker = require('madden-franchise/services/schemaPicker');
 

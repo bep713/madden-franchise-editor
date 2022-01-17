@@ -1,8 +1,7 @@
 const fs = require('fs');
 
-const { ipcRenderer, remote } = require('electron');
-const app = remote.app;
-const dialog = remote.dialog;
+const { ipcRenderer } = require('electron');
+const { app, dialog, getCurrentWindow } = require('@electron/remote');
 
 const moment = require('moment');
 const EventEmitter = require('events').EventEmitter;
@@ -52,6 +51,7 @@ function addVersionNumber() {
 
 function addListeners() {
   addOpenFileListener();
+  addTestHelperListener();
   addOpenScheduleListener();
   addOpenTableEditorListener();
   addOpenSchemaViewerListener();
@@ -64,6 +64,14 @@ function addOpenFileListener() {
 
   openFileButton.addEventListener('click', openFile);
   openDifferentFileButton.addEventListener('click', openFile);
+};
+
+function addTestHelperListener() {
+  const openFileHelper = document.getElementById('open-file-input');
+  openFileHelper.addEventListener('change', () => {
+    console.log(openFileHelper.value);
+    openFileFromPath(openFileHelper.value);
+  });
 };
 
 function addGlobalIpcListeners() {
@@ -208,7 +216,7 @@ function refreshRecentFilesList() {
 };
 
 function openFile () {
-  const filePath = dialog.showOpenDialogSync(remote.getCurrentWindow(), {
+  const filePath = dialog.showOpenDialogSync(getCurrentWindow(), {
     title: 'Select franchise file to open',
     defaultPath: ipcRenderer.sendSync('getPreferences').general.defaultDirectory,
     filters: [{
