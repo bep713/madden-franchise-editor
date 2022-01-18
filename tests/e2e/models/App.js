@@ -7,16 +7,9 @@ class App {
         if (!this.mainWindow) {
             const windows = await this.app.windows();
 
-            const titles = await Promise.all(windows.map(async (window) => {
-                const title = await window.title();
-                return title;
-            }));
-
-            const mainWindowIndex = titles.findIndex((title) => {
-                return title === 'Madden Franchise Editor';
+            this.mainWindow = windows.find((window) => {
+                return window._mainFrame._url.indexOf('index.html') >= 0;
             });
-    
-            this.mainWindow = windows[mainWindowIndex];
         }
 
         return this.mainWindow;
