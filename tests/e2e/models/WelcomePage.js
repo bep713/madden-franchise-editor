@@ -17,7 +17,7 @@ class WelcomePage {
         await this.window.waitForSelector('.link-item');
     };
 
-    async openNewFranchiseFile(path) {
+    async openFranchiseFile(path) {
         await util.enterFilePath(this.window, '#open-file-input', path);
     };
 

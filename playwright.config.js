@@ -10,7 +10,7 @@ const config = {
   testDir: './tests/e2e',
 
   /* Maximum time one test can run for. */
-  timeout: 30 * 1000,
+  timeout: 60 * 1000,
 
   expect: {
 

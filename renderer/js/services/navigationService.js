@@ -211,6 +211,12 @@ function addIpcListeners() {
     navigationService.currentlyOpenedFile.data.save();
   });
 
+  ipcRenderer.on('save-file-sync', function () {
+    navigationService.currentlyOpenedFile.data.save(null, {
+      sync: true
+    });
+  });
+
   ipcRenderer.on('close-file', function () {
     navigationService.currentlyOpenedFile.path = null;
     navigationService.currentlyOpenedFile.data = null;

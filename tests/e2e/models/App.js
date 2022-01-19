@@ -14,6 +14,33 @@ class App {
 
         return this.mainWindow;
     };
+
+    async closeFile() {
+        await this._clickMenuItem('CloseFile');
+    };
+
+    async saveFile() {
+        await this.mainWindow.evaluate(async () => {
+            const { getCurrentWindow } = require('@electron/remote');
+            getCurrentWindow().webContents.send('save-file-sync');
+
+            await new Promise((resolve) => {
+                let interval = setInterval(() => {
+                    if (getCurrentWindow().title.indexOf('Saved') >= 0) {
+                        clearInterval(interval);
+                        resolve();
+                    }
+                }, 50);
+            });
+        });
+    };
+
+    async _clickMenuItem(menuItemId) {
+        await this.mainWindow.evaluate(async (menuItemId) => {
+            const { Menu, getCurrentWindow } = require('@electron/remote');
+            Menu.getApplicationMenu().getMenuItemById(menuItemId).click(null, getCurrentWindow());
+        }, menuItemId);
+    };
 };
 
 module.exports = App;
