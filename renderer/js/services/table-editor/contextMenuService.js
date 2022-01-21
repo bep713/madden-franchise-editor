@@ -1,5 +1,5 @@
 module.exports = {
-    getContextMenu(tableEditorService) {
+    getContextMenu(tableEditorView) {
         return {
             items: {
                 'find_references': {
@@ -7,22 +7,22 @@ module.exports = {
                         return 'Find references to this record...'
                     },
                     disabled: () => {
-                        const selectedRows = tableEditorService.hot.getSelectedLast();
+                        const selectedRows = tableEditorView.hot.getSelectedLast();
                         return selectedRows[0] !== selectedRows[2];
                     },
                     callback: (key, selection, clickEvent) => {
-                        const selectedTableId = tableEditorService.selectedTable.header.tableId;
+                        const selectedTableId = tableEditorView.selectedTable.header.tableId;
                         const selectedRow = selection[0].end.row;
 
-                        const references = tableEditorService.file.getReferencesToRecord(selectedTableId, selectedRow);
+                        const references = tableEditorView.file.getReferencesToRecord(selectedTableId, selectedRow);
 
                         const selectedRecordData = {
                             tableId: selectedTableId,
-                            name: tableEditorService.selectedTable.name,
+                            name: tableEditorView.selectedTable.name,
                             recordIndex: selectedRow
                         };
 
-                        tableEditorService.showReferenceViewer(selectedRecordData, references)
+                        tableEditorView.showReferenceViewer(selectedRecordData, references)
                     }
                 },
                 'empty_row': {
@@ -30,28 +30,28 @@ module.exports = {
                         return 'Set selected record(s) as empty';
                     },
                     disabled: () => {
-                        const selectedRow = tableEditorService.hot.getSelectedLast()[0];
+                        const selectedRow = tableEditorView.hot.getSelectedLast()[0];
                         return selectedRow >= 0 &&
-                            (tableEditorService.selectedTable.header.record1Size < 4 ||
-                            tableEditorService.selectedTable.records[selectedRow].isEmpty);
+                            (tableEditorView.selectedTable.header.record1Size < 4 ||
+                            tableEditorView.selectedTable.records[selectedRow].isEmpty);
                     },
                     callback: (key, selection, clickEvent) => {
                         selection.forEach((selectionGroup) => {
                             for (let i = selectionGroup.start.row; i <= selectionGroup.end.row; i++) {
-                                tableEditorService.selectedTable.records[i].empty();
+                                tableEditorView.selectedTable.records[i].empty();
                             }
                         });
 
                         // We need to iterate over every empty record because their empty record reference may have changed.
                         let changes = [];
 
-                        tableEditorService.selectedTable.emptyRecords.forEach((_, key) => {
-                            tableEditorService.selectedTable.records[key].fields.forEach((field, index) => {
+                        tableEditorView.selectedTable.emptyRecords.forEach((_, key) => {
+                            tableEditorView.selectedTable.records[key].fields.forEach((field, index) => {
                                 changes.push([key, index, field.value]);
                             });
                         });
 
-                        tableEditorService.hot.setDataAtCell(changes, 'onEmpty');
+                        tableEditorView.hot.setDataAtCell(changes, 'onEmpty');
                     }
                 },
                 'advanced': {
@@ -62,10 +62,10 @@ module.exports = {
                                 key: 'advanced:setNextRecordToUse',
                                 name: 'Set as next empty record to use',
                                 disabled: () => {
-                                    return tableEditorService.hot.getSelectedLast()[2] !== tableEditorService.hot.getSelectedLast()[0];
+                                    return tableEditorView.hot.getSelectedLast()[2] !== tableEditorView.hot.getSelectedLast()[0];
                                 },
                                 callback: (key, selection, clickEvent) => {
-                                    tableEditorService.selectedTable.setNextRecordToUse(selection[0].start.row, true);
+                                    tableEditorView.selectedTable.setNextRecordToUse(selection[0].start.row, true);
                                 }
                             }
                         ]
