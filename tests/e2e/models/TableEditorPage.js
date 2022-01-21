@@ -11,8 +11,9 @@ class TableEditorPage {
         this.pins = new PinComponent(this.window, '.table-pins-wrapper');
 
         this.locators = {
+            backButton: this.window.locator('.back-link'),
+            loadingSpinner: this.window.locator('.loader-wrapper'),
             selectedCellEditReference: this.window.locator('.table-content-wrapper td.current .edit-button'),
-            loadingSpinner: this.window.locator('.loader-wrapper')
         };
     };
 
@@ -55,6 +56,11 @@ class TableEditorPage {
             }
         });
 
+        const referenceText = await this.table.getTextAtSelectedCell();
+        const rowIndex = parseInt(referenceText.match(/.+-\s(\d+)/)[1]);
+
+        this.table.setSelectedTableCell(rowIndex, 0);
+
         await this._waitForTableToLoad();
     };
 
@@ -82,6 +88,10 @@ class TableEditorPage {
     async clickPinByTableId(tableId) {
         await this.pins.clickPinByTableId(tableId);
         await this._waitForTableToLoad();
+    };
+
+    async clickBackButton() {
+        await this.locators.backButton.click();
     };
 };
 

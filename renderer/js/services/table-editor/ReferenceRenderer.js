@@ -1,8 +1,8 @@
 const utilService = require('../utilService');
 
 class ReferenceRenderer {
-    constructor(tableEditorView) {
-        this.tableEditorView = tableEditorView;
+    constructor(tableEditorWrapper) {
+        this.tableEditorWrapper = tableEditorWrapper;
     };
 
     renderer(instance, td, row, col, prop, value, cellProperties) {
@@ -13,7 +13,7 @@ class ReferenceRenderer {
             if (otherTableFlag === '0') {
                 const tableId = utilService.bin2dec(value.substring(2,15));
                 const recordIndex = utilService.bin2dec(value.substring(16));
-                const table = this.tableEditorView.file.getTableById(tableId);
+                const table = this.tableEditorWrapper.file.getTableById(tableId);
         
                 const referenceWrapper = document.createElement('div');
                     
@@ -25,22 +25,22 @@ class ReferenceRenderer {
                     referenceWrapper.appendChild(referenceLink);
             
                     referenceLink.addEventListener('click', () => {
-                        this.tableEditorView.navSteps[this.tableEditorView.navSteps.length - 1].column = col;
-                        this.tableEditorView.navSteps[this.tableEditorView.navSteps.length - 1].recordIndex = row;
+                        this.tableEditorWrapper.selectedTableEditor.navSteps[this.tableEditorWrapper.selectedTableEditor.navSteps.length - 1].column = col;
+                        this.tableEditorWrapper.selectedTableEditor.navSteps[this.tableEditorWrapper.selectedTableEditor.navSteps.length - 1].recordIndex = row;
             
-                        this.tableEditorView.rowIndexToSelect = recordIndex;
-                        this.tableEditorView.columnIndexToSelect = 0;
+                        this.tableEditorWrapper.selectedTableEditor.rowIndexToSelect = recordIndex;
+                        this.tableEditorWrapper.selectedTableEditor.columnIndexToSelect = 0;
             
-                        if (table.header.tableId != this.tableEditorView.tableSelector.getValue()) {
-                            this.tableEditorView.tableSelector.setValue(table.header.tableId);
+                        if (table.header.tableId != this.tableEditorWrapper.selectedTableEditor.tableSelector.getValue()) {
+                            this.tableEditorWrapper.selectedTableEditor.tableSelector.setValue(table.header.tableId);
                         } 
                         else {
-                            this.tableEditorView.hot.selectCell(recordIndex, 0);
+                            this.tableEditorWrapper.selectedTableEditor.hot.selectCell(recordIndex, 0);
                         }
             
                         setTimeout(() => {
-                            this.tableEditorView.navSteps[this.tableEditorView.navSteps.length - 1].recordIndex = recordIndex;
-                        }, 1000);
+                            this.tableEditorWrapper.selectedTableEditor.navSteps[this.tableEditorWrapper.selectedTableEditor.navSteps.length - 1].recordIndex = recordIndex;
+                        }, 125);
                     });
                 } else {
                     referenceWrapper.innerHTML = value;
@@ -96,7 +96,7 @@ class ReferenceRenderer {
         referenceEditorHighlight.style.width = tdClientRect.width + 'px';
         referenceEditorHighlight.style.height = tdClientRect.height + 'px';
 
-        this.tableEditorView.parent.referenceEditorSelector.setValue(tableId);
+        this.tableEditorWrapper.referenceEditorSelector.setValue(tableId);
         
         const rowInput = document.getElementById('reference-editor-row');
         rowInput.value = recordIndex;

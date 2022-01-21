@@ -5,6 +5,7 @@ const Selectr = require('../../libs/selectr/selectr');
 
 const utilService = require('../utilService');
 const TableEditorView = require('./TableEditorView');
+const ReferenceRenderer = require('./ReferenceRenderer');
 const pinnedTableService = require('../pinnedTableService');
 const externalDataService = require('../externalDataService');
 const referenceViewerService = require('../referenceViewerService');
@@ -17,6 +18,8 @@ class TableEditorWrapper {
         this.selectedTableEditor = null;
         this.referenceEditorSelector = null;
         this.loader = document.querySelector('.loader-wrapper');
+
+        this.referenceRenderer = new ReferenceRenderer(this);
 
         if (file.isLoaded) {
             this.start();

@@ -2,7 +2,6 @@ const Selectr = require('../../libs/selectr/selectr');
 const { default: Handsontable } = require("handsontable");
 
 const utilService = require('../utilService');
-const ReferenceRenderer = require('./ReferenceRenderer');
 const contextMenuService = require('./contextMenuService');
 const referenceViewerService = require('../referenceViewerService');
 
@@ -23,18 +22,16 @@ class TableEditorView {
         this.currentlySelectedColumn = 0;
         this.loader = document.querySelector('.loader-wrapper');
         this.referenceEditorSelector = this.parent.referenceEditorSelector;
-        
-        this.referenceRenderer = new ReferenceRenderer(this);
 
         this.hot = new Handsontable(this.baseContainer, {
             height: '100%',
             rowHeaders: true,
             manualRowResize: true,
             manualColumnResize: true,
-            afterChange: this._processChanges.bind(this),
-            afterSelection: this._processSelection.bind(this),
             currentRowClassName: 'active-row',
             licenseKey: 'non-commercial-and-evaluation',
+            afterChange: this._processChanges.bind(this),
+            afterSelection: this._processSelection.bind(this),
             contextMenu: contextMenuService.getContextMenu(this),
             rowHeaders: function (index) {
                 return index;
@@ -336,8 +333,8 @@ class TableEditorView {
             return table.offsetTable.map((offset) => {
                 return {
                     'data': offset.name,
-                    'renderer': offset.type === 'Spline' ? this.referenceRenderer.renderer.bind(this.referenceRenderer) : offset.isReference ? 
-                        this.referenceRenderer.renderer.bind(this.referenceRenderer) : offset.enum || offset.type === 'bool' ? 'dropdown' : 'text',
+                    'renderer': offset.type === 'Spline' ? this.parent.referenceRenderer.renderer.bind(this.parent.referenceRenderer) : offset.isReference ? 
+                        this.parent.referenceRenderer.renderer.bind(this.parent.referenceRenderer) : offset.enum || offset.type === 'bool' ? 'dropdown' : 'text',
                     'wordWrap': false,
                     'editor': offset.enum || offset.type === 'bool' ? 'dropdown' : 'text',
                     'source': offset.enum ? offset.enum.members.map((member) => { return member.name; }) : offset.type === 'bool' ? ['true', 'false'] : []
