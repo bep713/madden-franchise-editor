@@ -1,7 +1,6 @@
 const fs = require('fs');
 const EventEmitter = require('events');
-const { ipcRenderer, remote } = require('electron');
-const app = remote.app;
+const { app } = require('@electron/remote');
 
 const Selectr = require('../libs/selectr/selectr');
 const utilService = require('./utilService');

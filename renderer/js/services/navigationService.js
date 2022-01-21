@@ -1,9 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const { ipcRenderer, remote } = require('electron');
-
-const app = remote.app;
-const dialog = remote.dialog;
+const { ipcRenderer } = require('electron');
+const { app, dialog, getCurrentWindow } = require('@electron/remote');
 
 const Selectr = require('../libs/selectr/selectr');
 const FranchiseFile = require('madden-franchise');
@@ -16,12 +14,12 @@ const scheduleService = require('./scheduleService');
 const reloadFileService = require('./reloadFileService');
 const savedSchemaService = require('./savedSchemaService');
 const tableEditorService = require('./tableEditorService');
-const leagueEditorService = require('./leagueEditorService');
+// const leagueEditorService = require('./leagueEditorService');
 const schemaViewerService = require('./schemaViewerService');
 const abilityEditorService = require('./abilityEditorService');
 const schemaMismatchService = require('./schemaMismatchService');
 
-const services = [welcomeService, scheduleService, tableEditorService, schemaViewerService, abilityEditorService, leagueEditorService];
+const services = [welcomeService, scheduleService, tableEditorService, schemaViewerService, abilityEditorService];
 const navigationData = require('../../../data/navigation.json');
 
 const PATH_TO_DOCUMENTS = app.getPath('documents');
@@ -146,12 +144,12 @@ navigationService.onAbilityEditorClicked = function () {
 };
 
 navigationService.onLeagueEditorClicked = function () {
-  onNavigate(leagueEditorService);
+  // onNavigate(leagueEditorService);
   navigationService.loadPage('league-editor.html');
   appendNavigation('league-editor');
   postGenerateNavigation();
 
-  leagueEditorService.start(navigationService.currentlyOpenedFile.data);
+  // leagueEditorService.start(navigationService.currentlyOpenedFile.data);
 };
 
 navigationService.refreshCurrentPage = function () {
@@ -213,6 +211,12 @@ function addIpcListeners() {
     navigationService.currentlyOpenedFile.data.save();
   });
 
+  ipcRenderer.on('save-file-sync', function () {
+    navigationService.currentlyOpenedFile.data.save(null, {
+      sync: true
+    });
+  });
+
   ipcRenderer.on('close-file', function () {
     navigationService.currentlyOpenedFile.path = null;
     navigationService.currentlyOpenedFile.data = null;
@@ -224,7 +228,7 @@ function addIpcListeners() {
   });
 
   ipcRenderer.on('save-new-file', function () {
-    const savePath = dialog.showSaveDialogSync(remote.getCurrentWindow(), {
+    const savePath = dialog.showSaveDialogSync(getCurrentWindow(), {
       'title': 'Save as...',
       'defaultPath': ipcRenderer.sendSync('getPreferences').general.defaultDirectory
     });
@@ -394,7 +398,7 @@ function createNewFranchiseFile(file) {
   return newFile;
 
   function pickSchema() {
-    remote.dialog.showMessageBoxSync(remote.getCurrentWindow(), {
+    dialog.showMessageBoxSync(getCurrentWindow(), {
       'message': 'The selected file does not contain schema data. Please select one on the following screen.'
     });
     

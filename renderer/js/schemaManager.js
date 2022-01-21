@@ -1,6 +1,5 @@
-const { ipcRenderer, remote, shell } = require('electron');
-const dialog = remote.dialog;
-const app = remote.app;
+const { ipcRenderer } = require('electron');
+const { dialog, getCurrentWindow } = require('@electron/remote');
 
 const fs = require('fs');
 const path = require('path');
@@ -19,7 +18,7 @@ parseAvailableSchemas();
 function setupListeners() {
   const addSchema = document.querySelector('#add-schema');
   addSchema.addEventListener('click', () => {
-    const customSchemaFile = dialog.showOpenDialogSync(remote.getCurrentWindow(), {
+    const customSchemaFile = dialog.showOpenDialogSync(getCurrentWindow(), {
       'title': 'Open custom schema file...',
       'defaultPath': ipcRenderer.sendSync('getPreferences').general.defaultDirectory,
       'filters': [{
@@ -43,7 +42,7 @@ function setupListeners() {
   const searchSchemas = document.querySelector('#search-for-schemas-full');
   searchSchemas.addEventListener('click', () => {
     
-    const maddenInstallDirectory = dialog.showOpenDialogSync(remote.getCurrentWindow(), {
+    const maddenInstallDirectory = dialog.showOpenDialogSync(getCurrentWindow(), {
       'title': 'Select Madden Executable',
       'defaultPath': ipcRenderer.sendSync('getPreferences').gameVersions.madden20Directory,
       'properties': ['openFile'],
@@ -68,7 +67,7 @@ function setupListeners() {
   const searchSchemasQuick = document.querySelector('#search-for-schemas-quick');
   searchSchemasQuick.addEventListener('click', () => {
     
-    const maddenInstallDirectory = dialog.showOpenDialogSync(remote.getCurrentWindow(), {
+    const maddenInstallDirectory = dialog.showOpenDialogSync(getCurrentWindow(), {
       'title': 'Select Madden Executable',
       'defaultPath': ipcRenderer.sendSync('getPreferences').gameVersions.madden20Directory,
       'properties': ['openFile'],

@@ -9,7 +9,7 @@ let preferencesService = {
 
 preferencesService.getPreferenceKeys = function () {
     if (!app) {
-        app = require('electron').remote.app;
+        app = require('@electron/remote').app;
     }
 
     return {

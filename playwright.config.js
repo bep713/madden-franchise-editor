@@ -10,7 +10,7 @@ const config = {
   testDir: './tests/e2e',
 
   /* Maximum time one test can run for. */
-  timeout: 30 * 1000,
+  timeout: 60 * 1000,
 
   expect: {
 
@@ -31,7 +31,7 @@ const config = {
   workers: process.env.CI ? 1 : undefined,
 
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: 'html',
+  reporter: [[ 'html', { open: 'never', outputFolder: 'tests/output/playwright-report' }] ],
 
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {

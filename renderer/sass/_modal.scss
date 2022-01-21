@@ -4,7 +4,7 @@ $modal-bg-color: #F2F2F2;
   position: absolute;
   top: 50px;
   width: 100%;
-  z-index: 104;
+  z-index: 201;
   background-color: $modal-bg-color;
   padding: 20px;
   border: 1px solid $brand-black;
@@ -24,7 +24,7 @@ $modal-bg-color: #F2F2F2;
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 103;
+  z-index: 200;
 }
 
 .modal-header {

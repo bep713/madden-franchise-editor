@@ -31,8 +31,9 @@ module.exports = {
                     },
                     disabled: () => {
                         const selectedRow = tableEditorService.hot.getSelectedLast()[0];
-                        return tableEditorService.selectedTable.header.record1Size < 4 ||
-                            tableEditorService.selectedTable.records[selectedRow].isEmpty;
+                        return selectedRow >= 0 &&
+                            (tableEditorService.selectedTable.header.record1Size < 4 ||
+                            tableEditorService.selectedTable.records[selectedRow].isEmpty);
                     },
                     callback: (key, selection, clickEvent) => {
                         selection.forEach((selectionGroup) => {
