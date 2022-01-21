@@ -22,6 +22,10 @@ class PinComponent extends BaseComponent {
     async getAllPins() {
         return await this.baseLocator.locator('.pin').allTextContents();
     };
+
+    async clickPinByTableId(tableId) {
+        await this.baseLocator.locator(`.pin[tableid="${tableId}"]`).click();
+    };
 };
 
 module.exports = PinComponent;

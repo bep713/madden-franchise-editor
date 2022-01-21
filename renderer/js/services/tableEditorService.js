@@ -398,7 +398,9 @@ function initializeTable() {
     rowHeaders: function (index) {
       return index;
     },
-    contextMenu: contextMenuService.getContextMenu(tableEditorService)
+    contextMenu: contextMenuService.getContextMenu(tableEditorService),
+    licenseKey: 'non-commercial-and-evaluation',
+    height: '100%'
   });
 };
 

@@ -46,8 +46,7 @@ class HotComponent extends BaseComponent {
     };
 
     async selectCellAt(row, col) {
-        // Reset selected cell to (0, 0)
-        await this.locators.topLeftCell.click();
+        await this._selectFirstCell();
 
         // Move to desired cell
         let promises = [];
@@ -62,6 +61,11 @@ class HotComponent extends BaseComponent {
 
         await Promise.all(promises);
         this.setSelectedTableCell(row, col);
+    };
+
+    async _selectFirstCell() {
+        await this.locators.topLeftCell.click();
+        await this.window.keyboard.press('ArrowUp');
     };
 
     async setTextAtSelectedCell(text) {

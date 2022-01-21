@@ -78,6 +78,11 @@ class TableEditorPage {
     async removePinByTableId(tableId) {
         await this.pins.removePinByTableId(tableId);
     };
+
+    async clickPinByTableId(tableId) {
+        await this.pins.clickPinByTableId(tableId);
+        await this._waitForTableToLoad();
+    };
 };
 
 module.exports = TableEditorPage;

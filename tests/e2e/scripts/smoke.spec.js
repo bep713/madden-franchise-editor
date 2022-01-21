@@ -39,21 +39,6 @@ test('basic test', async () => {
   // table editor displays correct data
   const firstCell = await tableEditor.getTextAtSelectedCell();
   expect(firstCell).to.equal('Spline - 0');
-
-  // pins are displayed correctly
-  const pins = await tableEditor.getAllPins();
-  expect(pins.length).to.equal(5);
-  expect(pins[0]).to.equal('(4220) Player');
-
-  // can add a pin
-  await tableEditor.addSelectedTableAsPin();
-  const newPins = await tableEditor.getAllPins();
-  expect(newPins.length).to.equal(6);
-
-  // can remove a pin
-  await tableEditor.removePinByTableId(4097);
-  const evenNewerPins = await tableEditor.getAllPins();
-  expect(evenNewerPins.length).to.equal(5);
   
   // can open a different table
   await tableEditor.openTableById(7482);

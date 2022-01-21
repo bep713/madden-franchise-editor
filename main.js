@@ -45,7 +45,8 @@ function createWindow () {
     webPreferences: { 
       nodeIntegration: true, 
       contextIsolation: false 
-    }
+    },
+    icon: path.join(__dirname, 'renderer/img/icon.ico')
   });
 
   remoteMain.enable(mainWindow.webContents);
