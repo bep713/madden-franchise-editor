@@ -8,10 +8,14 @@ class SelectrComponent extends BaseComponent {
         this.selectorInput = this.window.locator(`${selector} .selectr-input`);
     };
 
-    async selectOption(option) {
+    async click() {
         await this.baseLocator.click();
+    };
+
+    async selectOption(option) {
+        await this.click();
         await this.selectorInput.type(`${option}`);
-        await this.window.click(`.selectr-option:has-text("(${option})")`);
+        await this.window.click(`.selectr-option:has-text("${option}")`);
     };
 
     async getSelectedOptionText() {

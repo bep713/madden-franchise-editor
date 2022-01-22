@@ -92,7 +92,7 @@ class TableEditorView {
         const toggleTypesButton = document.querySelector('.toggle-types');
         toggleTypesButton.addEventListener('click', () => {
             this.showHeaderTypes = !this.showHeaderTypes;
-            const headers = formatHeaders(tableEditorService.selectedTable);
+            const headers = this._formatHeaders(this.selectedTable);
         
             this.hot.updateSettings({
                 colHeaders: headers
@@ -109,16 +109,43 @@ class TableEditorView {
             jumpToColumnModal.classList.add('hidden');
             underlay.classList.add('hidden');
         });
+
+        const goJumpToColumnListener = () => {
+            const value = columnSelectr.getValue();
+            let index = columnSelectr.data.findIndex((opt) => { return opt.value === value; });
+          
+            if (index === -1) {
+              index = 0;
+            }
+          
+            jumpToColumnModal.classList.add('hidden');
+            underlay.classList.add('hidden');
+          
+            let row = parseInt(jumpRow.value);
+          
+            if (!row || row < 0) {
+              row = 0;
+            }
+          
+            this.navSteps.push({
+              'tableId': this.selectedTable.header.tableId,
+              'recordIndex': row,
+              'column': index
+            });
+          
+            window.removeEventListener('keypress', onEnterJumpToColumn);
+            this.hot.selectCell(row, index);
+        };
+
+        const onEnterJumpToColumn = (e) => {
+            if (e.which === 13) {
+              goJumpToColumnListener();
+            }
+        };
         
-        const jumpToColumnButton = document.querySelector('.jump-to-column');
-        jumpToColumnButton.addEventListener('click', jumpToColumnListener);
-    
-        const goJumpToColumnButton = document.querySelector('.btn-go-jump-to-column');
-        goJumpToColumnButton.addEventListener('click', goJumpToColumnListener);
-        
-        function jumpToColumnListener() {
-            jumpRow.value = tableEditorService.currentlySelectedRow;
-            const headers = formatHeaders(tableEditorService.selectedTable);
+        const jumpToColumnListener = () => {
+            jumpRow.value = this.currentlySelectedRow;
+            const headers = this._formatHeaders(this.selectedTable);
             const options = headers.map((header) => {
                 return {
                     'value': header,
@@ -146,39 +173,12 @@ class TableEditorView {
               }, 200);
             }, 50);
         };
-        
-        function onEnterJumpToColumn (e) {
-            if (e.which === 13) {
-              goJumpToColumnListener();
-            }
-        };
-          
-        function goJumpToColumnListener () {
-            const value = columnSelectr.getValue();
-            let index = columnSelectr.data.findIndex((opt) => { return opt.value === value; });
-          
-            if (index === -1) {
-              index = 0;
-            }
-          
-            jumpToColumnModal.classList.add('hidden');
-            underlay.classList.add('hidden');
-          
-            let row = parseInt(jumpRow.value);
-          
-            if (!row || row < 0) {
-              row = 0;
-            }
-          
-            tableEditorService.navSteps.push({
-              'tableId': tableEditorService.selectedTable.header.tableId,
-              'recordIndex': row,
-              'column': index
-            });
-          
-            window.removeEventListener('keypress', onEnterJumpToColumn);
-            tableEditorService.hot.selectCell(row, index);
-        };
+
+        const jumpToColumnButton = document.querySelector('.jump-to-column');
+        jumpToColumnButton.addEventListener('click', jumpToColumnListener);
+    
+        const goJumpToColumnButton = document.querySelector('.btn-go-jump-to-column');
+        goJumpToColumnButton.addEventListener('click', goJumpToColumnListener);
         
         const backLink = document.querySelector('.back-link');
         backLink.addEventListener('click', () => {

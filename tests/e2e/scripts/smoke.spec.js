@@ -9,6 +9,7 @@ const FilePaths = require('../util/FilePaths');
 const App = require('../models/App');
 const WelcomePage = require('../models/WelcomePage');
 const TableEditorPage = require('../models/TableEditorPage');
+const ColumnJumpModal = require('../models/ColumnJumpModal');
 const ReferenceEditorModal = require('../models/ReferenceEditorModal');
 
 test.beforeAll(async () => {
@@ -41,8 +42,14 @@ test('basic test', async () => {
   // can open a different table
   await tableEditor.openTableById(7482);
 
-  // other table data displays properly  
-  await tableEditor.selectCellAt(52, 75);
+  // can jump to a column and row
+  await tableEditor.openColumnJumpModal();
+  let columnJumpModal = new ColumnJumpModal(window);
+  await columnJumpModal.setColumn('LongName');
+  await columnJumpModal.setRowIndex(52);
+  await columnJumpModal.go();
+
+  // other table data displays properly
   const ny = await tableEditor.getTextAtSelectedCell();
   expect(ny).to.equal('New York');
 
@@ -66,12 +73,12 @@ test('basic test', async () => {
 
   // ensure our changes stuck
   await tableEditor.openTableById(7482);
-  await tableEditor.selectCellAt(52, 75);
+  await tableEditor.jumpToColumn('LongName', 52);
   const oy2 = await tableEditor.getTextAtSelectedCell();
   expect(oy2).to.equal('Old York');
 
   // can follow references
-  await tableEditor.selectCellAt(43, 1);
+  await tableEditor.jumpToColumn('Stadium', 43);
   const stadiumReference = await tableEditor.getTextAtSelectedCell();
   expect(stadiumReference).to.equal('Stadium - 12');
 
@@ -80,7 +87,7 @@ test('basic test', async () => {
   expect(table).to.equal('8 - (4104) Stadium');
 
   // can edit references
-  await tableEditor.selectCellAt(18, 0);
+  await tableEditor.jumpToColumn('BathroomInfo', 18);
   await tableEditor.openEditReferenceModalAtSelectedCell();
 
   const referenceEditor = new ReferenceEditorModal(window);

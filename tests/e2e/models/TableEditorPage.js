@@ -1,4 +1,5 @@
 const util = require('../util/UiTestUtil');
+const ColumnJumpModal = require('./ColumnJumpModal');
 
 const HotComponent = require("./HotComponent");
 const PinComponent = require("./PinComponent");
@@ -8,14 +9,17 @@ class TableEditorPage {
     constructor(window) {
         this.window = window;
 
-        this.tableSelector = new SelectrComponent(this.window, '.table-list > .selectr-container');
         this.table = new HotComponent(this.window, '.table-wrapper');
         this.pins = new PinComponent(this.window, '.table-pins-wrapper');
+        this.jumpToColumnModal = new ColumnJumpModal(this.window);
+        this.tableSelector = new SelectrComponent(this.window, '.table-list > .selectr-container');
 
         this.locators = {
             backButton: this.window.locator('.back-link'),
+            jumpToColumn: this.window.locator('.jump-to-column'),
             loadingSpinner: this.window.locator('.loader-wrapper'),
             exportTableInput: this.window.locator('#export-table-input'),
+            jumpToColumnModalSelector: this.window.locator('.jump-to-column-modal .selectr-container'),
             selectedCellEditReference: this.window.locator('.table-content-wrapper td.current .edit-button'),
         };
     };
@@ -29,7 +33,7 @@ class TableEditorPage {
     };
 
     async openTableById(tableId) {
-        await this.tableSelector.selectOption(tableId);
+        await this.tableSelector.selectOption(`(${tableId})`);
         await this._waitForTableToLoad();
     };
 
@@ -105,6 +109,18 @@ class TableEditorPage {
     async importTable(path) {
         await util.enterFilePath(this.window, '#import-table-input', path);
         await this._waitForTableToLoad();
+    };
+
+    async openColumnJumpModal() {
+        await this.locators.jumpToColumn.click();
+        await this.locators.jumpToColumnModalSelector.click();
+    };
+
+    async jumpToColumn(col, row) {
+        await this.openColumnJumpModal();
+        await this.jumpToColumnModal.setColumn(col);
+        await this.jumpToColumnModal.setRowIndex(row);
+        await this.jumpToColumnModal.go();
     };
 };
 
