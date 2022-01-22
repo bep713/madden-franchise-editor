@@ -3,8 +3,9 @@ const path = require('path');
 const { ipcRenderer } = require('electron');
 const { app, dialog, getCurrentWindow } = require('@electron/remote');
 
-const Selectr = require('../libs/selectr/selectr');
 const FranchiseFile = require('madden-franchise');
+const Selectr = require('../libs/selectr/selectr');
+const TestUtility = require('./test-utils/TestUtility');
 
 const utilService = require('./utilService');
 const menuService = require('./menuService.js');
@@ -169,7 +170,11 @@ navigationService.runCloseFunction = function () {
 };
 
 if (process.env.NODE_ENV === 'development') {
-  DEV_openFile(); 
+  DEV_openFile();
+}
+
+if (process.env.NODE_ENV === 'testing') {
+  new TestUtility(welcomeService, tableEditorService);
 }
 
 module.exports = navigationService;

@@ -42,6 +42,10 @@ welcomeService.onClose = function () {
   ipcRenderer.removeListener('close-file', onFileClosed);
 };
 
+welcomeService.openFileFromPath = (filePath) => {
+  openFileFromPath(filePath)
+};
+
 module.exports = welcomeService;
 
 function addVersionNumber() {
@@ -51,7 +55,6 @@ function addVersionNumber() {
 
 function addListeners() {
   addOpenFileListener();
-  addTestHelperListener();
   addOpenScheduleListener();
   addOpenTableEditorListener();
   addOpenSchemaViewerListener();
@@ -64,14 +67,6 @@ function addOpenFileListener() {
 
   openFileButton.addEventListener('click', openFile);
   openDifferentFileButton.addEventListener('click', openFile);
-};
-
-function addTestHelperListener() {
-  const openFileHelper = document.getElementById('open-file-input');
-  openFileHelper.addEventListener('change', () => {
-    console.log(openFileHelper.value);
-    openFileFromPath(openFileHelper.value);
-  });
 };
 
 function addGlobalIpcListeners() {

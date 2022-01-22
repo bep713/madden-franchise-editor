@@ -1,3 +1,5 @@
+const util = require('../util/UiTestUtil');
+
 const HotComponent = require("./HotComponent");
 const PinComponent = require("./PinComponent");
 const SelectrComponent = require("./SelectrComponent");
@@ -13,6 +15,7 @@ class TableEditorPage {
         this.locators = {
             backButton: this.window.locator('.back-link'),
             loadingSpinner: this.window.locator('.loader-wrapper'),
+            exportTableInput: this.window.locator('#export-table-input'),
             selectedCellEditReference: this.window.locator('.table-content-wrapper td.current .edit-button'),
         };
     };
@@ -93,7 +96,16 @@ class TableEditorPage {
     async clickBackButton() {
         await this.locators.backButton.click();
     };
+
+    async exportTable(path) {
+        await util.enterFilePath(this.window, '#export-table-input', path);
+        await this._waitForTableToLoad();
+    };
+
+    async importTable(path) {
+        await util.enterFilePath(this.window, '#import-table-input', path);
+        await this._waitForTableToLoad();
+    };
 };
 
 module.exports = TableEditorPage;
-

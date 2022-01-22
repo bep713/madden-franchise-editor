@@ -35,13 +35,13 @@ class HotComponent extends BaseComponent {
     };
 
     async _getCellText(baseCellSelector) {
-        const text = await this.window.textContent(baseCellSelector);
+        let text = await this.window.textContent(baseCellSelector);
     
         if (!text) {
             return this.window.textContent(`${baseCellSelector} > div > a`);
         }
         else {
-            return text;
+            return text.replace('▼', '');
         }
     };
 

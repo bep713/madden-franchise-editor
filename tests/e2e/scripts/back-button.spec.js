@@ -2,7 +2,7 @@ const path = require('path');
 const fs = require('fs/promises');
 const { expect } = require('chai');
 const { test,  } = require('@playwright/test');
-const { _electron: electron } = require('playwright');
+const electron = require('../util/Electron');
 
 const App = require('../models/App');
 const WelcomePage = require('../models/WelcomePage');
@@ -21,7 +21,7 @@ test.beforeAll(async () => {
 });
 
 test('back button e2e test', async () => {
-    const electronApp = await electron.launch({ args: ['.'] });
+    const electronApp = await electron.launchWithDefaultOptions();
     const app = new App(electronApp);
     
     const window = await app.getMainWindow();

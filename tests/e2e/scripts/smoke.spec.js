@@ -2,26 +2,24 @@ const path = require('path');
 const fs = require('fs/promises');
 const { expect } = require('chai');
 const { test,  } = require('@playwright/test');
-const { _electron: electron } = require('playwright');
+
+const electron = require('../util/Electron');
+const FilePaths = require('../util/FilePaths');
 
 const App = require('../models/App');
 const WelcomePage = require('../models/WelcomePage');
 const TableEditorPage = require('../models/TableEditorPage');
 const ReferenceEditorModal = require('../models/ReferenceEditorModal');
 
-// const M22_TEST_FILEPATH = path.join(__dirname, '../../data/m22/CAREER-E2ETEST');
-const M22_TEST_FILEPATH = path.join('C://Users//Matt//Documents//CAREER-E2ETEST');
-const M22_PRISTINE_CAREER_FILEPATH = path.join(__dirname, '../../data/m22/CAREER-M22TEST');
-
 test.beforeAll(async () => {
   // Overwrite the test file so that we never change the pristine career file.
   // It will always start with the same state.
-  const pristineCareer = await fs.readFile(M22_PRISTINE_CAREER_FILEPATH);
-  await fs.writeFile(M22_TEST_FILEPATH, pristineCareer);
+  const pristineCareer = await fs.readFile(FilePaths.m22.career.pristine);
+  await fs.writeFile(FilePaths.m22.career.test, pristineCareer);
 });
 
 test('basic test', async () => {
-  const electronApp = await electron.launch({ args: ['.'] });
+  const electronApp = await electron.launchWithDefaultOptions();
   const app = new App(electronApp);
   
   const window = await app.getMainWindow();
@@ -31,7 +29,7 @@ test('basic test', async () => {
   await welcome.waitForPageLoad();
 
   // can open the table editor
-  await welcome.openFranchiseFile(M22_TEST_FILEPATH);
+  await welcome.openFranchiseFile(FilePaths.m22.career.test);
   await welcome.openTableEditor();
 
   const tableEditor = new TableEditorPage(window);
@@ -63,7 +61,7 @@ test('basic test', async () => {
 
   // can re-open it
   await welcome.waitForPageLoad();
-  await welcome.openFranchiseFile(M22_TEST_FILEPATH);
+  await welcome.openFranchiseFile(FilePaths.m22.career.test);
   await welcome.openTableEditor();
 
   // ensure our changes stuck
@@ -102,8 +100,12 @@ test('basic test', async () => {
   // updates binary
   const newBinary = await referenceEditor.getBinary();
   expect(newBinary).to.equal('00100000011001000000000000011001');
-
+  await referenceEditor.clickChangeReferenceButton();
   await referenceEditor.close();
+
+  // updates cell and cell remains selected
+  const newText = await tableEditor.getTextAtSelectedCell();
+  expect(newText).to.equal('SeasonGame - 25');
 
   await electronApp.close();
 });

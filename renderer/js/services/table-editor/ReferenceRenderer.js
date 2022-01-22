@@ -96,7 +96,7 @@ class ReferenceRenderer {
         referenceEditorHighlight.style.width = tdClientRect.width + 'px';
         referenceEditorHighlight.style.height = tdClientRect.height + 'px';
 
-        this.tableEditorWrapper.referenceEditorSelector.setValue(tableId);
+        this.tableEditorWrapper.referenceEditor.referenceEditorSelector.setValue(tableId);
         
         const rowInput = document.getElementById('reference-editor-row');
         rowInput.value = recordIndex;
