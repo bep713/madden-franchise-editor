@@ -98,86 +98,15 @@ class TableEditorWrapper {
     };
 
     _onExportRawTable() {
-        let filePath = dialog.showSaveDialogSync(getCurrentWindow(), {
-          'title': 'Select destination file for raw table export',
-          'filters': [
-            {name: 'DAT file', extensions: ['dat']}
-          ]
-        });
-      
-        if (filePath) {
-            utilService.show(this.loader);
-        
-            setTimeout(() => {
-                ipcRenderer.send('exporting');
-                externalDataService.exportRawTableData({
-                    outputFilePath: filePath
-                }, this.selectedTableEditor.selectedTable).then(() => {
-                    utilService.hide(this.loader);
-                    ipcRenderer.send('exported');
-                }).catch((err) => {
-                    ipcRenderer.send('export-error');
-                    dialog.showErrorBox('Unable to export', 'Unable to export the table because it is currently open in another program. Try closing the file in Excel before exporting.');
-                    utilService.hide(this.loader);
-                });
-            }, 0)
-        }
+        this.externalDataHandler.exportRawTable();
     };
 
     _onExportFrt() {
-        let filePath = dialog.showSaveDialogSync(getCurrentWindow(), {
-          'title': 'Select destination file for raw FRT file export',
-          'filters': [
-            {name: 'FRT file', extensions: ['frt']}
-          ]
-        });
-      
-        if (filePath) {
-            utilService.show(this.loader);
-        
-            setTimeout(() => {
-                ipcRenderer.send('exporting');
-                externalDataService.exportFrt({
-                    'outputFilePath': filePath
-                }, this.file).then(() => {
-                    utilService.hide(this.loader);
-                    ipcRenderer.send('exported');
-                }).catch((err) => {
-                    ipcRenderer.send('export-error');
-                    dialog.showErrorBox('Unable to export', 'Unable to export FRT because it is currently open in another program. Try closing the file in Excel before exporting.');
-                    utilService.hide(this.loader);
-                });
-            }, 0)
-        }
+        this.externalDataHandler.exportRawFrtk();
     };
 
     _onImportRawTable() {
-        let filePath = dialog.showOpenDialogSync(getCurrentWindow(), {
-          'title': 'Select the file to import',
-          'filters': [
-            {name: 'DAT file', extensions: ['dat', '*']},
-          ]
-        });
-      
-        if (filePath) {
-            utilService.show(this.loader);
         
-            setTimeout(() => {
-                ipcRenderer.send('importing');
-        
-                externalDataService.importRawTable({
-                    filePath: filePath[0]
-                }, this.selectedTableEditor.selectedTable).then(() => {
-                    this.selectedTableEditor.loadTable(this.selectedTableEditor.selectedTable);
-                    utilService.hide(this.loader);
-                    ipcRenderer.send('imported');
-                }).catch((err) => {
-                    ipcRenderer.send('import-error');
-                    dialog.showErrorBox('Unable to import', 'Unable to import the raw file. Please make sure its in the correct franchise table format.');
-                    utilService.hide(this.loader);
-                });
-            }, 0)
-        }
     };
 
     _addEventListeners() {
@@ -202,8 +131,11 @@ class TableEditorWrapper {
     };
 
     _windowResizeListener () {
+        const wrapper = document.querySelector('.table-wrapper');
+
         this.selectedTableEditor.hot.updateSettings({
-            width: document.querySelector('.table-wrapper').offsetWidth
+            height: wrapper.offsetHeight - 80,
+            width: wrapper.offsetWidth
         });
     };
       
