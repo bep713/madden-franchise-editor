@@ -10,6 +10,9 @@ class TestUtility {
         this._handleOpenFile();
         this._handleExportTable();
         this._handleImportTable();
+        this._handleExportRawTable();
+        this._handleExportRawFrtk();
+        this._handleImportRawTable();
     };
 
     _handleOpenFile() {
@@ -44,7 +47,34 @@ class TestUtility {
         const that = this;
 
         this._addTestElement('import-table-input', function () {
-            that.tableEditorService.wrapper.externalDataHandler._importTable(this.value, that.tableEditorService.wrapper.selectedTableEditor.selectedTable);
+            that.tableEditorService.wrapper.externalDataHandler._importTable(this.value);
+            this.value = '';
+        });
+    };
+
+    _handleExportRawTable() {
+        const that = this;
+
+        this._addTestElement('export-raw-table', function () {
+            that.tableEditorService.wrapper.externalDataHandler._exportRawTable(this.value);
+            this.value = '';
+        });
+    };
+
+    _handleExportRawFrtk() {
+        const that = this;
+
+        this._addTestElement('export-raw-frtk', function () {
+            that.tableEditorService.wrapper.externalDataHandler._exportRawFrtk(this.value);
+            this.value = '';
+        });
+    };
+
+    _handleImportRawTable() {
+        const that = this;
+
+        this._addTestElement('import-raw-table', function () {
+            that.tableEditorService.wrapper.externalDataHandler._importRawTable(this.value);
             this.value = '';
         });
     };

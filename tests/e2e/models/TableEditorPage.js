@@ -122,6 +122,21 @@ class TableEditorPage {
         await this.jumpToColumnModal.setRowIndex(row);
         await this.jumpToColumnModal.go();
     };
+
+    async exportRawTable(filePath) {
+        await util.enterFilePath(this.window, '#export-raw-table', filePath);
+        await this._waitForTableToLoad();
+    };
+
+    async exportRawFrtkFile(filePath) {
+        await util.enterFilePath(this.window, '#export-raw-frtk', filePath);
+        await this._waitForTableToLoad();
+    };
+
+    async importRawTable(filePath) {
+        await util.enterFilePath(this.window, '#import-raw-table', filePath);
+        await this._waitForTableToLoad();
+    };
 };
 
 module.exports = TableEditorPage;

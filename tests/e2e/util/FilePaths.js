@@ -14,11 +14,22 @@ module.exports = {
         exports: {
             player: path.join(BASE_DIRS.m22, 'export/4220.xlsx'),
             overallPercentage: path.join(BASE_DIRS.m22, 'export/4097.xlsx'),
-            test: path.join(BASE_DIRS.m22, 'export/test/export.xlsx')
+            test: path.join(BASE_DIRS.m22, 'export/test/export.xlsx'),
+            rawTable: {
+                test: path.join(BASE_DIRS.m22, 'export/test/raw.dat'),
+                overallPercentage: path.join(BASE_DIRS.m22, 'export/4097_raw.dat')
+            },
+            frtk: {
+                test: path.join(BASE_DIRS.m22, 'export/test/frtk-test.frt'),
+                compare: path.join(BASE_DIRS.m22, 'export/full-export.frt')
+            }
         },
         imports: {
+            team: path.join(BASE_DIRS.m22, 'import/7482.xlsx'),
             overallPercentage: path.join(BASE_DIRS.m22, 'import/4097.xlsx'),
-            team: path.join(BASE_DIRS.m22, 'import/7482.xlsx')
+            rawTable: {
+                overallPercentage: path.join(BASE_DIRS.m22, 'import/4097_raw_import_test.dat')
+            }
         }
     }
 };

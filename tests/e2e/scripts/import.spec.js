@@ -48,19 +48,38 @@ test('import table e2e test', async () => {
     await tableEditor.importTable(FilePaths.m22.imports.team);
     
     // updates strings
-    await tableEditor.selectCellAt(5, 75);
+    // await tableEditor.selectCellAt(5, 75);
+    await tableEditor.jumpToColumn('LongName', 5)
     text = await tableEditor.getTextAtSelectedCell();
     expect(text).to.equal('TEST');
 
     // updates numbers
-    await tableEditor.selectCellAt(6, 141);
+    // await tableEditor.selectCellAt(6, 141);
+    await tableEditor.jumpToColumn('SalCapNextYearSalaryReserve', 6);
     text = await tableEditor.getTextAtSelectedCell();
     expect(text).to.equal('500');
 
     // updates booleans
-    await tableEditor.selectCellAt(43, 110);
+    // await tableEditor.selectCellAt(43, 110);
+    await tableEditor.jumpToColumn('TeamRegressionOccurred', 43);
     text = await tableEditor.getTextAtSelectedCell();
     expect(text).to.equal('true');
+
+    // can import a raw table
+    await tableEditor.openTableById(4097);
+    await tableEditor.importRawTable(FilePaths.m22.imports.rawTable.overallPercentage);
+
+    await tableEditor.selectCellAt(0, 0);
+    text = await tableEditor.getTextAtSelectedCell();
+    expect(text).to.equal('Spline - 10');
+
+    await tableEditor.selectCellAt(0, 1);
+    text = await tableEditor.getTextAtSelectedCell();
+    expect(text).to.equal('FS');
+
+    await tableEditor.selectCellAt(1, 0);
+    text = await tableEditor.getTextAtSelectedCell();
+    expect(text).to.equal('Spline - 11');
 
     await electronApp.close();
 });

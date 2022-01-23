@@ -107,8 +107,103 @@ class ExportHandler {
         
                 this.tableEditorWrapper.selectedTableEditor.loadTable(this.tableEditorWrapper.selectedTableEditor.selectedTable);
             });
-        }, 10)
-    }
+        }, 10);
+    };
+
+    exportRawTable() {
+        let filePath = dialog.showSaveDialogSync(getCurrentWindow(), {
+            'title': 'Select destination file for raw table export',
+            'filters': [
+                {name: 'DAT file', extensions: ['dat']}
+            ]
+        });
+    
+        if (filePath) {
+            this._exportRawTable(filePath);
+        }
+    };
+
+    _exportRawTable(filePath) {
+        this.loader.show();
+          
+        setTimeout(() => {
+            ipcRenderer.send('exporting');
+            externalDataService.exportRawTableData({
+                outputFilePath: filePath
+            }, this.tableEditorWrapper.selectedTableEditor.selectedTable).then(() => {
+                this.loader.hide();
+                ipcRenderer.send('exported');
+            }).catch((err) => {
+                ipcRenderer.send('export-error');
+                dialog.showErrorBox('Unable to export', `Unable to export. Error: ${err}`);
+                this.loader.hide();
+            });
+        }, 10);
+    };
+
+    exportRawFrtk() {
+        let filePath = dialog.showSaveDialogSync(getCurrentWindow(), {
+            'title': 'Select destination file for raw FRT file export',
+            'filters': [
+              {name: 'FRT file', extensions: ['frt']}
+            ]
+        });
+        
+        if (filePath) {
+            this._exportRawFrtk(filePath);
+        }
+    };
+
+    _exportRawFrtk(filePath) {
+        this.loader.show();
+          
+        setTimeout(() => {
+            ipcRenderer.send('exporting');
+            externalDataService.exportFrt({
+                'outputFilePath': filePath
+            }, this.tableEditorWrapper.file).then(() => {
+                this.loader.hide();
+                ipcRenderer.send('exported');
+            }).catch((err) => {
+                ipcRenderer.send('export-error');
+                dialog.showErrorBox('Unable to export', `Error while exporting FRTK file: ${err}`);
+                this.loader.hide();
+            });
+        }, 10);
+    };
+
+    importRawTable() {
+        let filePath = dialog.showOpenDialogSync(getCurrentWindow(), {
+            'title': 'Select the file to import',
+            'filters': [
+              {name: 'DAT file', extensions: ['dat', '*']},
+            ]
+        });
+        
+        if (filePath) {
+            this._importRawTable(filePath[0]);
+        }
+    };
+
+    _importRawTable(filePath) {
+        this.loader.show();
+          
+        setTimeout(() => {
+            ipcRenderer.send('importing');
+    
+            externalDataService.importRawTable({
+                filePath: filePath
+            }, this.tableEditorWrapper.selectedTableEditor.selectedTable).then(() => {
+                this.tableEditorWrapper.selectedTableEditor.loadTable(this.tableEditorWrapper.selectedTableEditor.selectedTable);
+                this.loader.hide();
+                ipcRenderer.send('imported');
+            }).catch((err) => {
+                ipcRenderer.send('import-error');
+                dialog.showErrorBox('Unable to import', `Unable to import the raw table. Error: ${err}`);
+                this.loader.hide();
+            });
+        }, 10);
+    };
 };
 
 module.exports = ExportHandler;

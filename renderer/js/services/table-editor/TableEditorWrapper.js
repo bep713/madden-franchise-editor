@@ -106,7 +106,7 @@ class TableEditorWrapper {
     };
 
     _onImportRawTable() {
-        
+        this.externalDataHandler.importRawTable();
     };
 
     _addEventListeners() {
