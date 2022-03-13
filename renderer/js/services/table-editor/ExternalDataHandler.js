@@ -86,12 +86,15 @@ class ExportHandler {
                 const trimmedTable = table.slice(0, this.tableEditorWrapper.selectedTableEditor.selectedTable.records.length);
                 trimmedTable.forEach((record, index) => {
                     let franchiseRecord = this.tableEditorWrapper.selectedTableEditor.selectedTable.records[index];
-        
-                    Object.keys(record).forEach((key) => {
-                        if (franchiseRecord[key] !== record[key]) {
-                            franchiseRecord[key] = record[key];
-                        }
+                    franchiseRecord.fieldsArray.forEach((field) => {
+                        field.value = record[field.key];
                     });
+        
+                    // Object.keys(record).forEach((key) => {
+                    //     if (franchiseRecord[key] !== record[key]) {
+                    //         franchiseRecord[key] = record[key];
+                    //     }
+                    // });
                 });
         
                 this.tableEditorWrapper.selectedTableEditor.selectedTable.recalculateEmptyRecordReferences();

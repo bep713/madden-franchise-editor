@@ -31,7 +31,7 @@ externalDataService.exportTableData = function (options, table) {
     });
 
     const data = table.records.map((record) => {
-      return record._fields.map((field) => { return field._value; });
+      return record.fieldsArray.map((field) => { return field._value; });
     });
 
     let wb = xlsx.utils.book_new();

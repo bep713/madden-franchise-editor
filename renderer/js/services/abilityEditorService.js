@@ -526,7 +526,7 @@ function formatColumns(table) {
 function getSignatureChoices() {
   return abilityEditorService.signatureAbilityTables.map((table) => {
     return table.records.filter((record) => {
-      return record.getFieldByKey('Name').unformattedValue !== '00000000000000000000000000000000';
+      return record.fields.Name.unformattedValue !== '00000000000000000000000000000000';
     }).map((record) => {
       return record.Name;
     });
@@ -535,7 +535,7 @@ function getSignatureChoices() {
 
 function getPlayerChoices () {
   return abilityEditorService.playerTable.records.filter((record) => {
-    return record.getFieldByKey('LastName').unformattedValue != '00000000000000000000000000000000';
+    return record.fields.LastName.unformattedValue != '00000000000000000000000000000000';
   }).map((record) => {
     const teamAbbreviation = abilityEditorService.teamTable.records.find((teamRecord) => { return teamRecord.TeamIndex === record.TeamIndex; }).ShortName;
     return `${record.FirstName} ${record.LastName} (${teamAbbreviation})`;

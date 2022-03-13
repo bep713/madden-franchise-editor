@@ -63,7 +63,7 @@ class TableEditorView {
                 const colNumber = this.selectedTable.offsetTable.findIndex((offset) => { return offset.name === key; });
         
                 try {
-                    let field = this.selectedTable.records[recordIndex].getFieldByKey(key);
+                    let field = this.selectedTable.records[recordIndex].fields[key];
                     field.value = newValue;
             
                     if (field.value !== newValue) {
@@ -227,13 +227,16 @@ class TableEditorView {
         const backLink = document.querySelector('.back-link');
     
         this.tableSelector.on('selectr.change', (option) => {
+            console.time('change');
             utilService.show(this.loader);
         
             setTimeout(() => {
                 const tableId = parseInt(this.tableSelector.getValue(true).value);
                 const table = this.file.getTableById(tableId);
-        
+
+                console.time('read records');        
                 table.readRecords().then((table) => {
+                    console.timeEnd('read records');
                     this.loadTable(table);
                     this.hot.selectCell(this.rowIndexToSelect, this.columnIndexToSelect);
                 
@@ -267,6 +270,7 @@ class TableEditorView {
                     utilService.hide(this.loader);
                 
                     this.parent._toggleAddPinButton(table.header.tableId);
+                    console.timeEnd('change');
                 });
             }, 100);
         });
@@ -286,11 +290,13 @@ class TableEditorView {
     };
 
     loadTable(table) {
+        console.time('get data');
         const data = this._formatTable(table);
+        console.timeEnd('get data');
         const headers = this._formatHeaders(table);
         const columns = this._formatColumns(table);
 
-        this.hot.loadData(data);
+        // this.hot.loadData(data);
         this.hot.updateSettings({
             data: data,
             colHeaders: headers,
@@ -305,7 +311,7 @@ class TableEditorView {
 
     _formatTable(table) {
         return table.records.map((record) => {
-            return record._fields.reduce((accumulator, currentValue) => {
+            return record.fieldsArray.reduce((accumulator, currentValue) => {
                     accumulator[currentValue.key] = currentValue.value;
                     return accumulator;
             }, {});

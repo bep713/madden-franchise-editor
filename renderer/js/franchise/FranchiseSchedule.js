@@ -114,7 +114,7 @@ class FranchiseSchedule extends EventEmitter {
           if (record.IsPractice || record.SeasonYear !== this.startTimes.seasonYear) {
             return;
           }
-  
+          
           let game = new FranchiseGame(record, index);
           
           if (record.HomeTeam !== '00000000000000000000000000000000') {
@@ -267,7 +267,7 @@ function getSeasonWeekDataByWeekIndexAndType(index, type) {
 function getStartTimes(schedulerTable, epochTable, epochReferenceData) {
   const epochRecord = epochTable.records[epochReferenceData.rowNumber];
   const epochYear = epochRecord.Year + 1900;
-  const epochMonth = utilService.bin2dec(epochRecord.getFieldByKey('Month').unformattedValue);
+  const epochMonth = epochRecord.fields.Month.unformattedValue.getBits(epochRecord.fields.Month.offset.offset, epochRecord.fields.Month.offset.length);
   const epochStart = moment([epochYear, epochMonth, epochRecord.DayOfMonth, epochRecord.Hour, epochRecord.Minute, epochRecord.Second]);
 
   const currentTime = moment.unix(schedulerTable.records[0].CurrentTime).utc().add(epochStart.unix(), 's');

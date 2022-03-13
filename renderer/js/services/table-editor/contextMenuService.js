@@ -46,7 +46,9 @@ module.exports = {
                         let changes = [];
 
                         tableEditorView.selectedTable.emptyRecords.forEach((_, key) => {
-                            tableEditorView.selectedTable.records[key].fields.forEach((field, index) => {
+                            tableEditorView.selectedTable.records[key].fieldsArray.filter((field) => {
+                                return field.offset.offset <= 32;
+                            }).forEach((field, index) => {
                                 changes.push([key, index, field.value]);
                             });
                         });
