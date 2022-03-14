@@ -32,8 +32,6 @@
     "@electron/remote": "^2.0.1",
     "chokidar": "^3.5.3",
     "concat-stream": "^2.0.0",
-    "d3": "^5.16.0",
-    "d3-drag": "^1.2.5",
     "electron-preferences": "^2.5.0",
     "electron-updater": "^4.6.1",
     "handsontable": "^11.1.0",
@@ -47,10 +45,11 @@
     "appId": "com.github.bep713.maddenfranchiseeditor",
     "productName": "Madden Franchise Editor",
     "win": {
+      "icon": "renderer/img/icon.ico",
       "publish": [
         "github"
       ]
     },
-    "electronVersion": "7.1.2"
+    "electronVersion": "16.0.7"
   }
 }
