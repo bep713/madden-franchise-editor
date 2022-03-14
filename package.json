@@ -1,6 +1,6 @@
 {
   "name": "madden-franchise-editor",
-  "version": "4.4.0",
+  "version": "4.4.1",
   "description": "An app that can modify Madden franchise files.",
   "main": "main.js",
   "scripts": {
@@ -39,7 +39,7 @@
     "handsontable": "^11.1.0",
     "lz4": "^0.6.5",
     "madden-file-tools": "^2.5.5",
-    "madden-franchise": "^2.5.4",
+    "madden-franchise": "^2.5.5",
     "moment": "^2.29.1",
     "xlsx": "^0.17.5"
   },
