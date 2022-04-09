@@ -38,7 +38,7 @@
     "lz4": "^0.6.5",
     "madden-file-tools": "^2.5.5",
     "madden-franchise": "^2.5.5",
-    "moment": "^2.29.1",
+    "moment": "^2.29.2",
     "xlsx": "^0.17.5"
   },
   "build": {
