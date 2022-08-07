@@ -6,7 +6,7 @@ const contextMenuService = require('./contextMenuService');
 const referenceViewerService = require('../referenceViewerService');
 
 class TableEditorView {
-    constructor(file, container, parent) {
+    constructor(file, container, parent, initialTableToSelect) {
         this.file = file;
         this.baseContainer = document.querySelector(container);
         this.parent = parent;
@@ -18,13 +18,14 @@ class TableEditorView {
         this.columnIndexToSelect = 0;
         this.showHeaderTypes = false;
         this.currentlySelectedRow = 0;
-        this.initialTableSelect = null;
+        this.initialTableToSelect = initialTableToSelect;
         this.currentlySelectedColumn = 0;
         this.loader = document.querySelector('.loader-wrapper');
         this.referenceEditorSelector = this.parent.referenceEditorSelector;
 
         this.hot = new Handsontable(this.baseContainer, {
             height: '100%',
+            width: '100%',
             rowHeaders: true,
             manualRowResize: true,
             manualColumnResize: true,
@@ -270,6 +271,8 @@ class TableEditorView {
                     utilService.hide(this.loader);
                 
                     this.parent._toggleAddPinButton(table.header.tableId);
+                    this.parent._onTableChanged(table.header.tableId, table.name);
+
                     console.timeEnd('change');
                 });
             }, 100);

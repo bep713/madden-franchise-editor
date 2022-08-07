@@ -11,10 +11,6 @@
   &.inactive {
     filter: saturate(0) blur(1px);
   }
-
-  @at-root .top-bar #{&} {
-    margin: -10px 0;
-  }
 }
 
 @for $var from 19 to 23 {

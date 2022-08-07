@@ -1,0 +1,101 @@
+%tab-border {
+    border-right: 1px solid #d1d1d1;
+}
+
+%tab-hover {
+    &:hover {
+        background-color: #fbfbfb;
+        cursor: pointer;
+    }
+}
+
+.tab-wrapper {
+    display: flex;
+    margin-bottom: 5px;
+    background-color: $background-color;
+    padding-left: 5px;
+    flex-wrap: nowrap;
+    overflow-x: overlay;
+    overflow-y: hidden;
+
+    &::-webkit-scrollbar {
+        height: 5px;
+        display: none;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background-color: darken($background-color, 20%);
+
+        &:hover {
+            background-color: darken($background-color, 30%);
+        }
+
+        &:active {
+            background-color: darken($background-color, 40%);
+        }
+    }
+
+    &:hover, &.show-scrollbar {
+        &::-webkit-scrollbar {
+            display: inherit;
+        }
+    }
+}
+
+.tab {
+    display: flex;
+    align-items: center;
+    padding: 7.5px 10px;
+    font-size: $font-size-small;
+    justify-content: space-between;
+    gap: 5px;
+    text-overflow: ellipsis;
+    white-space: pre;
+
+    @extend %tab-border;
+    @extend %tab-hover;
+
+    &.active {
+        background-color: #fff;
+
+        &:hover {
+            cursor: default;
+        }
+
+        .close-tab-button {
+            visibility: visible;
+        }
+    }
+
+    &:hover {
+        .close-tab-button {
+            visibility: visible;
+        }
+    }
+
+    .close-tab-button {
+        visibility: hidden;
+        padding: 10px;
+        cursor: pointer;
+        border-radius: 5px;
+        background-image: url('../img/close.png');
+        background-size: 8px;
+        background-position: center;
+        background-repeat: no-repeat;
+        
+        &:hover {
+            background-color: $background-color;
+        }
+    }
+}
+
+.add-tab-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-basis: 40px;
+    flex-shrink: 0;
+
+    @extend %tab-border;
+    @extend %tab-hover;
+}

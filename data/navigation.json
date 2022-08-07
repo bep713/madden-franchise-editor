@@ -3,6 +3,8 @@
     {
       "id": "home",
       "text": "Home",
+      "classList": [],
+      "image": "home.png",
       "clickListener": "onHomeClicked",
       "service": "welcomeService",
       "availableVersions": [19, 20, 21, 22],
@@ -13,7 +15,9 @@
     },
     {
       "id": "schedule-editor",
-      "text": "Schedule Editor",
+      "text": "Schedule",
+      "classList": [],
+      "image": "schedule.png",
       "service": "scheduleEditorService",
       "clickListener": "onScheduleEditorClicked",
       "availableVersions": [19, 20, 21, 22],
@@ -24,19 +28,10 @@
       }
     },
     {
-      "id": "table-editor",
-      "text": "Table Editor",
-      "service": "tableEditorService",
-      "clickListener": "onTableEditorClicked",
-      "availableFormats": ["franchise", "franchise-common"],
-      "availableVersions": [19,20, 21, 22],
-      "menu": {
-        "enable": ["Save", "Export", "Import", "LogTable", "ExportRawTable", "ExportFRT", "ImportRawTable"]
-      }
-    },
-    {
       "id": "ability-editor",
-      "text": "Ability Editor",
+      "text": "Abilities",
+      "classList": [],
+      "image": "",
       "service": "abilityEditorService",
       "clickListener": "onAbilityEditorClicked",
       "availableVersions": [20],
@@ -48,7 +43,9 @@
     },
     {
       "id": "schema-management",
-      "text": "Schema Management",
+      "text": "Schemas",
+      "classList": [],
+      "image": "schema.png",
       "service": "schemaViewerService",
       "clickListener": "onSchemaViewerClicked",
       "availableVersions": [19,20, 21, 22],
@@ -56,12 +53,27 @@
       "menu": {
         "disable": ["Save", "Export", "Import", "LogTable", "ExportRawTable", "ExportFRT", "ImportRawTable"]
       }
+    },
+    {
+      "id": "table-editor",
+      "text": "Open Table...",
+      "classList": [],
+      "image": "table.png",
+      "service": "tableEditorService",
+      "clickListener": "onTableEditorClicked",
+      "availableFormats": ["franchise", "franchise-common"],
+      "availableVersions": [19, 20, 21, 22],
+      "menu": {
+        "enable": ["Save", "Export", "Import", "LogTable", "ExportRawTable", "ExportFRT", "ImportRawTable"]
+      }
     }
   ],
   "hiddenItems": [
     {
       "id": "league-editor",
-      "text": "League Editor",
+      "text": "League",
+      "classList": [],
+      "image": "",
       "service": "leagueEditorService",
       "clickListener": "onLeagueEditorClicked",
       "availableVersions": [19, 20, 21, 22],

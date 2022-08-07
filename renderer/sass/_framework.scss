@@ -12,11 +12,14 @@ $breakpoint-xlg: 1280px;
 
 $font-base-family: "Roboto", sans-serif;
 $font-base-size: 15px;
+$font-size-small: 13px;
 $font-weight-bold: 600;
 
 $button-orange: #e9881947;
 $button-orange-hover: #ffd7aa;
 $button-orange-active: darken(#ffd7aa, 5%);
+
+$background-color: #f0f0f0;
 
 * {
   box-sizing: border-box;
@@ -31,8 +34,8 @@ body {
 
 #content {
   overflow: auto;
-  padding: 0 20px;
   height: 100vh;
+  padding: 0 10px 10px 10px;
 }
 
 h1 {

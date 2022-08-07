@@ -1,5 +1,5 @@
-const { ipcRenderer, shell } = require('electron');
-const { dialog, getCurrentWindow } = require('@electron/remote');
+const EventEmitter = require('events');
+const { ipcRenderer } = require('electron');
 
 const utilService = require('../utilService');
 const TableEditorView = require('./TableEditorView');
@@ -11,7 +11,13 @@ const externalDataService = require('../externalDataService');
 const referenceViewerService = require('../referenceViewerService');
 
 class TableEditorWrapper {
-    constructor(file) {
+    constructor() {
+        this.name = 'tableEditorService';   // for legacy purposes in nav data
+        this.eventEmitter = new EventEmitter();
+        this.initialTableToSelect = null;
+    };
+
+    start(file) {
         this.file = file;
         this.tableEditors = [];
         this.pinListElement = null;
@@ -27,15 +33,15 @@ class TableEditorWrapper {
         this._windowListeners = [];
 
         if (file.isLoaded) {
-            this.start();
+            this.onReady();
         } else {
             file.on('ready', function () {
-                this.start();
+                this.onReady();
             });
         }
-    };
+    }
 
-    start() {
+    onReady() {
         this._addIpcListeners();
         this._addEventListeners();
 
@@ -43,11 +49,14 @@ class TableEditorWrapper {
             'saveOnChange': ipcRenderer.sendSync('getPreferences').general.autoSave[0]
         };
 
-        this.selectedTableEditor = new TableEditorView(this.file, '.table-content-wrapper', this);
+        this.selectedTableEditor = new TableEditorView(this.file, '.table-content-wrapper', this, this.initialTableToSelect);
         this.tableEditors.push(this.selectedTableEditor);
 
         this._initializeReferenceEditor();
         this._initializePins(this.file.gameYear);
+        this._windowResizeListener();
+
+        this.initialTableToSelect = null;
     };
 
     _addIpcListeners() {
@@ -131,11 +140,12 @@ class TableEditorWrapper {
     };
 
     _windowResizeListener () {
-        const wrapper = document.querySelector('.table-wrapper');
+        const tableWrapper = document.querySelector('.table-wrapper');
+        const tableEditorWrapper = document.querySelector('.table-editor-wrapper');
 
         this.selectedTableEditor.hot.updateSettings({
-            height: wrapper.offsetHeight - 80,
-            width: wrapper.offsetWidth
+            height: tableEditorWrapper.offsetHeight - 80,
+            width: tableWrapper.offsetWidth
         });
     };
       
@@ -241,7 +251,14 @@ class TableEditorWrapper {
         }
     };
 
-    close() {
+    _onTableChanged(tableId, name) {
+        this.eventEmitter.emit('table-changed', {
+            tableId,
+            name
+        });
+    };
+
+    onClose() {
         this._ipcListeners.forEach((listener) => {
             ipcRenderer.removeListener(listener.event, listener.ref);
         });
