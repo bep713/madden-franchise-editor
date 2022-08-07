@@ -90,15 +90,15 @@ class TableEditorView {
         const underlay = document.querySelector('.underlay');
         const jumpRow = document.querySelector('.jump-row');
         
-        const toggleTypesButton = document.querySelector('.toggle-types');
-        toggleTypesButton.addEventListener('click', () => {
-            this.showHeaderTypes = !this.showHeaderTypes;
-            const headers = this._formatHeaders(this.selectedTable);
+        // const toggleTypesButton = document.querySelector('.toggle-types');
+        // toggleTypesButton.addEventListener('click', () => {
+        //     this.showHeaderTypes = !this.showHeaderTypes;
+        //     const headers = this._formatHeaders(this.selectedTable);
         
-            this.hot.updateSettings({
-                colHeaders: headers
-            });
-        });
+        //     this.hot.updateSettings({
+        //         colHeaders: headers
+        //     });
+        // });
         
         const columnSelect = document.querySelector('#available-columns');
         let columnSelectr = new Selectr(columnSelect, {
@@ -242,16 +242,20 @@ class TableEditorView {
                 table.readRecords().then((table) => {
                     console.timeEnd('read records');
                     this.loadTable(table);
+
                     this.hot.selectCell(this.rowIndexToSelect, this.columnIndexToSelect);
                 
                     this.rowIndexToSelect = 0;
                     this.columnIndexToSelect = 0;
                     
-                    this.navSteps.push({
-                        'tableId': table.header.tableId,
-                        'recordIndex': this.hot.getSelectedLast()[0],
-                        'column': this.hot.getSelectedLast()[1]
-                    });            
+                    const selectedCell = this.hot.getSelectedLast();
+                    if (selectedCell) {
+                        this.navSteps.push({
+                            'tableId': table.header.tableId,
+                            'recordIndex': selectedCell[0],
+                            'column': selectedCell[1]
+                        });     
+                    }       
                 })
                 .catch((err) => {
                     console.log(err);

@@ -23,9 +23,6 @@ class TableEditorWrapper {
         this.externalDataHandler = new ExternalDataHandler(this);
         this.referenceEditor = new ReferenceEditor(this);
         this.referenceRenderer = new ReferenceRenderer(this);
-
-        this._addIpcListeners();
-        this._addEventListeners();
     };
 
     start(file) {
@@ -34,6 +31,9 @@ class TableEditorWrapper {
         this.pinListElement = null;
         this.selectedTableEditor = null;
         this.loader = document.querySelector('.loader-wrapper');
+
+        this._addIpcListeners();
+        this._addEventListeners();
 
         if (file.isLoaded) {
             this.onReady();
@@ -153,10 +153,12 @@ class TableEditorWrapper {
         const tableWrapper = document.querySelector('.table-wrapper');
         const tableEditorWrapper = document.querySelector('.table-editor-wrapper');
 
-        this.selectedTableEditor.hot.updateSettings({
-            height: tableEditorWrapper.offsetHeight - 80,
-            width: tableWrapper.offsetWidth
-        });
+        if (tableWrapper && tableEditorWrapper && this.selectedTableEditor && this.selectedTableEditor.hot) {
+            this.selectedTableEditor.hot.updateSettings({
+                height: tableEditorWrapper.offsetHeight - 113,
+                width: tableWrapper.offsetWidth
+            });
+        }
     };
       
     _modalCloseListener (e) {
@@ -271,7 +273,8 @@ class TableEditorWrapper {
     _openTableInNewTab(tableId, row) {
         this.initialTableToSelect = {
             tableId: tableId,
-            recordIndex: row
+            recordIndex: row,
+            columnIndex: 0
         };
 
         this.eventEmitter.emit('table-editor:new-tab', {

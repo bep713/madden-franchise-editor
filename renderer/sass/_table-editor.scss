@@ -8,7 +8,7 @@
   height: 100%;
 
   @media (min-width: $breakpoint-md) {
-    grid-template-rows: 40px 40px calc(100% - 80px);
+    grid-template-rows: 40px 73px calc(100% - 113px);
   }
 }
 
@@ -29,10 +29,15 @@ td.active-row {
 
 .table-list {
   display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.table-list-top-bar {
+  display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  margin-bottom: 5px;
 
   @media (min-width: $breakpoint-md) {
     flex-wrap: nowrap;
@@ -149,11 +154,11 @@ td.active-row {
 .table-pins-wrapper {
   display: grid;
   grid-template-columns: 20px 1fr;
-  margin-top: -20px;
-  margin-bottom: 10px;
+  // margin-top: -20px;
+  // margin-bottom: 10px;
 
   .pin-icon {
-    margin-top: 15px;
+    // margin-top: 15px;
     background-image: url(../img/pushpin.svg);
     background-repeat: no-repeat;
     background-position: center;
@@ -194,7 +199,7 @@ td.active-row {
 
   .pin-wrapper {
     display: flex;
-    padding-top: 15px;
+    // padding-top: 15px;
 
     &:hover {
       .delete-pin {
@@ -204,6 +209,6 @@ td.active-row {
   }
 
   .add-new-pin {
-    padding-top: 15px;
+    // padding-top: 15px;
   }
 }

@@ -156,7 +156,7 @@ navigationService.scrollToActiveTab = function () {
   let targetNode = document.querySelector('.tab.active');
   const nextTabNode = document.querySelector('.tab.active + .tab');
 
-  if (nextTabNode.classList.contains('add-tab-button')) {
+  if (nextTabNode && nextTabNode.classList.contains('add-tab-button')) {
     // always keep the '+' button in view if user has last tab active
     targetNode = nextTabNode;
   }
@@ -582,7 +582,8 @@ function setupEvents() {
   scheduleService.eventEmitter.on('open-table-editor', function (tableId, index) {
     tableEditorWrapper.initialTableToSelect = {
       tableId: tableId,
-      recordIndex: index
+      recordIndex: index,
+      columnIndex: 0
     };
 
     navigationService.runCloseFunction();
