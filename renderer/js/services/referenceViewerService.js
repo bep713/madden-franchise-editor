@@ -29,9 +29,22 @@ module.exports = {
                 referenceDiv.classList.add('reference-link');
                 referenceDiv.innerText = `(${reference.tableId}) ${reference.name}`;
 
-                referenceDiv.addEventListener('click', () => {
+                referenceDiv.addEventListener('click', (event) => {
                     utilService.hide(modal);
-                    module.exports.eventEmitter.emit('reference-clicked', reference);
+                    module.exports.eventEmitter.emit('reference-clicked', {
+                        reference,
+                        newTab: event.ctrlKey
+                    });
+                });
+
+                referenceDiv.addEventListener('auxclick', (event) => {
+                    if (event.button === 1) {
+                        utilService.hide(modal);
+                        module.exports.eventEmitter.emit('reference-clicked', {
+                            reference,
+                            newTab: true
+                        });
+                    }
                 });
     
                 referenceListWrapper.appendChild(referenceDiv);

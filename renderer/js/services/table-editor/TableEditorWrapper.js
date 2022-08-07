@@ -15,6 +15,13 @@ class TableEditorWrapper {
         this.name = 'tableEditorService';   // for legacy purposes in nav data
         this.eventEmitter = new EventEmitter();
         this.initialTableToSelect = null;
+
+        this.externalDataHandler = new ExternalDataHandler(this);
+        this.referenceEditor = new ReferenceEditor(this);
+        this.referenceRenderer = new ReferenceRenderer(this);
+
+        this._addIpcListeners();
+        this._addEventListeners();
     };
 
     start(file) {
@@ -23,11 +30,6 @@ class TableEditorWrapper {
         this.pinListElement = null;
         this.selectedTableEditor = null;
         this.loader = document.querySelector('.loader-wrapper');
-
-        this.externalDataHandler = new ExternalDataHandler(this);
-
-        this.referenceEditor = new ReferenceEditor(this);
-        this.referenceRenderer = new ReferenceRenderer(this);
 
         this._ipcListeners = [];
         this._windowListeners = [];
@@ -42,9 +44,6 @@ class TableEditorWrapper {
     }
 
     onReady() {
-        this._addIpcListeners();
-        this._addEventListeners();
-
         this.file.settings = {
             'saveOnChange': ipcRenderer.sendSync('getPreferences').general.autoSave[0]
         };
@@ -119,8 +118,15 @@ class TableEditorWrapper {
     };
 
     _addEventListeners() {
-        referenceViewerService.eventEmitter.on('reference-clicked', (referenceData) => {
-            this.selectedTableEditor.tableSelector.setValue(referenceData.tableId);
+        referenceViewerService.eventEmitter.on('reference-clicked', (event) => {
+            const referenceData = event.reference;
+
+            if (event.newTab) {
+                this._openTableInNewTab(referenceData.tableId, 0);
+            }
+            else {
+                this.selectedTableEditor.tableSelector.setValue(referenceData.tableId);
+            }
         });
 
         this._windowListeners = [{
