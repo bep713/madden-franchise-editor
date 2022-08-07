@@ -2,6 +2,28 @@ module.exports = {
     getContextMenu(tableEditorView) {
         return {
             items: {
+                'open_new_tab': {
+                    name: () => {
+                        return 'Open this reference in a new tab';
+                    },
+                    disabled: () => {
+                        const selectedRows = tableEditorView.hot.getSelectedLast();
+                        if (selectedRows[0] !== selectedRows[2] || selectedRows[1] !== selectedRows[3]) {
+                            return true;
+                        }
+                        else {
+                            const cellNode = tableEditorView.hot.getCell(selectedRows[0], selectedRows[1]);
+                            const editButton = cellNode.querySelector('.edit-button');   // reference renderers always have an edit button
+                            return !editButton;
+                        }
+                    },
+                    callback: (key, selection, clickEvent) => {
+                        const cellNode = tableEditorView.hot.getCell(selection[0].end.row, selection[0].end.col);
+                        const link = cellNode.querySelector('a');
+                        const event = new MouseEvent('auxclick', { button: 1 });
+                        link.dispatchEvent(event);
+                    }
+                },
                 'find_references': {
                     name: () => {
                         return 'Find references to this record...'

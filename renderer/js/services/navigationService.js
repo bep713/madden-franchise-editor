@@ -601,6 +601,10 @@ function setupEvents() {
     navigationService.generateNavigation();
   });
 
+  tableEditorWrapper.eventEmitter.on('table-editor:new-tab', (tableId, row) => {
+    navigationService.onNewTabButtonClicked();
+  });
+
   window.addEventListener('resize', () => {
     let isGrowing = false;
 

@@ -24,7 +24,7 @@ class ReferenceRenderer {
                     referenceLink.innerHTML = `${table.name} - ${recordIndex}`;
                     referenceWrapper.appendChild(referenceLink);
             
-                    referenceLink.addEventListener('click', () => {
+                    referenceLink.addEventListener('click', (event) => {
                         this.tableEditorWrapper.selectedTableEditor.navSteps[this.tableEditorWrapper.selectedTableEditor.navSteps.length - 1].column = col;
                         this.tableEditorWrapper.selectedTableEditor.navSteps[this.tableEditorWrapper.selectedTableEditor.navSteps.length - 1].recordIndex = row;
             
@@ -41,6 +41,12 @@ class ReferenceRenderer {
                         setTimeout(() => {
                             this.tableEditorWrapper.selectedTableEditor.navSteps[this.tableEditorWrapper.selectedTableEditor.navSteps.length - 1].recordIndex = recordIndex;
                         }, 125);
+                    });
+
+                    referenceLink.addEventListener('auxclick', (event) => {
+                        if (event.button === 1) {
+                            this.tableEditorWrapper._openTableInNewTab(table.header.tableId, recordIndex);
+                        }
                     });
                 } else {
                     referenceWrapper.innerHTML = value;

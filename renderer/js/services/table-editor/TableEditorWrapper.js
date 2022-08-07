@@ -258,6 +258,18 @@ class TableEditorWrapper {
         });
     };
 
+    _openTableInNewTab(tableId, row) {
+        this.initialTableToSelect = {
+            tableId: tableId,
+            recordIndex: row
+        };
+
+        this.eventEmitter.emit('table-editor:new-tab', {
+            tableId,
+            row
+        });
+    };
+
     onClose() {
         this._ipcListeners.forEach((listener) => {
             ipcRenderer.removeListener(listener.event, listener.ref);
