@@ -280,7 +280,7 @@ class TableEditorView {
         
         if (this.initialTableToSelect) {
             this.rowIndexToSelect = this.initialTableToSelect.recordIndex;
-            this.columnIndexToSelect = 0;
+            this.columnIndexToSelect = this.initialTableToSelect.columnIndex;
         
             this.tableSelector.setValue(this.initialTableToSelect.tableId);
             this.initialTableToSelect = null;

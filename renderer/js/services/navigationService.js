@@ -213,6 +213,11 @@ navigationService.generateNavigation = function () {
 
         if (previouslyActiveTab) {
           previouslyActiveTab.isActive = false;
+
+          if (previouslyActiveTab instanceof TableEditorTab) {
+            previouslyActiveTab.tableColumn = tableEditorWrapper.lastSelectedCell.column;
+            previouslyActiveTab.tableRow = tableEditorWrapper.lastSelectedCell.row;
+          }
         }
 
         tab.isActive = true;
@@ -259,7 +264,8 @@ navigationService.onNewTabClicked = function () {
   if (activeTab.tableId >= 0) {
     tableEditorWrapper.initialTableToSelect = {
       tableId: activeTab.tableId,
-      recordIndex: activeTab.tableRow
+      recordIndex: activeTab.tableRow,
+      columnIndex: activeTab.tableColumn
     };
   }
 
@@ -601,7 +607,14 @@ function setupEvents() {
     navigationService.generateNavigation();
   });
 
-  tableEditorWrapper.eventEmitter.on('table-editor:new-tab', (tableId, row) => {
+  tableEditorWrapper.eventEmitter.on('table-editor:new-tab', () => {
+    const previouslyActiveTab = navigationService.getActiveTab();
+
+    if (previouslyActiveTab instanceof TableEditorTab) {
+      previouslyActiveTab.tableColumn = tableEditorWrapper.lastSelectedCell.column;
+      previouslyActiveTab.tableRow = tableEditorWrapper.lastSelectedCell.row;
+    }
+    
     navigationService.onNewTabButtonClicked();
   });
 

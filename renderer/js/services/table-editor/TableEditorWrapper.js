@@ -15,6 +15,10 @@ class TableEditorWrapper {
         this.name = 'tableEditorService';   // for legacy purposes in nav data
         this.eventEmitter = new EventEmitter();
         this.initialTableToSelect = null;
+        this.lastSelectedCell = {
+            row: 0,
+            column: 0
+        };
 
         this.externalDataHandler = new ExternalDataHandler(this);
         this.referenceEditor = new ReferenceEditor(this);
@@ -54,6 +58,7 @@ class TableEditorWrapper {
         this._initializeReferenceEditor();
         this._initializePins(this.file.gameYear);
         this._windowResizeListener();
+        this._selectionListener();
 
         this.initialTableToSelect = null;
     };
@@ -273,6 +278,13 @@ class TableEditorWrapper {
         this.eventEmitter.emit('table-editor:new-tab', {
             tableId,
             row
+        });
+    };
+
+    _selectionListener() {
+        this.selectedTableEditor.hot.addHook('afterSelection', (row, col, row2, col2) => {
+            this.lastSelectedCell.row = row2;
+            this.lastSelectedCell.column = col2;
         });
     };
 
