@@ -35,9 +35,6 @@ class TableEditorWrapper {
         this.selectedTableEditor = null;
         this.loader = document.querySelector('.loader-wrapper');
 
-        this._ipcListeners = [];
-        this._windowListeners = [];
-
         if (file.isLoaded) {
             this.onReady();
         } else {
@@ -92,10 +89,12 @@ class TableEditorWrapper {
         });
     };
 
-    _onPreferencesUpdated() {
-        this.file.settings = {
-            'saveOnChange': preferences.general.autoSave[0]
-        };
+    _onPreferencesUpdated(e, preferences) {
+        if (this.file) {
+            this.file.settings = {
+                'saveOnChange': preferences.general.autoSave[0]
+            };
+        }
     };
 
     _onExportFile() {

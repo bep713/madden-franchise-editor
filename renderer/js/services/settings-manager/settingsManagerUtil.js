@@ -38,12 +38,12 @@ settingsManagerUtil.addListeners = function (preferences) {
 };
 
 settingsManagerUtil.createFields = function (category) {
-    const preferenceOptions = ipcRenderer.sendSync('getPreferenceOptions');
+    const preferenceOptions = ipcRenderer.sendSync('getSections');
     const preferences = ipcRenderer.sendSync('getPreferences');
 
     settingsManagerUtil.addListeners(preferences);
 
-    const section = preferenceOptions.sections.find((section) => {
+    const section = preferenceOptions.find((section) => {
         return section.id === category;
     });
 

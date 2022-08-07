@@ -46,6 +46,9 @@ class ReferenceRenderer {
                     referenceLink.addEventListener('auxclick', (event) => {
                         this.tableEditorWrapper.lastSelectedCell.row = row;
                         this.tableEditorWrapper.lastSelectedCell.column = col;
+
+                        this.tableEditorWrapper.selectedTableEditor.navSteps[this.tableEditorWrapper.selectedTableEditor.navSteps.length - 1].column = col;
+                        this.tableEditorWrapper.selectedTableEditor.navSteps[this.tableEditorWrapper.selectedTableEditor.navSteps.length - 1].recordIndex = row;
                         
                         if (event.button === 1) {
                             this.tableEditorWrapper._openTableInNewTab(table.header.tableId, recordIndex);

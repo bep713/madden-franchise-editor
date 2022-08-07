@@ -215,8 +215,9 @@ navigationService.generateNavigation = function () {
           previouslyActiveTab.isActive = false;
 
           if (previouslyActiveTab instanceof TableEditorTab) {
-            previouslyActiveTab.tableColumn = tableEditorWrapper.lastSelectedCell.column;
             previouslyActiveTab.tableRow = tableEditorWrapper.lastSelectedCell.row;
+            previouslyActiveTab.tableColumn = tableEditorWrapper.lastSelectedCell.column;
+            previouslyActiveTab.tabHistory = tableEditorWrapper.selectedTableEditor.navSteps;
           }
         }
 
@@ -327,6 +328,10 @@ navigationService.onTableEditorClicked = function () {
   postGenerateNavigation();
 
   tableEditorWrapper.start(navigationService.currentlyOpenedFile.data);
+
+  const activeTab = navigationService.getActiveTab();
+  tableEditorWrapper.selectedTableEditor.navSteps = activeTab.tabHistory;
+  tableEditorWrapper.selectedTableEditor.navSteps.pop();
 };
 
 navigationService.onSchemaViewerClicked = function () {
@@ -376,7 +381,7 @@ navigationService.runCloseFunction = function () {
 };
 
 if (process.env.NODE_ENV === 'development') {
-  DEV_openFile();
+  // DEV_openFile();
 }
 
 if (process.env.NODE_ENV === 'testing') {
@@ -613,6 +618,7 @@ function setupEvents() {
     if (previouslyActiveTab instanceof TableEditorTab) {
       previouslyActiveTab.tableColumn = tableEditorWrapper.lastSelectedCell.column;
       previouslyActiveTab.tableRow = tableEditorWrapper.lastSelectedCell.row;
+      previouslyActiveTab.tabHistory = tableEditorWrapper.selectedTableEditor.navSteps;
     }
     
     navigationService.onNewTabButtonClicked();

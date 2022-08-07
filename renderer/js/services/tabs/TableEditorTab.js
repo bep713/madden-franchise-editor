@@ -7,6 +7,7 @@ class TableEditorTab extends Tab {
         this.tableId = -1;
         this.tableRow = 0;
         this.tableColumn = 0;
+        this.tabHistory = [];
         
         this.isClosable = true;
         this.isMiniTab = false;

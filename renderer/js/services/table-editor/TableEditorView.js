@@ -185,10 +185,12 @@ class TableEditorView {
         backLink.addEventListener('click', () => {
         
             if (this.navSteps.length >= 2) {
+                console.log(this.navSteps[this.navSteps.length - 1]);
                 this.navSteps.pop();
             
                 const navStep = this.navSteps[this.navSteps.length - 1];
                 const table = this.file.getTableById(navStep.tableId);
+                console.log(navStep);
             
                 this.rowIndexToSelect = navStep.recordIndex;
                 this.columnIndexToSelect = navStep.column;
@@ -200,6 +202,7 @@ class TableEditorView {
         
                 setTimeout(() => {
                     if (this.navSteps.length === 1) {
+                        console.log(this.navSteps);
                         backLink.classList.add('disabled');
                     }
                 }, 200);
@@ -248,8 +251,7 @@ class TableEditorView {
                         'tableId': table.header.tableId,
                         'recordIndex': this.hot.getSelectedLast()[0],
                         'column': this.hot.getSelectedLast()[1]
-                    });
-            
+                    });            
                 })
                 .catch((err) => {
                     console.log(err);
