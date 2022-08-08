@@ -38,7 +38,7 @@ class TestUtility {
         const that = this;
 
         this._addTestElement('export-table-input', function () {
-            that.tableEditorService.wrapper.externalDataHandler._exportTable(this.value, that.tableEditorService.wrapper.selectedTableEditor.selectedTable);
+            that.tableEditorService.externalDataHandler._exportTable(this.value);
             this.value = '';
         });
     };
@@ -47,7 +47,7 @@ class TestUtility {
         const that = this;
 
         this._addTestElement('import-table-input', function () {
-            that.tableEditorService.wrapper.externalDataHandler._importTable(this.value);
+            that.tableEditorService.externalDataHandler._importTable(this.value);
             this.value = '';
         });
     };
@@ -56,7 +56,7 @@ class TestUtility {
         const that = this;
 
         this._addTestElement('export-raw-table', function () {
-            that.tableEditorService.wrapper.externalDataHandler._exportRawTable(this.value);
+            that.tableEditorService.externalDataHandler._exportRawTable(this.value);
             this.value = '';
         });
     };
@@ -65,7 +65,7 @@ class TestUtility {
         const that = this;
 
         this._addTestElement('export-raw-frtk', function () {
-            that.tableEditorService.wrapper.externalDataHandler._exportRawFrtk(this.value);
+            that.tableEditorService.externalDataHandler._exportRawFrtk(this.value);
             this.value = '';
         });
     };
@@ -74,7 +74,7 @@ class TestUtility {
         const that = this;
 
         this._addTestElement('import-raw-table', function () {
-            that.tableEditorService.wrapper.externalDataHandler._importRawTable(this.value);
+            that.tableEditorService.externalDataHandler._importRawTable(this.value);
             this.value = '';
         });
     };

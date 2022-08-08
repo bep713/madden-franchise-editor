@@ -385,7 +385,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 if (process.env.NODE_ENV === 'testing') {
-  new TestUtility(welcomeService, tableEditorService);
+  new TestUtility(welcomeService, tableEditorWrapper);
 }
 
 module.exports = navigationService;

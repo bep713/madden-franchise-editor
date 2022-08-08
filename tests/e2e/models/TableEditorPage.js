@@ -12,7 +12,7 @@ class TableEditorPage {
         this.table = new HotComponent(this.window, '.table-wrapper');
         this.pins = new PinComponent(this.window, '.table-pins-wrapper');
         this.jumpToColumnModal = new ColumnJumpModal(this.window);
-        this.tableSelector = new SelectrComponent(this.window, '.table-list > .selectr-container');
+        this.tableSelector = new SelectrComponent(this.window, '.table-list-top-bar > .selectr-container');
 
         this.locators = {
             backButton: this.window.locator('.back-link'),

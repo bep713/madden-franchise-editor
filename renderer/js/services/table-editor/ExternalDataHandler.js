@@ -29,6 +29,7 @@ class ExportHandler {
     };
 
     _exportTable(filePath) {
+        console.log(filePath);
         this.loader.show();
         
         setTimeout(() => {
@@ -40,7 +41,7 @@ class ExportHandler {
                 ipcRenderer.send('exported');
         
                 if (ipcRenderer.sendSync('getPreferences').general.openExcelAfterImport[0]) {
-                    shell.openItem(filePath);
+                    shell.openPath(filePath);
                 }
             }).catch((err) => {
                 console.error(err);

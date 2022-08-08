@@ -34,21 +34,23 @@ test('export table e2e test', async () => {
     const tableEditor = new TableEditorPage(window);
     await tableEditor._waitForTableToLoad();
     await tableEditor.exportTable(FilePaths.m22.exports.test);
-
+    await window.waitForTimeout(1000);
     xlsxCompare(FilePaths.m22.exports.test, FilePaths.m22.exports.overallPercentage);
 
     // can export a raw table
     await tableEditor.exportRawTable(FilePaths.m22.exports.rawTable.test);
+    await window.waitForTimeout(1000);
     await fileCompare(FilePaths.m22.exports.rawTable.test, FilePaths.m22.exports.rawTable.overallPercentage);
 
     // can export the full FRT table
     await tableEditor.exportRawFrtkFile(FilePaths.m22.exports.frtk.test);
+    await window.waitForTimeout(1000);
     await fileCompare(FilePaths.m22.exports.frtk.test, FilePaths.m22.exports.frtk.compare);
 
     // can export a more complex table
     await tableEditor.openTableById(4220);
     await tableEditor.exportTable(FilePaths.m22.exports.test);
-
+    await window.waitForTimeout(1000);
     xlsxCompare(FilePaths.m22.exports.test, FilePaths.m22.exports.player);
 
     await electronApp.close();
