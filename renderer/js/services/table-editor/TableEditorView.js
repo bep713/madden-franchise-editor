@@ -185,12 +185,10 @@ class TableEditorView {
         backLink.addEventListener('click', () => {
         
             if (this.navSteps.length >= 2) {
-                console.log(this.navSteps[this.navSteps.length - 1]);
                 this.navSteps.pop();
             
                 const navStep = this.navSteps[this.navSteps.length - 1];
                 const table = this.file.getTableById(navStep.tableId);
-                console.log(navStep);
             
                 this.rowIndexToSelect = navStep.recordIndex;
                 this.columnIndexToSelect = navStep.column;
