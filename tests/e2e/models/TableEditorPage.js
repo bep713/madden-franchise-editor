@@ -4,14 +4,16 @@ const ColumnJumpModal = require('./ColumnJumpModal');
 const HotComponent = require("./HotComponent");
 const PinComponent = require("./PinComponent");
 const SelectrComponent = require("./SelectrComponent");
+const TabComponent = require('./TabComponent');
 
 class TableEditorPage {
     constructor(window) {
         this.window = window;
 
+        this.tabs = new TabComponent(this.window, '.tab-wrapper');
+        this.jumpToColumnModal = new ColumnJumpModal(this.window);
         this.table = new HotComponent(this.window, '.table-wrapper');
         this.pins = new PinComponent(this.window, '.table-pins-wrapper');
-        this.jumpToColumnModal = new ColumnJumpModal(this.window);
         this.tableSelector = new SelectrComponent(this.window, '.table-list-top-bar > .selectr-container');
 
         this.locators = {
@@ -33,7 +35,7 @@ class TableEditorPage {
     };
 
     async openTableById(tableId) {
-        await this.tableSelector.selectOption(`(${tableId})`);
+        await this.tableSelector.selectOption(`${tableId}`);
         await this._waitForTableToLoad();
     };
 

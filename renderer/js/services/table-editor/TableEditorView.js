@@ -90,16 +90,6 @@ class TableEditorView {
         const underlay = document.querySelector('.underlay');
         const jumpRow = document.querySelector('.jump-row');
         
-        // const toggleTypesButton = document.querySelector('.toggle-types');
-        // toggleTypesButton.addEventListener('click', () => {
-        //     this.showHeaderTypes = !this.showHeaderTypes;
-        //     const headers = this._formatHeaders(this.selectedTable);
-        
-        //     this.hot.updateSettings({
-        //         colHeaders: headers
-        //     });
-        // });
-        
         const columnSelect = document.querySelector('#available-columns');
         let columnSelectr = new Selectr(columnSelect, {
             data: null
@@ -200,7 +190,6 @@ class TableEditorView {
         
                 setTimeout(() => {
                     if (this.navSteps.length === 1) {
-                        console.log(this.navSteps);
                         backLink.classList.add('disabled');
                     }
                 }, 200);
@@ -212,7 +201,7 @@ class TableEditorView {
         const tableChoices = this.file.tables.map((table, index) => {
             return {
               'value': table.header.tableId,
-              'text': `${index} - (${table.header.tableId}) ${table.name}`,
+              'text': `${table.header.tableId} - ${table.name}`,
               'data-search-params': [index, table.header.tableId, table.name]
             };
         });

@@ -39,13 +39,13 @@ test('back button e2e test', async () => {
     await tableEditor.clickBackButton();
 
     let tableName = await tableEditor.getSelectedTableName();
-    expect(tableName).to.equal('1 - (4097) OverallPercentage');
+    expect(tableName).to.equal('4097 - OverallPercentage');
    
     // can go back after clicking on a reference
     await tableEditor.followSelectedCellReference();
     await tableEditor.clickBackButton();
     tableName = await tableEditor.getSelectedTableName();
-    expect(tableName).to.equal('1 - (4097) OverallPercentage');
+    expect(tableName).to.equal('4097 - OverallPercentage');
 
     // can go back to the specific cell that you were on
     await tableEditor.selectCellAt(5, 0);
@@ -60,13 +60,13 @@ test('back button e2e test', async () => {
     await tableEditor.followSelectedCellReference();
     await tableEditor.clickBackButton();
     tableName = await tableEditor.getSelectedTableName();
-    expect(tableName).to.equal('2925 - (7022) Spline');
+    expect(tableName).to.equal('7022 - Spline');
     cellText = await tableEditor.getTextAtSelectedCell();
     expect(cellText).to.equal('int[] - 10');
 
     await tableEditor.clickBackButton();
     tableName = await tableEditor.getSelectedTableName();
-    expect(tableName).to.equal('1 - (4097) OverallPercentage');
+    expect(tableName).to.equal('4097 - OverallPercentage');
     cellText = await tableEditor.getTextAtSelectedCell();
     expect(cellText).to.equal('Spline - 5');
 });

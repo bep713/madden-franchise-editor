@@ -14,7 +14,9 @@ class WelcomePage {
     };
 
     async waitForPageLoad() {
-        await this.window.waitForSelector('.link-item');
+        await this.window.waitForSelector('.link-item', {
+            state: 'attached'
+        });
     };
 
     async openFranchiseFile(path) {
@@ -23,6 +25,10 @@ class WelcomePage {
 
     async openTableEditor() {
         await this.locators.tableEditorLink.click();
+    };
+
+    async openScheduleEditor() {
+        await this.locators.scheduleLink.click();
     };
 };
 

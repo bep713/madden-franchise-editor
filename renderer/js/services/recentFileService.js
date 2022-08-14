@@ -10,8 +10,12 @@ recentFileService.recentFiles = [];
 
 recentFileService.initialize = () => {
   if (fs.existsSync(PATH_TO_RECENT_FILES)) {
-    recentFileService.recentFiles = require(PATH_TO_RECENT_FILES);
-    delete require.cache[require.resolve(PATH_TO_RECENT_FILES)]
+    try {
+      recentFileService.recentFiles = JSON.parse(fs.readFileSync(PATH_TO_RECENT_FILES));
+    }
+    catch (err) {
+      recentFileService.recentFiles = [];
+    }
   }
   else {
     recentFileService.recentFiles = [];
@@ -58,9 +62,5 @@ recentFileService.getRecentFiles = () => {
 module.exports = recentFileService;
 
 function writeToRecentFilesStore(data) {
-  fs.writeFile(PATH_TO_RECENT_FILES, JSON.stringify(data), function (err) {
-    if (err) {
-      console.log(err);
-    }
-  });
+  fs.writeFileSync(PATH_TO_RECENT_FILES, JSON.stringify(data));
 };

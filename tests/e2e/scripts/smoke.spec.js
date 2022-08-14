@@ -84,7 +84,7 @@ test('basic test', async () => {
 
   await tableEditor.followSelectedCellReference();
   const table = await tableEditor.getSelectedTableName();
-  expect(table).to.equal('8 - (4104) Stadium');
+  expect(table).to.equal('4104 - Stadium');
 
   // can edit references
   await tableEditor.jumpToColumn('BathroomInfo', 18);
@@ -93,7 +93,7 @@ test('basic test', async () => {
   const referenceEditor = new ReferenceEditorModal(window);
   
   const selectedTable = await referenceEditor.getSelectedTable();
-  expect(selectedTable).to.equal('45 - (4141) StadiumPartInfo');
+  expect(selectedTable).to.equal('4141 - StadiumPartInfo');
 
   const selectedRowIndex = await referenceEditor.getRowIndex();
   expect(selectedRowIndex).to.equal('18');

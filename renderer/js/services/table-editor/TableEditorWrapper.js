@@ -122,15 +122,13 @@ class TableEditorWrapper {
     };
 
     _addEventListeners() {
-        referenceViewerService.eventEmitter.on('reference-clicked', (event) => {
-            const referenceData = event.reference;
+        this._referenceListeners = [{
+            event: 'reference-clicked',
+            ref: this._onReferenceClicked.bind(this)
+        }]
 
-            if (event.newTab) {
-                this._openTableInNewTab(referenceData.tableId, 0);
-            }
-            else {
-                this.selectedTableEditor.tableSelector.setValue(referenceData.tableId);
-            }
+        this._referenceListeners.forEach((listener) => {
+            referenceViewerService.eventEmitter.on(listener.event, listener.ref);
         });
 
         this._windowListeners = [{
@@ -147,6 +145,17 @@ class TableEditorWrapper {
         this._windowListeners.forEach((listener) => {
             window.addEventListener(listener.event, listener.ref);
         });
+    };
+
+    _onReferenceClicked(event) {
+        const referenceData = event.reference;
+
+        if (event.newTab) {
+            this._openTableInNewTab(referenceData.tableId, 0);
+        }
+        else {
+            this.selectedTableEditor.tableSelector.setValue(referenceData.tableId);
+        }
     };
 
     _windowResizeListener () {
@@ -297,6 +306,10 @@ class TableEditorWrapper {
 
         this._windowListeners.forEach((listener) => {
             window.removeEventListener(listener.event, listener.ref);
+        });
+
+        this._referenceListeners.forEach((listener) => {
+            referenceViewerService.eventEmitter.off(listener.event, listener.ref);
         });
     };
 };

@@ -47,7 +47,7 @@ test('pins e2e test', async () => {
     // can click on a pin to load the table
     await tableEditor.clickPinByTableId(4220);
     const tableName = await tableEditor.getSelectedTableName();
-    expect(tableName).to.equal('124 - (4220) Player');
+    expect(tableName).to.equal('4220 - Player');
 
     // can remove a pin
     await tableEditor.removePinByTableId(4097);

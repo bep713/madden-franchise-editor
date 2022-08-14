@@ -178,6 +178,7 @@ navigationService.generateNavigation = function () {
   navigationService.tabs.forEach((tab) => {
     let navWrapper = document.createElement('div');
     navWrapper.innerHTML = tab.name;
+    navWrapper.dataset.name = tab.name;
     navWrapper.classList.add('tab');
 
     if (tab.customClassList.length > 0) {
@@ -225,6 +226,11 @@ navigationService.generateNavigation = function () {
         navigationService[tab.clickListenerFunction]();
       });
     }
+
+    element.addEventListener('wheel', (evt) => {
+      evt.preventDefault();
+      element.scrollLeft += evt.deltaY;
+    });
 
     element.appendChild(navWrapper);
 
