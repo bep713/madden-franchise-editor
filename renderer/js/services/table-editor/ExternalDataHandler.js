@@ -29,7 +29,6 @@ class ExportHandler {
     };
 
     _exportTable(filePath) {
-        console.log(filePath);
         this.loader.show();
         
         setTimeout(() => {
@@ -49,7 +48,7 @@ class ExportHandler {
                 dialog.showErrorBox('Unable to export', 'Unable to export the file because it is currently open in another program. Try closing the file in Excel before exporting.');
                 this.loader.hide();
             });
-        }, 5);
+        }, 10);
     };
 
     importTable() {
@@ -88,14 +87,13 @@ class ExportHandler {
                 trimmedTable.forEach((record, index) => {
                     let franchiseRecord = this.tableEditorWrapper.selectedTableEditor.selectedTable.records[index];
                     franchiseRecord.fieldsArray.forEach((field) => {
-                        field.value = record[field.key];
+                        try {
+                            field.value = record[field.key];
+                        }
+                        catch (err) {
+                            console.log('Could not set field value. Error: ', err);
+                        }
                     });
-        
-                    // Object.keys(record).forEach((key) => {
-                    //     if (franchiseRecord[key] !== record[key]) {
-                    //         franchiseRecord[key] = record[key];
-                    //     }
-                    // });
                 });
         
                 this.tableEditorWrapper.selectedTableEditor.selectedTable.recalculateEmptyRecordReferences();

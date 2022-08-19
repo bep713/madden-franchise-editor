@@ -24,9 +24,11 @@ class TableEditorView {
         this.referenceEditorSelector = this.parent.referenceEditorSelector;
 
         this.hot = new Handsontable(this.baseContainer, {
-            height: '100%',
+            // filters: true,
             width: '100%',
+            height: '100%',
             rowHeaders: true,
+            // dropdownMenu: true,
             manualRowResize: true,
             manualColumnResize: true,
             currentRowClassName: 'active-row',

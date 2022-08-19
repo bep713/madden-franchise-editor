@@ -4,3 +4,4 @@ dist
 resources
 test-results/
 playwright-report/
+tests/data/m22/export/test/

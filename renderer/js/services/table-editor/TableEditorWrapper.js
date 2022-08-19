@@ -38,7 +38,7 @@ class TableEditorWrapper {
         if (file.isLoaded) {
             this.onReady();
         } else {
-            file.on('ready', function () {
+            file.on('ready', () => {
                 this.onReady();
             });
         }

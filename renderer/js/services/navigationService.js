@@ -323,7 +323,10 @@ navigationService.onTableEditorClicked = function () {
         // there are no open table editor tabs
         let newTab = navigationService.addTab('New Tab', 'onNewTabClicked');
         newTab.isActive = true;
-        activeTab.isActive = false;
+
+        if (activeTab) {
+          activeTab.isActive = false;
+        }
       }
     }
   }
@@ -336,8 +339,11 @@ navigationService.onTableEditorClicked = function () {
   tableEditorWrapper.start(navigationService.currentlyOpenedFile.data);
 
   const activeTab = navigationService.getActiveTab();
-  tableEditorWrapper.selectedTableEditor.navSteps = activeTab.tabHistory;
-  tableEditorWrapper.selectedTableEditor.navSteps.pop();
+
+  if (activeTab && tableEditorWrapper.selectedTableEditor) {
+    tableEditorWrapper.selectedTableEditor.navSteps = activeTab.tabHistory;
+    tableEditorWrapper.selectedTableEditor.navSteps.pop();
+  }
 };
 
 navigationService.onSchemaViewerClicked = function () {
