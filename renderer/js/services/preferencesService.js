@@ -67,7 +67,8 @@ preferencesService.getPreferenceKeys = function () {
                 '4_3_6': false,
                 '4_4_0': false,
                 '4_4_1': false,
-                '4_5_0': false
+                '4_5_0': false,
+                '4_5_1': false,
             }
         }
     }
