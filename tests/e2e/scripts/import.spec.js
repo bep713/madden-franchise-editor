@@ -8,6 +8,7 @@ const FilePaths = require('../util/FilePaths');
 const App = require('../models/App');
 const WelcomePage = require('../models/WelcomePage');
 const TableEditorPage = require('../models/TableEditorPage');
+const SettingsManager = require('../models/SettingsManager');
 
 test.beforeAll(async () => {
     // Overwrite the test file so that we never change the pristine career file.
@@ -25,6 +26,7 @@ test('import table e2e test', async () => {
     const welcome = new WelcomePage(window);
 
     await welcome.waitForPageLoad();
+    await toggleAutoSave(false);
     await welcome.openFranchiseFile(FilePaths.m22.career.test);
     await welcome.openTableEditor();
 
@@ -52,12 +54,30 @@ test('import table e2e test', async () => {
     await welcome.openTableEditor();
     await checkImportedFields();
 
+    // changes persist on auto-save
+    await toggleAutoSave(true);
+    await tableEditor.openTableById(4712);
+    await tableEditor.importTable(FilePaths.m22.imports.franchise);
+    await tableEditor.jumpToColumn('HasFantasyRoster', 0);
+    let text = await tableEditor.getTextAtSelectedCell();
+    expect(text).to.equal('true');
+    await wait(250);
+
+    await app.closeFile();
+    await welcome.waitForPageLoad();
+    await welcome.openFranchiseFile(FilePaths.m22.career.test);
+    await welcome.openTableEditor();
+    await tableEditor.openTableById(4712);
+    await tableEditor.jumpToColumn('HasFantasyRoster', 0);
+    text = await tableEditor.getTextAtSelectedCell();
+    expect(text).to.equal('true');
+
     // can import a raw table
     await tableEditor.openTableById(4097);
     await tableEditor.importRawTable(FilePaths.m22.imports.rawTable.overallPercentage);
 
     await tableEditor.selectCellAt(0, 0);
-    let text = await tableEditor.getTextAtSelectedCell();
+    text = await tableEditor.getTextAtSelectedCell();
     expect(text).to.equal('Spline - 10');
 
     await tableEditor.selectCellAt(0, 1);
@@ -67,6 +87,8 @@ test('import table e2e test', async () => {
     await tableEditor.selectCellAt(1, 0);
     text = await tableEditor.getTextAtSelectedCell();
     expect(text).to.equal('Spline - 11');
+
+    await toggleAutoSave(false);
 
     await electronApp.close();
 
@@ -107,7 +129,19 @@ test('import table e2e test', async () => {
         await tableEditor.jumpToColumn('STADIUM_AIRPORTCODE', 0);
         text = await tableEditor.getTextAtSelectedCell();
         expect(text).to.equal('LAS');
-    }
+    };
+
+    async function toggleAutoSave(val) {
+        await app._clickMenuItem('ViewReleaseNotes');
+
+        const settingsManagerWindow = await app.getSettingsManager();
+        const settingsManager = new SettingsManager(settingsManagerWindow);
+        
+        await settingsManager.clickContinue();
+        await settingsManager.setAutoSaveSetting(val);
+        await settingsManager.clickContinue();
+        await settingsManager.clickContinue();
+    };
 });
 
 async function wait(ms) {

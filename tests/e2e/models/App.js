@@ -15,6 +15,13 @@ class App {
         return this.mainWindow;
     };
 
+    async getSettingsManager() {
+        const windows = await this.app.windows();
+        return windows.find((window) => {
+            return window._mainFrame._url.indexOf('settings') >= 0;
+        });
+    };
+
     async closeFile() {
         await this._clickMenuItem('CloseFile');
     };

@@ -99,8 +99,8 @@ class ExportHandler {
                 ipcRenderer.send('imported');
         
                 if (flipSaveOnChange) {
-                    this.file.save();
-                    this.file.settings = {
+                    this.tableEditorWrapper.file.save();
+                    this.tableEditorWrapper.file.settings = {
                         'saveOnChange': true
                     };
                 }

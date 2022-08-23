@@ -162,7 +162,7 @@ class TableEditorView {
               document.querySelector('.modal .selectr-selected').click();
         
               setTimeout(() => {
-                document.querySelector('.modal .selectr-input').focus();
+                document.querySelector('.modal .selectr-input')?.focus();
               }, 200);
             }, 50);
         };
