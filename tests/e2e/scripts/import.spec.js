@@ -33,44 +33,31 @@ test('import table e2e test', async () => {
     await tableEditor._waitForTableToLoad();
     await tableEditor.importTable(FilePaths.m22.imports.overallPercentage);
 
-    // updates references
-    await tableEditor.selectCellAt(0, 0);
-    let text = await tableEditor.getTextAtSelectedCell();
-    expect(text).to.equal('Spline - 1');
-
-    // updates enums
-    await tableEditor.selectCellAt(0, 1);
-    text = await tableEditor.getTextAtSelectedCell();
-    expect(text).to.equal('QB');
-
     // can import a large table
     await tableEditor.openTableById(7482);
     await tableEditor.importTable(FilePaths.m22.imports.team);
-    
-    // updates strings
-    // await tableEditor.selectCellAt(5, 75);
-    await tableEditor.jumpToColumn('LongName', 5)
-    text = await tableEditor.getTextAtSelectedCell();
-    expect(text).to.equal('TEST');
 
-    // updates numbers
-    // await tableEditor.selectCellAt(6, 141);
-    await tableEditor.jumpToColumn('SalCapNextYearSalaryReserve', 6);
-    text = await tableEditor.getTextAtSelectedCell();
-    expect(text).to.equal('500');
+    // can import a table without every column
+    await tableEditor.openTableById(4104);
+    await tableEditor.importTable(FilePaths.m22.imports.stadium);
 
-    // updates booleans
-    // await tableEditor.selectCellAt(43, 110);
-    await tableEditor.jumpToColumn('TeamRegressionOccurred', 43);
-    text = await tableEditor.getTextAtSelectedCell();
-    expect(text).to.equal('true');
+    // fields change on import
+    await checkImportedFields();
+
+    // fields persist after saving
+    await app.saveFile();
+    await app.closeFile();
+    await welcome.waitForPageLoad();
+    await welcome.openFranchiseFile(FilePaths.m22.career.test);
+    await welcome.openTableEditor();
+    await checkImportedFields();
 
     // can import a raw table
     await tableEditor.openTableById(4097);
     await tableEditor.importRawTable(FilePaths.m22.imports.rawTable.overallPercentage);
 
     await tableEditor.selectCellAt(0, 0);
-    text = await tableEditor.getTextAtSelectedCell();
+    let text = await tableEditor.getTextAtSelectedCell();
     expect(text).to.equal('Spline - 10');
 
     await tableEditor.selectCellAt(0, 1);
@@ -82,6 +69,45 @@ test('import table e2e test', async () => {
     expect(text).to.equal('Spline - 11');
 
     await electronApp.close();
+
+    async function checkImportedFields() {
+        // updates references
+        await tableEditor.openTableById(4097);
+        await tableEditor.selectCellAt(0, 0);
+        let text = await tableEditor.getTextAtSelectedCell();
+        expect(text).to.equal('Spline - 1');
+
+        // updates enums
+        await tableEditor.selectCellAt(0, 1);
+        text = await tableEditor.getTextAtSelectedCell();
+        expect(text).to.equal('QB');
+        
+        // updates strings
+        await tableEditor.openTableById(7482);
+        await tableEditor.jumpToColumn('LongName', 5)
+        text = await tableEditor.getTextAtSelectedCell();
+        expect(text).to.equal('TEST');
+
+        // updates numbers
+        await tableEditor.jumpToColumn('SalCapNextYearSalaryReserve', 6);
+        text = await tableEditor.getTextAtSelectedCell();
+        expect(text).to.equal('500');
+
+        // updates booleans
+        await tableEditor.jumpToColumn('TeamRegressionOccurred', 43);
+        text = await tableEditor.getTextAtSelectedCell();
+        expect(text).to.equal('true');
+
+        // updates table which imported single column correctly
+        await tableEditor.openTableById(4104);
+        await tableEditor.jumpToColumn('Name', 8);
+        text = await tableEditor.getTextAtSelectedCell();
+        expect(text).to.equal('Test Stadium Name');
+
+        await tableEditor.jumpToColumn('STADIUM_AIRPORTCODE', 0);
+        text = await tableEditor.getTextAtSelectedCell();
+        expect(text).to.equal('LAS');
+    }
 });
 
 async function wait(ms) {

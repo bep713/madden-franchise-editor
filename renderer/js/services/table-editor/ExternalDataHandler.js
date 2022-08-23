@@ -86,12 +86,10 @@ class ExportHandler {
                 const trimmedTable = table.slice(0, this.tableEditorWrapper.selectedTableEditor.selectedTable.records.length);
                 trimmedTable.forEach((record, index) => {
                     let franchiseRecord = this.tableEditorWrapper.selectedTableEditor.selectedTable.records[index];
-                    franchiseRecord.fieldsArray.forEach((field) => {
-                        try {
-                            field.value = record[field.key];
-                        }
-                        catch (err) {
-                            console.log('Could not set field value. Error: ', err);
+                    
+                    Object.keys(record).forEach((key) => {
+                        if (franchiseRecord[key] !== record[key]) {
+                            franchiseRecord[key] = record[key];
                         }
                     });
                 });

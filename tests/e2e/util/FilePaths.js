@@ -27,6 +27,7 @@ module.exports = {
         imports: {
             team: path.join(BASE_DIRS.m22, 'import/7482.xlsx'),
             overallPercentage: path.join(BASE_DIRS.m22, 'import/4097.xlsx'),
+            stadium: path.join(BASE_DIRS.m22, 'import/4104.xlsx'),
             rawTable: {
                 overallPercentage: path.join(BASE_DIRS.m22, 'import/4097_raw_import_test.dat')
             }
