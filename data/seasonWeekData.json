@@ -6,6 +6,7 @@
       "weekType": "preseason",
       "scheduleId": 0,
       "weekIndex": 0,
+      "legacyWeekIndex": 0,
       "seasonWeekType": "PreSeason"
     },
     {
@@ -14,6 +15,7 @@
       "weekType": "preseason",
       "scheduleId": 0,
       "weekIndex": 1,
+      "legacyWeekIndex": 1,
       "seasonWeekType": "PreSeason"
     },
     {
@@ -22,6 +24,7 @@
       "weekType": "preseason",
       "scheduleId": 0,
       "weekIndex": 2,
+      "legacyWeekIndex": 2,
       "seasonWeekType": "PreSeason"
     },
     {
@@ -30,6 +33,7 @@
       "weekType": "preseason",
       "scheduleId": 0,
       "weekIndex": 3,
+      "legacyWeekIndex": 3,
       "seasonWeekType": "PreSeason"
     },
     {
@@ -38,6 +42,7 @@
       "weekType": "season",
       "scheduleId": 1,
       "weekIndex": 0,
+      "legacyWeekIndex": 0,
       "seasonWeekType": "RegularSeason"
     },
     {
@@ -46,6 +51,7 @@
       "weekType": "season",
       "scheduleId": 1,
       "weekIndex": 1,
+      "legacyWeekIndex": 1,
       "seasonWeekType": "RegularSeason"
     },
     {
@@ -54,6 +60,7 @@
       "weekType": "season",
       "scheduleId": 1,
       "weekIndex": 2,
+      "legacyWeekIndex": 2,
       "seasonWeekType": "RegularSeason"
     },
     {
@@ -62,6 +69,7 @@
       "weekType": "season",
       "scheduleId": 1,
       "weekIndex": 3,
+      "legacyWeekIndex": 3,
       "seasonWeekType": "RegularSeason"
     },
     {
@@ -70,6 +78,7 @@
       "weekType": "season",
       "scheduleId": 1,
       "weekIndex": 4,
+      "legacyWeekIndex": 4,
       "seasonWeekType": "RegularSeason"
     },
     {
@@ -78,6 +87,7 @@
       "weekType": "season",
       "scheduleId": 1,
       "weekIndex": 5,
+      "legacyWeekIndex": 5,
       "seasonWeekType": "RegularSeason"
     },
     {
@@ -86,6 +96,7 @@
       "weekType": "season",
       "scheduleId": 1,
       "weekIndex": 6,
+      "legacyWeekIndex": 6,
       "seasonWeekType": "RegularSeason"
     },
     {
@@ -94,6 +105,7 @@
       "weekType": "season",
       "scheduleId": 1,
       "weekIndex": 7,
+      "legacyWeekIndex": 7,
       "seasonWeekType": "RegularSeason"
     },
     {
@@ -102,6 +114,7 @@
       "weekType": "season",
       "scheduleId": 1,
       "weekIndex": 8,
+      "legacyWeekIndex": 8,
       "seasonWeekType": "RegularSeason"
     },
     {
@@ -110,6 +123,7 @@
       "weekType": "season",
       "scheduleId": 1,
       "weekIndex": 9,
+      "legacyWeekIndex": 9,
       "seasonWeekType": "RegularSeason"
     },
     {
@@ -118,6 +132,7 @@
       "weekType": "season",
       "scheduleId": 1,
       "weekIndex": 10,
+      "legacyWeekIndex": 10,
       "seasonWeekType": "RegularSeason"
     },
     {
@@ -126,6 +141,7 @@
       "weekType": "season",
       "scheduleId": 1,
       "weekIndex": 11,
+      "legacyWeekIndex": 11,
       "seasonWeekType": "RegularSeason"
     },
     {
@@ -134,6 +150,7 @@
       "weekType": "season",
       "scheduleId": 1,
       "weekIndex": 12,
+      "legacyWeekIndex": 12,
       "seasonWeekType": "RegularSeason"
     },
     {
@@ -142,6 +159,7 @@
       "weekType": "season",
       "scheduleId": 1,
       "weekIndex": 13,
+      "legacyWeekIndex": 13,
       "seasonWeekType": "RegularSeason"
     },
     {
@@ -150,6 +168,7 @@
       "weekType": "season",
       "scheduleId": 1,
       "weekIndex": 14,
+      "legacyWeekIndex": 14,
       "seasonWeekType": "RegularSeason"
     },
     {
@@ -158,6 +177,7 @@
       "weekType": "season",
       "scheduleId": 1,
       "weekIndex": 15,
+      "legacyWeekIndex": 15,
       "seasonWeekType": "RegularSeason"
     },
     {
@@ -166,6 +186,16 @@
       "weekType": "season",
       "scheduleId": 1,
       "weekIndex": 16,
+      "legacyWeekIndex": 16,
+      "seasonWeekType": "RegularSeason"
+    },
+    {
+      "weekName": "Week 18",
+      "abbreviation": "18",
+      "weekType": "season",
+      "scheduleId": 1,
+      "weekIndex": 17,
+      "legacyWeekIndex": 0,
       "seasonWeekType": "RegularSeason"
     },
     {
@@ -173,7 +203,8 @@
       "abbreviation": "WC",
       "weekType": "playoffs",
       "scheduleId": 2,
-      "weekIndex": 17,
+      "weekIndex": 18,
+      "legacyWeekIndex": 17,
       "seasonWeekType": "FirstPlayoff_"
     },
     {
@@ -181,7 +212,8 @@
       "abbreviation": "DV",
       "weekType": "playoffs",
       "scheduleId": 3,
-      "weekIndex": 18,
+      "weekIndex": 19,
+      "legacyWeekIndex": 18,
       "seasonWeekType": "DivisionalPlayoff"
     },
     {
@@ -189,7 +221,8 @@
       "abbreviation": "CC",
       "weekType": "playoffs",
       "scheduleId": 4,
-      "weekIndex": 19,
+      "weekIndex": 20,
+      "legacyWeekIndex": 19,
       "seasonWeekType": "ConferencePlayoff"
     },
     {
@@ -197,7 +230,8 @@
       "abbreviation": "PB",
       "weekType": "playoffs",
       "scheduleId": 6,
-      "weekIndex": 20,
+      "weekIndex": 21,
+      "legacyWeekIndex": 20,
       "seasonWeekType": "ProBowl"
     },
     {
@@ -205,7 +239,8 @@
       "abbreviation": "SB",
       "weekType": "playoffs",
       "scheduleId": 5,
-      "weekIndex": 21,
+      "weekIndex": 22,
+      "legacyWeekIndex": 21,
       "seasonWeekType": "LastPlayoff_"
     },
     {

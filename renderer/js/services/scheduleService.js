@@ -32,10 +32,10 @@ scheduleService.loadSchedule = function (file) {
       this.loadGamesByWeek(0);
       utilService.hide(document.querySelector('.loader-wrapper'));
     });
-  }, 1);
 
-  addEventListeners();
-  this.loadWeeks();
+    addEventListeners();
+    this.loadWeeks();
+  }, 1);
 };
 
 scheduleService.loadWeeks = function () {
@@ -144,12 +144,19 @@ function removeAllChildNodes(selector) {
 
 function attachWeekNumberElements() {
   const weekWrapper = document.querySelector('.week-wrapper');
+  let attribute = 'weekIndex';
+  
+  console.log(scheduleService.file)
+
+  if (scheduleService.file.file.gameYear < 22) {
+    attribute = 'legacyWeekIndex';
+  }
   
   seasonWeekData.weeks.forEach((week, index) => {
     const weekElement = document.createElement('div');
     weekElement.classList.add('week');
     weekElement.setAttribute('data-week', index);
-    weekElement.setAttribute('data-week-schedule', week.weekIndex);
+    weekElement.setAttribute('data-week-schedule', week[attribute]);
     weekElement.setAttribute('data-week-type', week.scheduleId);
     weekElement.textContent = week.abbreviation;
 

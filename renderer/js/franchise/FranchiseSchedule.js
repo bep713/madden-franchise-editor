@@ -56,6 +56,7 @@ class FranchiseSchedule extends EventEmitter {
   
       tablesLoaded.then(() => {  
         this.startTimes = getStartTimes(schedulerTable, epochTable, epochReferenceData);
+        console.log(this.startTimes);
 
         // In case someone has added in custom teams that aren't in our metadata,
         // we read the team table to get information about them.
@@ -261,7 +262,14 @@ function getDayOfWeekByAbbreviation(abbreviation) {
 };
 
 function getSeasonWeekDataByWeekIndexAndType(index, type) {
-  return seasonWeekData.weeks.find((week) => { return week.weekIndex == index - 1 && week.weekType === type; });
+  let attribute = 'weekIndex';
+
+  if (this.file.gameYear < 21) {
+    console.log(this.file.gameYear);
+    attribute = 'legacyWeekIndex';  
+  }
+
+  return seasonWeekData.weeks.find((week) => { return week[attribute] == index - 1 && week.weekType === type; });
 };
 
 function getStartTimes(schedulerTable, epochTable, epochReferenceData) {
@@ -274,7 +282,7 @@ function getStartTimes(schedulerTable, epochTable, epochReferenceData) {
   const numYears = currentTime.year() - epochYear;
   const currentYear = epochYear + numYears;
 
-  const preseasonStart = moment([currentYear, 7]).startOf('isoweek').add(3, 'd').add(1, 'w');
+  const preseasonStart = moment([currentYear, 7]).startOf('isoweek').add(1, 'd').add(1, 'w');
   const regularSeasonStart = moment(preseasonStart).add(4, 'w');
 
   return {
@@ -289,18 +297,18 @@ function getStartTimes(schedulerTable, epochTable, epochReferenceData) {
 function getDaysToAdd(day) {
   switch(day) {
     case 'Thursday':
-      return 0;
-    case 'Friday':
-      return 1;
-    case 'Saturday':
       return 2;
-    case 'Sunday':
+    case 'Friday':
       return 3;
-    case 'Monday':
+    case 'Saturday':
       return 4;
-    case 'Tuesday':
+    case 'Sunday':
       return 5;
-    case 'Wednesday':
+    case 'Monday':
       return 6;
+    case 'Tuesday':
+      return 0;
+    case 'Wednesday':
+      return 1;
   }
 };
