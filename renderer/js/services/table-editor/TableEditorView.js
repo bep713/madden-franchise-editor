@@ -66,15 +66,35 @@ class TableEditorView {
                 const colNumber = this.selectedTable.offsetTable.findIndex((offset) => { return offset.name === key; });
         
                 try {
-                    let field = this.selectedTable.records[recordIndex].fields[key];
+                    const record = this.selectedTable.records[recordIndex];
+                    const recordWasEmpty = record.isEmpty;
+
+                    let field = record.fields[key];
                     field.value = newValue;
             
                     if (field.value !== newValue) {
                         this.hot.setDataAtCell(recordIndex, colNumber, field.value);
                     }
+
+                    // check if the record was empty and is no longer empty after the change
+                    if (recordWasEmpty && !record.isEmpty) {
+                        // if so, we need to update all fields in the first 4 bytes of the record
+                        // We need to iterate over every empty record because their empty record reference may have changed.
+                        let changes = [];
+                        
+                        record.fieldsArray.filter((field) => {
+                            return field.offset.offset < 32;
+                        }).forEach((field, index) => {
+                            const colNum = this.selectedTable.offsetTable.findIndex((offset) => { return offset.name === field.key; });
+                            changes.push([recordIndex, colNum, field.value]);
+                        });
+
+                        this.hot.setDataAtCell(changes, 'onEmpty');
+                    }
                 }
                 catch (err) {
-                    this.hot.setDataAtCell(recordIndex, colNumber, oldValue)
+                    this.hot.setDataAtCell(recordIndex, colNumber, oldValue);
+                    console.warn(err);
                 }
             });
         
