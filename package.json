@@ -5,6 +5,7 @@
   "main": "main.js",
   "scripts": {
     "start": "set NODE_ENV=development&& electron .",
+    "e2eTest": "npx playwright test",
     "build": "electron-builder build -w"
   },
   "author": "bep713",
