@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const fsPromises = require('fs/promises');
 const { pipeline, Writable } = require('stream');
 const EventEmitter = require('events').EventEmitter;
 const schemaGenerationService = require('./schemaGenerationService');
@@ -21,8 +22,9 @@ schemaSearchService.search = (directoriesToSearch) => {
         });
       })
       .catch((err) => {
-        reject(err);
-        return;
+        schemaSearchService.eventEmitter.emit('directory-done', {
+          'directory': dir
+        });
       });
     });
 
@@ -37,32 +39,43 @@ schemaSearchService.getSchemasInFile = getSchemasInFile;
 module.exports = schemaSearchService;
 
 function readInstallPackageFiles (directory) {
-  return new Promise((resolve, reject) => {
-    fs.readdir(directory, function (err, files) {
-      if (err) { 
-        reject(err); 
-        return;
+  return new Promise(async (resolve, reject) => {
+    const itemsInDir = await fsPromises.readdir(directory);
+    
+    let fileSchemaPromises = [];
+    let files = [];
+    
+    for (const item of itemsInDir) {
+      try {
+        const stats = await fsPromises.lstat(path.join(directory, item));
+        if (stats.isFile()) {
+          files.push(item);
+        }
+      } catch (err) {
+        console.warn(err);
       }
+    }
       
-      let fileSchemaPromises = [];
-
-      schemaSearchService.eventEmitter.emit('directory-scan', {
-        'fileCount': files.length
-      });
-      
-      files.forEach((file) => {
-        const promise = getSchemasInFile(path.join(directory, file));
-        fileSchemaPromises.push(promise);
-        promise.then(() => {
-          schemaSearchService.eventEmitter.emit('file-done', {
-            'file': file
-          });
+    schemaSearchService.eventEmitter.emit('directory-scan', {
+      'fileCount': files.length
+    });
+  
+    files.forEach((file) => {
+      const promise = getSchemasInFile(path.join(directory, file));
+      fileSchemaPromises.push(promise);
+      promise.then(() => {
+        schemaSearchService.eventEmitter.emit('file-done', {
+          'file': file
+        });
+      }).catch((err) => {
+        schemaSearchService.eventEmitter.emit('file-done', {
+          'file': file
         });
       });
-
-      Promise.all(fileSchemaPromises).then((promises) => {
-        resolve(promises.flat());
-      });
+    });
+  
+    Promise.all(fileSchemaPromises).then((promises) => {
+      resolve(promises.flat());
     });
   });
 };

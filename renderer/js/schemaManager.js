@@ -69,7 +69,6 @@ function setupListeners() {
     
     const maddenInstallDirectory = dialog.showOpenDialogSync(getCurrentWindow(), {
       'title': 'Select Madden Executable',
-      'defaultPath': ipcRenderer.sendSync('getPreferences').gameVersions.madden20Directory,
       'properties': ['openFile'],
       'filters': [{
         name: 'Game executable',
@@ -251,14 +250,37 @@ function isDev () {
 function getQuickScanDirectories(pathToExecutable) {
   // try to look in patch - 00 if it exists. If not, look in data - 00
   return new Promise((resolve, reject) => {
-    const patchPath = path.join(pathToExecutable, '../patch/Win32/superbundlelayout/madden_installpackage_00/cas_01.cas');
+    // const patchPath = path.join(pathToExecutable, '../patch/Win32/superbundlelayout/madden_installpackage_00/cas_01.cas');
 
-    if (fs.existsSync(patchPath)) {
-      resolve([path.join(pathToExecutable, '../patch/Win32/superbundlelayout/madden_installpackage_00')]);
-    }
-    else {
-      resolve([path.join(pathToExecutable, '../data/Win32/superbundlelayout/madden_installpackage_00')]);
-    }
+    // if (fs.existsSync(patchPath)) {
+    //   resolve([path.join(pathToExecutable, '../patch/Win32/superbundlelayout/madden_installpackage_00')]);
+    // }
+    // else {
+    //   resolve([path.join(pathToExecutable, '../data/Win32/superbundlelayout/madden_installpackage_00')]);
+    // }
+
+    getCompleteScanDirectories(pathToExecutable)
+      .then((allDirs) => {
+        const firstPatchPackage = allDirs.find((dir) => {
+          return dir.toLowerCase().indexOf('patch') >= 0 && dir.toLowerCase().indexOf('package_00') >= 0;
+        });
+    
+        if (firstPatchPackage) {
+          resolve([firstPatchPackage]);
+        }
+        else {
+          const firstDataDirectory = allDirs.find((dir) => {
+            return dir.toLowerCase().indexOf('data') >= 0 && dir.toLowerCase().indexOf('package_00') >= 0;
+          });
+    
+          if (firstDataDirectory) {
+            resolve([firstDataDirectory]);
+          }
+          else {
+            resolve([allDirs[0]]);
+          }
+        }
+      });
   });
 };
 

@@ -7,7 +7,7 @@
       "image": "home.png",
       "clickListener": "onHomeClicked",
       "service": "welcomeService",
-      "availableVersions": [19, 20, 21, 22, 23],
+      "availableVersions": [19, 20, 21, 22, 23, 24],
       "availableFormats": ["franchise", "franchise-common"],
       "menu": {
         "disable": ["Save", "Export", "Import", "LogTable", "ExportRawTable", "ExportFRT", "ImportRawTable"]
@@ -20,7 +20,7 @@
       "image": "schedule.png",
       "service": "scheduleEditorService",
       "clickListener": "onScheduleEditorClicked",
-      "availableVersions": [19, 20, 21, 22, 23],
+      "availableVersions": [19, 20, 21, 22, 23, 24],
       "availableFormats": ["franchise"],
       "menu": {
         "enable": ["Save"],
@@ -48,7 +48,7 @@
       "image": "schema.png",
       "service": "schemaViewerService",
       "clickListener": "onSchemaViewerClicked",
-      "availableVersions": [19,20, 21, 22, 23],
+      "availableVersions": [19,20, 21, 22, 23, 24],
       "availableFormats": ["franchise", "franchise-common"],
       "menu": {
         "disable": ["Save", "Export", "Import", "LogTable", "ExportRawTable", "ExportFRT", "ImportRawTable"]
@@ -62,7 +62,7 @@
       "service": "tableEditorService",
       "clickListener": "onTableEditorClicked",
       "availableFormats": ["franchise", "franchise-common"],
-      "availableVersions": [19, 20, 21, 22, 23],
+      "availableVersions": [19, 20, 21, 22, 23, 24],
       "menu": {
         "enable": ["Save", "Export", "Import", "LogTable", "ExportRawTable", "ExportFRT", "ImportRawTable"]
       }

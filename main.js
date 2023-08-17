@@ -93,7 +93,7 @@ function createWindow () {
     const checkForSchemas = preferencesService.preferences.value('general.checkForSchemaUpdates');
 
     if (checkboxSettingIsEnabled(checkForSchemas)) {
-      schemaWindow.webContents.send('schema-quick-scan', 23);
+      schemaWindow.webContents.send('schema-quick-scan', 24);
     }
 
     function checkboxSettingIsEnabled(setting) {

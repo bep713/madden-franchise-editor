@@ -89,6 +89,8 @@ class TableEditorView {
                             changes.push([recordIndex, colNum, field.value]);
                         });
 
+                        
+
                         this.hot.setDataAtCell(changes, 'onEmpty');
                     }
                 }
