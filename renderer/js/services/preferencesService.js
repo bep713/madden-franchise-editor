@@ -27,6 +27,9 @@ preferencesService.getPreferenceKeys = function () {
             ],
             'openExcelAfterImport': [
                 true
+            ],
+            'autoUnempty': [
+                
             ]
         },
         'gameVersions': {
@@ -43,6 +46,7 @@ preferencesService.getPreferenceKeys = function () {
                 'defaultEditorSet': false,
                 'checkForUpdatesSet': false,
                 'autoSaveSet': false,
+                'autoUnemptySet': false,
                 'checkForSchemaUpdatesSet': false,
                 'openExcelAfterImportSet': false
             },
@@ -51,7 +55,8 @@ preferencesService.getPreferenceKeys = function () {
                 'madden20DirectorySet': false,
                 'madden21DirectorySet': false,
                 'madden22DirectorySet': false,
-                'madden23DirectorySet': false
+                'madden23DirectorySet': false,
+                'madden24DirectorySet': false
             },
             'appVersions': {
                 '4_0_0': false,
@@ -144,6 +149,14 @@ preferencesService.initialize = function () {
                                     'type': 'checkbox',
                                     'options': [
                                         { 'label': 'Open Excel automatically after import is complete', 'value': true }
+                                    ]
+                                },
+                                {
+                                    'label': 'Automatically un-empty rows when any field is edited (Use with caution)',
+                                    'key': 'autoUnempty',
+                                    'type': 'checkbox',
+                                    'options': [
+                                        { 'label': 'Automatically un-empty rows when any field is edited (Use with caution)', 'value': true }
                                     ]
                                 }
                             ]

@@ -53,9 +53,7 @@ class TableEditorView {
     _processChanges(changes, source) {
         if (changes && source !== 'onEmpty') {
             const flipSaveOnChange = this.file.settings.saveOnChange;
-            this.file.settings = {
-                'saveOnChange': false
-            };
+            this.file.settings.saveOnChange = false;
         
             changes.forEach((change) => {
                 const recordIndex = this.hot.toPhysicalRow(change[0]);
@@ -102,9 +100,7 @@ class TableEditorView {
         
             if (flipSaveOnChange) {
                 this.file.save();
-                this.file.settings = {
-                    'saveOnChange': true
-                };
+                this.file.settings.saveOnChange = true;
             }
         }
     };

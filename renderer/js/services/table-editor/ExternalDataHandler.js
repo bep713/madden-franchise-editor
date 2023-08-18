@@ -78,9 +78,7 @@ class ExportHandler {
                 inputFilePath: filePath
             }).then((table) => {
                 const flipSaveOnChange = this.tableEditorWrapper.file.settings.saveOnChange;
-                this.tableEditorWrapper.file.settings = {
-                    'saveOnChange': false
-                };
+                this.tableEditorWrapper.file.settings.saveOnChange = false;
     
                 // do not allow rows to be added.
                 const trimmedTable = table.slice(0, this.tableEditorWrapper.selectedTableEditor.selectedTable.records.length);
@@ -100,9 +98,7 @@ class ExportHandler {
         
                 if (flipSaveOnChange) {
                     this.tableEditorWrapper.file.save();
-                    this.tableEditorWrapper.file.settings = {
-                        'saveOnChange': true
-                    };
+                    this.tableEditorWrapper.file.settings.saveOnChange = true;
                 }
         
                 this.tableEditorWrapper.selectedTableEditor.loadTable(this.tableEditorWrapper.selectedTableEditor.selectedTable);

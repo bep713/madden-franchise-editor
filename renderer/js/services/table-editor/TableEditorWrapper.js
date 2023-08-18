@@ -45,9 +45,8 @@ class TableEditorWrapper {
     }
 
     onReady() {
-        this.file.settings = {
-            'saveOnChange': ipcRenderer.sendSync('getPreferences').general.autoSave[0]
-        };
+        const prefs = ipcRenderer.sendSync('getPreferences');
+        this._setFilePrefs(prefs);
 
         this.selectedTableEditor = new TableEditorView(this.file, '.table-content-wrapper', this, this.initialTableToSelect);
         this.tableEditors.push(this.selectedTableEditor);
@@ -58,6 +57,13 @@ class TableEditorWrapper {
         this._selectionListener();
 
         this.initialTableToSelect = null;
+    };
+
+    _setFilePrefs(prefs) {
+        if (this.file) {
+            this.file.settings.saveOnChange = prefs.general.autoSave[0];
+            this.file.settings.autoUnempty = prefs.general.autoUnempty[0];
+        }
     };
 
     _addIpcListeners() {
@@ -90,11 +96,7 @@ class TableEditorWrapper {
     };
 
     _onPreferencesUpdated(e, preferences) {
-        if (this.file) {
-            this.file.settings = {
-                'saveOnChange': preferences.general.autoSave[0]
-            };
-        }
+        this._setFilePrefs(preferences);
     };
 
     _onExportFile() {
