@@ -107,7 +107,7 @@ function toggleNavigationLinks(type) {
     scheduleLink.classList.remove('unavailable');
   }
 
-  else if (type.year === 21 || type.year === 22) {
+  else if (type.year === 21 || type.year === 22 || type.year === 23 || type.year === 24) {
     abilityLink.classList.add('unavailable');
   }
 
