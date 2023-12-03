@@ -1,0 +1,19 @@
+.blob-editor-modal {
+    max-height: 80%;
+    display: grid;
+    grid-template-rows: 38px calc(100% - 38px);
+
+    .close-modal {
+        color: $brand-link-color;
+    }
+}
+
+#blob-editor {
+    height: 100%;
+}
+
+.blob-editor-text-content {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}

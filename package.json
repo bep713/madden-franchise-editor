@@ -1,6 +1,6 @@
 {
   "name": "madden-franchise-editor",
-  "version": "4.5.4",
+  "version": "4.5.5",
   "description": "An app that can modify Madden franchise files.",
   "main": "main.js",
   "scripts": {
@@ -13,6 +13,8 @@
   "homepage": "https://github.com/bep713/madden-franchise-editor",
   "devDependencies": {
     "@playwright/test": "^1.25.0",
+    "browser-resolve": "^2.0.0",
+    "browserify": "^17.0.0",
     "chai": "^4.3.4",
     "cheerio": "^1.0.0-rc.10",
     "debug": "^4.3.3",
@@ -20,6 +22,7 @@
     "electron-packager": "^13.1.1",
     "electron-rebuild": "^3.2.7",
     "electron-reload": "^1.5.0",
+    "esmify": "^2.1.1",
     "gulp": "^4.0.2",
     "gulp-sass": "^5.1.0",
     "gulp-sourcemaps": "^2.6.5",
@@ -37,8 +40,8 @@
     "electron-updater": "^4.6.1",
     "handsontable": "^11.1.0",
     "lz4": "^0.6.5",
-    "madden-franchise": "3.1.1",
     "madden-file-tools": "^2.5.5",
+    "madden-franchise": "^3.2.6",
     "moment": "^2.29.4",
     "xlsx": "^0.17.5"
   },

@@ -1,4 +1,4 @@
-const utilService = require('../utilService');
+const utilService = require('../../../utilService');
 
 class ReferenceRenderer {
     constructor(tableEditorWrapper) {

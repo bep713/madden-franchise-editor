@@ -1,5 +1,5 @@
-const utilService = require('../utilService');
-const Selectr = require('../../libs/selectr/selectr');
+const utilService = require('../../../utilService');
+const Selectr = require('../../../../libs/selectr/selectr');
 
 class ReferenceEditor {
     constructor(tableEditorWrapper) {

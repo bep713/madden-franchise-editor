@@ -116,6 +116,8 @@ td.active-row {
 }
 
 .table-cell-button {
+  flex-shrink: 0;
+
   &.table-cell-button--right {
     align-self: center;
     height: 15px;
@@ -124,7 +126,6 @@ td.active-row {
     background-position: center;
     border: none;
   }
-
 }
 
 .edit-button {

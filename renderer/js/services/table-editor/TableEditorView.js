@@ -355,8 +355,7 @@ class TableEditorView {
             return table.offsetTable.map((offset) => {
                 return {
                     'data': offset.name,
-                    'renderer': offset.type === 'Spline' ? this.parent.referenceRenderer.renderer.bind(this.parent.referenceRenderer) : offset.isReference ? 
-                        this.parent.referenceRenderer.renderer.bind(this.parent.referenceRenderer) : offset.enum || offset.type === 'bool' ? 'dropdown' : 'text',
+                    'renderer': getRendererType.bind(this)(offset),
                     'wordWrap': false,
                     'editor': offset.enum || offset.type === 'bool' ? 'dropdown' : 'text',
                     'source': offset.enum ? offset.enum.members.map((member) => { return member.name; }) : offset.type === 'bool' ? ['true', 'false'] : []
@@ -365,6 +364,21 @@ class TableEditorView {
         } else {
             return [];
         }
+
+        function getRendererType(offset) {
+            if (offset.isReference) {
+                return this.parent.referenceRenderer.renderer.bind(this.parent.referenceRenderer);
+            }
+            else if (offset.valueInThirdTable) {
+                return this.parent.blobRenderer.renderer.bind(this.parent.blobRenderer)
+            }
+            else if (offset.enum || offset.type === 'bool') {
+                return 'dropdown';
+            }
+            else {
+                return 'text';
+            }
+        };
     };
 
     _calculateColumnWidths(columns, table) {
@@ -376,6 +390,9 @@ class TableEditorView {
             if (offset.isReference || offset.enum) {
                 const typeLength = ((offset.type.length + 6) * 9) + 35;
                 calculatedWidth = typeLength > 350 ? typeLength : 350;
+            }
+            else if (offset.valueInThirdTable) {
+                calculatedWidth = 700;
             }
             else if (offset.maxLength) {
                 calculatedWidth = (offset.maxLength * 9) + 26;

@@ -3,12 +3,16 @@ const { ipcRenderer } = require('electron');
 
 const utilService = require('../utilService');
 const TableEditorView = require('./TableEditorView');
-const ReferenceEditor = require('./ReferenceEditor');
-const ReferenceRenderer = require('./ReferenceRenderer');
 const pinnedTableService = require('../pinnedTableService');
 const ExternalDataHandler = require('./ExternalDataHandler');
 const externalDataService = require('../externalDataService');
 const referenceViewerService = require('../referenceViewerService');
+
+const ReferenceEditor = require('./custom-renderers/reference/ReferenceEditor');
+const ReferenceRenderer = require('./custom-renderers/reference/ReferenceRenderer');
+
+const BinaryBlobEditor = require('./custom-renderers/binary-blob/BinaryBlobEditor')
+const BinaryBlobRenderer = require('./custom-renderers/binary-blob/BinaryBlobRenderer');
 
 class TableEditorWrapper {
     constructor() {
@@ -23,6 +27,9 @@ class TableEditorWrapper {
         this.externalDataHandler = new ExternalDataHandler(this);
         this.referenceEditor = new ReferenceEditor(this);
         this.referenceRenderer = new ReferenceRenderer(this);
+
+        this.blobEditor = new BinaryBlobEditor(this);
+        this.blobRenderer = new BinaryBlobRenderer(this);
     };
 
     start(file) {
@@ -51,7 +58,7 @@ class TableEditorWrapper {
         this.selectedTableEditor = new TableEditorView(this.file, '.table-content-wrapper', this, this.initialTableToSelect);
         this.tableEditors.push(this.selectedTableEditor);
 
-        this._initializeReferenceEditor();
+        this._initializeEditors();
         this._initializePins(this.file.gameYear);
         this._windowResizeListener();
         this._selectionListener();
@@ -193,8 +200,17 @@ class TableEditorWrapper {
         }
     };
 
+    _initializeEditors() {
+        this._initializeReferenceEditor();
+        this._initializeBlobEditor();
+    };
+
     _initializeReferenceEditor() {
         this.referenceEditor.initialize();
+    };
+
+    _initializeBlobEditor() {
+        this.blobEditor.initialize();
     };
 
     _initializePins(gameYear) {

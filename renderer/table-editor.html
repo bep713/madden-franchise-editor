@@ -54,8 +54,18 @@
   <div class="spline-editor-wrapper">
     <div id="spline-editor-area"></div>
   </div>
+  <div id="blob-editor-modal" class="blob-editor-modal modal hidden">
+    <div class="modal-header">
+      <h2 class="title">Edit Blob Data</h2>
+      <div class="close-modal">Apply Changes</div>
+    </div>
+    <div class="modal-content">
+      <div id="blob-editor"></div>
+    </div>
+  </div>
+  <div class="blob-editor-underlay underlay-editor hidden"></div>
   <div id="reference-editor-wrapper" class="reference-editor-wrapper hidden">
-    <div class="reference-editor-underlay"></div>
+    <div class="reference-editor-underlay underlay-editor"></div>
     <div id="reference-editor-highlight" class="reference-editor-highlight"></div>
     <div id="reference-editor-content" class="reference-editor-content">
       <div class="reference-title-wrapper">
