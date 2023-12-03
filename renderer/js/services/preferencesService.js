@@ -1,10 +1,12 @@
 const os = require('os');
 const path = require('path');
-let { app } = require('electron');
+let {
+    app
+} = require('electron');
 const ElectronPreferences = require('electron-preferences');
 
 let preferencesService = {
-  preferences: null
+    preferences: null
 };
 
 preferencesService.getPreferenceKeys = function () {
@@ -29,7 +31,7 @@ preferencesService.getPreferenceKeys = function () {
                 true
             ],
             'autoUnempty': [
-                
+
             ]
         },
         'gameVersions': {
@@ -78,6 +80,7 @@ preferencesService.getPreferenceKeys = function () {
                 '4_5_2': false,
                 '4_5_3': false,
                 '4_5_4': false,
+                '4_5_5': false,
             }
         }
     }
@@ -85,83 +88,98 @@ preferencesService.getPreferenceKeys = function () {
 
 preferencesService.initialize = function () {
     const preferenceDefaults = preferencesService.getPreferenceKeys();
-    
+
     preferencesService.preferences = new ElectronPreferences({
         'dataStore': path.resolve(app.getPath('userData'), 'preferences.json'),
         'defaults': preferenceDefaults,
-        'sections': [
-            {
+        'sections': [{
                 'id': 'general',
                 'label': 'General',
                 'icon': 'settings-gear-63',
                 'form': {
-                    'groups': [
-                        {
-                            'fields': [
-                                {
-                                    'label': 'Default game save directory',
-                                    'key': 'defaultDirectory',
-                                    'type': 'directory',
-                                    'help': 'The directory to open when you choose to open a file.'
-                                },
-                                {
-                                    'label': 'Editor to open on file load',
-                                    'key': 'defaultEditor',
-                                    'type': 'dropdown',
-                                    'options': [
-                                        { 'label': 'Home screen', 'value': 'open-home' },
-                                        { 'label': 'Schedule editor', 'value': 'open-schedule' },
-                                        { 'label': 'Table editor', 'value': 'open-table-editor' },
-                                        { 'label': 'Schema viewer', 'value': 'open-schema-viewer' },
-                                        { 'label': 'Ability editor', 'value': 'open-ability-editor' }
-                                    ],
-                                    'help': 'Choose the editor to open when you open a new file.'
-                                },
-                                {
-                                    'label': 'Automatically check for application updates',
-                                    'key': 'checkForUpdates',
-                                    'type': 'checkbox',
-                                    'options': [
-                                        { 'label': 'Check for updates on app start', 'value': true }
-                                    ],
-                                    'help': 'If checked, the app will check to see if a new release has been made each time you start the app. You can manually check by clicking About -> Check for update at the top menu.'
-                                },
-                                {
-                                    'label': 'Save the file after any change',
-                                    'key': 'autoSave',
-                                    'type': 'checkbox',
-                                    'options': [
-                                        { 'label': 'Auto-Save', 'value': true }
-                                    ],
-                                    'help': 'If checked, the app will save after any change is made.'
-                                },
-                                {
-                                    'label': 'Automatically re-scan schemas after a Madden update',
-                                    'key': 'checkForSchemaUpdates',
-                                    'type': 'checkbox',
-                                    'options': [
-                                        { 'label': 'Check for game updates', 'value': true }
-                                    ]
-                                },
-                                {
-                                    'label': 'Open Excel after Table Export',
-                                    'key': 'openExcelAfterImport',
-                                    'type': 'checkbox',
-                                    'options': [
-                                        { 'label': 'Open Excel automatically after import is complete', 'value': true }
-                                    ]
-                                },
-                                {
+                    'groups': [{
+                        'fields': [{
+                                'label': 'Default game save directory',
+                                'key': 'defaultDirectory',
+                                'type': 'directory',
+                                'help': 'The directory to open when you choose to open a file.'
+                            },
+                            {
+                                'label': 'Editor to open on file load',
+                                'key': 'defaultEditor',
+                                'type': 'dropdown',
+                                'options': [{
+                                        'label': 'Home screen',
+                                        'value': 'open-home'
+                                    },
+                                    {
+                                        'label': 'Schedule editor',
+                                        'value': 'open-schedule'
+                                    },
+                                    {
+                                        'label': 'Table editor',
+                                        'value': 'open-table-editor'
+                                    },
+                                    {
+                                        'label': 'Schema viewer',
+                                        'value': 'open-schema-viewer'
+                                    },
+                                    {
+                                        'label': 'Ability editor',
+                                        'value': 'open-ability-editor'
+                                    }
+                                ],
+                                'help': 'Choose the editor to open when you open a new file.'
+                            },
+                            {
+                                'label': 'Automatically check for application updates',
+                                'key': 'checkForUpdates',
+                                'type': 'checkbox',
+                                'options': [{
+                                    'label': 'Check for updates on app start',
+                                    'value': true
+                                }],
+                                'help': 'If checked, the app will check to see if a new release has been made each time you start the app. You can manually check by clicking About -> Check for update at the top menu.'
+                            },
+                            {
+                                'label': 'Save the file after any change',
+                                'key': 'autoSave',
+                                'type': 'checkbox',
+                                'options': [{
+                                    'label': 'Auto-Save',
+                                    'value': true
+                                }],
+                                'help': 'If checked, the app will save after any change is made.'
+                            },
+                            {
+                                'label': 'Automatically re-scan schemas after a Madden update',
+                                'key': 'checkForSchemaUpdates',
+                                'type': 'checkbox',
+                                'options': [{
+                                    'label': 'Check for game updates',
+                                    'value': true
+                                }]
+                            },
+                            {
+                                'label': 'Open Excel after Table Export',
+                                'key': 'openExcelAfterImport',
+                                'type': 'checkbox',
+                                'options': [{
+                                    'label': 'Open Excel automatically after import is complete',
+                                    'value': true
+                                }]
+                            },
+                            {
+                                'label': 'Automatically un-empty rows when any field is edited (Use with caution)',
+                                'key': 'autoUnempty',
+                                'type': 'checkbox',
+                                'options': [{
                                     'label': 'Automatically un-empty rows when any field is edited (Use with caution)',
-                                    'key': 'autoUnempty',
-                                    'type': 'checkbox',
-                                    'options': [
-                                        { 'label': 'Automatically un-empty rows when any field is edited (Use with caution)', 'value': true }
-                                    ]
-                                }
-                            ]
-                        }
-                    ]
+                                    'value': true
+                                }]
+                            }
+                        ]
+                    }]
                 }
             },
             {
@@ -169,42 +187,39 @@ preferencesService.initialize = function () {
                 'label': 'Game Directories',
                 'icon': 'folder-15',
                 'form': {
-                    'groups': [
-                        {
-                            'fields': [
-                                {
-                                    'label': 'Madden 19 game directory',
-                                    'key': 'madden19Directory',
-                                    'type': 'directory'
-                                },
-                                {
-                                    'label': 'Madden 20 game directory',
-                                    'key': 'madden20Directory',
-                                    'type': 'directory'
-                                },
-                                {
-                                    'label': 'Madden 21 game directory',
-                                    'key': 'madden21Directory',
-                                    'type': 'directory'
-                                },
-                                {
-                                    'label': 'Madden 22 game directory',
-                                    'key': 'madden22Directory',
-                                    'type': 'directory'
-                                },
-                                {
-                                    'label': 'Madden 23 game directory',
-                                    'key': 'madden23Directory',
-                                    'type': 'directory'
-                                },
-                                {
-                                    'label': 'Madden 24 game directory',
-                                    'key': 'madden24Directory',
-                                    'type': 'directory'
-                                },
-                            ]
-                        }
-                    ]
+                    'groups': [{
+                        'fields': [{
+                                'label': 'Madden 19 game directory',
+                                'key': 'madden19Directory',
+                                'type': 'directory'
+                            },
+                            {
+                                'label': 'Madden 20 game directory',
+                                'key': 'madden20Directory',
+                                'type': 'directory'
+                            },
+                            {
+                                'label': 'Madden 21 game directory',
+                                'key': 'madden21Directory',
+                                'type': 'directory'
+                            },
+                            {
+                                'label': 'Madden 22 game directory',
+                                'key': 'madden22Directory',
+                                'type': 'directory'
+                            },
+                            {
+                                'label': 'Madden 23 game directory',
+                                'key': 'madden23Directory',
+                                'type': 'directory'
+                            },
+                            {
+                                'label': 'Madden 24 game directory',
+                                'key': 'madden24Directory',
+                                'type': 'directory'
+                            },
+                        ]
+                    }]
                 }
             }
         ]

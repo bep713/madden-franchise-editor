@@ -6,6 +6,27 @@
         <ul>
             <li>
                 <div class="list-content">
+                    <div class="header">JSON data support (Table3)</div>
+                    <ul class="inner-list">
+                        <li>Adding support for viewing and editing blob data types (CharacterVisuals).</li>
+                        <li>Adding a JSON editor to make it easier to edit blob data.</li>
+                    </ul>
+                </div>
+            </li>
+            <li>
+                <div class="list-content">
+                    <div class="header">Bug fixes</div>
+                    <ul class="inner-list">
+                        <li>Fixed an issue where saving an FTC file multiple times would cause issues with strings.</li>
+                        <li>Fixed a few issues related to table3 (blob) data.</li>
+                    </ul>
+                </div>
+            </li>
+        </ul>
+        <div class="version-separator">v4.5.4</div>
+        <ul>
+            <li>
+                <div class="list-content">
                     <div class="header">Initial M24 support</div>
                     <ul class="inner-list">
                         <li>Adding M24 game directory setting and initial schema.</li>
@@ -16,7 +37,8 @@
                 <div class="list-content">
                     <div class="header">Auto un-empty option</div>
                     <ul class="inner-list">
-                        <li>Advanced option that gives more control over empty/unemptying rows. Enable this setting with caution.</li>
+                        <li>Advanced option that gives more control over empty/unemptying rows. Enable this setting with
+                            caution.</li>
                     </ul>
                 </div>
             </li>
@@ -58,8 +80,10 @@
                 <div class="list-content">
                     <div class="header">Bug fixes</div>
                     <ul class="inner-list">
-                        <li>Fixed a bug where the app would show an infinite spinner if table editor was selected to open by default.</li>
-                        <li>Fixed a bug where importing certain tables caused an infinite loading spinner due to invalid enum values.</li>
+                        <li>Fixed a bug where the app would show an infinite spinner if table editor was selected to
+                            open by default.</li>
+                        <li>Fixed a bug where importing certain tables caused an infinite loading spinner due to invalid
+                            enum values.</li>
                     </ul>
                 </div>
             </li>
@@ -71,7 +95,8 @@
                     <div class="header">Tabs!</div>
                     <ul class="inner-list">
                         <li>Added the ability to open multiple tables at the same time in different tabs.</li>
-                        <li>Open references in a new tab by clicking the middle mouse button on the reference link (or right click on the cell -> Open in new tab).</li>
+                        <li>Open references in a new tab by clicking the middle mouse button on the reference link (or
+                            right click on the cell -> Open in new tab).</li>
                         <li>Updated the app layout to make a tab for each screen.</li>
                     </ul>
                 </div>
@@ -80,7 +105,8 @@
                 <div class="list-content">
                     <div class="header">Export Error</div>
                     <ul class="inner-list">
-                        <li>Fixed an issue while exporting a table. An error message will no longer pop up if you choose to auto-open the file in Excel.</li>
+                        <li>Fixed an issue while exporting a table. An error message will no longer pop up if you choose
+                            to auto-open the file in Excel.</li>
                     </ul>
                 </div>
             </li>
@@ -91,7 +117,8 @@
                 <div class="list-content">
                     <div class="header">Trailing zeros</div>
                     <ul class="inner-list">
-                        <li>Fixed an issue where editing the very last table in a file caused a game crash when that table had strings.</li>
+                        <li>Fixed an issue where editing the very last table in a file caused a game crash when that
+                            table had strings.</li>
                     </ul>
                 </div>
             </li>
@@ -118,7 +145,9 @@
                 <div class="list-content">
                     <div class="header">Nice reference!</div>
                     <ul class="inner-list">
-                        <li>Added the ability to see a list of references to a record. Right click on the record -> 'Find references to this record...' to see the list. You can click on any of these items to open the table.</li>
+                        <li>Added the ability to see a list of references to a record. Right click on the record ->
+                            'Find references to this record...' to see the list. You can click on any of these items to
+                            open the table.</li>
                     </ul>
                 </div>
             </li>
@@ -129,7 +158,8 @@
                 <div class="list-content">
                     <div class="header">FTC strings fix</div>
                     <ul class="inner-list">
-                        <li>Fixing an issue when changing a string in an FTC file. Now correctly updating the table header to account for the new table length.</li>
+                        <li>Fixing an issue when changing a string in an FTC file. Now correctly updating the table
+                            header to account for the new table length.</li>
                     </ul>
                 </div>
             </li>
@@ -137,7 +167,9 @@
                 <div class="list-content">
                     <div class="header">Raw table import</div>
                     <ul class="inner-list">
-                        <li>There is a new option to import raw data into a table. This is an advanced feature, use it carefully because it can easily crash the game. Find this option under Tools -> Raw table import.</li>
+                        <li>There is a new option to import raw data into a table. This is an advanced feature, use it
+                            carefully because it can easily crash the game. Find this option under Tools -> Raw table
+                            import.</li>
                     </ul>
                 </div>
             </li>
@@ -148,7 +180,8 @@
                 <div class="list-content">
                     <div class="header">Data import fix</div>
                     <ul class="inner-list">
-                        <li>When importing a table, the app will automatically recalculate the new empty record references and apply them.</li>
+                        <li>When importing a table, the app will automatically recalculate the new empty record
+                            references and apply them.</li>
                     </ul>
                 </div>
             </li>
@@ -159,7 +192,8 @@
                 <div class="list-content">
                     <div class="header">Text field fix</div>
                     <ul class="inner-list">
-                        <li>Fixed an issue where tables with multiple text fields saved incorrectly when the fields changed.</li>
+                        <li>Fixed an issue where tables with multiple text fields saved incorrectly when the fields
+                            changed.</li>
                     </ul>
                 </div>
             </li>
@@ -170,7 +204,8 @@
                 <div class="list-content">
                     <div class="header">Array Table Fix</div>
                     <ul class="inner-list">
-                        <li>Before this update, any change to array table sizes caused the game to crash. This has been addressed. (Any table ending in [])</li>
+                        <li>Before this update, any change to array table sizes caused the game to crash. This has been
+                            addressed. (Any table ending in [])</li>
                     </ul>
                 </div>
             </li>
@@ -178,9 +213,14 @@
                 <div class="list-content">
                     <div class="header">Empty Records</div>
                     <ul class="inner-list">
-                        <li>Madden franchise files have a complicated algorithm for tracking empty records. The app will now track these empty records to prevent the game crashing.</li>
-                        <li>You can manually empty a row by clicking on the row and selecting 'Set selected record(s) as empty'</li>
-                        <li>[Advanced] Each table's header points to the first empty record in a table. You can manually set this record by right clicking -> Advanced -> Set as next empty record to use. This can very easily cause the game to crash if you don't know what you're doing. You've been warned!</li>
+                        <li>Madden franchise files have a complicated algorithm for tracking empty records. The app will
+                            now track these empty records to prevent the game crashing.</li>
+                        <li>You can manually empty a row by clicking on the row and selecting 'Set selected record(s) as
+                            empty'</li>
+                        <li>[Advanced] Each table's header points to the first empty record in a table. You can manually
+                            set this record by right clicking -> Advanced -> Set as next empty record to use. This can
+                            very easily cause the game to crash if you don't know what you're doing. You've been warned!
+                        </li>
                     </ul>
                 </div>
             </li>
@@ -188,7 +228,9 @@
                 <div class="list-content">
                     <div class="header">Excel After Export</div>
                     <ul class="inner-list">
-                        <li>Added an option to toggle whether Excel (or default spreadsheet program) opens automatically after a table export has been completed. Previously, there was no way to disable this behavior. It can become annoying when you want to export a lot of tables in a row.</li>
+                        <li>Added an option to toggle whether Excel (or default spreadsheet program) opens automatically
+                            after a table export has been completed. Previously, there was no way to disable this
+                            behavior. It can become annoying when you want to export a lot of tables in a row.</li>
                     </ul>
                 </div>
             </li>
@@ -196,13 +238,17 @@
                 <div class="list-content">
                     <div class="header">Export Table and FRT</div>
                     <ul class="inner-list">
-                        <li>Added an option under the Tools menu to export a table to a file that can be opened in a hex editor. Helpful for debugging.</li>
-                        <li>Added a similar option to export the entire decompressed FRT file. This will contain every table in the file. Also helpful for debugging.</li>
+                        <li>Added an option under the Tools menu to export a table to a file that can be opened in a hex
+                            editor. Helpful for debugging.</li>
+                        <li>Added a similar option to export the entire decompressed FRT file. This will contain every
+                            table in the file. Also helpful for debugging.</li>
                     </ul>
                 </div>
             </li>
         </ul>
-        <div class="info-message">View old release notes on the <a href="https://github.com/bep713/madden-franchise-editor/releases" target="_blank">project homepage.</a></div>
+        <div class="info-message">View old release notes on the <a
+                href="https://github.com/bep713/madden-franchise-editor/releases" target="_blank">project homepage.</a>
+        </div>
         <div class="continue-wrapper">
             <button class="back-btn btn">Previous</button>
             <button class="continue-btn btn">Continue to new settings</button>
