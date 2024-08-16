@@ -20,7 +20,7 @@
       "image": "schedule.png",
       "service": "scheduleEditorService",
       "clickListener": "onScheduleEditorClicked",
-      "availableVersions": [19, 20, 21, 22, 23, 24],
+      "availableVersions": [19, 20, 21, 22, 23, 24, 25],
       "availableFormats": ["franchise"],
       "menu": {
         "enable": ["Save"],
