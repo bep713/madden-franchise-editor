@@ -41,6 +41,7 @@ preferencesService.getPreferenceKeys = function () {
             'madden22Directory': 'C:\\Program Files (x86)\\Origin Games\\Madden NFL 22',
             'madden23Directory': 'C:\\Program Files (x86)\\Origin Games\\Madden NFL 23',
             'madden24Directory': 'C:\\Program Files (x86)\\Origin Games\\Madden NFL 24',
+            'madden25Directory': 'C:\\Program Files (x86)\\Origin Games\\Madden NFL 25',
         },
         'settingsManager': {
             'general': {
@@ -58,7 +59,8 @@ preferencesService.getPreferenceKeys = function () {
                 'madden21DirectorySet': false,
                 'madden22DirectorySet': false,
                 'madden23DirectorySet': false,
-                'madden24DirectorySet': false
+                'madden24DirectorySet': false,
+                'madden25DirectorySet': false
             },
             'appVersions': {
                 '4_0_0': false,
@@ -81,6 +83,7 @@ preferencesService.getPreferenceKeys = function () {
                 '4_5_3': false,
                 '4_5_4': false,
                 '4_5_5': false,
+                '4_5_6': false
             }
         }
     }
@@ -216,6 +219,11 @@ preferencesService.initialize = function () {
                             {
                                 'label': 'Madden 24 game directory',
                                 'key': 'madden24Directory',
+                                'type': 'directory'
+                            },
+                            {
+                                'label': 'Madden 25 game directory',
+                                'key': 'madden25Directory',
                                 'type': 'directory'
                             },
                         ]

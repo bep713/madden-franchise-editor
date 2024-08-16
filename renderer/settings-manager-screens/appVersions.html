@@ -6,6 +6,18 @@
         <ul>
             <li>
                 <div class="list-content">
+                    <div class="header">Madden 25 Partial Support</div>
+                    <ul class="inner-list">
+                        <li>Adding initial Madden 25 support.</li>
+                        <li>Note: Character Visuals data is not supported for M25 at this time.</li>
+                    </ul>
+                </div>
+            </li>
+        </ul>
+        <div class="version-separator">v4.5.5</div>
+        <ul>
+            <li>
+                <div class="list-content">
                     <div class="header">JSON data support (Table3)</div>
                     <ul class="inner-list">
                         <li>Adding support for viewing and editing blob data types (CharacterVisuals).</li>
@@ -194,54 +206,6 @@
                     <ul class="inner-list">
                         <li>Fixed an issue where tables with multiple text fields saved incorrectly when the fields
                             changed.</li>
-                    </ul>
-                </div>
-            </li>
-        </ul>
-        <div class="version-separator">v4.3.3</div>
-        <ul>
-            <li>
-                <div class="list-content">
-                    <div class="header">Array Table Fix</div>
-                    <ul class="inner-list">
-                        <li>Before this update, any change to array table sizes caused the game to crash. This has been
-                            addressed. (Any table ending in [])</li>
-                    </ul>
-                </div>
-            </li>
-            <li>
-                <div class="list-content">
-                    <div class="header">Empty Records</div>
-                    <ul class="inner-list">
-                        <li>Madden franchise files have a complicated algorithm for tracking empty records. The app will
-                            now track these empty records to prevent the game crashing.</li>
-                        <li>You can manually empty a row by clicking on the row and selecting 'Set selected record(s) as
-                            empty'</li>
-                        <li>[Advanced] Each table's header points to the first empty record in a table. You can manually
-                            set this record by right clicking -> Advanced -> Set as next empty record to use. This can
-                            very easily cause the game to crash if you don't know what you're doing. You've been warned!
-                        </li>
-                    </ul>
-                </div>
-            </li>
-            <li>
-                <div class="list-content">
-                    <div class="header">Excel After Export</div>
-                    <ul class="inner-list">
-                        <li>Added an option to toggle whether Excel (or default spreadsheet program) opens automatically
-                            after a table export has been completed. Previously, there was no way to disable this
-                            behavior. It can become annoying when you want to export a lot of tables in a row.</li>
-                    </ul>
-                </div>
-            </li>
-            <li>
-                <div class="list-content">
-                    <div class="header">Export Table and FRT</div>
-                    <ul class="inner-list">
-                        <li>Added an option under the Tools menu to export a table to a file that can be opened in a hex
-                            editor. Helpful for debugging.</li>
-                        <li>Added a similar option to export the entire decompressed FRT file. This will contain every
-                            table in the file. Also helpful for debugging.</li>
                     </ul>
                 </div>
             </li>
