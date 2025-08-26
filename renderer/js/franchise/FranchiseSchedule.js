@@ -112,7 +112,8 @@ class FranchiseSchedule extends EventEmitter {
           });
   
         seasonGameTable.records.forEach((record, index) => {
-          if (record.IsPractice || record.SeasonYear !== this.startTimes.seasonYear) {
+          // Skip epoch logic for M21+, can cause issues later on in files, and the replace all function doesn't work for them anyway
+          if (record.IsPractice || (record.SeasonYear !== this.startTimes.seasonYear && this.file.schema.meta.gameYear < 21)) {
             return;
           }
           
