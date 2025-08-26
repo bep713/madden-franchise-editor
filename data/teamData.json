@@ -307,6 +307,15 @@
       "isCollege": false
     },
     {
+      "city": "Washington",
+      "nickname": "Commanders",
+      "abbreviation": "WAS",
+      "nameMatchList": ["Washington Commanders"],
+      "scheduleId": 30,
+      "logoPath": "img/team-logos/nfl/commanders.PNG",
+      "isCollege": false
+    },
+    {
       "city": "AFC",
       "nickname": "Pro Bowl",
       "abbreviation": "AFC",
