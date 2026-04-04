@@ -4,7 +4,7 @@ const Loader = require("./Loader");
 const externalDataService = require("../externalDataService");
 const preferencesService = require("../preferencesService");
 
-class ExportHandler {
+class ExternalDataHandler {
   constructor(tableEditorWrapper) {
     this.loader = new Loader();
     this.tableEditorWrapper = tableEditorWrapper;
@@ -135,12 +135,13 @@ class ExportHandler {
     }, 10);
   }
 
-  exportRawTable() {
-    let filePath = dialog.showSaveDialogSync(getCurrentWindow(), {
+  async exportRawTable() {
+    let result = await window.electronAPI.showSaveDialog({
       title: "Select destination file for raw table export",
       filters: [{ name: "DAT file", extensions: ["dat"] }],
     });
 
+    let filePath = result.filePath;
     if (filePath) {
       this._exportRawTable(filePath);
     }
@@ -165,22 +166,25 @@ class ExportHandler {
           ipcRenderer.send("exported");
         })
         .catch((err) => {
+          console.error(err);
           ipcRenderer.send("export-error");
-          dialog.showErrorBox(
-            "Unable to export",
-            `Unable to export. Error: ${err}`,
-          );
+          window.electronAPI.showMessageBox({
+            type: "error",
+            title: "Unable to export",
+            message: `Unable to export. Error: ${err.message || err}`,
+          });
           this.loader.hide();
         });
     }, 10);
   }
 
-  exportRawFrtk() {
-    let filePath = dialog.showSaveDialogSync(getCurrentWindow(), {
+  async exportRawFrtk() {
+    let result = await window.electronAPI.showSaveDialog({
       title: "Select destination file for raw FRT file export",
       filters: [{ name: "FRT file", extensions: ["frt"] }],
     });
 
+    let filePath = result.filePath;
     if (filePath) {
       this._exportRawFrtk(filePath);
     }
@@ -203,23 +207,26 @@ class ExportHandler {
           ipcRenderer.send("exported");
         })
         .catch((err) => {
+          console.error(err);
           ipcRenderer.send("export-error");
-          dialog.showErrorBox(
-            "Unable to export",
-            `Error while exporting FRTK file: ${err}`,
-          );
+          window.electronAPI.showMessageBox({
+            type: "error",
+            title: "Unable to export",
+            message: `Error while exporting FRTK file: ${err.message || err}`,
+          });
           this.loader.hide();
         });
     }, 10);
   }
 
-  importRawTable() {
-    let filePath = dialog.showOpenDialogSync(getCurrentWindow(), {
+  async importRawTable() {
+    let result = await window.electronAPI.showOpenDialog({
       title: "Select the file to import",
       filters: [{ name: "DAT file", extensions: ["dat", "*"] }],
     });
 
-    if (filePath) {
+    let filePath = result.filePaths;
+    if (filePath && filePath.length > 0) {
       this._importRawTable(filePath[0]);
     }
   }
@@ -247,15 +254,17 @@ class ExportHandler {
           ipcRenderer.send("imported");
         })
         .catch((err) => {
+          console.error(err);
           ipcRenderer.send("import-error");
-          dialog.showErrorBox(
-            "Unable to import",
-            `Unable to import the raw table. Error: ${err}`,
-          );
+          window.electronAPI.showMessageBox({
+            type: "error",
+            title: "Unable to import",
+            message: `Unable to import the raw table. Error: ${err.message || err}`,
+          });
           this.loader.hide();
         });
     }, 10);
   }
 }
 
-module.exports = ExportHandler;
+module.exports = ExternalDataHandler;
