@@ -9,6 +9,7 @@ class TableEditorView {
   constructor(fileId, container, parent, initialTableToSelect) {
     this.fileId = fileId;
     this.file = null; // No longer holds raw file object
+    this.tableList = []; // Cached table list from IPC
     this.baseContainer = document.querySelector(container);
     this.parent = parent;
 
@@ -43,7 +44,7 @@ class TableEditorView {
     });
 
     this._addEventListeners();
-    this._initialLoad();
+    this.initialLoadPromise = this._initialLoad();
   }
 
   _processSelection(row, col, row2, col2) {
@@ -51,66 +52,53 @@ class TableEditorView {
     this.currentlySelectedColumn = col;
   }
 
-  _processChanges(changes, source) {
+  async _processChanges(changes, source) {
     if (changes && source !== "onEmpty") {
-      // Settings are now managed in main process
-      // For now, we'll track changes locally and sync via IPC
-
-      changes.forEach((change) => {
+      // Write each change to the main process via IPC
+      for (const change of changes) {
         const recordIndex = this.hot.toPhysicalRow(change[0]);
-        const key = change[1];
+        const fieldName = change[1];
         const oldValue = change[2];
         const newValue = change[3];
 
-        const colNumber = this.selectedTable.offsetTable.findIndex((offset) => {
-          return offset.name === key;
-        });
-
         try {
-          const record = this.selectedTable.records[recordIndex];
-          const recordWasEmpty = record.isEmpty;
+          // Write to main process via IPC
+          await window.franchiseAPI.writeTableCell(
+            this.fileId,
+            this.selectedTable.tableId,
+            recordIndex,
+            fieldName,
+            newValue,
+          );
 
-          let field = record.fields[key];
-          field.value = newValue;
-
-          if (field.value !== newValue) {
-            this.hot.setDataAtCell(recordIndex, colNumber, field.value);
-          }
-
-          // check if the record was empty and is no longer empty after the change
-          if (recordWasEmpty && !record.isEmpty) {
-            // if so, we need to update all fields in the first 4 bytes of the record
-            // We need to iterate over every empty record because their empty record reference may have changed.
-            let changes = [];
-
-            record.fieldsArray
-              .filter((field) => {
-                return field.offset.offset < 32;
-              })
-              .forEach((field, index) => {
-                const colNum = this.selectedTable.offsetTable.findIndex(
-                  (offset) => {
-                    return offset.name === field.key;
-                  },
-                );
-                changes.push([recordIndex, colNum, field.value]);
-              });
-
-            this.hot.setDataAtCell(changes, "onEmpty");
+          // Update local cache
+          if (this.selectedTable.records[recordIndex]) {
+            this.selectedTable.records[recordIndex][fieldName] = newValue;
           }
         } catch (err) {
-          this.hot.setDataAtCell(recordIndex, colNumber, oldValue);
-          console.warn(err);
+          // Revert the cell on error
+          this.hot.setDataAtCell(
+            recordIndex,
+            this._getColumnIndex(fieldName),
+            oldValue,
+          );
+          console.warn("Failed to write cell value:", err);
         }
-      });
+      }
 
-      // Save via IPC if auto-save is enabled
-      // This would need to check preferences and call window.franchiseAPI.saveFile(this.fileId)
-      // For now, we'll trigger the save through the parent wrapper
+      // Auto-save after changes
       if (this.parent && this.parent.fileId) {
         window.franchiseAPI.saveFile(this.parent.fileId);
       }
     }
+  }
+
+  _getColumnIndex(fieldName) {
+    if (!this.selectedTable.headers) return 0;
+    const index = this.selectedTable.headers.findIndex(
+      (h) => h.name === fieldName,
+    );
+    return index !== -1 ? index : 0;
   }
 
   _addEventListeners() {
@@ -149,7 +137,7 @@ class TableEditorView {
       }
 
       this.navSteps.push({
-        tableId: this.selectedTable.header.tableId,
+        tableId: this.selectedTable.tableId,
         recordIndex: row,
         column: index,
       });
@@ -204,12 +192,11 @@ class TableEditorView {
     goJumpToColumnButton.addEventListener("click", goJumpToColumnListener);
 
     const backLink = document.querySelector(".back-link");
-    backLink.addEventListener("click", () => {
+    backLink.addEventListener("click", async () => {
       if (this.navSteps.length >= 2) {
         this.navSteps.pop();
 
         const navStep = this.navSteps[this.navSteps.length - 1];
-        const table = this.file.getTableById(navStep.tableId);
 
         this.rowIndexToSelect = navStep.recordIndex;
         this.columnIndexToSelect = navStep.column;
@@ -217,7 +204,17 @@ class TableEditorView {
         this.tableSelector.setValue(navStep.tableId);
         this.navSteps.pop();
 
-        this.selectedTable = table;
+        // Load the previous table via IPC
+        try {
+          const tableData = await window.franchiseAPI.readTableData(
+            this.fileId,
+            navStep.tableId,
+          );
+          this.selectedTable = tableData;
+          this.loadTable(tableData);
+        } catch (err) {
+          console.error("Failed to load previous table:", err);
+        }
 
         setTimeout(() => {
           if (this.navSteps.length === 1) {
@@ -228,100 +225,100 @@ class TableEditorView {
     });
   }
 
-  _initialLoad() {
-    const tableChoices = this.file.tables.map((table, index) => {
-      return {
-        value: table.header.tableId,
-        text: `${table.header.tableId} - ${table.name}`,
-        "data-search-params": [index, table.header.tableId, table.name],
-      };
-    });
+  async _initialLoad() {
+    try {
+      // Fetch table list via IPC
+      this.tableList = await window.franchiseAPI.getTableList(this.fileId);
 
-    if (tableChoices.length === 0) {
-      console.log(
-        "cannot load the table editor because the file appears to be corrupt.",
-      );
-    }
+      const tableChoices = this.tableList.map((table, index) => {
+        return {
+          value: table.id,
+          text: `${table.id} - ${table.name}`,
+          "data-search-params": [index, table.id, table.name],
+        };
+      });
 
-    const tableSelector = document.querySelector(".table-selector");
-    this.tableSelector = new Selectr(tableSelector, {
-      data: tableChoices,
-    });
+      if (tableChoices.length === 0) {
+        console.log(
+          "cannot load the table editor because the file appears to be corrupt.",
+        );
+      }
 
-    const backLink = document.querySelector(".back-link");
+      const tableSelector = document.querySelector(".table-selector");
+      this.tableSelector = new Selectr(tableSelector, {
+        data: tableChoices,
+      });
 
-    this.tableSelector.on("selectr.change", (option) => {
-      console.time("change");
-      utilService.show(this.loader);
+      const backLink = document.querySelector(".back-link");
 
-      setTimeout(() => {
-        const tableId = parseInt(this.tableSelector.getValue(true).value);
-        const table = this.file.getTableById(tableId);
+      this.tableSelector.on("selectr.change", async (option) => {
+        console.time("change");
+        utilService.show(this.loader);
 
-        console.time("read records");
-        table
-          .readRecords()
-          .then((table) => {
-            console.timeEnd("read records");
-            this.loadTable(table);
+        try {
+          const tableId = parseInt(this.tableSelector.getValue(true).value);
+          const tableData = await window.franchiseAPI.readTableData(
+            this.fileId,
+            tableId,
+          );
 
-            this.hot.selectCell(
-              this.rowIndexToSelect,
-              this.columnIndexToSelect,
-            );
+          console.timeEnd("read records");
+          this.loadTable(tableData);
 
-            this.rowIndexToSelect = 0;
-            this.columnIndexToSelect = 0;
+          this.hot.selectCell(this.rowIndexToSelect, this.columnIndexToSelect);
 
-            const selectedCell = this.hot.getSelectedLast();
-            if (selectedCell) {
-              this.navSteps.push({
-                tableId: table.header.tableId,
-                recordIndex: selectedCell[0],
-                column: selectedCell[1],
-              });
-            }
+          this.rowIndexToSelect = 0;
+          this.columnIndexToSelect = 0;
+
+          const selectedCell = this.hot.getSelectedLast();
+          if (selectedCell) {
+            this.navSteps.push({
+              tableId: tableData.tableId,
+              recordIndex: selectedCell[0],
+              column: selectedCell[1],
+            });
+          }
+
+          this.selectedTable = tableData;
+
+          if (this.navSteps.length >= 2) {
+            backLink.classList.remove("disabled");
+          }
+
+          utilService.hide(this.loader);
+
+          this.parent._toggleAddPinButton(tableData.tableId);
+          this.parent._onTableChanged(tableData.tableId, tableData.name);
+
+          console.timeEnd("change");
+        } catch (err) {
+          console.error("Failed to load table:", err);
+          utilService.hide(this.loader);
+        }
+      });
+
+      if (this.initialTableToSelect) {
+        this.rowIndexToSelect = this.initialTableToSelect.recordIndex;
+        this.columnIndexToSelect = this.initialTableToSelect.columnIndex;
+
+        this.tableSelector.setValue(this.initialTableToSelect.tableId);
+        this.initialTableToSelect = null;
+      } else {
+        this.tableSelector.setValue(tableChoices[1].value);
+
+        // Load the default table via IPC
+        const defaultTableId = tableChoices[1].value;
+        window.franchiseAPI
+          .readTableData(this.fileId, defaultTableId)
+          .then((tableData) => {
+            this.selectedTable = tableData;
           })
           .catch((err) => {
-            console.log(err);
-            this.loadTable(table);
-
-            this.navSteps.push({
-              tableId: table.header.tableId,
-              recordIndex: 0,
-              column: 0,
-            });
-          })
-          .finally(() => {
-            this.selectedTable = table;
-
-            if (this.navSteps.length >= 2) {
-              backLink.classList.remove("disabled");
-            }
-
-            utilService.hide(this.loader);
-
-            this.parent._toggleAddPinButton(table.header.tableId);
-            this.parent._onTableChanged(table.header.tableId, table.name);
-
-            console.timeEnd("change");
+            console.error("Failed to load default table:", err);
           });
-      }, 100);
-    });
-
-    if (this.initialTableToSelect) {
-      this.rowIndexToSelect = this.initialTableToSelect.recordIndex;
-      this.columnIndexToSelect = this.initialTableToSelect.columnIndex;
-
-      this.tableSelector.setValue(this.initialTableToSelect.tableId);
-      this.initialTableToSelect = null;
-    } else {
-      this.tableSelector.setValue(tableChoices[1].value);
-
-      const tableToLoad = this.file.getAllTablesByName(
-        tableChoices[1].text.substring(tableChoices[1].text.indexOf(" ") + 3),
-      );
-      this.selectedTable = tableToLoad[tableToLoad.length - 1];
+      }
+    } catch (err) {
+      console.error("Failed to load table list:", err);
     }
   }
 
@@ -346,22 +343,18 @@ class TableEditorView {
   }
 
   _formatTable(table) {
-    return table.records.map((record) => {
-      return record.fieldsArray.reduce((accumulator, currentValue) => {
-        accumulator[currentValue.key] = currentValue.value;
-        return accumulator;
-      }, {});
-    });
+    // IPC returns records as array of plain objects { fieldName: value }
+    return table.records;
   }
 
   _formatHeaders(table) {
-    if (table.offsetTable) {
+    if (table.headers) {
       if (this.showHeaderTypes) {
-        return table.offsetTable.map((offset) => {
+        return table.headers.map((offset) => {
           return `${offset.name} <div class="header-type">${offset.type}</div>`;
         });
       } else {
-        return table.offsetTable.map((offset) => {
+        return table.headers.map((offset) => {
           return offset.name;
         });
       }
@@ -371,8 +364,8 @@ class TableEditorView {
   }
 
   _formatColumns(table) {
-    if (table.offsetTable) {
-      return table.offsetTable.map((offset) => {
+    if (table.headers) {
+      return table.headers.map((offset) => {
         return {
           data: offset.name,
           renderer: getRendererType.bind(this)(offset),
@@ -408,7 +401,7 @@ class TableEditorView {
 
   _calculateColumnWidths(columns, table) {
     return columns.map((col, index) => {
-      const offset = table.offsetTable[index];
+      const offset = table.headers[index];
       const colMinWidth = col.data.length * 9 + 26;
       let calculatedWidth = 0;
 

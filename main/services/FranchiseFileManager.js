@@ -397,6 +397,19 @@ class FranchiseFileManager {
             name: o.name,
             type: o.type,
             offset: o.offset,
+            isReference: o.isReference || false,
+            valueInThirdTable: o.valueInThirdTable || false,
+            maxLength: o.maxLength || null,
+            length: o.length || 0,
+            enum: o.enum
+              ? {
+                  name: o.enum.name,
+                  members: o.enum.members.map((m) => ({
+                    name: m.name,
+                    value: m.value,
+                  })),
+                }
+              : null,
           }))
         : [],
     };

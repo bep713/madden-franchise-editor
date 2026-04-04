@@ -158,7 +158,7 @@ class ExportHandler {
             outputFilePath: filePath,
           },
           this.tableEditorWrapper.fileId,
-          table.header.tableId,
+          table.tableId,
         )
         .then(() => {
           this.loader.hide();
@@ -237,7 +237,7 @@ class ExportHandler {
             filePath: filePath,
           },
           this.tableEditorWrapper.fileId,
-          table.header.tableId,
+          table.tableId,
         )
         .then(() => {
           this.tableEditorWrapper.selectedTableEditor.loadTable(

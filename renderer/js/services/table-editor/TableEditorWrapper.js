@@ -51,7 +51,7 @@ class TableEditorWrapper {
     this.onReady();
   }
 
-  onReady() {
+  async onReady() {
     const prefs = preferencesService.get();
     this._setFilePrefs(prefs);
 
@@ -64,7 +64,7 @@ class TableEditorWrapper {
     this.tableEditors.push(this.selectedTableEditor);
 
     this._initializeEditors();
-    this._initializePins(this.fileMetadata?.gameYear);
+    await this._initializePins(this.fileMetadata?.gameYear);
     this._windowResizeListener();
     this._selectionListener();
 
@@ -229,7 +229,8 @@ class TableEditorWrapper {
     this._initializeBlobEditor();
   }
 
-  _initializeReferenceEditor() {
+  async _initializeReferenceEditor() {
+    await this.selectedTableEditor.initialLoadPromise;
     this.referenceEditor.initialize();
   }
 
@@ -237,17 +238,19 @@ class TableEditorWrapper {
     this.blobEditor.initialize();
   }
 
-  _initializePins(gameYear) {
-    pinnedTableService.initialize(gameYear);
+  async _initializePins(gameYear) {
+    await pinnedTableService.initialize(gameYear);
 
     this.pinListElement = document.querySelector(".pins-list");
     utilService.removeChildNodes(this.pinListElement);
     this.pinListElement.appendChild(this._createAddNewPinButton());
 
-    pinnedTableService.applicablePins.forEach((pin) => {
-      const pinElement = this._createPinElement(pin);
-      this.pinListElement.appendChild(pinElement);
-    });
+    if (pinnedTableService.applicablePins) {
+      pinnedTableService.applicablePins.forEach((pin) => {
+        const pinElement = this._createPinElement(pin);
+        this.pinListElement.appendChild(pinElement);
+      });
+    }
   }
 
   _createPinElement(pin) {
@@ -266,9 +269,7 @@ class TableEditorWrapper {
       pinnedTableService.removePin(pin.tableId);
       pinWrapper.parentNode.removeChild(pinWrapper);
 
-      if (
-        this.selectedTableEditor.selectedTable.header.tableId === pin.tableId
-      ) {
+      if (this.selectedTableEditor.selectedTable.tableId === pin.tableId) {
         this._toggleAddPinButton(pin.tableId);
       }
     });
@@ -289,10 +290,8 @@ class TableEditorWrapper {
     addPinButton.innerText = "+ Add";
 
     addPinButton.addEventListener("click", () => {
-      const selectedTableId =
-        this.selectedTableEditor.selectedTable.header.tableId;
-      const selectedTableName =
-        this.selectedTableEditor.selectedTable.header.name;
+      const selectedTableId = this.selectedTableEditor.selectedTable.tableId;
+      const selectedTableName = this.selectedTableEditor.selectedTable.name;
 
       const tableAlreadyPinned = pinnedTableService.findPin(selectedTableId);
 

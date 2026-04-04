@@ -85,7 +85,7 @@ pinnedTableService.getPinsByGameYear = (gameYear) => {
   });
 
   if (!pinMeta) {
-    return null;
+    return [];
   } else {
     return pinMeta.pins;
   }
