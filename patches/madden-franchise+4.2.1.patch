@@ -1,0 +1,99 @@
+diff --git a/node_modules/madden-franchise/dist/index.cjs b/node_modules/madden-franchise/dist/index.cjs
+index 1c4ec0f..dc4a3fd 100644
+--- a/node_modules/madden-franchise/dist/index.cjs
++++ b/node_modules/madden-franchise/dist/index.cjs
+@@ -1295,7 +1295,14 @@ function requireDist () {
+ var distExports = requireDist();
+ var XmlParser = /*@__PURE__*/getDefaultExportFromCjs(distExports);
+ 
+-const __filename$6 = url.fileURLToPath((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src || new URL('index.cjs', document.baseURI).href)));
++const __filename$6 = url.fileURLToPath(
++  (typeof process !== 'undefined' && process.versions && process.versions.node)
++    ? require('u' + 'rl').pathToFileURL(__filename).href
++    : (typeof document === 'undefined'
++        ? require('u' + 'rl').pathToFileURL(__filename).href
++        : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src
++            || new URL('index.cjs', document.baseURI).href))
++);
+ const __dirname$6 = path.dirname(__filename$6);
+ 
+ let schemaGenerator = {};
+@@ -3200,7 +3207,14 @@ class XMLParser{
+     }
+ }
+ 
+-const __filename$5 = url.fileURLToPath((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src || new URL('index.cjs', document.baseURI).href)));
++const __filename$5 = url.fileURLToPath(
++  (typeof process !== 'undefined' && process.versions && process.versions.node)
++    ? require('u' + 'rl').pathToFileURL(__filename).href
++    : (typeof document === 'undefined'
++        ? require('u' + 'rl').pathToFileURL(__filename).href
++        : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src
++            || new URL('index.cjs', document.baseURI).href))
++);
+ const __dirname$5 = path.dirname(__filename$5);
+ 
+ /**
+@@ -5747,7 +5761,13 @@ M19Table2Strategy.getInitialUnformattedValue =
+ M19Table2Strategy.setUnformattedValueFromFormatted =
+     FranchiseTable2FieldStrategy.setUnformattedValueFromFormatted;
+ 
+-const __filename$4 = url.fileURLToPath((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src || new URL('index.cjs', document.baseURI).href)));
++const __filename$4 = url.fileURLToPath(
++  (typeof process !== 'undefined' && process.versions && process.versions.node)
++    ? require('u' + 'rl').pathToFileURL(__filename).href
++    : (typeof document === 'undefined'
++        ? require('u' + 'rl').pathToFileURL(__filename).href
++        : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src
++            || new URL('index.cjs', document.baseURI).href)));
+ const __dirname$4 = path.dirname(__filename$4);
+ 
+ const slotsLookup = JSON.parse(
+@@ -6334,7 +6354,14 @@ var M24Strategy = {
+ 
+ // Required modules
+ 
+-const __filename$3 = url.fileURLToPath((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src || new URL('index.cjs', document.baseURI).href)));
++const __filename$3 = url.fileURLToPath(
++  (typeof process !== 'undefined' && process.versions && process.versions.node)
++    ? require('u' + 'rl').pathToFileURL(__filename).href
++    : (typeof document === 'undefined'
++        ? require('u' + 'rl').pathToFileURL(__filename).href
++        : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src
++            || new URL('index.cjs', document.baseURI).href))
++);
+ const __dirname$3 = path.dirname(__filename$3);
+ 
+ /**
+@@ -6763,7 +6790,14 @@ var M25Strategy = {
+     table3Field: M25Table3Strategy
+ };
+ 
+-const __filename$2 = url.fileURLToPath((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src || new URL('index.cjs', document.baseURI).href)));
++const __filename$2 = url.fileURLToPath(
++  (typeof process !== 'undefined' && process.versions && process.versions.node)
++    ? require('u' + 'rl').pathToFileURL(__filename).href
++    : (typeof document === 'undefined'
++        ? require('u' + 'rl').pathToFileURL(__filename).href
++        : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src
++            || new URL('index.cjs', document.baseURI).href))
++);
+ const __dirname$2 = path.dirname(__filename$2);
+ 
+ let FranchiseZstdTable3FieldStrategy = {};
+@@ -7135,7 +7169,14 @@ class FranchiseFileSettings {
+     }
+ }
+ 
+-const __filename$1 = url.fileURLToPath((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src || new URL('index.cjs', document.baseURI).href)));
++const __filename$1 = url.fileURLToPath(
++  (typeof process !== 'undefined' && process.versions && process.versions.node)
++    ? require('u' + 'rl').pathToFileURL(__filename).href
++    : (typeof document === 'undefined'
++        ? require('u' + 'rl').pathToFileURL(__filename).href
++        : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src
++            || new URL('index.cjs', document.baseURI).href))
++);
+ const __dirname$1 = path.dirname(__filename$1);
+ 
+ const SCHEMA_DIRECTORY = path.join(__dirname$1, '../data/schemas');

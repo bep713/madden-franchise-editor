@@ -1,0 +1,183 @@
+{
+  "sections": [
+    {
+      "id": "general",
+      "label": "General",
+      "icon": "settings-gear-63",
+      "fields": [
+        {
+          "key": "defaultDirectory",
+          "label": "Default game save directory",
+          "type": "directory",
+          "defaultValue": null,
+          "help": "The directory to open when you choose to open a file."
+        },
+        {
+          "key": "defaultEditor",
+          "label": "Editor to open on file load",
+          "type": "dropdown",
+          "defaultValue": "open-home",
+          "options": [
+            { "label": "Home screen", "value": "open-home" },
+            { "label": "Schedule editor", "value": "open-schedule" },
+            { "label": "Table editor", "value": "open-table-editor" },
+            { "label": "Schema viewer", "value": "open-schema-viewer" },
+            { "label": "Ability editor", "value": "open-ability-editor" }
+          ],
+          "help": "Choose the editor to open when you open a new file."
+        },
+        {
+          "key": "checkForUpdates",
+          "label": "Automatically check for application updates",
+          "type": "checkbox",
+          "defaultValue": [true],
+          "options": [
+            { "label": "Check for updates on app start", "value": true }
+          ],
+          "help": "If checked, the app will check to see if a new release has been made each time you start the app."
+        },
+        {
+          "key": "autoSave",
+          "label": "Save the file after any change",
+          "type": "checkbox",
+          "defaultValue": [true],
+          "options": [{ "label": "Auto-Save", "value": true }],
+          "help": "If checked, the app will save after any change is made."
+        },
+        {
+          "key": "checkForSchemaUpdates",
+          "label": "Automatically re-scan schemas after a Madden update",
+          "type": "checkbox",
+          "defaultValue": [true],
+          "options": [{ "label": "Check for game updates", "value": true }]
+        },
+        {
+          "key": "openExcelAfterImport",
+          "label": "Open Excel after Table Export",
+          "type": "checkbox",
+          "defaultValue": [true],
+          "options": [
+            {
+              "label": "Open Excel automatically after import is complete",
+              "value": true
+            }
+          ]
+        },
+        {
+          "key": "autoUnempty",
+          "label": "Automatically un-empty rows when any field is edited (Use with caution)",
+          "type": "checkbox",
+          "defaultValue": [],
+          "options": [
+            {
+              "label": "Automatically un-empty rows when any field is edited (Use with caution)",
+              "value": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gameVersions",
+      "label": "Game Directories",
+      "icon": "folder-15",
+      "fields": [
+        {
+          "key": "madden19Directory",
+          "label": "Madden 19 game directory",
+          "type": "directory",
+          "defaultValue": "C:\\Program Files (x86)\\Origin Games\\Madden NFL 19"
+        },
+        {
+          "key": "madden20Directory",
+          "label": "Madden 20 game directory",
+          "type": "directory",
+          "defaultValue": "C:\\Program Files (x86)\\Origin Games\\Madden NFL 20"
+        },
+        {
+          "key": "madden21Directory",
+          "label": "Madden 21 game directory",
+          "type": "directory",
+          "defaultValue": "C:\\Program Files (x86)\\Origin Games\\Madden NFL 21"
+        },
+        {
+          "key": "madden22Directory",
+          "label": "Madden 22 game directory",
+          "type": "directory",
+          "defaultValue": "C:\\Program Files (x86)\\Origin Games\\Madden NFL 22"
+        },
+        {
+          "key": "madden23Directory",
+          "label": "Madden 23 game directory",
+          "type": "directory",
+          "defaultValue": "C:\\Program Files (x86)\\Origin Games\\Madden NFL 23"
+        },
+        {
+          "key": "madden24Directory",
+          "label": "Madden 24 game directory",
+          "type": "directory",
+          "defaultValue": "C:\\Program Files (x86)\\Origin Games\\Madden NFL 24"
+        },
+        {
+          "key": "madden25Directory",
+          "label": "Madden 25 game directory",
+          "type": "directory",
+          "defaultValue": "C:\\Program Files (x86)\\Origin Games\\Madden NFL 25"
+        },
+        {
+          "key": "madden26Directory",
+          "label": "Madden 26 game directory",
+          "type": "directory",
+          "defaultValue": "C:\\Program Files (x86)\\Origin Games\\Madden NFL 26"
+        }
+      ]
+    }
+  ],
+  "settingsManager": {
+    "general": {
+      "defaultDirectorySet": false,
+      "defaultEditorSet": false,
+      "checkForUpdatesSet": false,
+      "autoSaveSet": false,
+      "autoUnemptySet": false,
+      "checkForSchemaUpdatesSet": false,
+      "openExcelAfterImportSet": false
+    },
+    "gameVersions": {
+      "madden19DirectorySet": false,
+      "madden20DirectorySet": false,
+      "madden21DirectorySet": false,
+      "madden22DirectorySet": false,
+      "madden23DirectorySet": false,
+      "madden24DirectorySet": false,
+      "madden25DirectorySet": false,
+      "madden26DirectorySet": false
+    },
+    "appVersions": {
+      "4_0_0": false,
+      "4_1_0": false,
+      "4_1_1": false,
+      "4_2_0": false,
+      "4_2_1": false,
+      "4_3_0": false,
+      "4_3_1": false,
+      "4_3_2": false,
+      "4_3_3": false,
+      "4_3_4": false,
+      "4_3_5": false,
+      "4_3_6": false,
+      "4_4_0": false,
+      "4_4_1": false,
+      "4_5_0": false,
+      "4_5_1": false,
+      "4_5_2": false,
+      "4_5_3": false,
+      "4_5_4": false,
+      "4_5_5": false,
+      "4_5_6": false,
+      "4_5_7": false,
+      "4_5_8": false,
+      "4_5_9": false
+    }
+  }
+}

@@ -1,12 +1,13 @@
-const { app } = require('@electron/remote');
-
 let appVersionsService = {};
 
-appVersionsService.initialize = function () {
-    const version = app.getVersion();
-    document.querySelector('.version').innerHTML = `v${version}`;
+appVersionsService.initialize = async function () {
+  const version = await window.electronAPI.getVersion();
+  const versionElement = document.querySelector(".version");
+  if (versionElement) {
+    versionElement.innerHTML = `v${version}`;
+  }
 };
 
-appVersionsService.id = 'appVersions';
+appVersionsService.id = "appVersions";
 
 module.exports = appVersionsService;

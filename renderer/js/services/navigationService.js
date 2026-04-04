@@ -1,41 +1,44 @@
-const fs = require('fs');
-const path = require('path');
-const { ipcRenderer } = require('electron');
-const { app, dialog, getCurrentWindow } = require('@electron/remote');
+const Tab = require("./tabs/Tab");
+const TableEditorTab = require("./tabs/TableEditorTab");
 
-const Tab = require('./tabs/Tab');
-const TableEditorTab = require('./tabs/TableEditorTab');
+const Selectr = require("../libs/selectr/selectr");
+const TestUtility = require("./test-utils/TestUtility");
 
-const FranchiseFile = require('madden-franchise');
-const Selectr = require('../libs/selectr/selectr');
-const TestUtility = require('./test-utils/TestUtility');
+const utilService = require("./utilService");
+const menuService = require("./menuService.js");
+const updateService = require("./updateService");
+const welcomeService = require("./welcomeService");
+const scheduleService = require("./scheduleService");
+const reloadFileService = require("./reloadFileService");
+const savedSchemaService = require("./savedSchemaService");
+const schemaViewerService = require("./schemaViewerService");
+const abilityEditorService = require("./abilityEditorService");
+const schemaMismatchService = require("./schemaMismatchService");
+const preferencesService = require("./preferencesService");
 
-const utilService = require('./utilService');
-const menuService = require('./menuService.js');
-const updateService = require('./updateService');
-const welcomeService = require('./welcomeService');
-const scheduleService = require('./scheduleService');
-const reloadFileService = require('./reloadFileService');
-const savedSchemaService = require('./savedSchemaService');
-const schemaViewerService = require('./schemaViewerService');
-const abilityEditorService = require('./abilityEditorService');
-const schemaMismatchService = require('./schemaMismatchService');
-
-const TableEditorWrapper = require('./table-editor/TableEditorWrapper');
+const TableEditorWrapper = require("./table-editor/TableEditorWrapper");
 const tableEditorWrapper = new TableEditorWrapper();
 
-const services = [welcomeService, scheduleService, tableEditorWrapper, schemaViewerService, abilityEditorService];
-const navigationData = require('../../../data/navigation.json');
+const services = [
+  welcomeService,
+  scheduleService,
+  tableEditorWrapper,
+  schemaViewerService,
+  abilityEditorService,
+];
+const navigationData = require("../../../data/navigation.json");
 
-const PATH_TO_DOCUMENTS = app.getPath('documents');
-const MADDEN_SAVE_BASE_FOLDER = {
-  20: `${PATH_TO_DOCUMENTS}\\Madden NFL 20\\settings`,
-  21: `${PATH_TO_DOCUMENTS}\\Madden NFL 21\\saves`,
-  22: `${PATH_TO_DOCUMENTS}\\Madden NFL 22\\saves`
-};
+// These will be populated after app is ready
+let PATH_TO_DOCUMENTS = null;
+let MADDEN_SAVE_BASE_FOLDER = {};
+
+async function initializePaths() {
+  PATH_TO_DOCUMENTS = await window.electronAPI.getDocumentsPath();
+}
+
+initializePaths();
 
 setupEvents();
-setupMenu();
 attachServicesToNavigationData();
 addIpcListeners();
 
@@ -47,24 +50,30 @@ conditionallyShowCheckForUpdatesNotification();
 let navigationService = {};
 navigationService.currentlyOpenedFile = {
   path: null,
-  data: null,
+  fileId: null,
+  metadata: null,
   gameYear: null,
-  type: null
+  type: null,
 };
 
 navigationService.currentlyOpenService = null;
 navigationService.tabs = [];
 navigationService.lastWindowSize = {
   height: window.innerHeight,
-  width: window.innerWidth
+  width: window.innerWidth,
 };
 
 navigationService.generateMainNavigationTabs = function () {
   navigationService.tabs = [];
 
+  const metadata = navigationService.currentlyOpenedFile.metadata;
+  if (!metadata) return;
+
   const applicableNavigationData = navigationData.items.filter((navigation) => {
-    return (navigation.availableVersions.includes(navigationService.currentlyOpenedFile.data._gameYear)
-      && navigation.availableFormats.includes(navigationService.currentlyOpenedFile.data.type.format));
+    return (
+      navigation.availableVersions.includes(metadata.gameYear) &&
+      navigation.availableFormats.includes(metadata.format)
+    );
   });
 
   applicableNavigationData.forEach((item) => {
@@ -72,7 +81,7 @@ navigationService.generateMainNavigationTabs = function () {
     tab.name = item.text;
     tab.customClassList = item.classList;
     tab.clickListenerFunction = item.clickListener;
-    
+
     tab.isActive = false;
     tab.isClosable = false;
     tab.isMainNavigationItem = true;
@@ -82,10 +91,10 @@ navigationService.generateMainNavigationTabs = function () {
 
   // append new tab button
   let newTabButton = new Tab();
-  newTabButton.name = '+';
-  newTabButton.customClassList = ['add-tab-button'];
+  newTabButton.name = "+";
+  newTabButton.customClassList = ["add-tab-button"];
   newTabButton.isAddTabButton = true;
-  newTabButton.clickListenerFunction = 'onNewTabButtonClicked';
+  newTabButton.clickListenerFunction = "onNewTabButtonClicked";
   newTabButton.isClosable = false;
 
   navigationService.tabs.push(newTabButton);
@@ -103,28 +112,38 @@ navigationService.addTab = function (name, clickListener) {
 };
 
 navigationService.getTabByName = function (name) {
-  return navigationService.tabs.find((tab) => { return tab.name === name; });
+  return navigationService.tabs.find((tab) => {
+    return tab.name === name;
+  });
 };
 
 navigationService.getActiveTab = function () {
-  return navigationService.tabs.find((tab) => { return tab.isActive; });
+  return navigationService.tabs.find((tab) => {
+    return tab.isActive;
+  });
 };
 
 navigationService.closeTab = function (tabToClose) {
-  const tabIndexToDelete = navigationService.tabs.findIndex((tab) => { return tab === tabToClose; });
+  const tabIndexToDelete = navigationService.tabs.findIndex((tab) => {
+    return tab === tabToClose;
+  });
   navigationService.tabs.splice(tabIndexToDelete, 1);
 };
 
-navigationService.closeTabAndSelectNextAvailableIfNeeded = function (tabToClose) {
+navigationService.closeTabAndSelectNextAvailableIfNeeded = function (
+  tabToClose,
+) {
   const activeTab = navigationService.getActiveTab();
-  const currentTabIndex = navigationService.tabs.findIndex((tab) => { return tab === tabToClose; });
+  const currentTabIndex = navigationService.tabs.findIndex((tab) => {
+    return tab === tabToClose;
+  });
   navigationService.closeTab(tabToClose);
 
   if (activeTab === tabToClose) {
     // if the user closed the active tab, select the next tab to the left.
     // otherwise, stay on the active tab.
     let nextTabToTheLeft = navigationService.tabs[currentTabIndex - 1];
-  
+
     if (nextTabToTheLeft) {
       nextTabToTheLeft.isActive = true;
       navigationService[nextTabToTheLeft.clickListenerFunction]();
@@ -139,7 +158,9 @@ navigationService.selectTab = function (name) {
     previouslyActiveTab.isActive = false;
   }
 
-  let tab = navigationService.tabs.find((tab) => { return tab.name === name; });
+  let tab = navigationService.tabs.find((tab) => {
+    return tab.name === name;
+  });
 
   if (tab) {
     tab.isActive = true;
@@ -153,51 +174,51 @@ navigationService.scrollToTab = function (tabNode, options) {
 };
 
 navigationService.scrollToActiveTab = function () {
-  let targetNode = document.querySelector('.tab.active');
-  const nextTabNode = document.querySelector('.tab.active + .tab');
+  let targetNode = document.querySelector(".tab.active");
+  const nextTabNode = document.querySelector(".tab.active + .tab");
 
-  if (nextTabNode && nextTabNode.classList.contains('add-tab-button')) {
+  if (nextTabNode && nextTabNode.classList.contains("add-tab-button")) {
     // always keep the '+' button in view if user has last tab active
     targetNode = nextTabNode;
   }
 
-  navigationService.scrollToTab(targetNode, { inline: 'start' });
+  navigationService.scrollToTab(targetNode, { inline: "start" });
 };
 
 navigationService.scrollToTabOnRightOfActiveTab = function () {
-  const targetTabDom = document.querySelector('.tab.active + .tab');
-  navigationService.scrollToTab(targetTabDom, { inline: 'end' });
+  const targetTabDom = document.querySelector(".tab.active + .tab");
+  navigationService.scrollToTab(targetTabDom, { inline: "end" });
 };
 
 navigationService.generateNavigation = function () {
-  const element = document.querySelector('.tab-wrapper');
-  const rightActionButtons = document.querySelector('.right-action-buttons');
+  const element = document.querySelector(".tab-wrapper");
+  const rightActionButtons = document.querySelector(".right-action-buttons");
 
-  element.innerHTML = '';
+  element.innerHTML = "";
 
   navigationService.tabs.forEach((tab) => {
-    let navWrapper = document.createElement('div');
+    let navWrapper = document.createElement("div");
     navWrapper.innerHTML = tab.name;
     navWrapper.dataset.name = tab.name;
-    navWrapper.classList.add('tab');
+    navWrapper.classList.add("tab");
 
     if (tab.customClassList.length > 0) {
       navWrapper.classList.add(tab.customClassList);
     }
 
     if (tab.isClosable) {
-      navWrapper.classList.add('closable');
+      navWrapper.classList.add("closable");
 
-      let closeTabButton = document.createElement('div');
-      closeTabButton.classList.add('close-tab-button');
+      let closeTabButton = document.createElement("div");
+      closeTabButton.classList.add("close-tab-button");
 
-      closeTabButton.addEventListener('click', onCloseTab);
-      navWrapper.addEventListener('auxclick', (event) => {
+      closeTabButton.addEventListener("click", onCloseTab);
+      navWrapper.addEventListener("auxclick", (event) => {
         if (event.button === 1) {
           onCloseTab(event);
         }
       });
-      navWrapper.addEventListener('mousedown', (event) => {
+      navWrapper.addEventListener("mousedown", (event) => {
         if (event.button === 1) {
           event.preventDefault();
         }
@@ -207,18 +228,21 @@ navigationService.generateNavigation = function () {
     }
 
     if (tab.isActive) {
-      navWrapper.classList.add('active');
+      navWrapper.classList.add("active");
     } else {
-      navWrapper.addEventListener('click', () => {
+      navWrapper.addEventListener("click", () => {
         let previouslyActiveTab = navigationService.getActiveTab();
 
         if (previouslyActiveTab) {
           previouslyActiveTab.isActive = false;
 
           if (previouslyActiveTab instanceof TableEditorTab) {
-            previouslyActiveTab.tableRow = tableEditorWrapper.lastSelectedCell.row;
-            previouslyActiveTab.tableColumn = tableEditorWrapper.lastSelectedCell.column;
-            previouslyActiveTab.tabHistory = tableEditorWrapper.selectedTableEditor.navSteps;
+            previouslyActiveTab.tableRow =
+              tableEditorWrapper.lastSelectedCell.row;
+            previouslyActiveTab.tableColumn =
+              tableEditorWrapper.lastSelectedCell.column;
+            previouslyActiveTab.tabHistory =
+              tableEditorWrapper.selectedTableEditor.navSteps;
           }
         }
 
@@ -227,7 +251,7 @@ navigationService.generateNavigation = function () {
       });
     }
 
-    element.addEventListener('wheel', (evt) => {
+    element.addEventListener("wheel", (evt) => {
       evt.preventDefault();
       element.scrollLeft += evt.deltaY;
     });
@@ -238,7 +262,7 @@ navigationService.generateNavigation = function () {
       event.stopPropagation();
       navigationService.closeTabAndSelectNextAvailableIfNeeded(tab);
       navigationService.generateNavigation();
-    };
+    }
   });
 
   navigationService.scrollToActiveTab();
@@ -259,7 +283,7 @@ navigationService.onNewTabButtonClicked = function () {
     newTabButton.isActive = false;
   }
 
-  let newTab = navigationService.addTab('New Tab', 'onNewTabClicked');
+  let newTab = navigationService.addTab("New Tab", "onNewTabClicked");
   newTab.isActive = true;
 
   navigationService.onNewTabClicked();
@@ -272,56 +296,58 @@ navigationService.onNewTabClicked = function () {
     tableEditorWrapper.initialTableToSelect = {
       tableId: activeTab.tableId,
       recordIndex: activeTab.tableRow,
-      columnIndex: activeTab.tableColumn
+      columnIndex: activeTab.tableColumn,
     };
   }
 
   navigationService.onTableEditorClicked();
 };
 
-navigationService.onHomeClicked = function () {
+navigationService.onHomeClicked = async function () {
   onNavigate(welcomeService);
-  navigationService.loadPage('welcome.html');
+  await navigationService.loadPage("welcome.html");
   postGenerateNavigation();
 
   welcomeService.start(navigationService.currentlyOpenedFile);
 };
 
-navigationService.onScheduleEditorClicked = function () {
-  navigationService.selectTab('Schedule');
+navigationService.onScheduleEditorClicked = async function () {
+  navigationService.selectTab("Schedule");
   onNavigate(scheduleService);
-  navigationService.loadPage('schedule.html');
+  await navigationService.loadPage("schedule.html");
   appendNavigation();
   postGenerateNavigation();
 
-  scheduleService.loadSchedule(navigationService.currentlyOpenedFile.data);
+  scheduleService.loadSchedule(navigationService.currentlyOpenedFile.fileId);
 };
 
-navigationService.onTableEditorClicked = function () {
+navigationService.onTableEditorClicked = async function () {
   // custom logic to find the table editor tab
-  let placeholderTab = navigationService.tabs.find((tab) => { return tab.name === 'Open Table...'});
+  let placeholderTab = navigationService.tabs.find((tab) => {
+    return tab.name === "Open Table...";
+  });
   if (placeholderTab) {
     // The first call to this function will remove the placeholder tab
     // and replace with a table editor tab.
     navigationService.closeTab(placeholderTab);
-    let newTab = navigationService.addTab('New Tab', 'onNewTabClicked');
+    let newTab = navigationService.addTab("New Tab", "onNewTabClicked");
     newTab.isActive = true;
-  }
-  else {
+  } else {
     // check if a table editor tab is active
     let activeTab = navigationService.getActiveTab();
-    
+
     if (!(activeTab instanceof TableEditorTab)) {
-      let firstTableEditorTab = navigationService.tabs.find((tab) => { return tab instanceof TableEditorTab; });
+      let firstTableEditorTab = navigationService.tabs.find((tab) => {
+        return tab instanceof TableEditorTab;
+      });
 
       if (firstTableEditorTab) {
         activeTab.isActive = false;
         firstTableEditorTab.isActive = true;
         return navigationService.onNewTabClicked();
-      } 
-      else {
+      } else {
         // there are no open table editor tabs
-        let newTab = navigationService.addTab('New Tab', 'onNewTabClicked');
+        let newTab = navigationService.addTab("New Tab", "onNewTabClicked");
         newTab.isActive = true;
 
         if (activeTab) {
@@ -332,11 +358,11 @@ navigationService.onTableEditorClicked = function () {
   }
 
   onNavigate(tableEditorWrapper);
-  navigationService.loadPage('table-editor.html');
+  await navigationService.loadPage("table-editor.html");
   appendNavigation();
   postGenerateNavigation();
 
-  tableEditorWrapper.start(navigationService.currentlyOpenedFile.data);
+  tableEditorWrapper.start(navigationService.currentlyOpenedFile.fileId);
 
   const activeTab = navigationService.getActiveTab();
 
@@ -346,75 +372,63 @@ navigationService.onTableEditorClicked = function () {
   }
 };
 
-navigationService.onSchemaViewerClicked = function () {
-  navigationService.selectTab('Schemas');
+navigationService.onSchemaViewerClicked = async function () {
+  navigationService.selectTab("Schemas");
   onNavigate(schemaViewerService);
-  navigationService.loadPage('schema-viewer.html');
+  await navigationService.loadPage("schema-viewer.html");
   appendNavigation();
   postGenerateNavigation();
 
-  schemaViewerService.start(navigationService.currentlyOpenedFile.data);
+  schemaViewerService.start(navigationService.currentlyOpenedFile.fileId);
 };
 
-navigationService.onAbilityEditorClicked = function () {
-  navigationService.selectTab('Abilities');
+navigationService.onAbilityEditorClicked = async function () {
+  navigationService.selectTab("Abilities");
   onNavigate(abilityEditorService);
-  navigationService.loadPage('ability-editor.html');
+  await navigationService.loadPage("ability-editor.html");
   appendNavigation();
   postGenerateNavigation();
 
-  abilityEditorService.start(navigationService.currentlyOpenedFile.data);
+  abilityEditorService.start(navigationService.currentlyOpenedFile.fileId);
 };
 
 navigationService.onLeagueEditorClicked = function () {
   navigationService.selectTab(leagueEditorService.name);
   onNavigate(leagueEditorService);
-  navigationService.loadPage('league-editor.html');
+  navigationService.loadPage("league-editor.html");
   appendNavigation();
   postGenerateNavigation();
 
-  // leagueEditorService.start(navigationService.currentlyOpenedFile.data);
+  // leagueEditorService.start(navigationService.currentlyOpenedFile.fileId);
 };
 
 navigationService.refreshCurrentPage = function () {
-  navigationService[navigationService.currentlyOpenService.navigationData.clickListener]();
+  navigationService[
+    navigationService.currentlyOpenService.navigationData.clickListener
+  ]();
 };
 
-navigationService.loadPage = function (pagePath) {
-  const page = fs.readFileSync(path.join(__dirname, '..\\..\\', pagePath));
-  const content = document.querySelector('#content');
+navigationService.loadPage = async function (pagePath) {
+  const fullPath = `renderer/${pagePath}`;
+  const page = await window.electronAPI.fs.readFile(fullPath);
+  const content = document.querySelector("#content");
   content.innerHTML = page;
 };
 
 navigationService.runCloseFunction = function () {
-  if (navigationService.currentlyOpenService && navigationService.currentlyOpenService.onClose) {
+  if (
+    navigationService.currentlyOpenService &&
+    navigationService.currentlyOpenService.onClose
+  ) {
     navigationService.currentlyOpenService.onClose();
   }
 };
 
-if (process.env.NODE_ENV === 'development') {
-  // DEV_openFile();
-}
-
-if (process.env.NODE_ENV === 'testing') {
+if (process.env.NODE_ENV === "testing") {
   new TestUtility(welcomeService, tableEditorWrapper);
 }
 
 module.exports = navigationService;
-
-function DEV_openFile() {
-  // welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER + '\\CAREER-M03TEST_MOD');
-  // welcomeService.eventEmitter.emit('open-file', MADDEN_SAVE_BASE_FOLDER[21] + '\\CAREER-SCHEDULETEST_Replace');
-  welcomeService.eventEmitter.emit('open-file', `${MADDEN_SAVE_BASE_FOLDER[22]}\\CAREER-TEST`);
-  // welcomeService.eventEmitter.emit('open-file', 'D:\\Projects\\Madden 20\\CAREER-TESTNEW');
-  // welcomeService.eventEmitter.emit('open-file', `D:\\Projects\\Madden 20\\FranchiseData\\Franchise-Tuning-binary.FTC`);
-
-  setTimeout(() => {
-    // ipcRenderer.send('show-preferences-window');
-    navigationService.onTableEditorClicked();
-    // navigationService.onScheduleEditorClicked();
-  }, 0);
-};
 
 function onNavigate(service) {
   navigationService.runCloseFunction();
@@ -424,200 +438,236 @@ function onNavigate(service) {
     menuService.enableMenuIds(service.navigationData.menu.enable);
     menuService.disableMenuIds(service.navigationData.menu.disable);
   }
-};
+}
 
-function postGenerateNavigation() {
-  
-};
+function postGenerateNavigation() {}
 
 function addIpcListeners() {
-  ipcRenderer.on('show-check-for-update-notification', function () {
-    console.log('show checkf or update notification');
-  });
-  
-  ipcRenderer.on('save-file', function () {
-    navigationService.currentlyOpenedFile.data.save();
+  window.electronAPI.on("show-check-for-update-notification", function () {
+    console.log("show check for update notification");
   });
 
-  ipcRenderer.on('save-file-sync', function () {
-    navigationService.currentlyOpenedFile.data.save(null, {
-      sync: true
-    });
+  window.electronAPI.on("save-file", async function () {
+    const fileId = navigationService.currentlyOpenedFile.fileId;
+    if (fileId) {
+      await window.franchiseAPI.saveFile(fileId);
+    }
   });
 
-  ipcRenderer.on('close-file', function () {
+  window.electronAPI.on("save-file-sync", async function () {
+    const fileId = navigationService.currentlyOpenedFile.fileId;
+    if (fileId) {
+      await window.franchiseAPI.saveFile(fileId, { sync: true });
+    }
+  });
+
+  window.electronAPI.on("close-file", function () {
     navigationService.currentlyOpenedFile.path = null;
-    navigationService.currentlyOpenedFile.data = null;
+    navigationService.currentlyOpenedFile.fileId = null;
+    navigationService.currentlyOpenedFile.metadata = null;
     navigationService.currentlyOpenedFile.gameYear = null;
     navigationService.currentlyOpenedFile.type = null;
     navigationService.onHomeClicked();
 
-    ipcRenderer.send('close-file');
+    window.electronAPI.send("close-file");
   });
 
-  ipcRenderer.on('save-new-file', function () {
-    const savePath = dialog.showSaveDialogSync(getCurrentWindow(), {
-      'title': 'Save as...',
-      'defaultPath': ipcRenderer.sendSync('getPreferences').general.defaultDirectory
+  window.electronAPI.on("save-new-file", async function () {
+    const result = await window.electronAPI.showSaveDialog({
+      title: "Save as...",
+      defaultPath: preferencesService.getValue("general.defaultDirectory"),
     });
-    
+
+    const savePath = result.filePath;
     if (savePath) {
-      navigationService.currentlyOpenedFile.data.filePath = savePath;
-      ipcRenderer.send('file-loaded', {
-        'path': savePath,
-        'gameYear': navigationService.currentlyOpenedFile.data._gameYear
+      const fileId = navigationService.currentlyOpenedFile.fileId;
+      await window.franchiseAPI.saveFileAs(fileId, savePath);
+
+      navigationService.currentlyOpenedFile.path = savePath;
+      window.electronAPI.send("file-loaded", {
+        path: savePath,
+        type: navigationService.currentlyOpenedFile.type,
+        fileId: fileId,
       });
 
       welcomeService.addRecentFile(savePath);
-      navigationService.currentlyOpenedFile.data.save();
     }
   });
 
-  ipcRenderer.on('load-schema', function (_, args) {
-    if (!navigationService.currentlyOpenedFile.path) { return; }
-    utilService.show(document.querySelector('.loader-wrapper'));
-      
-    setTimeout(() => {
-      navigationService.currentlyOpenedFile.data = new FranchiseFile(navigationService.currentlyOpenedFile.path, {
-        'schemaOverride': {
-          'path': args.path
-        }
-      });
+  window.electronAPI.on("load-schema", async function (args) {
+    if (!navigationService.currentlyOpenedFile.path) {
+      return;
+    }
+    utilService.show(document.querySelector(".loader-wrapper"));
 
-      navigationService.currentlyOpenedFile.data.on('error', (err) => {
-        ipcRenderer.send('load-schema-done', {
-          'status': 'error',
-          'error': err
+    try {
+      const fileId = navigationService.currentlyOpenedFile.fileId;
+      const result = await window.franchiseAPI.loadSchema(
+        fileId,
+        args.path,
+        args.saveSchema,
+      );
+
+      if (result.error) {
+        window.electronAPI.send("load-schema-done", {
+          status: "error",
+          error: result.error,
         });
-      });
+      } else {
+        navigationService.currentlyOpenedFile.metadata = result.metadata;
+        navigationService.currentlyOpenedFile.gameYear =
+          result.metadata.gameYear;
+        navigationService.currentlyOpenedFile.type = result.metadata.type;
 
-      navigationService.currentlyOpenedFile.data.on('ready', () => {
         navigationService.refreshCurrentPage();
+        navigationService.generateMainNavigationTabs();
 
-        if (args.saveSchema) {
-          savedSchemaService.saveSchema(args.path, {
-            'gameYear': navigationService.currentlyOpenedFile.data.schemaList.meta.gameYear,
-            'major': navigationService.currentlyOpenedFile.data.schemaList.meta.major,
-            'minor': navigationService.currentlyOpenedFile.data.schemaList.meta.minor,
-            'fileExtension': path.extname(navigationService.currentlyOpenedFile.data.schemaList.path)
-          })
-        }
+        utilService.hide(document.querySelector(".loader-wrapper"));
 
-        utilService.hide(document.querySelector('.loader-wrapper'));
-
-        ipcRenderer.send('load-schema-done', {
-          'status': 'successful'
+        window.electronAPI.send("load-schema-done", {
+          status: "successful",
         });
+      }
+    } catch (err) {
+      window.electronAPI.send("load-schema-done", {
+        status: "error",
+        error: err.message,
       });
-    }, 10);
+      utilService.hide(document.querySelector(".loader-wrapper"));
+    }
   });
 
-  ipcRenderer.on('get-schema-info-request', function (event, arg) {
-    if (navigationService.currentlyOpenedFile.data) {
-      ipcRenderer.send('get-schema-info-response', {
-        'expected': navigationService.currentlyOpenedFile.data.expectedSchemaVersion,
-        'loaded': navigationService.currentlyOpenedFile.data.schemaList.meta,
-        'autoSelect': arg
+  window.electronAPI.on("get-schema-info-request", function (arg) {
+    if (navigationService.currentlyOpenedFile.metadata) {
+      window.electronAPI.send("get-schema-info-response", {
+        expected:
+          navigationService.currentlyOpenedFile.metadata.expectedSchemaVersion,
+        loaded: navigationService.currentlyOpenedFile.metadata.schemaList?.meta,
+        autoSelect: arg,
       });
     }
   });
 
-  ipcRenderer.on('currently-searching-response', function (event, arg) {
+  window.electronAPI.on("currently-searching-response", function (arg) {
     if (!arg) {
-      schemaMismatchService.initialize(navigationService.currentlyOpenedFile.data);
-      schemaMismatchService.eventEmitter.on('navigate', function () {
+      schemaMismatchService.initialize(
+        navigationService.currentlyOpenedFile.fileId,
+      );
+      schemaMismatchService.eventEmitter.on("navigate", function () {
         navigationService.onSchemaViewerClicked();
       });
     }
   });
-};
+}
 
 function setupEvents() {
-  welcomeService.eventEmitter.on('open-file', function (file) {
+  welcomeService.eventEmitter.on("open-file", async function (file) {
     navigationService.currentlyOpenedFile.path = file;
-    navigationService.currentlyOpenedFile.data = createNewFranchiseFile(file);
-    
-    // assume m22 if no game year is set
-    if (!navigationService.currentlyOpenedFile.data._gameYear) {
-      navigationService.currentlyOpenedFile.data._gameYear = 22;
+
+    try {
+      const result = await window.franchiseAPI.openFile(file, {
+        schemaDirectory: savedSchemaService.getSchemaPath(),
+      });
+
+      if (result.error) {
+        // Schema not found, prompt user to pick one
+        await window.electronAPI.showMessageBox({
+          message:
+            "The selected file does not contain schema data. Please select one on the following screen.",
+        });
+        showSchemaManager();
+        return;
+      }
+
+      const { fileId, metadata } = result;
+
+      navigationService.currentlyOpenedFile.fileId = fileId;
+      navigationService.currentlyOpenedFile.metadata = metadata;
+
+      // assume m22 if no game year is set
+      if (!metadata.gameYear) {
+        metadata.gameYear = 22;
+      }
+      if (!metadata.type?.year) {
+        metadata.type = metadata.type || {};
+        metadata.type.year = 22;
+      }
+
+      navigationService.currentlyOpenedFile.gameYear = metadata.gameYear;
+      navigationService.currentlyOpenedFile.type = metadata.type;
+
+      tableEditorWrapper.initialTableToSelect = null; // reset table to select on new file
+      navigationService.generateMainNavigationTabs();
+
+      window.electronAPI.send("file-loaded", {
+        path: navigationService.currentlyOpenedFile.path,
+        type: navigationService.currentlyOpenedFile.type,
+        fileId: fileId,
+      });
+
+      backupFile(fileId);
+
+      window.electronAPI.send("is-currently-searching");
+
+      // Set up event listeners for saving/saved
+      window.franchiseAPI.onFileSaving(function () {
+        window.electronAPI.send("saving");
+        reloadFileService.hide();
+      });
+
+      window.franchiseAPI.onFileSaved(function () {
+        window.electronAPI.send("saved");
+      });
+    } catch (err) {
+      console.error("Error opening file:", err);
     }
-
-    if (!navigationService.currentlyOpenedFile.data.type.year) {
-      navigationService.currentlyOpenedFile.data.type.year = 22;
-    }
-
-    navigationService.currentlyOpenedFile.gameYear = navigationService.currentlyOpenedFile.data._gameYear;
-    navigationService.currentlyOpenedFile.type = navigationService.currentlyOpenedFile.data.type;
-
-    tableEditorWrapper.initialTableToSelect = null; // reset table to select on new file
-    navigationService.generateMainNavigationTabs();
-
-    ipcRenderer.send('file-loaded', {
-      'path': navigationService.currentlyOpenedFile.path,
-      'type': navigationService.currentlyOpenedFile.type
-    });
-
-    backupFile(navigationService.currentlyOpenedFile);
-
-    ipcRenderer.send('is-currently-searching');
-
-    schemaMismatchService.eventEmitter.on('schema-quick-search', function () {
-      ipcRenderer.send('schema-quick-search');
-    });
-
-    navigationService.currentlyOpenedFile.data.on('saving', function () {
-      ipcRenderer.send('saving');
-      reloadFileService.hide();
-    });
-  
-    navigationService.currentlyOpenedFile.data.on('saved', function (game) {
-      ipcRenderer.send('saved');
-    });
   });
 
-  welcomeService.eventEmitter.on('open-schedule', function () {
+  welcomeService.eventEmitter.on("open-schedule", function () {
     navigationService.onScheduleEditorClicked();
   });
-  
-  welcomeService.eventEmitter.on('open-table-editor', function () {
+
+  welcomeService.eventEmitter.on("open-table-editor", function () {
     navigationService.onTableEditorClicked();
   });
 
-  welcomeService.eventEmitter.on('open-schema-viewer', function () {
+  welcomeService.eventEmitter.on("open-schema-viewer", function () {
     navigationService.onSchemaViewerClicked();
   });
 
-  welcomeService.eventEmitter.on('open-ability-editor', function () {
+  welcomeService.eventEmitter.on("open-ability-editor", function () {
     navigationService.onAbilityEditorClicked();
   });
 
-  scheduleService.eventEmitter.on('open-table-editor', function (tableId, index) {
-    tableEditorWrapper.initialTableToSelect = {
-      tableId: tableId,
-      recordIndex: index,
-      columnIndex: 0
-    };
+  scheduleService.eventEmitter.on(
+    "open-table-editor",
+    function (tableId, index) {
+      tableEditorWrapper.initialTableToSelect = {
+        tableId: tableId,
+        recordIndex: index,
+        columnIndex: 0,
+      };
 
-    navigationService.runCloseFunction();
+      navigationService.runCloseFunction();
 
-    let scheduleTab = navigationService.getTabByName('Schedule');
-    scheduleTab.isActive = false;
+      let scheduleTab = navigationService.getTabByName("Schedule");
+      scheduleTab.isActive = false;
 
-    // check if placeholder tab exists
-    const placeholderTab = navigationService.getTabByName('Open Table...');
-    if (placeholderTab) {
-      navigationService.onTableEditorClicked();
-    }
-    else {
-      navigationService.onNewTabButtonClicked();
-    }
-  });
+      // check if placeholder tab exists
+      const placeholderTab = navigationService.getTabByName("Open Table...");
+      if (placeholderTab) {
+        navigationService.onTableEditorClicked();
+      } else {
+        navigationService.onNewTabButtonClicked();
+      }
+    },
+  );
 
-  schemaViewerService.eventEmitter.on('change-schema', function () {
+  schemaViewerService.eventEmitter.on("change-schema", function () {
     showSchemaManager();
   });
 
-  tableEditorWrapper.eventEmitter.on('table-changed', (data) => {
+  tableEditorWrapper.eventEmitter.on("table-changed", (data) => {
     let tab = navigationService.getActiveTab();
     tab.name = `${data.tableId} - ${data.name}`;
     tab.tableId = data.tableId;
@@ -625,19 +675,21 @@ function setupEvents() {
     navigationService.generateNavigation();
   });
 
-  tableEditorWrapper.eventEmitter.on('table-editor:new-tab', () => {
+  tableEditorWrapper.eventEmitter.on("table-editor:new-tab", () => {
     const previouslyActiveTab = navigationService.getActiveTab();
 
     if (previouslyActiveTab instanceof TableEditorTab) {
-      previouslyActiveTab.tableColumn = tableEditorWrapper.lastSelectedCell.column;
+      previouslyActiveTab.tableColumn =
+        tableEditorWrapper.lastSelectedCell.column;
       previouslyActiveTab.tableRow = tableEditorWrapper.lastSelectedCell.row;
-      previouslyActiveTab.tabHistory = tableEditorWrapper.selectedTableEditor.navSteps;
+      previouslyActiveTab.tabHistory =
+        tableEditorWrapper.selectedTableEditor.navSteps;
     }
-    
+
     navigationService.onNewTabButtonClicked();
   });
 
-  window.addEventListener('resize', () => {
+  window.addEventListener("resize", () => {
     let isGrowing = false;
 
     if (window.innerWidth > navigationService.lastWindowSize.width) {
@@ -646,91 +698,74 @@ function setupEvents() {
 
     navigationService.lastWindowSize = {
       height: window.innerHeight,
-      width: window.innerWidth
+      width: window.innerWidth,
     };
 
-    let tabWrapper = document.querySelector('.tab-wrapper');
+    let tabWrapper = document.querySelector(".tab-wrapper");
 
-    if (tabWrapper && !tabWrapper.classList.contains('show-scrollbar')) {
-      tabWrapper.classList.add('show-scrollbar');
-      
+    if (tabWrapper && !tabWrapper.classList.contains("show-scrollbar")) {
+      tabWrapper.classList.add("show-scrollbar");
+
       setTimeout(() => {
-        tabWrapper.classList.remove('show-scrollbar');
+        tabWrapper.classList.remove("show-scrollbar");
       }, 400);
     }
 
     if (isGrowing) {
       navigationService.scrollToTabOnRightOfActiveTab();
-    }
-    else {
+    } else {
       navigationService.scrollToActiveTab();
     }
   });
-};
+}
 
 function showSchemaManager() {
-  ipcRenderer.send('show-schema-manager', {
-    'expected': navigationService.currentlyOpenedFile.data.expectedSchemaVersion,
-    'loaded': navigationService.currentlyOpenedFile.data.schemaList.meta
+  const metadata = navigationService.currentlyOpenedFile.metadata;
+  if (!metadata) return;
+
+  window.electronAPI.send("show-schema-manager", {
+    expected: metadata.expectedSchemaVersion,
+    loaded: metadata.schemaList?.meta ?? null,
   });
 }
 
-function createNewFranchiseFile(file) {
-  let newFile;
-
-  newFile = new FranchiseFile(file, {
-    'schemaDirectory': savedSchemaService.getSchemaPath()
-  });
-
-  newFile.once('error', pickSchema);
-  newFile.on('ready', () => {
-    newFile.off('error', pickSchema);
-  });
-
-  return newFile;
-
-  function pickSchema() {
-    dialog.showMessageBoxSync(getCurrentWindow(), {
-      'message': 'The selected file does not contain schema data. Please select one on the following screen.'
-    });
-    
-    showSchemaManager();
-  };
-};
-
-function setupMenu() {
-  menuService.initializeMenu();  
-};
-
 function attachServicesToNavigationData() {
   services.forEach((service) => {
-    service.navigationData = navigationData.items.find((nav) => { return nav.service === service.name; });
+    service.navigationData = navigationData.items.find((nav) => {
+      return nav.service === service.name;
+    });
   });
-};
+}
 
 function appendNavigation() {
   navigationService.generateNavigation();
-};
+}
 
-function backupFile(franchiseFile) {
-  if (!fs.existsSync('temp/backup')) {
-    if (!fs.existsSync('temp')) {
-      fs.mkdirSync('temp');
-    }
-    
-    fs.mkdirSync('temp/backup');
+async function backupFile(fileId) {
+  const backupDir = "temp/backup";
+  const exists = await window.electronAPI.fs.exists(backupDir);
+  if (!exists) {
+    await window.electronAPI.fs.mkdir(backupDir);
   }
 
-  fs.writeFile('temp/backup/backup.bak', franchiseFile.data.rawContents, function (err) {
-    if (err) {
-      throw err;
+  try {
+    const result = await window.franchiseAPI.getRawContents(fileId);
+    if (result.data) {
+      await window.electronAPI.fs.writeFileBase64(
+        `${backupDir}/backup.bak`,
+        result.data,
+      );
     }
-  });
-};
+  } catch (err) {
+    console.error("Failed to backup file:", err);
+  }
+}
 
 function conditionallyShowCheckForUpdatesNotification() {
-  const checkForUpdates = ipcRenderer.sendSync('getPreferences').general.checkForUpdates;
+  const checkForUpdates = preferencesService.getValue(
+    "general.checkForUpdates",
+  );
   if (checkForUpdates === undefined || checkForUpdates === null) {
     updateService.showCheckForUpdatesNotification();
   }
-};
+}

@@ -1,166 +1,201 @@
-const fs = require('fs');
-const path = require('path');
-const electron = require('electron');
+const path = require("path");
+const electron = require("electron");
 const ipcRenderer = electron.ipcRenderer;
-const { getCurrentWindow } = require('@electron/remote');
 
-const preferencesService = require('./js/services/preferencesService');
+const preferencesService = require("./services/preferencesService");
 
-const pageData = require('../data/settingsManagerData.json');
-const currentWindow = getCurrentWindow();
-const preferences = ipcRenderer.sendSync('getPreferences');
+// Static imports for settings manager services (required for browserify bundling)
+const appVersionsService = require("./services/settings-manager/appVersionsService");
+const gameSettingsService = require("./services/settings-manager/gameSettingsService");
+const gameVersionsService = require("./services/settings-manager/gameVersionsService");
 
-initializeSettingsManager(preferences);
-addIpcListeners();
+// Map service IDs to their modules for runtime lookup
+const serviceRegistry = {
+  appVersions: appVersionsService,
+  general: gameSettingsService,
+  gameVersions: gameVersionsService,
+};
 
-const pagesToShow = getPagesToShow(preferences);
+const pageData = require("../../data/settingsManagerData.json");
 
-if (pagesToShow.length > 0) {
-    currentWindow.show();
+let preferences;
 
+initializeSettingsManagerAsync();
+
+async function initializeSettingsManagerAsync() {
+  preferences = await preferencesService.getAll();
+
+  // Guard against undefined/null preferences from IPC
+  if (!preferences || typeof preferences !== "object") {
+    preferences = preferencesService.getPreferenceKeys();
+  }
+
+  await initializeSettingsManager(preferences);
+  addIpcListeners();
+
+  const pagesToShow = getPagesToShow(preferences);
+
+  if (pagesToShow.length > 0) {
+    // Window visibility is now managed via IPC
     setTimeout(() => {
-        currentWindow.moveTop();
-        showPages(pagesToShow);
+      showPages(pagesToShow);
     }, 1000);
-} else {
-    currentWindow.hide();
+  }
 }
 
 function addIpcListeners() {
-    ipcRenderer.on('show-release-notes-dialog', () => {
-        let pagesToShow = [];
-        
-        for (let page in preferences.settingsManager) {
-            pagesToShow.push(page);
-        }
-
-        pagesToShow = pagesToShow.map((page) => {
-            return pageData.items.find((data) => { return data.id === page; });
-        }).sort((a, b) => { 
-            return a.order - b.order;
-        });
-
-        showPages(pagesToShow);
-    });
-
-    ipcRenderer.on('show-settings-dialog', () => {
-        
-    });
-};
-
-function showPages(pages) {
-    let currentIndex = 0;
-    const services = loadServices(pages);
-    
-    loadPageAtMetaIndex(currentIndex);
-
-    function loadPageAtMetaIndex(index) {
-        const currentPage = pages[index];
-
-        if (!currentPage) {
-            setAllSettingsAsShown(preferences);
-            currentWindow.hide();
-            return;
-        }
-
-        const currentService = services[index];
-
-        loadPage(currentPage);
-        currentService.initialize();
-
-        const backButton = document.querySelector(currentPage.backButtonSelector);
-        const continueButton = document.querySelector(currentPage.continueButtonSelector);
-
-        if (index === 0) {
-            backButton.classList.add('hidden');
-        }
-        
-        if ((index + 1) === pages.length) {
-            if (currentPage.id === 'appVersions') {
-                continueButton.innerHTML = 'Close';
-            }
-            else {
-                continueButton.innerHTML = continueButton.innerHTML.replace('continue', 'close').replace('Continue', 'Close');
-            }
-        }
-
-        backButton.addEventListener('click', () => {
-            loadPageAtMetaIndex(index - 1);
-        });
-
-        continueButton.addEventListener('click', () => {
-            loadPageAtMetaIndex(index + 1);
-        });
-    };
-
-    function loadServices(pages) {
-        return pages.map((page) => {
-            return require(page.service);
-        });
-    };
-};
-
-function loadPage(page) {
-    const pageContent = fs.readFileSync(path.join(__dirname, page.page));
-    const content = document.querySelector('#settings-content');
-    content.innerHTML = pageContent;
-};
-
-function initializeSettingsManager(preferences) {
-    const preferencesSchema = preferencesService.getPreferenceKeys();
-    setMissingKeys(preferencesSchema, preferences);        
-    ipcRenderer.sendSync('setPreferences', preferences);
-};
-
-function setMissingKeys(schema, objectToCheck) {
-    for (let category in schema) {
-        if (objectToCheck[category] === null || objectToCheck[category] === undefined) {
-            objectToCheck[category] = schema[category];
-        }
-        else {
-            const nextLevelDown = schema[category];
-
-            if (typeof(nextLevelDown) === 'object' && !Array.isArray(nextLevelDown)) {
-                setMissingKeys(schema[category], objectToCheck[category]);
-            }
-        }
-    }
-};
-
-function getPagesToShow(preferences) {
+  ipcRenderer.on("show-release-notes-dialog", () => {
     let pagesToShow = [];
 
     for (let page in preferences.settingsManager) {
-        if (checkPage(preferences.settingsManager[page])) {
-            pagesToShow.push(page);
-        }
+      pagesToShow.push(page);
     }
 
-    return pagesToShow.map((page) => {
-        return pageData.items.find((data) => { return data.id === page; });
-    }).sort((a, b) => { 
+    pagesToShow = pagesToShow
+      .map((page) => {
+        return pageData.items.find((data) => {
+          return data.id === page;
+        });
+      })
+      .sort((a, b) => {
         return a.order - b.order;
+      });
+
+    showPages(pagesToShow);
+  });
+
+  ipcRenderer.on("show-settings-dialog", () => {});
+}
+
+function showPages(pages) {
+  let currentIndex = 0;
+  const services = loadServices(pages);
+
+  loadPageAtMetaIndex(currentIndex);
+
+  async function loadPageAtMetaIndex(index) {
+    const currentPage = pages[index];
+
+    if (!currentPage) {
+      setAllSettingsAsShown();
+      window.close();
+      return;
+    }
+
+    const currentService = services[index];
+
+    await loadPage(currentPage);
+    currentService.initialize();
+
+    const backButton = document.querySelector(currentPage.backButtonSelector);
+    const continueButton = document.querySelector(
+      currentPage.continueButtonSelector,
+    );
+
+    if (index === 0) {
+      backButton.classList.add("hidden");
+    }
+
+    if (index + 1 === pages.length) {
+      if (currentPage.id === "appVersions") {
+        continueButton.innerHTML = "Close";
+      } else {
+        continueButton.innerHTML = continueButton.innerHTML
+          .replace("continue", "close")
+          .replace("Continue", "Close");
+      }
+    }
+
+    backButton.addEventListener("click", () => {
+      loadPageAtMetaIndex(index - 1);
     });
 
-    function checkPage(page) {
-        for (let key in page) {
-            if (!page[key]) {
-                return true;
-            }
-        }
+    continueButton.addEventListener("click", () => {
+      loadPageAtMetaIndex(index + 1);
+    });
+  }
 
-        return false;
-    };
-};
+  function loadServices(pages) {
+    return pages.map((page) => {
+      return serviceRegistry[page.id];
+    });
+  }
+}
 
-function setAllSettingsAsShown() {
-    const preferences = ipcRenderer.sendSync('getPreferences');
-    
-    for (let page in preferences.settingsManager) {
-        for (let key in preferences.settingsManager[page]) {
-            preferences.settingsManager[page][key] = true;
-        }
+async function loadPage(page) {
+  const pageContent = await window.electronAPI.fs.readFile(page.page);
+  const content = document.querySelector("#settings-content");
+  content.innerHTML = pageContent;
+}
+
+async function initializeSettingsManager(preferences) {
+  const preferencesSchema = preferencesService.getPreferenceKeys();
+  setMissingKeys(preferencesSchema, preferences);
+  await preferencesService.setAll(preferences);
+}
+
+function setMissingKeys(schema, objectToCheck) {
+  for (let category in schema) {
+    if (
+      objectToCheck[category] === null ||
+      objectToCheck[category] === undefined
+    ) {
+      objectToCheck[category] = schema[category];
+    } else {
+      const nextLevelDown = schema[category];
+      const currentValue = objectToCheck[category];
+
+      if (
+        typeof nextLevelDown === "object" &&
+        !Array.isArray(nextLevelDown) &&
+        currentValue !== null &&
+        currentValue !== undefined &&
+        typeof currentValue === "object"
+      ) {
+        setMissingKeys(schema[category], currentValue);
+      }
+    }
+  }
+}
+
+function getPagesToShow(preferences) {
+  let pagesToShow = [];
+
+  for (let page in preferences.settingsManager) {
+    if (checkPage(preferences.settingsManager[page])) {
+      pagesToShow.push(page);
+    }
+  }
+
+  return pagesToShow
+    .map((page) => {
+      return pageData.items.find((data) => {
+        return data.id === page;
+      });
+    })
+    .sort((a, b) => {
+      return a.order - b.order;
+    });
+
+  function checkPage(page) {
+    for (let key in page) {
+      if (!page[key]) {
+        return true;
+      }
     }
 
-    ipcRenderer.sendSync('setPreferences', preferences);
-};
+    return false;
+  }
+}
+
+async function setAllSettingsAsShown() {
+  const preferences = await preferencesService.getAll();
+
+  for (let page in preferences.settingsManager) {
+    for (let key in preferences.settingsManager[page]) {
+      preferences.settingsManager[page][key] = true;
+    }
+  }
+
+  await preferencesService.setAll(preferences);
+}

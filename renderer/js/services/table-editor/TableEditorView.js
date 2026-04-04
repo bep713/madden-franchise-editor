@@ -1,416 +1,440 @@
-const Selectr = require('../../libs/selectr/selectr');
+const Selectr = require("../../libs/selectr/selectr");
 const { default: Handsontable } = require("handsontable");
 
-const utilService = require('../utilService');
-const contextMenuService = require('./contextMenuService');
-const referenceViewerService = require('../referenceViewerService');
+const utilService = require("../utilService");
+const contextMenuService = require("./contextMenuService");
+const referenceViewerService = require("../referenceViewerService");
 
 class TableEditorView {
-    constructor(file, container, parent, initialTableToSelect) {
-        this.file = file;
-        this.baseContainer = document.querySelector(container);
-        this.parent = parent;
+  constructor(fileId, container, parent, initialTableToSelect) {
+    this.fileId = fileId;
+    this.file = null; // No longer holds raw file object
+    this.baseContainer = document.querySelector(container);
+    this.parent = parent;
 
-        this.navSteps = [];
-        this.rowIndexToSelect = 0;
-        this.tableSelector = null;
-        this.selectedTable = null;
-        this.columnIndexToSelect = 0;
-        this.showHeaderTypes = false;
-        this.currentlySelectedRow = 0;
-        this.initialTableToSelect = initialTableToSelect;
-        this.currentlySelectedColumn = 0;
-        this.loader = document.querySelector('.loader-wrapper');
-        this.referenceEditorSelector = this.parent.referenceEditorSelector;
+    this.navSteps = [];
+    this.rowIndexToSelect = 0;
+    this.tableSelector = null;
+    this.selectedTable = null;
+    this.columnIndexToSelect = 0;
+    this.showHeaderTypes = false;
+    this.currentlySelectedRow = 0;
+    this.initialTableToSelect = initialTableToSelect;
+    this.currentlySelectedColumn = 0;
+    this.loader = document.querySelector(".loader-wrapper");
+    this.referenceEditorSelector = this.parent.referenceEditorSelector;
 
-        this.hot = new Handsontable(this.baseContainer, {
-            // filters: true,
-            width: '100%',
-            height: '100%',
-            rowHeaders: true,
-            // dropdownMenu: true,
-            manualRowResize: true,
-            manualColumnResize: true,
-            currentRowClassName: 'active-row',
-            licenseKey: 'non-commercial-and-evaluation',
-            afterChange: this._processChanges.bind(this),
-            afterSelection: this._processSelection.bind(this),
-            contextMenu: contextMenuService.getContextMenu(this),
-            rowHeaders: function (index) {
-                return index;
-            },
+    this.hot = new Handsontable(this.baseContainer, {
+      // filters: true,
+      width: "100%",
+      height: "100%",
+      rowHeaders: true,
+      // dropdownMenu: true,
+      manualRowResize: true,
+      manualColumnResize: true,
+      currentRowClassName: "active-row",
+      licenseKey: "non-commercial-and-evaluation",
+      afterChange: this._processChanges.bind(this),
+      afterSelection: this._processSelection.bind(this),
+      contextMenu: contextMenuService.getContextMenu(this),
+      rowHeaders: function (index) {
+        return index;
+      },
+    });
+
+    this._addEventListeners();
+    this._initialLoad();
+  }
+
+  _processSelection(row, col, row2, col2) {
+    this.currentlySelectedRow = row;
+    this.currentlySelectedColumn = col;
+  }
+
+  _processChanges(changes, source) {
+    if (changes && source !== "onEmpty") {
+      // Settings are now managed in main process
+      // For now, we'll track changes locally and sync via IPC
+
+      changes.forEach((change) => {
+        const recordIndex = this.hot.toPhysicalRow(change[0]);
+        const key = change[1];
+        const oldValue = change[2];
+        const newValue = change[3];
+
+        const colNumber = this.selectedTable.offsetTable.findIndex((offset) => {
+          return offset.name === key;
         });
 
-        this._addEventListeners();
-        this._initialLoad();
-    };
+        try {
+          const record = this.selectedTable.records[recordIndex];
+          const recordWasEmpty = record.isEmpty;
 
-    _processSelection(row, col, row2, col2) {
-        this.currentlySelectedRow = row;
-        this.currentlySelectedColumn = col;
-    };
+          let field = record.fields[key];
+          field.value = newValue;
 
-    _processChanges(changes, source) {
-        if (changes && source !== 'onEmpty') {
-            const flipSaveOnChange = this.file.settings.saveOnChange;
-            this.file.settings.saveOnChange = false;
-        
-            changes.forEach((change) => {
-                const recordIndex = this.hot.toPhysicalRow(change[0]);
-                const key = change[1];
-                const oldValue = change[2];
-                const newValue = change[3];
-        
-                const colNumber = this.selectedTable.offsetTable.findIndex((offset) => { return offset.name === key; });
-        
-                try {
-                    const record = this.selectedTable.records[recordIndex];
-                    const recordWasEmpty = record.isEmpty;
+          if (field.value !== newValue) {
+            this.hot.setDataAtCell(recordIndex, colNumber, field.value);
+          }
 
-                    let field = record.fields[key];
-                    field.value = newValue;
-            
-                    if (field.value !== newValue) {
-                        this.hot.setDataAtCell(recordIndex, colNumber, field.value);
-                    }
+          // check if the record was empty and is no longer empty after the change
+          if (recordWasEmpty && !record.isEmpty) {
+            // if so, we need to update all fields in the first 4 bytes of the record
+            // We need to iterate over every empty record because their empty record reference may have changed.
+            let changes = [];
 
-                    // check if the record was empty and is no longer empty after the change
-                    if (recordWasEmpty && !record.isEmpty) {
-                        // if so, we need to update all fields in the first 4 bytes of the record
-                        // We need to iterate over every empty record because their empty record reference may have changed.
-                        let changes = [];
-                        
-                        record.fieldsArray.filter((field) => {
-                            return field.offset.offset < 32;
-                        }).forEach((field, index) => {
-                            const colNum = this.selectedTable.offsetTable.findIndex((offset) => { return offset.name === field.key; });
-                            changes.push([recordIndex, colNum, field.value]);
-                        });
+            record.fieldsArray
+              .filter((field) => {
+                return field.offset.offset < 32;
+              })
+              .forEach((field, index) => {
+                const colNum = this.selectedTable.offsetTable.findIndex(
+                  (offset) => {
+                    return offset.name === field.key;
+                  },
+                );
+                changes.push([recordIndex, colNum, field.value]);
+              });
 
-                        
-
-                        this.hot.setDataAtCell(changes, 'onEmpty');
-                    }
-                }
-                catch (err) {
-                    this.hot.setDataAtCell(recordIndex, colNumber, oldValue);
-                    console.warn(err);
-                }
-            });
-        
-            if (flipSaveOnChange) {
-                this.file.save();
-                this.file.settings.saveOnChange = true;
-            }
+            this.hot.setDataAtCell(changes, "onEmpty");
+          }
+        } catch (err) {
+          this.hot.setDataAtCell(recordIndex, colNumber, oldValue);
+          console.warn(err);
         }
+      });
+
+      // Save via IPC if auto-save is enabled
+      // This would need to check preferences and call window.franchiseAPI.saveFile(this.fileId)
+      // For now, we'll trigger the save through the parent wrapper
+      if (this.parent && this.parent.fileId) {
+        window.franchiseAPI.saveFile(this.parent.fileId);
+      }
+    }
+  }
+
+  _addEventListeners() {
+    const jumpToColumnModal = document.querySelector(".jump-to-column-modal");
+    const underlay = document.querySelector(".underlay");
+    const jumpRow = document.querySelector(".jump-row");
+
+    const columnSelect = document.querySelector("#available-columns");
+    let columnSelectr = new Selectr(columnSelect, {
+      data: null,
+    });
+
+    const closeModalButton = document.querySelector(".close-modal");
+    closeModalButton.addEventListener("click", () => {
+      jumpToColumnModal.classList.add("hidden");
+      underlay.classList.add("hidden");
+    });
+
+    const goJumpToColumnListener = () => {
+      const value = columnSelectr.getValue();
+      let index = columnSelectr.data.findIndex((opt) => {
+        return opt.value === value;
+      });
+
+      if (index === -1) {
+        index = 0;
+      }
+
+      jumpToColumnModal.classList.add("hidden");
+      underlay.classList.add("hidden");
+
+      let row = parseInt(jumpRow.value);
+
+      if (!row || row < 0) {
+        row = 0;
+      }
+
+      this.navSteps.push({
+        tableId: this.selectedTable.header.tableId,
+        recordIndex: row,
+        column: index,
+      });
+
+      window.removeEventListener("keypress", onEnterJumpToColumn);
+      this.hot.selectCell(row, index);
     };
 
-    _addEventListeners() {
-        const jumpToColumnModal = document.querySelector('.jump-to-column-modal');
-        const underlay = document.querySelector('.underlay');
-        const jumpRow = document.querySelector('.jump-row');
-        
-        const columnSelect = document.querySelector('#available-columns');
-        let columnSelectr = new Selectr(columnSelect, {
-            data: null
-        });
-    
-        const closeModalButton = document.querySelector('.close-modal');
-        closeModalButton.addEventListener('click', () => {
-            jumpToColumnModal.classList.add('hidden');
-            underlay.classList.add('hidden');
-        });
+    const onEnterJumpToColumn = (e) => {
+      if (e.which === 13) {
+        goJumpToColumnListener();
+      }
+    };
 
-        const goJumpToColumnListener = () => {
-            const value = columnSelectr.getValue();
-            let index = columnSelectr.data.findIndex((opt) => { return opt.value === value; });
-          
-            if (index === -1) {
-              index = 0;
+    const jumpToColumnListener = () => {
+      jumpRow.value = this.currentlySelectedRow;
+      const headers = this._formatHeaders(this.selectedTable);
+      const options = headers.map((header) => {
+        return {
+          value: header,
+          text: header,
+        };
+      });
+
+      columnSelectr.removeAll();
+      columnSelectr.add(options);
+
+      setTimeout(() => {
+        columnSelect.focus();
+      }, 200);
+
+      window.addEventListener("keydown", onEnterJumpToColumn);
+
+      jumpToColumnModal.classList.remove("hidden");
+      underlay.classList.remove("hidden");
+
+      setTimeout(() => {
+        document.querySelector(".modal .selectr-selected").click();
+
+        setTimeout(() => {
+          document.querySelector(".modal .selectr-input")?.focus();
+        }, 200);
+      }, 50);
+    };
+
+    const jumpToColumnButton = document.querySelector(".jump-to-column");
+    jumpToColumnButton.addEventListener("click", jumpToColumnListener);
+
+    const goJumpToColumnButton = document.querySelector(
+      ".btn-go-jump-to-column",
+    );
+    goJumpToColumnButton.addEventListener("click", goJumpToColumnListener);
+
+    const backLink = document.querySelector(".back-link");
+    backLink.addEventListener("click", () => {
+      if (this.navSteps.length >= 2) {
+        this.navSteps.pop();
+
+        const navStep = this.navSteps[this.navSteps.length - 1];
+        const table = this.file.getTableById(navStep.tableId);
+
+        this.rowIndexToSelect = navStep.recordIndex;
+        this.columnIndexToSelect = navStep.column;
+
+        this.tableSelector.setValue(navStep.tableId);
+        this.navSteps.pop();
+
+        this.selectedTable = table;
+
+        setTimeout(() => {
+          if (this.navSteps.length === 1) {
+            backLink.classList.add("disabled");
+          }
+        }, 200);
+      }
+    });
+  }
+
+  _initialLoad() {
+    const tableChoices = this.file.tables.map((table, index) => {
+      return {
+        value: table.header.tableId,
+        text: `${table.header.tableId} - ${table.name}`,
+        "data-search-params": [index, table.header.tableId, table.name],
+      };
+    });
+
+    if (tableChoices.length === 0) {
+      console.log(
+        "cannot load the table editor because the file appears to be corrupt.",
+      );
+    }
+
+    const tableSelector = document.querySelector(".table-selector");
+    this.tableSelector = new Selectr(tableSelector, {
+      data: tableChoices,
+    });
+
+    const backLink = document.querySelector(".back-link");
+
+    this.tableSelector.on("selectr.change", (option) => {
+      console.time("change");
+      utilService.show(this.loader);
+
+      setTimeout(() => {
+        const tableId = parseInt(this.tableSelector.getValue(true).value);
+        const table = this.file.getTableById(tableId);
+
+        console.time("read records");
+        table
+          .readRecords()
+          .then((table) => {
+            console.timeEnd("read records");
+            this.loadTable(table);
+
+            this.hot.selectCell(
+              this.rowIndexToSelect,
+              this.columnIndexToSelect,
+            );
+
+            this.rowIndexToSelect = 0;
+            this.columnIndexToSelect = 0;
+
+            const selectedCell = this.hot.getSelectedLast();
+            if (selectedCell) {
+              this.navSteps.push({
+                tableId: table.header.tableId,
+                recordIndex: selectedCell[0],
+                column: selectedCell[1],
+              });
             }
-          
-            jumpToColumnModal.classList.add('hidden');
-            underlay.classList.add('hidden');
-          
-            let row = parseInt(jumpRow.value);
-          
-            if (!row || row < 0) {
-              row = 0;
-            }
-          
+          })
+          .catch((err) => {
+            console.log(err);
+            this.loadTable(table);
+
             this.navSteps.push({
-              'tableId': this.selectedTable.header.tableId,
-              'recordIndex': row,
-              'column': index
+              tableId: table.header.tableId,
+              recordIndex: 0,
+              column: 0,
             });
-          
-            window.removeEventListener('keypress', onEnterJumpToColumn);
-            this.hot.selectCell(row, index);
-        };
+          })
+          .finally(() => {
+            this.selectedTable = table;
 
-        const onEnterJumpToColumn = (e) => {
-            if (e.which === 13) {
-              goJumpToColumnListener();
-            }
-        };
-        
-        const jumpToColumnListener = () => {
-            jumpRow.value = this.currentlySelectedRow;
-            const headers = this._formatHeaders(this.selectedTable);
-            const options = headers.map((header) => {
-                return {
-                    'value': header,
-                    'text': header
-                };
-            });
-        
-            columnSelectr.removeAll();
-            columnSelectr.add(options);
-        
-            setTimeout(() => {
-              columnSelect.focus();
-            }, 200);
-        
-            window.addEventListener('keydown', onEnterJumpToColumn);
-        
-            jumpToColumnModal.classList.remove('hidden');
-            underlay.classList.remove('hidden');
-        
-            setTimeout(() => {
-              document.querySelector('.modal .selectr-selected').click();
-        
-              setTimeout(() => {
-                document.querySelector('.modal .selectr-input')?.focus();
-              }, 200);
-            }, 50);
-        };
-
-        const jumpToColumnButton = document.querySelector('.jump-to-column');
-        jumpToColumnButton.addEventListener('click', jumpToColumnListener);
-    
-        const goJumpToColumnButton = document.querySelector('.btn-go-jump-to-column');
-        goJumpToColumnButton.addEventListener('click', goJumpToColumnListener);
-        
-        const backLink = document.querySelector('.back-link');
-        backLink.addEventListener('click', () => {
-        
             if (this.navSteps.length >= 2) {
-                this.navSteps.pop();
-            
-                const navStep = this.navSteps[this.navSteps.length - 1];
-                const table = this.file.getTableById(navStep.tableId);
-            
-                this.rowIndexToSelect = navStep.recordIndex;
-                this.columnIndexToSelect = navStep.column;
-            
-                this.tableSelector.setValue(navStep.tableId);
-                this.navSteps.pop();
-            
-                this.selectedTable = table;
-        
-                setTimeout(() => {
-                    if (this.navSteps.length === 1) {
-                        backLink.classList.add('disabled');
-                    }
-                }, 200);
+              backLink.classList.remove("disabled");
             }
+
+            utilService.hide(this.loader);
+
+            this.parent._toggleAddPinButton(table.header.tableId);
+            this.parent._onTableChanged(table.header.tableId, table.name);
+
+            console.timeEnd("change");
+          });
+      }, 100);
+    });
+
+    if (this.initialTableToSelect) {
+      this.rowIndexToSelect = this.initialTableToSelect.recordIndex;
+      this.columnIndexToSelect = this.initialTableToSelect.columnIndex;
+
+      this.tableSelector.setValue(this.initialTableToSelect.tableId);
+      this.initialTableToSelect = null;
+    } else {
+      this.tableSelector.setValue(tableChoices[1].value);
+
+      const tableToLoad = this.file.getAllTablesByName(
+        tableChoices[1].text.substring(tableChoices[1].text.indexOf(" ") + 3),
+      );
+      this.selectedTable = tableToLoad[tableToLoad.length - 1];
+    }
+  }
+
+  loadTable(table) {
+    console.time("get data");
+    const data = this._formatTable(table);
+    console.timeEnd("get data");
+    const headers = this._formatHeaders(table);
+    const columns = this._formatColumns(table);
+
+    // this.hot.loadData(data);
+    this.hot.updateSettings({
+      data: data,
+      colHeaders: headers,
+      columns: columns,
+      colWidths: this._calculateColumnWidths(columns, table),
+    });
+
+    this.hot.selectCell(this.rowIndexToSelect, this.columnIndexToSelect);
+
+    utilService.hide(this.loader);
+  }
+
+  _formatTable(table) {
+    return table.records.map((record) => {
+      return record.fieldsArray.reduce((accumulator, currentValue) => {
+        accumulator[currentValue.key] = currentValue.value;
+        return accumulator;
+      }, {});
+    });
+  }
+
+  _formatHeaders(table) {
+    if (table.offsetTable) {
+      if (this.showHeaderTypes) {
+        return table.offsetTable.map((offset) => {
+          return `${offset.name} <div class="header-type">${offset.type}</div>`;
         });
-    };
-
-    _initialLoad() {
-        const tableChoices = this.file.tables.map((table, index) => {
-            return {
-              'value': table.header.tableId,
-              'text': `${table.header.tableId} - ${table.name}`,
-              'data-search-params': [index, table.header.tableId, table.name]
-            };
+      } else {
+        return table.offsetTable.map((offset) => {
+          return offset.name;
         });
-        
-        if (tableChoices.length === 0) {
-            console.log('cannot load the table editor because the file appears to be corrupt.');
-        }
-    
-        const tableSelector = document.querySelector('.table-selector');
-        this.tableSelector = new Selectr(tableSelector, {
-            data: tableChoices
-        });
-    
-        const backLink = document.querySelector('.back-link');
-    
-        this.tableSelector.on('selectr.change', (option) => {
-            console.time('change');
-            utilService.show(this.loader);
-        
-            setTimeout(() => {
-                const tableId = parseInt(this.tableSelector.getValue(true).value);
-                const table = this.file.getTableById(tableId);
+      }
+    } else {
+      return [];
+    }
+  }
 
-                console.time('read records');        
-                table.readRecords().then((table) => {
-                    console.timeEnd('read records');
-                    this.loadTable(table);
-
-                    this.hot.selectCell(this.rowIndexToSelect, this.columnIndexToSelect);
-                
-                    this.rowIndexToSelect = 0;
-                    this.columnIndexToSelect = 0;
-                    
-                    const selectedCell = this.hot.getSelectedLast();
-                    if (selectedCell) {
-                        this.navSteps.push({
-                            'tableId': table.header.tableId,
-                            'recordIndex': selectedCell[0],
-                            'column': selectedCell[1]
-                        });     
-                    }       
-                })
-                .catch((err) => {
-                    console.log(err);
-                    this.loadTable(table);
-                
-                    this.navSteps.push({
-                        'tableId': table.header.tableId,
-                        'recordIndex': 0,
-                        'column': 0
-                    });
-                })
-                .finally(() => {
-                    this.selectedTable = table;
-                
-                    if (this.navSteps.length >= 2) {
-                        backLink.classList.remove('disabled');
-                    }
-
-                    utilService.hide(this.loader);
-                
-                    this.parent._toggleAddPinButton(table.header.tableId);
-                    this.parent._onTableChanged(table.header.tableId, table.name);
-
-                    console.timeEnd('change');
-                });
-            }, 100);
-        });
-        
-        if (this.initialTableToSelect) {
-            this.rowIndexToSelect = this.initialTableToSelect.recordIndex;
-            this.columnIndexToSelect = this.initialTableToSelect.columnIndex;
-        
-            this.tableSelector.setValue(this.initialTableToSelect.tableId);
-            this.initialTableToSelect = null;
-        } else {
-            this.tableSelector.setValue(tableChoices[1].value);
-        
-            const tableToLoad = this.file.getAllTablesByName(tableChoices[1].text.substring(tableChoices[1].text.indexOf(' ') + 3));
-            this.selectedTable = tableToLoad[tableToLoad.length - 1];
-        }
-    };
-
-    loadTable(table) {
-        console.time('get data');
-        const data = this._formatTable(table);
-        console.timeEnd('get data');
-        const headers = this._formatHeaders(table);
-        const columns = this._formatColumns(table);
-
-        // this.hot.loadData(data);
-        this.hot.updateSettings({
-            data: data,
-            colHeaders: headers,
-            columns: columns,
-            colWidths: this._calculateColumnWidths(columns, table)
-        });
-
-        this.hot.selectCell(this.rowIndexToSelect, this.columnIndexToSelect);
-
-        utilService.hide(this.loader);
-    };
-
-    _formatTable(table) {
-        return table.records.map((record) => {
-            return record.fieldsArray.reduce((accumulator, currentValue) => {
-                    accumulator[currentValue.key] = currentValue.value;
-                    return accumulator;
-            }, {});
-        });
-    };
-
-    _formatHeaders(table) {
-        if (table.offsetTable) {
-            if (this.showHeaderTypes) {
-                return table.offsetTable.map((offset) => {
-                    return `${offset.name} <div class="header-type">${offset.type}</div>`;
-                });
-            } else {
-                return table.offsetTable.map((offset) => {
-                    return offset.name;
-                });
-            }
-        } else {
-            return [];
-        }
-    };
-
-    _formatColumns(table) {
-        if (table.offsetTable) {
-            return table.offsetTable.map((offset) => {
-                return {
-                    'data': offset.name,
-                    'renderer': getRendererType.bind(this)(offset),
-                    'wordWrap': false,
-                    'editor': offset.enum || offset.type === 'bool' ? 'dropdown' : 'text',
-                    'source': offset.enum ? offset.enum.members.map((member) => { return member.name; }) : offset.type === 'bool' ? ['true', 'false'] : []
-                };
-            });
-        } else {
-            return [];
-        }
-
-        function getRendererType(offset) {
-            if (offset.isReference) {
-                return this.parent.referenceRenderer.renderer.bind(this.parent.referenceRenderer);
-            }
-            else if (offset.valueInThirdTable) {
-                return this.parent.blobRenderer.renderer.bind(this.parent.blobRenderer)
-            }
-            else if (offset.enum || offset.type === 'bool') {
-                return 'dropdown';
-            }
-            else {
-                return 'text';
-            }
+  _formatColumns(table) {
+    if (table.offsetTable) {
+      return table.offsetTable.map((offset) => {
+        return {
+          data: offset.name,
+          renderer: getRendererType.bind(this)(offset),
+          wordWrap: false,
+          editor: offset.enum || offset.type === "bool" ? "dropdown" : "text",
+          source: offset.enum
+            ? offset.enum.members.map((member) => {
+                return member.name;
+              })
+            : offset.type === "bool"
+              ? ["true", "false"]
+              : [],
         };
-    };
+      });
+    } else {
+      return [];
+    }
 
-    _calculateColumnWidths(columns, table) {
-        return columns.map((col, index) => {
-            const offset = table.offsetTable[index];
-            const colMinWidth = ((col.data.length * 9) + 26);
-            let calculatedWidth = 0;
-        
-            if (offset.isReference || offset.enum) {
-                const typeLength = ((offset.type.length + 6) * 9) + 35;
-                calculatedWidth = typeLength > 350 ? typeLength : 350;
-            }
-            else if (offset.valueInThirdTable) {
-                calculatedWidth = 700;
-            }
-            else if (offset.maxLength) {
-                calculatedWidth = (offset.maxLength * 9) + 26;
-            }
-            else if (offset.type === 'bool') {
-                calculatedWidth = 80;
-            }
-            else {
-                calculatedWidth = (offset.length * 9) + 26;
-            }
-        
-            return colMinWidth > calculatedWidth ? colMinWidth : calculatedWidth;
-        });
-    };
+    function getRendererType(offset) {
+      if (offset.isReference) {
+        return this.parent.referenceRenderer.renderer.bind(
+          this.parent.referenceRenderer,
+        );
+      } else if (offset.valueInThirdTable) {
+        return this.parent.blobRenderer.renderer.bind(this.parent.blobRenderer);
+      } else if (offset.enum || offset.type === "bool") {
+        return "dropdown";
+      } else {
+        return "text";
+      }
+    }
+  }
 
-    showReferenceViewer(referencedRecordData, references) {
-        referenceViewerService.showReferenceViewer(referencedRecordData, references);
-    };
-};
+  _calculateColumnWidths(columns, table) {
+    return columns.map((col, index) => {
+      const offset = table.offsetTable[index];
+      const colMinWidth = col.data.length * 9 + 26;
+      let calculatedWidth = 0;
+
+      if (offset.isReference || offset.enum) {
+        const typeLength = (offset.type.length + 6) * 9 + 35;
+        calculatedWidth = typeLength > 350 ? typeLength : 350;
+      } else if (offset.valueInThirdTable) {
+        calculatedWidth = 700;
+      } else if (offset.maxLength) {
+        calculatedWidth = offset.maxLength * 9 + 26;
+      } else if (offset.type === "bool") {
+        calculatedWidth = 80;
+      } else {
+        calculatedWidth = offset.length * 9 + 26;
+      }
+
+      return colMinWidth > calculatedWidth ? colMinWidth : calculatedWidth;
+    });
+  }
+
+  showReferenceViewer(referencedRecordData, references) {
+    referenceViewerService.showReferenceViewer(
+      referencedRecordData,
+      references,
+    );
+  }
+}
 
 module.exports = TableEditorView;

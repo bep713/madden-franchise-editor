@@ -1,127 +1,154 @@
-const elementCreationUtil = require('./elementCreationUtil');
+const elementCreationUtil = require("./elementCreationUtil");
+const preferencesService = require("../preferencesService");
 
 let settingsManagerUtil = {};
 
 settingsManagerUtil.getNewPreferences = function (preferences, category) {
-    return Object.entries(preferences.settingsManager[category])
-        .filter((setting) => { 
-            return setting[1] === false;
-        })
-        .map((entry) => {
-            return entry[0];
-        });
+  return Object.entries(preferences.settingsManager[category])
+    .filter((setting) => {
+      return setting[1] === false;
+    })
+    .map((entry) => {
+      return entry[0];
+    });
 };
 
-settingsManagerUtil.getFieldMetadata = function (fields, preferences, category) {
-    const newPreferences = settingsManagerUtil.getNewPreferences(preferences, category);
+settingsManagerUtil.getFieldMetadata = function (
+  fields,
+  preferences,
+  category,
+) {
+  const newPreferences = settingsManagerUtil.getNewPreferences(
+    preferences,
+    category,
+  );
 
-    return fields.map((field) => {
-        const isNewField = newPreferences.findIndex((pref) => { 
-            return pref === field.key + 'Set';
-        }) > -1;
+  return fields.map((field) => {
+    const isNewField =
+      newPreferences.findIndex((pref) => {
+        return pref === field.key + "Set";
+      }) > -1;
 
-        field.isNewField = isNewField;
-        return field;
-    });  
+    field.isNewField = isNewField;
+    return field;
+  });
 };
 
 settingsManagerUtil.addListeners = function (preferences) {
-    const savePreferences = function () {
-        ipcRenderer.sendSync('setPreferences', preferences);
-    };
-    
-    const continueButton = document.querySelector('.continue-btn');
-    continueButton.addEventListener('click', savePreferences);
+  const savePreferences = async function () {
+    await preferencesService.setAll(preferences);
+  };
 
-    const previousButton = document.querySelector('.back-btn');
-    previousButton.addEventListener('click', savePreferences);
+  const continueButton = document.querySelector(".continue-btn");
+  continueButton.addEventListener("click", savePreferences);
+
+  const previousButton = document.querySelector(".back-btn");
+  previousButton.addEventListener("click", savePreferences);
 };
 
-settingsManagerUtil.createFields = function (category) {
-    const preferenceOptions = ipcRenderer.sendSync('getSections');
-    const preferences = ipcRenderer.sendSync('getPreferences');
+settingsManagerUtil.createFields = async function (category) {
+  const preferenceOptions = await window.electronAPI.preferences.getSections();
+  const preferences = preferencesService.get();
 
-    settingsManagerUtil.addListeners(preferences);
+  if (!preferences) {
+    throw new Error("Preferences not loaded. Call preferencesService.load() first.");
+  }
 
-    const section = preferenceOptions.find((section) => {
-        return section.id === category;
+  settingsManagerUtil.addListeners(preferences);
+
+  const section = preferenceOptions.find((section) => {
+    return section.id === category;
+  });
+
+  if (!section) {
+    throw new Error(`Preference section "${category}" not found.`);
+  }
+
+  const fields = section.form.groups
+    .map((group) => {
+      return group.fields;
+    })
+    .flat();
+
+  const oldFieldWrapper = document.querySelector(".old-fields");
+  const newFieldWrapper = document.querySelector(".new-fields");
+
+  const fieldMetadata = settingsManagerUtil.getFieldMetadata(
+    fields,
+    preferences,
+    category,
+  );
+
+  const newFields = fieldMetadata.filter((field) => {
+    return field.isNewField;
+  });
+
+  if (newFields.length === 0) {
+    newFieldWrapper.classList.add("hidden");
+  } else {
+    newFields.forEach((field) => {
+      createNewField(field, newFieldWrapper, category);
     });
+  }
 
-    const fields = section.form.groups.map((group) => {
-        return group.fields;
-    }).flat();
+  const oldFields = fieldMetadata.filter((field) => {
+    return field.isNewField === false;
+  });
 
-    const oldFieldWrapper = document.querySelector('.old-fields');
-    const newFieldWrapper = document.querySelector('.new-fields');
-
-    const fieldMetadata = settingsManagerUtil.getFieldMetadata(fields, preferences, category);
-
-    const newFields = fieldMetadata.filter((field) => {
-        return field.isNewField;
+  if (oldFields.length === 0) {
+    oldFieldWrapper.classList.add("hidden");
+  } else {
+    oldFields.forEach((field) => {
+      createNewField(field, oldFieldWrapper, category);
     });
+  }
 
-    if (newFields.length === 0) {
-        newFieldWrapper.classList.add('hidden');
-    }
-    else {
-        newFields.forEach((field) => {
-            createNewField(field, newFieldWrapper, category);
-        });
-    }
-
-    const oldFields = fieldMetadata.filter((field) => {
-        return field.isNewField === false;
+  function createNewField(field, parentElement, category) {
+    const currentValue = getPreferenceKeyValue(field.key, category);
+    const element = elementCreationUtil.createField(field, currentValue);
+    parentElement.appendChild(element);
+    element.addEventListener("setting-change", function (e) {
+      setPreferenceKeyValue(field, e.detail, category);
     });
-    
-    if (oldFields.length === 0) {
-        oldFieldWrapper.classList.add('hidden');
-    }
-    else {
-        oldFields.forEach((field) => {
-            createNewField(field, oldFieldWrapper, category);
-        });
-    }
+  }
 
-    function createNewField (field, parentElement, category) {
-        const currentValue = getPreferenceKeyValue(field.key, category);
-        const element = elementCreationUtil.createField(field, currentValue);
-        parentElement.appendChild(element);
-        element.addEventListener('setting-change', function (e) {
-            setPreferenceKeyValue(field, e.detail, category);
-        });
-    };
+  function getPreferenceKeyValue(key, category) {
+    if (
+      preferences[category] &&
+      preferences[category][key] !== null &&
+      preferences[category][key] !== undefined
+    ) {
+      return preferences[category][key];
+    } else {
+      console.warn(`Preference key "${key}" not found in category "${category}"`);
+      return undefined;
+    }
+  }
 
-    function getPreferenceKeyValue(key, category) {
-        if (preferences[category][key] !== null && preferences[category][key] !== undefined) {
-            return preferences[category][key];
-        }
-        else {
-            console.log('here');
-        }
-    };
-    
-    function setPreferenceKeyValue(field, value, category) {
-        if (preferences[category][field.key] !== null && preferences[category][field.key] !== undefined) {
-            switch(field.type) {
-                case 'checkbox':
-                    if (value) {
-                        preferences[category][field.key] = [value];
-                    } 
-                    else {
-                        preferences[category][field.key] = [];
-                    }
-    
-                    break;
-                case 'text':
-                default:
-                    preferences[category][field.key] = value;
-                    break;
-            }
-        }
-        else {
-            console.log('here');
-        }
-    };
+  function setPreferenceKeyValue(field, value, category) {
+    if (
+      preferences[category] &&
+      preferences[category][field.key] !== null &&
+      preferences[category][field.key] !== undefined
+    ) {
+      switch (field.type) {
+        case "checkbox":
+          if (value) {
+            preferences[category][field.key] = [value];
+          } else {
+            preferences[category][field.key] = [];
+          }
+
+          break;
+        case "text":
+        default:
+          preferences[category][field.key] = value;
+          break;
+      }
+    } else {
+      console.warn(`Cannot set preference "${field.key}" in category "${category}" - key does not exist`);
+    }
+  }
 };
 
 module.exports = settingsManagerUtil;

@@ -10,11 +10,20 @@ module.exports = {
                         const selectedRows = tableEditorView.hot.getSelectedLast();
                         return selectedRows[0] !== selectedRows[2];
                     },
-                    callback: (key, selection, clickEvent) => {
+                    callback: async (key, selection, clickEvent) => {
                         const selectedTableId = tableEditorView.selectedTable.header.tableId;
                         const selectedRow = selection[0].end.row;
 
-                        const references = tableEditorView.file.getReferencesToRecord(selectedTableId, selectedRow);
+                        const result = await window.franchiseAPI.getReferencesToRecord(
+                            tableEditorView.fileId,
+                            selectedTableId,
+                            selectedRow
+                        );
+
+                        if (result.error) {
+                            console.error('Failed to get references:', result.error);
+                            return;
+                        }
 
                         const selectedRecordData = {
                             tableId: selectedTableId,
@@ -22,7 +31,7 @@ module.exports = {
                             recordIndex: selectedRow
                         };
 
-                        tableEditorView.showReferenceViewer(selectedRecordData, references)
+                        tableEditorView.showReferenceViewer(selectedRecordData, result.data)
                     }
                 },
                 'open_new_tab': {

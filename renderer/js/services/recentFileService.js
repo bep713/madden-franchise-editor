@@ -1,66 +1,37 @@
-const fs = require('fs');
-const path = require('path');
-const { app } = require('@electron/remote');
+const recentFileService = {};
 
-const PATH_TO_RECENT_FILES = path.join(app.getPath('userData'), 'recentFiles.json');
-const MAX_RECENT_FILES = 10;
-
-let recentFileService = {};
-recentFileService.recentFiles = [];
-
-recentFileService.initialize = () => {
-  if (fs.existsSync(PATH_TO_RECENT_FILES)) {
-    try {
-      recentFileService.recentFiles = JSON.parse(fs.readFileSync(PATH_TO_RECENT_FILES));
-    }
-    catch (err) {
-      recentFileService.recentFiles = [];
-    }
+recentFileService.initialize = async () => {
+  if (!window.electronAPI?.recentFiles) {
+    throw new Error("Recent files API not available");
   }
-  else {
-    recentFileService.recentFiles = [];
-  }
+  return window.electronAPI.recentFiles.initialize();
 };
 
-recentFileService.addFile = (filePath) => {
-  const indexInRecents = recentFileService.recentFiles.findIndex((file) => {
-    return file.path === filePath;
-  });
-
-  if (indexInRecents >= 0) {
-    recentFileService.recentFiles[indexInRecents].time = Date.now();
+recentFileService.addFile = async (filePath) => {
+  if (!filePath || typeof filePath !== "string") {
+    throw new Error("Invalid file path");
   }
-  else {
-    recentFileService.recentFiles.push({
-      'path': filePath,
-      'time': Date.now()
-    });
-
-    if (recentFileService.recentFiles.length > MAX_RECENT_FILES) {
-      recentFileService.recentFiles = recentFileService.getRecentFiles().slice(0, MAX_RECENT_FILES);
-    }
+  if (!window.electronAPI?.recentFiles) {
+    throw new Error("Recent files API not available");
   }
-
-  writeToRecentFilesStore(recentFileService.recentFiles);
+  return window.electronAPI.recentFiles.addFile(filePath);
 };
 
-recentFileService.removeFile = (filePath) => {
-  const indexInRecents = recentFileService.recentFiles.findIndex((file) => {
-    return file.path === filePath;
-  });
-
-  if (indexInRecents >= 0) {
-    recentFileService.recentFiles.splice(indexInRecents, 1);
-    writeToRecentFilesStore(recentFileService.recentFiles);
+recentFileService.removeFile = async (filePath) => {
+  if (!filePath || typeof filePath !== "string") {
+    throw new Error("Invalid file path");
   }
+  if (!window.electronAPI?.recentFiles) {
+    throw new Error("Recent files API not available");
+  }
+  return window.electronAPI.recentFiles.removeFile(filePath);
 };
 
-recentFileService.getRecentFiles = () => {
-  return recentFileService.recentFiles.sort((a, b) => { return b.time - a.time; });
+recentFileService.getRecentFiles = async () => {
+  if (!window.electronAPI?.recentFiles) {
+    throw new Error("Recent files API not available");
+  }
+  return window.electronAPI.recentFiles.getRecentFiles();
 };
 
 module.exports = recentFileService;
-
-function writeToRecentFilesStore(data) {
-  fs.writeFileSync(PATH_TO_RECENT_FILES, JSON.stringify(data));
-};

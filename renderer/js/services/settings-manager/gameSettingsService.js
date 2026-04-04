@@ -1,12 +1,11 @@
-const { ipcRenderer } = require('electron');
-const settingsManagerUtil = require('./settingsManagerUtil');
+const settingsManagerUtil = require("./settingsManagerUtil");
 
 let gameSettingsService = {};
 
 gameSettingsService.initialize = function () {
-    settingsManagerUtil.createFields('general');
+  settingsManagerUtil.createFields("general");
 };
 
-gameSettingsService.id = 'gameSettings';
+gameSettingsService.id = "gameSettings";
 
 module.exports = gameSettingsService;
