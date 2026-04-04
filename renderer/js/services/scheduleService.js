@@ -19,14 +19,19 @@ scheduleService.name = "scheduleEditorService";
 scheduleService.fileId = null;
 scheduleService.eventEmitter = new EventEmitter();
 
-scheduleService.loadSchedule = function (fileId) {
+scheduleService.loadSchedule = async function (fileId) {
   utilService.show(document.querySelector(".loader-wrapper"));
 
-  setTimeout(() => {
+  setTimeout(async () => {
     scheduleService.fileId = fileId;
+
+    // Fetch file metadata via IPC to get gameYear
+    const metadata = await window.franchiseAPI.getMetadata(fileId);
+
     scheduleService.file = {
       schedule: new FranchiseSchedule(fileId),
       fileId: fileId,
+      gameYear: metadata?.gameYear,
     };
 
     scheduleService.file.schedule.on("ready", () => {
@@ -71,11 +76,8 @@ function addEventListeners() {
   const viewTableEditor = document.querySelector("#view-table-editor");
   viewTableEditor.addEventListener("click", function () {
     const gameOffset = parseInt(contextMenu.getAttribute("data-game"));
-    scheduleService.eventEmitter.emit(
-      "open-table-editor",
-      scheduleService.file.file.getTableByName("SeasonGame").header.tableId,
-      gameOffset,
-    );
+    // SeasonGame table ID is 1001
+    scheduleService.eventEmitter.emit("open-table-editor", 1001, gameOffset);
   });
 
   const modalClose = document.querySelectorAll(".modal-header .close-modal");
@@ -159,9 +161,7 @@ function attachWeekNumberElements() {
   const weekWrapper = document.querySelector(".week-wrapper");
   let attribute = "weekIndex";
 
-  console.log(scheduleService.file);
-
-  if (scheduleService.file.file.gameYear < 22) {
+  if (scheduleService.file.gameYear && scheduleService.file.gameYear < 22) {
     attribute = "legacyWeekIndex";
   }
 

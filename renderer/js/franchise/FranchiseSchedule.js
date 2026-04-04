@@ -1,13 +1,11 @@
 const moment = require("moment");
-const { ipcRenderer } = require("electron");
 const FranchiseGame = require("./FranchiseGame");
 const EventEmitter = require("events").EventEmitter;
 const utilService = require("../services/utilService");
 const preferencesService = require("../services/preferencesService");
 const dayOfWeekData = require("../../../data/dayOfWeekData.json");
 const seasonWeekData = require("../../../data/seasonWeekData.json");
-
-const pathToTeamData = "../../../data/teamData.json";
+const teamData = require("../../../data/teamData.json");
 
 class FranchiseSchedule extends EventEmitter {
   constructor(fileId) {
@@ -16,7 +14,7 @@ class FranchiseSchedule extends EventEmitter {
     this.fileId = fileId;
     this.games = [];
     this.startTimes = null;
-    this._teamData = require(pathToTeamData);
+    this._teamData = teamData;
     this.file = null; // Will be populated when needed
 
     // For now, we'll parse immediately
@@ -25,15 +23,16 @@ class FranchiseSchedule extends EventEmitter {
   }
 
   async parse() {
-    delete require.cache[require.resolve(pathToTeamData)];
-    this._teamData = require(pathToTeamData);
-
     const fileId = this.fileId;
+
+    // Fetch file metadata to get gameYear
+    const metadata = await window.franchiseAPI.getMetadata(fileId);
+    this.gameYear = metadata?.gameYear;
 
     // Get table data via IPC
     const [
       seasonGameData,
-      teamData,
+      teamTableData,
       schedulerData,
       appointmentData,
       gameEventData,
@@ -72,14 +71,33 @@ class FranchiseSchedule extends EventEmitter {
       window.franchiseAPI.readTableData(fileId, 1004), // GameEvent
     ]);
 
+    console.log(
+      seasonGameData,
+      teamTableData,
+      schedulerData,
+      appointmentData,
+      gameEventData,
+    );
+
     if (
       !seasonGameData ||
-      !teamData ||
+      !teamTableData ||
       !schedulerData ||
       !appointmentData ||
       !gameEventData
     ) {
       console.error("Failed to load required tables");
+      return;
+    }
+
+    // Validate that tables have records arrays
+    if (
+      !seasonGameData.records ||
+      !schedulerData.records ||
+      !appointmentData.records ||
+      !gameEventData.records
+    ) {
+      console.error("One or more tables missing records array");
       return;
     }
 
@@ -99,6 +117,11 @@ class FranchiseSchedule extends EventEmitter {
       epochReferenceData.tableId,
     );
 
+    if (!epochTableData || !epochTableData.records) {
+      console.error("Failed to load epoch table data");
+      return;
+    }
+
     this.startTimes = getStartTimesFromData(
       schedulerData,
       epochTableData,
@@ -110,7 +133,7 @@ class FranchiseSchedule extends EventEmitter {
     // we read the team table to get information about them.
     // They won't have their logo, but they should have all other attributes.
 
-    teamData.records.forEach((team, index) => {
+    teamTableData.records.forEach((team, index) => {
       let teamInMetadata = this._getTeamByFullName(
         `${team.LongName} ${team.DisplayName}`,
       );
@@ -182,14 +205,14 @@ class FranchiseSchedule extends EventEmitter {
       if (record.HomeTeam !== "00000000000000000000000000000000") {
         const recordIndex = utilService.bin2dec(record.HomeTeam.substring(16));
         game._homeTeam = this._getTeamByFullName(
-          `${teamData.records[recordIndex].LongName} ${teamData.records[recordIndex].DisplayName}`,
+          `${teamTableData.records[recordIndex].LongName} ${teamTableData.records[recordIndex].DisplayName}`,
         );
       }
 
       if (record.AwayTeam !== "00000000000000000000000000000000") {
         const recordIndex = utilService.bin2dec(record.AwayTeam.substring(16));
         game._awayTeam = this._getTeamByFullName(
-          `${teamData.records[recordIndex].LongName} ${teamData.records[recordIndex].DisplayName}`,
+          `${teamTableData.records[recordIndex].LongName} ${teamTableData.records[recordIndex].DisplayName}`,
         );
       }
 
@@ -341,7 +364,7 @@ class FranchiseSchedule extends EventEmitter {
     });
 
     if (preferencesService.getValue("general.autoSave")?.[0]) {
-      this.file.save().then(() => {
+      window.franchiseAPI.saveFile(this.fileId).then(() => {
         console.log("saved!");
       });
     }
@@ -365,8 +388,7 @@ function getDayOfWeekByAbbreviation(abbreviation) {
 function getSeasonWeekDataByWeekIndexAndType(index, type) {
   let attribute = "weekIndex";
 
-  if (this.file.gameYear < 21) {
-    console.log(this.file.gameYear);
+  if (this.gameYear && this.gameYear < 21) {
     attribute = "legacyWeekIndex";
   }
 
@@ -376,7 +398,19 @@ function getSeasonWeekDataByWeekIndexAndType(index, type) {
 }
 
 function getStartTimes(schedulerTable, epochTable, epochReferenceData) {
+  if (!epochTable.records || epochTable.records.length === 0) {
+    console.error("Epoch table has no records");
+    return null;
+  }
+
   const epochRecord = epochTable.records[epochReferenceData.rowNumber];
+  if (!epochRecord) {
+    console.error(
+      `Epoch record at index ${epochReferenceData.rowNumber} not found`,
+    );
+    return null;
+  }
+
   const epochYear = epochRecord.Year + 1900;
   const epochMonth = epochRecord.fields.Month.unformattedValue.getBits(
     epochRecord.fields.Month.offset.offset,
