@@ -6,6 +6,10 @@ const contextMenuService = require("./contextMenuService");
 const referenceViewerService = require("../referenceViewerService");
 const preferencesService = require("../preferencesService");
 
+function isDev() {
+  return window.electronAPI?.isDev ?? false;
+}
+
 class TableEditorView {
   constructor(fileId, container, parent, initialTableToSelect) {
     this.fileId = fileId;
@@ -88,7 +92,11 @@ class TableEditorView {
       }
 
       // Auto-save after changes (only if enabled in preferences)
-      if (this.parent && this.parent.fileId && preferencesService.getValue("general.autoSave")?.[0]) {
+      if (
+        this.parent &&
+        this.parent.fileId &&
+        preferencesService.getValue("general.autoSave")?.[0]
+      ) {
         window.franchiseAPI.saveFile(this.parent.fileId);
       }
     }
@@ -253,17 +261,18 @@ class TableEditorView {
       const backLink = document.querySelector(".back-link");
 
       this.tableSelector.on("selectr.change", async (option) => {
-        console.time("change");
+        if (isDev()) console.time("change");
         utilService.show(this.loader);
 
         try {
           const tableId = parseInt(this.tableSelector.getValue(true).value);
+          if (isDev()) console.time("read records");
           const tableData = await window.franchiseAPI.readTableData(
             this.fileId,
             tableId,
           );
 
-          console.timeEnd("read records");
+          if (isDev()) console.timeEnd("read records");
           this.loadTable(tableData);
 
           this.hot.selectCell(this.rowIndexToSelect, this.columnIndexToSelect);
@@ -291,7 +300,7 @@ class TableEditorView {
           this.parent._toggleAddPinButton(tableData.tableId);
           this.parent._onTableChanged(tableData.tableId, tableData.name);
 
-          console.timeEnd("change");
+          if (isDev()) console.timeEnd("change");
         } catch (err) {
           console.error("Failed to load table:", err);
           utilService.hide(this.loader);
@@ -324,9 +333,9 @@ class TableEditorView {
   }
 
   loadTable(table) {
-    console.time("get data");
+    if (isDev()) console.time("get data");
     const data = this._formatTable(table);
-    console.timeEnd("get data");
+    if (isDev()) console.timeEnd("get data");
     const headers = this._formatHeaders(table);
     const columns = this._formatColumns(table);
 

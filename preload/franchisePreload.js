@@ -170,6 +170,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke("dialog:show-message", options),
 
   // App info
+  isDev,
   getUserDataPath: () => ipcRenderer.invoke("app:get-user-data-path"),
   getDocumentsPath: () => ipcRenderer.invoke("app:get-documents-path"),
   getVersion: () => ipcRenderer.invoke("app:get-version"),
