@@ -391,7 +391,12 @@ class FranchiseFileManager {
       tableId: table.header.tableId,
       name: table.name,
       recordCount: table.records.length,
-      records: table.records.map((r) => r.values),
+      records: table.records.map((r) =>
+        r.fieldsArray.reduce((accum, cur) => {
+          accum[cur.key] = cur.value;
+          return accum;
+        }, {}),
+      ),
       headers: table.offsetTable
         ? table.offsetTable.map((o) => ({
             name: o.name,
@@ -439,7 +444,7 @@ class FranchiseFileManager {
       throw new Error(`Record not found: ${recordIndex}`);
     }
 
-    table.records[recordIndex].setValue(fieldName, value);
+    table.records[recordIndex][fieldName] = value;
   }
 
   /**

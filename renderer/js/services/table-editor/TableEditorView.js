@@ -4,6 +4,7 @@ const { default: Handsontable } = require("handsontable");
 const utilService = require("../utilService");
 const contextMenuService = require("./contextMenuService");
 const referenceViewerService = require("../referenceViewerService");
+const preferencesService = require("../preferencesService");
 
 class TableEditorView {
   constructor(fileId, container, parent, initialTableToSelect) {
@@ -86,8 +87,8 @@ class TableEditorView {
         }
       }
 
-      // Auto-save after changes
-      if (this.parent && this.parent.fileId) {
+      // Auto-save after changes (only if enabled in preferences)
+      if (this.parent && this.parent.fileId && preferencesService.getValue("general.autoSave")?.[0]) {
         window.franchiseAPI.saveFile(this.parent.fileId);
       }
     }
