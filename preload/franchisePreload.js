@@ -106,6 +106,8 @@ contextBridge.exposeInMainWorld("franchiseAPI", {
     ),
   getTableList: (fileId) =>
     ipcRenderer.invoke("franchise:get-table-list", fileId),
+  findTablesByName: (fileId, tableName) =>
+    ipcRenderer.invoke("franchise:find-tables-by-name", fileId, tableName),
 
   // Utility operations
   getUtilReferenceData: (epochValue) =>
@@ -126,6 +128,12 @@ contextBridge.exposeInMainWorld("franchiseAPI", {
       ipcRenderer.invoke("schema-viewer:get-fields", fileId),
     getSchemaInfo: (fileId) =>
       ipcRenderer.invoke("schema-viewer:get-schema-info", fileId),
+  },
+
+  // Schedule operations
+  schedule: {
+    getStartTimes: (fileId) =>
+      ipcRenderer.invoke("schedule:get-start-times", fileId),
   },
 
   // Event listeners (one-way from main to renderer)

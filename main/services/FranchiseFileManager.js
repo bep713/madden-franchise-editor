@@ -467,6 +467,26 @@ class FranchiseFileManager {
   }
 
   /**
+   * Find tables by name
+   * @param {string} fileId
+   * @param {string} tableName - Table name to search for
+   * @returns {Array<{id: number, name: string, recordCount: number}>}
+   */
+  findTablesByName(fileId, tableName) {
+    const entry = this.activeFiles.get(fileId);
+    if (!entry) {
+      throw new Error(`File not found: ${fileId}`);
+    }
+
+    const tables = entry.file.getAllTablesByName(tableName);
+    return tables.map((t) => ({
+      id: t.header.tableId,
+      name: t.name,
+      recordCount: t.header.data1RecordCount,
+    }));
+  }
+
+  /**
    * Get raw file contents for backup
    * @param {string} fileId
    * @returns {Buffer|null}
@@ -610,6 +630,17 @@ class FranchiseFileManager {
         return { error: err.message };
       }
     });
+
+    loggedIpc.handle(
+      "franchise:find-tables-by-name",
+      async (event, fileId, tableName) => {
+        try {
+          return this.findTablesByName(fileId, tableName);
+        } catch (err) {
+          return { error: err.message };
+        }
+      },
+    );
 
     // Utility operations
     loggedIpc.handle(

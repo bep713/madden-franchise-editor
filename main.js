@@ -30,6 +30,7 @@ const {
 const {
   registerSchemaViewerHandlers,
 } = require("./main/handlers/schemaViewerHandler");
+const { registerScheduleHandlers } = require("./main/handlers/scheduleHandler");
 const { registerUpdateHandlers } = require("./main/handlers/updateHandler");
 const { registerWelcomeHandlers } = require("./main/handlers/welcomeHandler");
 const {
@@ -95,6 +96,7 @@ registerSchemaHandlers(loggedIpc, franchiseFileManager);
 registerSchemaMismatchHandlers(loggedIpc, franchiseFileManager);
 registerSchemaSearchHandlers(loggedIpc, franchiseFileManager);
 registerSchemaViewerHandlers(loggedIpc, franchiseFileManager);
+registerScheduleHandlers(loggedIpc, franchiseFileManager);
 registerUpdateHandlers(loggedIpc, autoUpdater, isDev, loggedMain);
 
 // Register external URL handler
@@ -346,7 +348,13 @@ function createWindow() {
     // when you should delete the corresponding element.
     mainWindow = null;
     workerWindow = null;
+
+    // Destroy hidden windows that have preventDefault close handlers
+    if (schemaWindow) schemaWindow.destroy();
     schemaWindow = null;
+
+    if (settingsWindow) settingsWindow.destroy();
+    settingsWindow = null;
 
     if (baseFileWatcher) {
       baseFileWatcher.close();
@@ -783,8 +791,10 @@ function createSchemaWindow(show) {
   schemaWindow.loadFile(schemaPage);
 
   schemaWindow.on("close", function (e) {
-    schemaWindow.hide();
-    e.preventDefault();
+    if (schemaWindow) {
+      schemaWindow.hide();
+      e.preventDefault();
+    }
   });
 
   schemaWindow.on("closed", function () {
@@ -827,8 +837,10 @@ function createSettingsWindow(show) {
   settingsWindow.loadFile(settingsPage);
 
   settingsWindow.on("close", function (e) {
-    settingsWindow.hide();
-    e.preventDefault();
+    if (settingsWindow) {
+      settingsWindow.hide();
+      e.preventDefault();
+    }
   });
 
   settingsWindow.on("closed", function () {

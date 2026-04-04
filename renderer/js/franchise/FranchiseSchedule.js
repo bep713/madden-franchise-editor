@@ -25,9 +25,28 @@ class FranchiseSchedule extends EventEmitter {
   async parse() {
     const fileId = this.fileId;
 
-    // Fetch file metadata to get gameYear
-    const metadata = await window.franchiseAPI.getMetadata(fileId);
+    // Fetch file metadata to get gameYear and table list
+    const [
+      metadata,
+      seasonGameTables,
+      teamTables,
+      schedulerTables,
+      appointmentTables,
+      gameEventTables,
+    ] = await Promise.all([
+      window.franchiseAPI.getMetadata(fileId),
+      window.franchiseAPI.findTablesByName(fileId, "SeasonGame"),
+      window.franchiseAPI.findTablesByName(fileId, "Team"),
+      window.franchiseAPI.findTablesByName(fileId, "Scheduler"),
+      window.franchiseAPI.findTablesByName(fileId, "Scheduler.Appointment"),
+      window.franchiseAPI.findTablesByName(fileId, "GameEvent"),
+    ]);
+
     this.gameYear = metadata?.gameYear;
+
+    const teamTable = teamTables.find(
+      (t) => t.name === "Team" && t.recordCount > 1,
+    );
 
     // Get table data via IPC
     const [
@@ -37,7 +56,7 @@ class FranchiseSchedule extends EventEmitter {
       appointmentData,
       gameEventData,
     ] = await Promise.all([
-      window.franchiseAPI.readTableData(fileId, 1001, [
+      window.franchiseAPI.readTableData(fileId, seasonGameTables[0].id, [
         "AwayTeam",
         "HomeTeam",
         "TimeOfDay",
@@ -50,34 +69,19 @@ class FranchiseSchedule extends EventEmitter {
         "SeasonWeekType",
         "IsPractice",
       ]),
-      window.franchiseAPI.getTableList(fileId).then((tables) => {
-        const teamTable = tables.find(
-          (t) => t.name === "Team" && t.recordCount > 1,
-        );
-        return teamTable
-          ? window.franchiseAPI.readTableData(fileId, teamTable.id, [
-              "ShortName",
-              "LongName",
-              "DisplayName",
-            ])
-          : null;
-      }),
-      window.franchiseAPI.readTableData(fileId, 1002), // Scheduler
-      window.franchiseAPI.readTableData(fileId, 1003, [
+      window.franchiseAPI.readTableData(fileId, teamTable.id, [
+        "ShortName",
+        "LongName",
+        "DisplayName",
+      ]),
+      window.franchiseAPI.readTableData(fileId, schedulerTables[0].id),
+      window.franchiseAPI.readTableData(fileId, appointmentTables[0].id, [
         "StartEvent",
         "StartOccurrenceTime",
         "Name",
-      ]), // Scheduler.Appointment
-      window.franchiseAPI.readTableData(fileId, 1004), // GameEvent
+      ]),
+      window.franchiseAPI.readTableData(fileId, gameEventTables[0].id),
     ]);
-
-    console.log(
-      seasonGameData,
-      teamTableData,
-      schedulerData,
-      appointmentData,
-      gameEventData,
-    );
 
     if (
       !seasonGameData ||
@@ -103,30 +107,21 @@ class FranchiseSchedule extends EventEmitter {
 
     const that = this;
 
-    // Get epoch reference data via IPC
-    const epochValue = schedulerData.records[0]?.Epoch;
-    if (!epochValue) {
-      console.error("No epoch value found in scheduler");
+    // Get computed start times via IPC (main process has access to raw field data)
+    const startTimesRaw =
+      await window.franchiseAPI.schedule.getStartTimes(fileId);
+    if (!startTimesRaw) {
+      console.error("Failed to get schedule start times");
       return;
     }
 
-    const epochReferenceData =
-      await window.franchiseAPI.getUtilReferenceData(epochValue);
-    const epochTableData = await window.franchiseAPI.readTableData(
-      fileId,
-      epochReferenceData.tableId,
-    );
-
-    if (!epochTableData || !epochTableData.records) {
-      console.error("Failed to load epoch table data");
-      return;
-    }
-
-    this.startTimes = getStartTimesFromData(
-      schedulerData,
-      epochTableData,
-      epochReferenceData,
-    );
+    this.startTimes = {
+      currentTime: moment(startTimesRaw.currentTime),
+      seasonYear: startTimesRaw.seasonYear,
+      epochStart: moment(startTimesRaw.epochStart),
+      preseasonStart: moment(startTimesRaw.preseasonStart),
+      regularSeasonStart: moment(startTimesRaw.regularSeasonStart),
+    };
     console.log(this.startTimes);
 
     // In case someone has added in custom teams that aren't in our metadata,
@@ -395,56 +390,6 @@ function getSeasonWeekDataByWeekIndexAndType(index, type) {
   return seasonWeekData.weeks.find((week) => {
     return week[attribute] == index - 1 && week.weekType === type;
   });
-}
-
-function getStartTimes(schedulerTable, epochTable, epochReferenceData) {
-  if (!epochTable.records || epochTable.records.length === 0) {
-    console.error("Epoch table has no records");
-    return null;
-  }
-
-  const epochRecord = epochTable.records[epochReferenceData.rowNumber];
-  if (!epochRecord) {
-    console.error(
-      `Epoch record at index ${epochReferenceData.rowNumber} not found`,
-    );
-    return null;
-  }
-
-  const epochYear = epochRecord.Year + 1900;
-  const epochMonth = epochRecord.fields.Month.unformattedValue.getBits(
-    epochRecord.fields.Month.offset.offset,
-    epochRecord.fields.Month.offset.length,
-  );
-  const epochStart = moment([
-    epochYear,
-    epochMonth,
-    epochRecord.DayOfMonth,
-    epochRecord.Hour,
-    epochRecord.Minute,
-    epochRecord.Second,
-  ]);
-
-  const currentTime = moment
-    .unix(schedulerTable.records[0].CurrentTime)
-    .utc()
-    .add(epochStart.unix(), "s");
-  const numYears = currentTime.year() - epochYear;
-  const currentYear = epochYear + numYears;
-
-  const preseasonStart = moment([currentYear, 7])
-    .startOf("isoweek")
-    .add(1, "d")
-    .add(1, "w");
-  const regularSeasonStart = moment(preseasonStart).add(4, "w");
-
-  return {
-    currentTime: currentTime,
-    seasonYear: numYears,
-    epochStart: epochStart,
-    preseasonStart: preseasonStart,
-    regularSeasonStart: regularSeasonStart,
-  };
 }
 
 function getDaysToAdd(day) {
