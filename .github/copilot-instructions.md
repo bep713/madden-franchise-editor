@@ -157,3 +157,18 @@ Tests are in `tests/` directory. Config in `playwright.config.js`.
 - **madden-franchise** — Core parsing/writing library (`FranchiseFile`, `schemaPicker`, `schemaGenerator`, `utilService`)
 - **madden-franchise-mcp** — MCP server for franchise data access
 - **CASBlockParser** — Stream-based binary parser for EA CAS format (UNCOMPRESSED, ZLIB, LZ4_BLOCK, ZSTD, OODLE)
+
+## madden-franchise API
+
+When working with franchise file operations in handlers, reference:
+
+- **Skill:** `.github/skills/madden-franchise-api/SKILL.md` — workflow patterns, decision flows, common mistakes
+- **Repo memory:** `/memories/repo/madden-franchise-api.md` — quick API reference (auto-loaded)
+
+**Key principle:** Field names are directly accessible on `FranchiseFileRecord` via Proxy. Set values with:
+
+```js
+table.records[index].fields[fieldName] = value;
+// or
+table.records[index][fieldName] = value;
+```
