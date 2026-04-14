@@ -30,40 +30,39 @@ class ExternalDataHandler {
     }
   }
 
-  _exportTable(filePath) {
+  async _exportTable(filePath) {
     this.loader.show();
 
-    setTimeout(() => {
-      ipcRenderer.send("exporting");
-      externalDataService
-        .exportTableData(
-          {
-            outputFilePath: filePath,
-          },
-          this.tableEditorWrapper.selectedTableEditor.selectedTable,
-        )
-        .then(() => {
-          this.loader.hide();
-          ipcRenderer.send("exported");
+    // Wait for the browser to paint the loader before doing heavy work
+    await new Promise((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve)),
+    );
 
-          if (
-            preferencesService.getValue("general.openExcelAfterImport")?.[0]
-          ) {
-            window.electronAPI.send("open-path", filePath);
-          }
-        })
-        .catch((err) => {
-          console.error(err);
-          ipcRenderer.send("export-error");
-          window.electronAPI.showMessageBox({
-            type: "error",
-            title: "Unable to export",
-            message:
-              "Unable to export the file because it is currently open in another program. Try closing the file in Excel before exporting.",
-          });
-          this.loader.hide();
-        });
-    }, 10);
+    try {
+      ipcRenderer.send("exporting");
+      await externalDataService.exportTableData(
+        {
+          outputFilePath: filePath,
+        },
+        this.tableEditorWrapper.selectedTableEditor.selectedTable,
+      );
+      this.loader.hide();
+      ipcRenderer.send("exported");
+
+      if (preferencesService.getValue("general.openExcelAfterImport")?.[0]) {
+        window.electronAPI.send("open-path", filePath);
+      }
+    } catch (err) {
+      console.error(err);
+      ipcRenderer.send("export-error");
+      window.electronAPI.showMessageBox({
+        type: "error",
+        title: "Unable to export",
+        message:
+          "Unable to export the file because it is currently open in another program. Try closing the file in Excel before exporting.",
+      });
+      this.loader.hide();
+    }
   }
 
   async importTable() {
@@ -86,53 +85,43 @@ class ExternalDataHandler {
     }
   }
 
-  _importTable(filePath) {
+  async _importTable(filePath) {
     this.loader.show();
 
-    setTimeout(() => {
+    // Wait for the browser to paint the loader before doing heavy work
+    await new Promise((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve)),
+    );
+
+    try {
       ipcRenderer.send("importing");
-      externalDataService
-        .importTableData({
-          inputFilePath: filePath,
-        })
-        .then((table) => {
-          const flipSaveOnChange =
-            this.tableEditorWrapper.file.settings.saveOnChange;
-          this.tableEditorWrapper.file.settings.saveOnChange = false;
 
-          // do not allow rows to be added.
-          const trimmedTable = table.slice(
-            0,
-            this.tableEditorWrapper.selectedTableEditor.selectedTable.records
-              .length,
-          );
-          trimmedTable.forEach((record, index) => {
-            let franchiseRecord =
-              this.tableEditorWrapper.selectedTableEditor.selectedTable.records[
-                index
-              ];
+      const rows = await externalDataService.importTableData({
+        inputFilePath: filePath,
+      });
 
-            Object.keys(record).forEach((key) => {
-              if (franchiseRecord[key] !== record[key]) {
-                franchiseRecord[key] = record[key];
-              }
-            });
-          });
+      const table = this.tableEditorWrapper.selectedTableEditor.selectedTable;
+      await externalDataService.importTableBulk(
+        this.tableEditorWrapper.fileId,
+        table.tableId,
+        rows,
+      );
 
-          this.tableEditorWrapper.selectedTableEditor.selectedTable.recalculateEmptyRecordReferences();
-
-          ipcRenderer.send("imported");
-
-          if (flipSaveOnChange) {
-            this.tableEditorWrapper.file.save();
-            this.tableEditorWrapper.file.settings.saveOnChange = true;
-          }
-
-          this.tableEditorWrapper.selectedTableEditor.loadTable(
-            this.tableEditorWrapper.selectedTableEditor.selectedTable,
-          );
-        });
-    }, 10);
+      await this.tableEditorWrapper.selectedTableEditor.loadTableById(
+        table.tableId,
+      );
+      this.loader.hide();
+      ipcRenderer.send("imported");
+    } catch (err) {
+      console.error(err);
+      ipcRenderer.send("import-error");
+      window.electronAPI.showMessageBox({
+        type: "error",
+        title: "Unable to import",
+        message: `Unable to import the table. Error: ${err.message || err}`,
+      });
+      this.loader.hide();
+    }
   }
 
   async exportRawTable() {
@@ -147,35 +136,36 @@ class ExternalDataHandler {
     }
   }
 
-  _exportRawTable(filePath) {
+  async _exportRawTable(filePath) {
     this.loader.show();
 
-    setTimeout(() => {
+    // Wait for the browser to paint the loader before doing heavy work
+    await new Promise((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve)),
+    );
+
+    try {
       ipcRenderer.send("exporting");
       const table = this.tableEditorWrapper.selectedTableEditor.selectedTable;
-      externalDataService
-        .exportRawTableData(
-          {
-            outputFilePath: filePath,
-          },
-          this.tableEditorWrapper.fileId,
-          table.tableId,
-        )
-        .then(() => {
-          this.loader.hide();
-          ipcRenderer.send("exported");
-        })
-        .catch((err) => {
-          console.error(err);
-          ipcRenderer.send("export-error");
-          window.electronAPI.showMessageBox({
-            type: "error",
-            title: "Unable to export",
-            message: `Unable to export. Error: ${err.message || err}`,
-          });
-          this.loader.hide();
-        });
-    }, 10);
+      await externalDataService.exportRawTableData(
+        {
+          outputFilePath: filePath,
+        },
+        this.tableEditorWrapper.fileId,
+        table.tableId,
+      );
+      this.loader.hide();
+      ipcRenderer.send("exported");
+    } catch (err) {
+      console.error(err);
+      ipcRenderer.send("export-error");
+      window.electronAPI.showMessageBox({
+        type: "error",
+        title: "Unable to export",
+        message: `Unable to export. Error: ${err.message || err}`,
+      });
+      this.loader.hide();
+    }
   }
 
   async exportRawFrtk() {
@@ -190,33 +180,34 @@ class ExternalDataHandler {
     }
   }
 
-  _exportRawFrtk(filePath) {
+  async _exportRawFrtk(filePath) {
     this.loader.show();
 
-    setTimeout(() => {
+    // Wait for the browser to paint the loader before doing heavy work
+    await new Promise((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve)),
+    );
+
+    try {
       ipcRenderer.send("exporting");
-      externalDataService
-        .exportFrt(
-          {
-            outputFilePath: filePath,
-          },
-          this.tableEditorWrapper.fileId,
-        )
-        .then(() => {
-          this.loader.hide();
-          ipcRenderer.send("exported");
-        })
-        .catch((err) => {
-          console.error(err);
-          ipcRenderer.send("export-error");
-          window.electronAPI.showMessageBox({
-            type: "error",
-            title: "Unable to export",
-            message: `Error while exporting FRTK file: ${err.message || err}`,
-          });
-          this.loader.hide();
-        });
-    }, 10);
+      await externalDataService.exportFrt(
+        {
+          outputFilePath: filePath,
+        },
+        this.tableEditorWrapper.fileId,
+      );
+      this.loader.hide();
+      ipcRenderer.send("exported");
+    } catch (err) {
+      console.error(err);
+      ipcRenderer.send("export-error");
+      window.electronAPI.showMessageBox({
+        type: "error",
+        title: "Unable to export",
+        message: `Error while exporting FRTK file: ${err.message || err}`,
+      });
+      this.loader.hide();
+    }
   }
 
   async importRawTable() {
@@ -231,39 +222,40 @@ class ExternalDataHandler {
     }
   }
 
-  _importRawTable(filePath) {
+  async _importRawTable(filePath) {
     this.loader.show();
 
-    setTimeout(() => {
+    // Wait for the browser to paint the loader before doing heavy work
+    await new Promise((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve)),
+    );
+
+    try {
       ipcRenderer.send("importing");
 
       const table = this.tableEditorWrapper.selectedTableEditor.selectedTable;
-      externalDataService
-        .importRawTable(
-          {
-            filePath: filePath,
-          },
-          this.tableEditorWrapper.fileId,
-          table.tableId,
-        )
-        .then(() => {
-          this.tableEditorWrapper.selectedTableEditor.loadTable(
-            this.tableEditorWrapper.selectedTableEditor.selectedTable,
-          );
-          this.loader.hide();
-          ipcRenderer.send("imported");
-        })
-        .catch((err) => {
-          console.error(err);
-          ipcRenderer.send("import-error");
-          window.electronAPI.showMessageBox({
-            type: "error",
-            title: "Unable to import",
-            message: `Unable to import the raw table. Error: ${err.message || err}`,
-          });
-          this.loader.hide();
-        });
-    }, 10);
+      await externalDataService.importRawTable(
+        {
+          filePath: filePath,
+        },
+        this.tableEditorWrapper.fileId,
+        table.tableId,
+      );
+      this.tableEditorWrapper.selectedTableEditor.loadTable(
+        this.tableEditorWrapper.selectedTableEditor.selectedTable,
+      );
+      this.loader.hide();
+      ipcRenderer.send("imported");
+    } catch (err) {
+      console.error(err);
+      ipcRenderer.send("import-error");
+      window.electronAPI.showMessageBox({
+        type: "error",
+        title: "Unable to import",
+        message: `Unable to import the raw table. Error: ${err.message || err}`,
+      });
+      this.loader.hide();
+    }
   }
 }
 

@@ -215,12 +215,7 @@ class TableEditorView {
 
         // Load the previous table via IPC
         try {
-          const tableData = await window.franchiseAPI.readTableData(
-            this.fileId,
-            navStep.tableId,
-          );
-          this.selectedTable = tableData;
-          this.loadTable(tableData);
+          await this.loadTableById(navStep.tableId);
         } catch (err) {
           console.error("Failed to load previous table:", err);
         }
@@ -232,6 +227,21 @@ class TableEditorView {
         }, 200);
       }
     });
+  }
+
+  /**
+   * Read table data from main process, update selectedTable, and render.
+   * @param {number} tableId - The table ID to load.
+   * @returns {Promise<Object>} The loaded table data.
+   */
+  async loadTableById(tableId) {
+    const tableData = await window.franchiseAPI.readTableData(
+      this.fileId,
+      tableId,
+    );
+    this.selectedTable = tableData;
+    this.loadTable(tableData);
+    return tableData;
   }
 
   async _initialLoad() {
@@ -267,13 +277,8 @@ class TableEditorView {
         try {
           const tableId = parseInt(this.tableSelector.getValue(true).value);
           if (isDev()) console.time("read records");
-          const tableData = await window.franchiseAPI.readTableData(
-            this.fileId,
-            tableId,
-          );
-
+          const tableData = await this.loadTableById(tableId);
           if (isDev()) console.timeEnd("read records");
-          this.loadTable(tableData);
 
           this.hot.selectCell(this.rowIndexToSelect, this.columnIndexToSelect);
 
@@ -288,8 +293,6 @@ class TableEditorView {
               column: selectedCell[1],
             });
           }
-
-          this.selectedTable = tableData;
 
           if (this.navSteps.length >= 2) {
             backLink.classList.remove("disabled");
@@ -318,14 +321,9 @@ class TableEditorView {
 
         // Load the default table via IPC
         const defaultTableId = tableChoices[1].value;
-        window.franchiseAPI
-          .readTableData(this.fileId, defaultTableId)
-          .then((tableData) => {
-            this.selectedTable = tableData;
-          })
-          .catch((err) => {
-            console.error("Failed to load default table:", err);
-          });
+        this.loadTableById(defaultTableId).catch((err) => {
+          console.error("Failed to load default table:", err);
+        });
       }
     } catch (err) {
       console.error("Failed to load table list:", err);

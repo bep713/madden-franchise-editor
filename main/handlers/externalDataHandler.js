@@ -106,6 +106,61 @@ function registerExternalDataHandlers(loggedIpc, franchiseFileManager) {
       }
     },
   );
+
+  // ---------------------------------------------------------------------------
+  // Bulk edit imported rows (CSV/XLSX) into an existing table.
+  // This handler receives the parsed rows from the renderer and replaces the
+  // records of the target table while preserving record IDs. It runs entirely
+  // in the main process, ensuring the FranchiseFile is mutated only there.
+  // ---------------------------------------------------------------------------
+  loggedIpc.handle(
+    "external-data:import-bulk",
+    async (event, fileId, tableId, rows) => {
+      try {
+        console.time("import-bulk");
+        const entry = franchiseFileManager.activeFiles.get(fileId);
+        if (!entry) throw new Error(`File not found: ${fileId}`);
+
+        const table = entry.file.getTableById(tableId);
+        if (!table) throw new Error(`Table not found: ${tableId}`);
+
+        const flipSaveOnChange = entry.file.settings.saveOnChange;
+        entry.file.settings.saveOnChange = false;
+
+        // Follow the renderer's original logic: only update existing records
+        // up to the current record count, ignoring any extra rows.
+        const existingCount = table.records.length;
+        const trimmedRows = rows.slice(0, existingCount);
+
+        console.time("set");
+        trimmedRows.forEach((record, index) => {
+          const franchiseRecord = table.records[index];
+          Object.keys(record).forEach((key) => {
+            if (franchiseRecord[key] !== record[key]) {
+              franchiseRecord[key] = record[key];
+            }
+          });
+        });
+        console.timeEnd("set");
+
+        // Recalculate any empty‑record references as the UI does.
+        console.time("recalc");
+        table.recalculateEmptyRecordReferences();
+        console.timeEnd("recalc");
+
+        if (flipSaveOnChange) {
+          this.tableEditorWrapper.file.save();
+          this.tableEditorWrapper.file.settings.saveOnChange = true;
+        }
+
+        console.timeEnd("import-bulk");
+
+        return { success: true };
+      } catch (error) {
+        throw new Error(`Failed to bulk import rows: ${error.message}`);
+      }
+    },
+  );
 }
 
 module.exports = { registerExternalDataHandlers };

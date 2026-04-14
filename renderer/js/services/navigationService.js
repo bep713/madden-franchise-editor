@@ -424,7 +424,7 @@ navigationService.runCloseFunction = function () {
   }
 };
 
-if (process.env.NODE_ENV === "testing") {
+if (window.electronAPI?.isTest) {
   new TestUtility(welcomeService, tableEditorWrapper);
 }
 

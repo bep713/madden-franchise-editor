@@ -1,17 +1,24 @@
-const utilService = require('../utilService');
+const utilService = require("../utilService");
 
 class Loader {
-    constructor() {
-        this.loader = document.querySelector('.loader-wrapper');
-    };
+  constructor() {
+    this.loader = null;
+  }
 
-    show() {
-        utilService.show(this.loader);
-    };
+  _getElement() {
+    if (!this.loader) {
+      this.loader = document.querySelector(".loader-wrapper");
+    }
+    return this.loader;
+  }
 
-    hide() {
-        utilService.hide(this.loader);
-    };
-};
+  show() {
+    utilService.show(this._getElement());
+  }
+
+  hide() {
+    utilService.hide(this._getElement());
+  }
+}
 
 module.exports = Loader;

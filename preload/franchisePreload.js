@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 const isDev = process.env.NODE_ENV === "development";
+const isTest = process.env.NODE_ENV === "testing";
 
 // Wrap ipcRenderer.invoke for dev logging
 const originalInvoke = ipcRenderer.invoke.bind(ipcRenderer);
@@ -179,6 +180,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   // App info
   isDev,
+  isTest,
   getUserDataPath: () => ipcRenderer.invoke("app:get-user-data-path"),
   getDocumentsPath: () => ipcRenderer.invoke("app:get-documents-path"),
   getVersion: () => ipcRenderer.invoke("app:get-version"),
@@ -221,6 +223,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // External data operations (xlsx/csv import/export handled in main)
   externalData: {
     import: (filePath) => ipcRenderer.invoke("external-data:import", filePath),
+    importBulk: (fileId, tableId, rows) =>
+      ipcRenderer.invoke("external-data:import-bulk", fileId, tableId, rows),
     export: (filePath, headers, rows) =>
       ipcRenderer.invoke("external-data:export", filePath, headers, rows),
     rawExport: (fileId, tableId, filePath) =>

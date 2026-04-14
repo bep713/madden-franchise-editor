@@ -17,6 +17,11 @@ externalDataService.importTableData = async function (options) {
   return window.electronAPI.externalData.import(options.inputFilePath);
 };
 
+// Bulk import of parsed rows – sends rows to main for mutation
+externalDataService.importTableBulk = async function (fileId, tableId, rows) {
+  return window.electronAPI.externalData.importBulk(fileId, tableId, rows);
+};
+
 externalDataService.exportTableData = async function (options, table) {
   if (!options) {
     throw new Error(
@@ -24,10 +29,10 @@ externalDataService.exportTableData = async function (options, table) {
     );
   }
 
-  const headers = table.offsetTable.map((offset) => offset.name);
-  const rows = table.records.map((record) =>
-    record.fieldsArray.map((field) => field._value),
-  );
+  const headers = table.headers.map((offset) => offset.name);
+  const rows = table.records.map((record) => headers.map((h) => record[h]));
+
+  console.log(headers, rows);
 
   await window.electronAPI.externalData.export(
     options.outputFilePath,

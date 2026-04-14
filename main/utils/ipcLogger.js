@@ -12,7 +12,7 @@ function createLoggedIpcMain(ipcMain) {
     handle(channel, handler) {
       return ipcMain.handle(channel, async (event, ...args) => {
         if (isDev) {
-          log.debug(`[IPC -> Main] ${channel}`, args);
+          // log.debug(`[IPC -> Main] ${channel}`, args);
         }
         try {
           const result = await handler(event, ...args);

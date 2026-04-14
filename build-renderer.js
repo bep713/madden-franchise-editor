@@ -6,6 +6,9 @@ const path = require("path");
 const isWatchMode = process.argv.includes("--watch");
 const READY_FILE = path.join(__dirname, ".watcher-ready");
 
+// Track all watchify bundlers so they can be closed on shutdown
+const bundlers = [];
+
 // Clean up stale ready file from a previous crashed run
 if (isWatchMode) {
   try {
@@ -49,6 +52,7 @@ function createBundler(entry, label) {
     // Use watchify for incremental rebuilds
     b = browserify(entry, opts);
     b.plugin(watchify);
+    bundlers.push(b);
     console.log(`⏳ ${label} watching for changes...`);
   } else {
     b = browserify(entry, opts);
@@ -111,6 +115,32 @@ async function bundle(entry, output, label) {
   }
 }
 
+// Cleanup on graceful shutdown — registered early so it's always active
+function cleanup() {
+  try {
+    fs.unlinkSync(READY_FILE);
+  } catch {
+    // ignore
+  }
+  // Close all watchify instances to release file watchers
+  for (const b of bundlers) {
+    try {
+      b.close();
+    } catch {
+      // ignore errors during shutdown
+    }
+  }
+}
+
+if (isWatchMode) {
+  process.on("SIGINT", () => {
+    cleanup();
+    process.exit(0);
+  });
+  process.on("SIGTERM", cleanup);
+  process.on("exit", cleanup);
+}
+
 async function buildAll() {
   if (isWatchMode) {
     // In watch mode, start all bundles watching in parallel
@@ -124,21 +154,6 @@ async function buildAll() {
     // Signal that all initial builds are complete
     fs.writeFileSync(READY_FILE, Date.now().toString());
     console.log("\n✅ All bundles built and watching for changes.\n");
-
-    // Cleanup on graceful shutdown
-    const cleanup = () => {
-      try {
-        fs.unlinkSync(READY_FILE);
-      } catch {
-        // ignore
-      }
-    };
-    process.on("SIGINT", () => {
-      cleanup();
-      process.exit(0);
-    });
-    process.on("SIGTERM", cleanup);
-    process.on("exit", cleanup);
   } else {
     // Sequential build for one-off builds
     for (const { entry, output, label } of bundles) {

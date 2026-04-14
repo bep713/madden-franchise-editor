@@ -7,7 +7,7 @@ class Electron {
 
     async launchWithDefaultOptions() {
         this.electron = await electron.launch({
-            args: ['.'],
+            args: ['main.js'],
             env: {
                 'NODE_ENV': 'testing'
             }
