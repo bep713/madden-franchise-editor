@@ -210,15 +210,8 @@ class TableEditorView {
         this.rowIndexToSelect = navStep.recordIndex;
         this.columnIndexToSelect = navStep.column;
 
-        this.tableSelector.setValue(navStep.tableId);
         this.navSteps.pop();
-
-        // Load the previous table via IPC
-        try {
-          await this.loadTableById(navStep.tableId);
-        } catch (err) {
-          console.error("Failed to load previous table:", err);
-        }
+        this.tableSelector.setValue(navStep.tableId);
 
         setTimeout(() => {
           if (this.navSteps.length === 1) {
@@ -280,6 +273,9 @@ class TableEditorView {
           const tableData = await this.loadTableById(tableId);
           if (isDev()) console.timeEnd("read records");
 
+          console.log(
+            `Selecting cell ${this.rowIndexToSelect}, ${this.columnIndexToSelect}`,
+          );
           this.hot.selectCell(this.rowIndexToSelect, this.columnIndexToSelect);
 
           this.rowIndexToSelect = 0;
