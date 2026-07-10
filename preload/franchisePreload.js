@@ -78,6 +78,7 @@ contextBridge.exposeInMainWorld("franchiseAPI", {
     ipcRenderer.invoke("franchise:save-file-as", fileId, newPath),
   loadSchema: (fileId, schemaPath, saveSchema) =>
     ipcRenderer.invoke("franchise:load-schema", fileId, schemaPath, saveSchema),
+  getActiveFileId: () => ipcRenderer.invoke("app:get-active-file-id"),
 
   // Schema operations
   getSavedSchemas: () => ipcRenderer.invoke("franchise:get-saved-schemas"),
@@ -212,6 +213,22 @@ contextBridge.exposeInMainWorld("electronAPI", {
     exportTable: (filePath, base64Data) =>
       ipcRenderer.invoke("fs:export-table", filePath, base64Data),
     importTable: (filePath) => ipcRenderer.invoke("fs:import-table", filePath),
+  },
+
+  menu: {
+    // Programmatically click a menu item by its ID
+    clickItem: (menuItemId) =>
+      ipcRenderer.invoke("menu:click-item", menuItemId),
+
+    // Listen for menu-driven events from main (e.g. main triggers 'menu:action' before invoking)
+    onAction: (callback) => {
+      addListener("menu:action", callback, (_event, data) => {
+        if (typeof callback === "function") callback(data);
+      });
+    },
+    removeActionListener: (callback) => {
+      removeListener("menu:action", callback);
+    },
   },
 
   // Schedule operations

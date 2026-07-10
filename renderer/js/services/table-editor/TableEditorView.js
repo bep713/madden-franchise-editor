@@ -273,9 +273,6 @@ class TableEditorView {
           const tableData = await this.loadTableById(tableId);
           if (isDev()) console.timeEnd("read records");
 
-          console.log(
-            `Selecting cell ${this.rowIndexToSelect}, ${this.columnIndexToSelect}`,
-          );
           this.hot.selectCell(this.rowIndexToSelect, this.columnIndexToSelect);
 
           this.rowIndexToSelect = 0;

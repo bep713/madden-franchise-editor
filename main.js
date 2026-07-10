@@ -663,6 +663,12 @@ function addIpcListeners() {
     return packageJson.version;
   });
 
+  ipcMain.handle("app:get-active-file-id", () => {
+    // Return the most recently opened fileId from the manager
+    const ids = [...franchiseFileManager.activeFiles.keys()];
+    return ids.length > 0 ? ids[ids.length - 1] : null;
+  });
+
   // --- File system IPC handlers (replaces fs in renderer) ---
   const realFs = require("fs");
 
@@ -749,6 +755,17 @@ function addIpcListeners() {
     } catch {
       return null;
     }
+  });
+
+  ipcMain.handle("menu:click-item", (event, menuItemId) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    const menuItem = Menu.getApplicationMenu()?.getMenuItemById(menuItemId);
+
+    if (!menuItem) {
+      throw new Error(`Menu item not found: ${menuItemId}`);
+    }
+
+    menuItem.click(null, win);
   });
 
   // Open path in default application (replaces shell.openPath)
