@@ -104,9 +104,17 @@ function toggleNavigationLinks(type) {
     type.year === 21 ||
     type.year === 22 ||
     type.year === 23 ||
-    type.year === 24
+    type.year === 24 ||
+    type.year === 25 ||
+    type.year === 26 ||
+    type.year === 27
   ) {
     abilityLink.classList.add("unavailable");
+
+    // Disable schedule editor for CFB
+    if(type.gameType === "college") {
+      scheduleLink.classList.add("unavailable");
+    }
   } else {
     abilityLink.classList.remove("unavailable");
     scheduleLink.classList.remove("unavailable");
