@@ -115,6 +115,12 @@ td.active-row {
   }
 }
 
+.handsontable td.table-cell--error {
+  background-color: #e3e3e3;
+  color: #666;
+  font-style: italic;
+}
+
 .table-cell-button {
   flex-shrink: 0;
 

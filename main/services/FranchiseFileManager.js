@@ -42,6 +42,23 @@ class FranchiseFileManager {
   }
 
   /**
+   * Create a renderer-safe placeholder for a cell that could not be read.
+   * @returns {string}
+   */
+  _getUnreadableCellPlaceholder() {
+    return "Error loading cell";
+  }
+
+  /**
+   * Normalize thrown values into a readable message.
+   * @param {*} error
+   * @returns {string}
+   */
+  _getErrorMessage(error) {
+    return error?.message || String(error);
+  }
+
+  /**
    * Open a franchise file
    * @param {string} filePath - Absolute path to the file
    * @param {object} options - Options for opening the file
@@ -387,16 +404,30 @@ class FranchiseFileManager {
 
     await table.readRecords(fields);
 
+    const cellErrors = {};
+
     return {
       tableId: table.header.tableId,
+      header: { ...table.header },
       name: table.name,
       recordCount: table.records.length,
-      records: table.records.map((r) =>
-        r.fieldsArray.reduce((accum, cur) => {
-          accum[cur.key] = cur.value;
+      records: table.records.map((record, recordIndex) =>
+        record.fieldsArray.reduce((accum, field) => {
+          try {
+            accum[field.key] = field.value;
+          } catch (error) {
+            if (!cellErrors[recordIndex]) {
+              cellErrors[recordIndex] = {};
+            }
+
+            cellErrors[recordIndex][field.key] = this._getErrorMessage(error);
+            accum[field.key] = this._getUnreadableCellPlaceholder();
+          }
+
           return accum;
         }, {}),
       ),
+      cellErrors,
       headers: table.offsetTable
         ? table.offsetTable.map((o) => ({
             name: o.name,

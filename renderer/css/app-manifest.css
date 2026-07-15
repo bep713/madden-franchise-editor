@@ -642,6 +642,11 @@ td.active-row {
   .table-cell--with-button.table-cell-button--show-on-hover:hover button {
     display: inherit; }
 
+.handsontable td.table-cell--error {
+  background-color: #e3e3e3;
+  color: #666;
+  font-style: italic; }
+
 .table-cell-button {
   flex-shrink: 0; }
   .table-cell-button.table-cell-button--right {
