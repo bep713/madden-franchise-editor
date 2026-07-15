@@ -20,20 +20,22 @@ module.exports = {
               selectedRow,
             );
 
-            if (result.error) {
-              console.error("Failed to get references:", result.error);
-              return;
-            }
-
             const selectedRecordData = {
               tableId: selectedTableId,
               name: tableEditorView.selectedTable.name,
               recordIndex: selectedRow,
             };
 
+            const references = Array.isArray(result.data) ? result.data : [];
+
+            if (result.error) {
+              console.error("Failed to get references:", result.error);
+              references.errorMessage = result.error;
+            }
+
             tableEditorView.showReferenceViewer(
               selectedRecordData,
-              result.data,
+              references,
             );
           },
         },

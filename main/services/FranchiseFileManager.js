@@ -224,6 +224,16 @@ class FranchiseFileManager {
   }
 
   /**
+   * Get an active franchise file by ID.
+   * @param {string} fileId
+   * @returns {FranchiseFile|null}
+   */
+  getFile(fileId) {
+    const entry = this.activeFiles.get(fileId);
+    return entry ? entry.file : null;
+  }
+
+  /**
    * Build metadata object from FranchiseFile
    * @param {FranchiseFile} file
    * @returns {object}
@@ -680,6 +690,103 @@ class FranchiseFileManager {
   }
 
   /**
+   * Get all records that reference a specific record.
+   * Falls back to a manual scan when the library helper is unavailable.
+   * @param {string} fileId
+   * @param {number} tableId
+   * @param {number} recordIndex
+   * @returns {Promise<Array<{tableId: number, name: string, recordIndex: number, fieldName?: string}>>}
+   */
+  async getReferencesToRecord(fileId, tableId, recordIndex) {
+    const entry = this.activeFiles.get(fileId);
+    if (!entry) {
+      throw new Error(`File not found: ${fileId}`);
+    }
+
+    const file = entry.file;
+    if (typeof file.getReferencesToRecord === "function") {
+      const result = file.getReferencesToRecord(tableId, recordIndex);
+      // Ensure the result is a plain array of plain objects
+      if (Array.isArray(result)) {
+        return result.map((ref) => ({
+          tableId: Number(ref.tableId),
+          name: String(ref.name),
+          recordIndex: Number(ref.recordIndex),
+          fieldName: ref.fieldName ? String(ref.fieldName) : undefined,
+        }));
+      }
+      return [];
+    }
+
+    const targetTableId = Number(tableId);
+    const targetRecordIndex = Number(recordIndex);
+    const references = [];
+    const seen = new Set();
+
+    for (const table of file.tables || []) {
+      const referenceHeaders = (table.offsetTable || []).filter(
+        (header) => header && header.isReference,
+      );
+
+      if (referenceHeaders.length === 0) {
+        continue;
+      }
+
+      try {
+        await table.readRecords();
+      } catch (error) {
+        console.warn(`Failed to read records for table ${table.name}:`, error);
+        continue;
+      }
+
+      if (!Array.isArray(table.records)) {
+        continue;
+      }
+
+      table.records.forEach((record, sourceRecordIndex) => {
+        if (!record) return;
+
+        for (const header of referenceHeaders) {
+          let referenceData;
+
+          try {
+            referenceData = record.getReferenceDataByKey(header.name);
+          } catch (error) {
+            continue;
+          }
+
+          if (!referenceData) {
+            continue;
+          }
+
+          const referencedTableId = Number(referenceData.tableId);
+          const referencedRecordIndex = Number(referenceData.recordIndex);
+
+          if (
+            referencedTableId === targetTableId &&
+            referencedRecordIndex === targetRecordIndex
+          ) {
+            const key = `${table.header.tableId}:${sourceRecordIndex}:${header.name}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              // Create a plain object with only serializable properties
+              references.push({
+                tableId: Number(table.header.tableId),
+                name: String(table.name),
+                recordIndex: Number(sourceRecordIndex),
+                fieldName: String(header.name),
+              });
+            }
+            break;
+          }
+        }
+      });
+    }
+
+    return references;
+  }
+
+  /**
    * Emit an event to all windows that have a file loaded
    * @param {string} fileId
    * @param {string} channel
@@ -861,11 +968,11 @@ class FranchiseFileManager {
       "franchise:get-references-to-record",
       async (event, fileId, tableId, recordIndex) => {
         try {
-          const file = this.getFile(fileId);
-          if (!file) {
-            return { error: "File not found" };
-          }
-          const references = file.getReferencesToRecord(tableId, recordIndex);
+          const references = await this.getReferencesToRecord(
+            fileId,
+            tableId,
+            recordIndex,
+          );
           return { data: references };
         } catch (err) {
           return { error: err.message };

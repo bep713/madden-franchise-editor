@@ -142,7 +142,7 @@ function createApplicationMenu() {
           id: "ShowPreferences",
           label: "Preferences",
           accelerator: "CmdOrCtrl+Shift+P",
-          click: () => loggedMain.send("show-preferences-window"),
+          click: () => openPreferencesWindow(),
         },
         { type: "separator" },
         { role: "quit" },
@@ -257,7 +257,7 @@ function createApplicationMenu() {
         {
           id: "ViewReleaseNotes",
           label: "View Release Notes",
-          click: () => loggedMain.send("show-settings-manager"),
+          click: () => openReleaseNotesWindow(),
         },
       ],
     },
@@ -621,13 +621,11 @@ function addIpcListeners() {
   });
 
   ipcMain.on("show-settings-manager", function () {
-    createSettingsWindow(true);
-    loggedSettings.send("show-release-notes-dialog");
+    openReleaseNotesWindow();
   });
 
   ipcMain.on("show-preferences-window", function () {
-    createSettingsWindow(true);
-    loggedSettings.send("show-settings-dialog");
+    openPreferencesWindow();
   });
 
   ipcMain.on("is-currently-searching", () => {
@@ -863,6 +861,31 @@ function createSettingsWindow(show) {
   settingsWindow.on("closed", function () {
     settingsWindow = null;
   });
+}
+
+function sendSettingsWindowEvent(channel) {
+  createSettingsWindow(true);
+
+  const send = () => {
+    if (loggedSettings) {
+      loggedSettings.send(channel);
+    }
+  };
+
+  if (settingsWindow.webContents.isLoadingMainFrame()) {
+    settingsWindow.webContents.once("did-finish-load", send);
+    return;
+  }
+
+  send();
+}
+
+function openReleaseNotesWindow() {
+  sendSettingsWindowEvent("show-release-notes-dialog");
+}
+
+function openPreferencesWindow() {
+  sendSettingsWindowEvent("show-settings-dialog");
 }
 
 function addAutoUpdaterListeners() {
