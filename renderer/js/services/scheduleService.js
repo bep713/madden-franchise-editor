@@ -115,10 +115,14 @@ function addEventListeners() {
     }
   });
 
-  const replaceAll = document.querySelector("#replace-all");
-  replaceAll.addEventListener("click", function () {
-    const replaceAllModal = document.querySelector(".replace-all-modal");
-    const underlay = document.querySelector(".underlay");
+  const replaceAll = document.querySelector('#replace-all');
+  replaceAll.addEventListener('click', function () {
+    // Full schedule replacement doesn't work for M21 and newer
+    if (scheduleService.file.file.gameYear >= 21) {
+      return;
+    }
+    const replaceAllModal = document.querySelector('.replace-all-modal');
+    const underlay = document.querySelector('.underlay');
 
     replaceAllModal.classList.remove("hidden");
     underlay.classList.remove("hidden");
