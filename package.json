@@ -46,7 +46,7 @@
     "electron-updater": "^4.6.1",
     "handsontable": "^11.1.0",
     "lz4-napi": "^2.9.0",
-    "madden-franchise": "^4.2.1",
+    "madden-franchise": "^4.3.1",
     "moment": "^2.29.4",
     "patch-package": "^8.0.1",
     "stream-parser": "^0.3.1",
