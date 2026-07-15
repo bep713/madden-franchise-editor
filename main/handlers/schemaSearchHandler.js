@@ -72,7 +72,7 @@ function registerSchemaSearchHandlers(loggedIpc, franchiseFileManager) {
       const schemas = [];
 
       for (const file of files) {
-        const match = file.match(/^M(\d+)_(\d+)_(\d+)(\.\w+)$/);
+        const match = file.match(/^[MC](\d+)_(\d+)_(\d+)(\.\w+)$/);
         if (match) {
           schemas.push({
             gameYear: parseInt(match[1], 10),
@@ -105,7 +105,7 @@ function registerSchemaSearchHandlers(loggedIpc, franchiseFileManager) {
 
       const files = await fs.readdir(schemaDir);
       const exists = files.some((file) => {
-        const match = file.match(/^M(\d+)_(\d+)_(\d+)(\.\w+)$/);
+        const match = file.match(/^[MC](\d+)_(\d+)_(\d+)(\.\w+)$/);
         if (!match) return false;
         return (
           parseInt(match[1], 10) === meta.gameYear &&
