@@ -20,7 +20,107 @@ class FranchiseFileManager {
     this.activeFiles = new Map();
     this._nextFileId = 1;
     this._schemaDirectory = path.join(app.getPath("userData"), "schemas");
+    this._preferencesProvider = null;
     this._ensureSchemaDirectory();
+  }
+
+  /**
+   * Register a preferences provider used for file-level settings.
+   * @param {Function|null} provider
+   */
+  setPreferencesProvider(provider) {
+    this._preferencesProvider = typeof provider === "function" ? provider : null;
+  }
+
+  /**
+   * Get the latest preferences snapshot, if available.
+   * @returns {object|null}
+   * @private
+   */
+  _getPreferences() {
+    if (!this._preferencesProvider) {
+      return null;
+    }
+
+    try {
+      return this._preferencesProvider() || null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * Normalize checkbox-based preference values into booleans.
+   * @param {*} value
+   * @returns {boolean}
+   * @private
+   */
+  _isPreferenceEnabled(value) {
+    if (Array.isArray(value)) {
+      return value.includes(true);
+    }
+
+    return Boolean(value);
+  }
+
+  /**
+   * Build file settings for a franchise file from open options and preferences.
+   * @param {object} options
+   * @returns {object}
+   * @private
+   */
+  _buildFileSettings(options = {}) {
+    const preferences = this._getPreferences();
+    const autoUnempty =
+      options.autoUnempty ??
+      this._isPreferenceEnabled(preferences?.general?.autoUnempty);
+
+    const settings = {
+      schemaDirectory: options.schemaDirectory || this._schemaDirectory,
+      autoParse: true,
+      autoUnempty,
+    };
+
+    if (options.schemaOverride) {
+      settings.schemaOverride = options.schemaOverride;
+    }
+
+    return settings;
+  }
+
+  /**
+   * Apply managed editor preferences to a loaded file instance.
+   * @param {FranchiseFile} file
+   * @param {object} preferences
+   * @returns {void}
+   * @private
+   */
+  _applyPreferencesToFile(file, preferences = null) {
+    if (!file) {
+      return;
+    }
+
+    const resolvedPreferences = preferences || this._getPreferences();
+
+    file.settings = {
+      ...(file.settings || {}),
+      autoUnempty: this._isPreferenceEnabled(
+        resolvedPreferences?.general?.autoUnempty,
+      ),
+    };
+  }
+
+  /**
+   * Apply current preferences to all active files.
+   * @param {object} preferences
+   * @returns {{ updatedFileCount: number }}
+   */
+  applyPreferenceSettings(preferences = null) {
+    this.activeFiles.forEach(({ file }) => {
+      this._applyPreferencesToFile(file, preferences);
+    });
+
+    return { updatedFileCount: this.activeFiles.size };
   }
 
   /**
@@ -155,14 +255,7 @@ class FranchiseFileManager {
    * @returns {Promise<{ fileId: string, metadata: object }>}
    */
   async openFile(filePath, options = {}) {
-    const settings = {
-      schemaDirectory: options.schemaDirectory || this._schemaDirectory,
-      autoParse: true,
-    };
-
-    if (options.schemaOverride) {
-      settings.schemaOverride = options.schemaOverride;
-    }
+    const settings = this._buildFileSettings(options);
 
     return new Promise((resolve, reject) => {
       const file = new FranchiseFile(filePath, settings);
@@ -174,6 +267,7 @@ class FranchiseFileManager {
 
       file.on("ready", () => {
         file.off("error", reject);
+        this._applyPreferencesToFile(file);
 
         // Assume m22 if no game year is set
         if (!file._gameYear) {

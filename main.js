@@ -83,9 +83,12 @@ remoteMain.initialize();
 const loggedIpc = createLoggedIpcMain(ipcMain);
 
 // Register franchise IPC handlers
+franchiseFileManager.setPreferencesProvider(() =>
+  preferencesHandler.getPreferencesInstance()?.value(),
+);
 franchiseFileManager.registerIpcHandlers(loggedIpc);
 registerExternalDataHandlers(loggedIpc, franchiseFileManager);
-preferencesHandler.registerPreferencesHandlers(loggedIpc);
+preferencesHandler.registerPreferencesHandlers(loggedIpc, franchiseFileManager);
 registerRecentFilesHandlers(loggedIpc);
 registerWelcomeHandlers(loggedIpc, franchiseFileManager);
 registerReloadFileHandlers(loggedIpc, {

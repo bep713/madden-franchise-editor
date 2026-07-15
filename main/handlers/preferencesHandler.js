@@ -55,7 +55,7 @@ function buildPreferenceSections() {
 /**
  * Register IPC handlers for preferences operations.
  */
-function registerPreferencesHandlers(loggedIpc) {
+function registerPreferencesHandlers(loggedIpc, franchiseFileManager = null) {
   loggedIpc.handle("preferences:get", async () => {
     try {
       if (!preferencesInstance) {
@@ -83,6 +83,11 @@ function registerPreferencesHandlers(loggedIpc) {
           }
         }
       }
+
+      if (franchiseFileManager?.applyPreferenceSettings) {
+        franchiseFileManager.applyPreferenceSettings(preferencesInstance.value());
+      }
+
       return true;
     } catch (error) {
       throw new Error(`Failed to set preferences: ${error.message}`);
