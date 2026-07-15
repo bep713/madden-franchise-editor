@@ -59,6 +59,94 @@ class FranchiseFileManager {
   }
 
   /**
+   * Serialize a single record into a renderer-safe plain object.
+   * @param {object} record
+   * @param {number} recordIndex
+   * @param {object} cellErrors
+   * @returns {object}
+   * @private
+   */
+  _serializeRecord(record, recordIndex, cellErrors = {}) {
+    return record.fieldsArray.reduce((accum, field) => {
+      try {
+        accum[field.key] = field.value;
+      } catch (error) {
+        if (!cellErrors[recordIndex]) {
+          cellErrors[recordIndex] = {};
+        }
+
+        cellErrors[recordIndex][field.key] = this._getErrorMessage(error);
+        accum[field.key] = this._getUnreadableCellPlaceholder();
+      }
+
+      return accum;
+    }, {});
+  }
+
+  /**
+   * Serialize renderer-relevant metadata for a single record.
+   * @param {object} record
+   * @param {number} recordIndex
+   * @returns {object}
+   * @private
+   */
+  _serializeRecordMeta(record, recordIndex) {
+    return {
+      index: recordIndex,
+      isEmpty: Boolean(record?.isEmpty),
+    };
+  }
+
+  /**
+   * Convert table.emptyRecords into a stable array of record indices.
+   * @param {*} emptyRecords
+   * @returns {number[]}
+   * @private
+   */
+  _serializeEmptyRecordIndices(emptyRecords) {
+    if (!emptyRecords) {
+      return [];
+    }
+
+    if (emptyRecords instanceof Map) {
+      return Array.from(emptyRecords.keys())
+        .map((value) => Number(value))
+        .filter((value) => Number.isInteger(value))
+        .sort((a, b) => a - b);
+    }
+
+    if (emptyRecords instanceof Set) {
+      return Array.from(emptyRecords)
+        .map((value) => Number(value))
+        .filter((value) => Number.isInteger(value))
+        .sort((a, b) => a - b);
+    }
+
+    if (Array.isArray(emptyRecords)) {
+      return emptyRecords
+        .map((value, index) => {
+          if (typeof value === "number") return value;
+          if (value && typeof value === "object") {
+            if (Number.isInteger(value.recordIndex)) return value.recordIndex;
+            if (Number.isInteger(value.index)) return value.index;
+          }
+          return Number.isInteger(index) ? index : null;
+        })
+        .filter((value) => Number.isInteger(value))
+        .sort((a, b) => a - b);
+    }
+
+    if (typeof emptyRecords === "object") {
+      return Object.keys(emptyRecords)
+        .map((value) => Number(value))
+        .filter((value) => Number.isInteger(value))
+        .sort((a, b) => a - b);
+    }
+
+    return [];
+  }
+
+  /**
    * Open a franchise file
    * @param {string} filePath - Absolute path to the file
    * @param {object} options - Options for opening the file
@@ -405,28 +493,21 @@ class FranchiseFileManager {
     await table.readRecords(fields);
 
     const cellErrors = {};
+    const records = table.records.map((record, recordIndex) =>
+      this._serializeRecord(record, recordIndex, cellErrors),
+    );
+    const recordMeta = table.records.map((record, recordIndex) =>
+      this._serializeRecordMeta(record, recordIndex),
+    );
 
     return {
       tableId: table.header.tableId,
       header: { ...table.header },
       name: table.name,
       recordCount: table.records.length,
-      records: table.records.map((record, recordIndex) =>
-        record.fieldsArray.reduce((accum, field) => {
-          try {
-            accum[field.key] = field.value;
-          } catch (error) {
-            if (!cellErrors[recordIndex]) {
-              cellErrors[recordIndex] = {};
-            }
-
-            cellErrors[recordIndex][field.key] = this._getErrorMessage(error);
-            accum[field.key] = this._getUnreadableCellPlaceholder();
-          }
-
-          return accum;
-        }, {}),
-      ),
+      records,
+      recordMeta,
+      emptyRecordIndices: this._serializeEmptyRecordIndices(table.emptyRecords),
       cellErrors,
       headers: table.offsetTable
         ? table.offsetTable.map((o) => ({
@@ -475,7 +556,77 @@ class FranchiseFileManager {
       throw new Error(`Record not found: ${recordIndex}`);
     }
 
+    const previousMeta = this._serializeRecordMeta(
+      table.records[recordIndex],
+      recordIndex,
+    );
+
     table.records[recordIndex][fieldName] = value;
+
+    const cellErrors = {};
+    const updatedRecord = this._serializeRecord(
+      table.records[recordIndex],
+      recordIndex,
+      cellErrors,
+    );
+    const updatedMeta = this._serializeRecordMeta(
+      table.records[recordIndex],
+      recordIndex,
+    );
+
+    return {
+      record: updatedRecord,
+      recordMeta: updatedMeta,
+      previousRecordMeta: previousMeta,
+      emptyRecordIndices: this._serializeEmptyRecordIndices(table.emptyRecords),
+      cellErrors: cellErrors[recordIndex] || null,
+    };
+  }
+
+  /**
+   * Set one or more records as empty for a table.
+   * @param {string} fileId
+   * @param {number} tableId
+   * @param {number[]} recordIndices
+   * @returns {Promise<object>}
+   */
+  async setTableRecordsEmpty(fileId, tableId, recordIndices = []) {
+    const entry = this.activeFiles.get(fileId);
+    if (!entry) {
+      throw new Error(`File not found: ${fileId}`);
+    }
+
+    const table = entry.file.getTableById(tableId);
+    if (!table) {
+      throw new Error(`Table not found: ${tableId}`);
+    }
+
+    if (!Array.isArray(recordIndices) || recordIndices.length === 0) {
+      return { affectedCount: 0, emptyRecordIndices: this._serializeEmptyRecordIndices(table.emptyRecords) };
+    }
+
+    await table.readRecords();
+
+    const uniqueIndices = Array.from(new Set(recordIndices))
+      .map((value) => Number(value))
+      .filter((value) => Number.isInteger(value) && value >= 0);
+
+    uniqueIndices.forEach((recordIndex) => {
+      if (!table.records[recordIndex]) {
+        throw new Error(`Record not found: ${recordIndex}`);
+      }
+
+      if (!table.records[recordIndex].isEmpty) {
+        table.records[recordIndex].empty();
+      }
+    });
+
+    table.recalculateEmptyRecordReferences();
+
+    return {
+      affectedCount: uniqueIndices.length,
+      emptyRecordIndices: this._serializeEmptyRecordIndices(table.emptyRecords),
+    };
   }
 
   /**
@@ -640,14 +791,30 @@ class FranchiseFileManager {
       "franchise:write-table-cell",
       async (event, fileId, tableId, recordIndex, fieldName, value) => {
         try {
-          await this.writeTableCell(
+          const result = await this.writeTableCell(
             fileId,
             tableId,
             recordIndex,
             fieldName,
             value,
           );
-          return { success: true };
+          return { success: true, ...result };
+        } catch (err) {
+          return { error: err.message };
+        }
+      },
+    );
+
+    loggedIpc.handle(
+      "franchise:set-table-records-empty",
+      async (event, fileId, tableId, recordIndices) => {
+        try {
+          const result = await this.setTableRecordsEmpty(
+            fileId,
+            tableId,
+            recordIndices,
+          );
+          return { success: true, ...result };
         } catch (err) {
           return { error: err.message };
         }

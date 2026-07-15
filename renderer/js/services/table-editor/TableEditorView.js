@@ -82,9 +82,36 @@ class TableEditorView {
             throw new Error(result.error);
           }
 
-          // Update local cache
-          if (this.selectedTable.records[recordIndex]) {
+          // Keep local cache and row metadata in sync with main-process state
+          if (result?.record && this.selectedTable.records[recordIndex]) {
+            this.selectedTable.records[recordIndex] = result.record;
+          } else if (this.selectedTable.records[recordIndex]) {
             this.selectedTable.records[recordIndex][fieldName] = newValue;
+          }
+
+          if (result?.recordMeta) {
+            this.selectedTable.recordMeta = this.selectedTable.recordMeta || [];
+            this.selectedTable.recordMeta[recordIndex] = result.recordMeta;
+          }
+
+          if (Array.isArray(result?.emptyRecordIndices)) {
+            this.selectedTable.emptyRecordIndices = result.emptyRecordIndices;
+          }
+
+          if (result?.cellErrors) {
+            this.cellErrors[recordIndex] = result.cellErrors;
+          } else if (this.cellErrors[recordIndex]) {
+            delete this.cellErrors[recordIndex][fieldName];
+            if (Object.keys(this.cellErrors[recordIndex]).length === 0) {
+              delete this.cellErrors[recordIndex];
+            }
+          }
+
+          const wasEmpty = Boolean(result?.previousRecordMeta?.isEmpty);
+          const isEmpty = Boolean(result?.recordMeta?.isEmpty);
+
+          if (result?.record && wasEmpty && !isEmpty) {
+            this._syncVisibleRowFromRecord(change[0], result.record);
           }
         } catch (err) {
           // Revert the cell on error
@@ -107,6 +134,20 @@ class TableEditorView {
         window.franchiseAPI.saveFile(this.parent.fileId);
       }
     }
+  }
+
+  _syncVisibleRowFromRecord(visualRow, rowData) {
+    if (!this.selectedTable?.headers?.length || !rowData) {
+      return;
+    }
+
+    const rowUpdates = this.selectedTable.headers.map((header) => [
+      visualRow,
+      header.name,
+      rowData[header.name],
+    ]);
+
+    this.hot.setDataAtRowProp(rowUpdates, "onEmpty");
   }
 
   _getColumnIndex(fieldName) {

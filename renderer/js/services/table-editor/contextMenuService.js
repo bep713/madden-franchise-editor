@@ -72,12 +72,82 @@ module.exports = {
             return "Set selected record(s) as empty";
           },
           disabled: () => {
-            // TODO: Migrate to IPC - requires main process handler for emptying records
+            const selectedRange = tableEditorView.hot.getSelectedLast();
+            if (!selectedRange) {
+              return true;
+            }
+
+            const physicalStart = tableEditorView.hot.toPhysicalRow(
+              selectedRange[0],
+            );
+            const physicalEnd = tableEditorView.hot.toPhysicalRow(
+              selectedRange[2],
+            );
+
+            const start = Math.min(physicalStart, physicalEnd);
+            const end = Math.max(physicalStart, physicalEnd);
+
+            if (start < 0 || end < 0) {
+              return true;
+            }
+
+            const headerRecordSize =
+              tableEditorView.selectedTable?.header?.record1Size ?? 0;
+            if (headerRecordSize < 4) {
+              return true;
+            }
+
+            for (let recordIndex = start; recordIndex <= end; recordIndex++) {
+              const meta = tableEditorView.selectedTable?.recordMeta?.[recordIndex];
+              const isEmpty = Boolean(meta?.isEmpty);
+              if (!isEmpty) {
+                return false;
+              }
+            }
+
             return true;
           },
-          callback: (key, selection, clickEvent) => {
-            // TODO: Implement via IPC call to main process
-            console.warn("Empty row feature not yet migrated to IPC");
+          callback: async (key, selection, clickEvent) => {
+            const selectedRange = tableEditorView.hot.getSelectedLast();
+            if (!selectedRange) {
+              return;
+            }
+
+            const physicalStart = tableEditorView.hot.toPhysicalRow(
+              selectedRange[0],
+            );
+            const physicalEnd = tableEditorView.hot.toPhysicalRow(
+              selectedRange[2],
+            );
+
+            const start = Math.min(physicalStart, physicalEnd);
+            const end = Math.max(physicalStart, physicalEnd);
+            const targetIndices = [];
+
+            for (let recordIndex = start; recordIndex <= end; recordIndex++) {
+              const meta = tableEditorView.selectedTable?.recordMeta?.[recordIndex];
+              if (!meta?.isEmpty) {
+                targetIndices.push(recordIndex);
+              }
+            }
+
+            if (!targetIndices.length) {
+              return;
+            }
+
+            const result = await window.franchiseAPI.setTableRecordsEmpty(
+              tableEditorView.fileId,
+              tableEditorView.selectedTable.tableId,
+              targetIndices,
+            );
+
+            if (result?.error) {
+              console.error("Failed to set records empty:", result.error);
+              return;
+            }
+
+            await tableEditorView.loadTableById(tableEditorView.selectedTable.tableId);
+            tableEditorView.hot.selectCell(selectedRange[0], selectedRange[1]);
           },
         },
         advanced: {
@@ -94,10 +164,19 @@ module.exports = {
                   );
                 },
                 callback: (key, selection, clickEvent) => {
-                  tableEditorView.selectedTable.setNextRecordToUse(
-                    selection[0].start.row,
-                    true,
-                  );
+                  if (
+                    typeof tableEditorView.selectedTable?.setNextRecordToUse ===
+                    "function"
+                  ) {
+                    tableEditorView.selectedTable.setNextRecordToUse(
+                      selection[0].start.row,
+                      true,
+                    );
+                  } else {
+                    console.warn(
+                      "setNextRecordToUse is not available on serialized tables yet.",
+                    );
+                  }
                 },
               },
             ],

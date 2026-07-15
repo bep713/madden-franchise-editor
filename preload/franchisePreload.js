@@ -106,6 +106,13 @@ contextBridge.exposeInMainWorld("franchiseAPI", {
       fieldName,
       value,
     ),
+  setTableRecordsEmpty: (fileId, tableId, recordIndices) =>
+    ipcRenderer.invoke(
+      "franchise:set-table-records-empty",
+      fileId,
+      tableId,
+      recordIndices,
+    ),
   getTableList: (fileId) =>
     ipcRenderer.invoke("franchise:get-table-list", fileId),
   findTablesByName: (fileId, tableName) =>
