@@ -257,7 +257,7 @@ async function parseAvailableSchemas(autoSelect) {
   schemas.forEach((schema) => {
     const listItem = document.createElement("li");
     listItem.classList.add("schema-list-item");
-    listItem.innerHTML = `M${schema.gameYear} ${schema.major}.${schema.minor}`;
+    listItem.innerHTML = `${schema.filename[0] === "C" ? "C" : "M"}${schema.gameYear} ${schema.major}.${schema.minor}`;
 
     listItem.addEventListener("click", () => {
       utilService.show(document.querySelector(".loader-wrapper"));
