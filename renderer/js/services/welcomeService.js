@@ -21,7 +21,7 @@ welcomeService.start = function (file) {
   if (file.type) {
     showOpenedFileLinks();
     toggleNavigationLinks(file.type);
-    toggleMaddenIcons(file.type.year);
+    toggleGameIcons(file.type);
   }
 };
 
@@ -83,7 +83,7 @@ function addTemporaryIpcListeners() {
 function onFileLoaded(file) {
   if (!file || !file.type) return;
   toggleNavigationLinks(file.type);
-  toggleMaddenIcons(file.type.year);
+  toggleGameIcons(file.type);
 }
 
 function onFileClosed() {
@@ -121,7 +121,24 @@ function toggleNavigationLinks(type) {
   }
 }
 
-function toggleMaddenIcons(year) {
+function toggleGameIcons(type) {
+  const { year, gameType } = type;
+
+  toggleMaddenIcons(year, gameType);
+  toggleCfbIcons(year, gameType);
+}
+
+function toggleMaddenIcons(year, gameType) {
+  const maddenIcons = document.querySelectorAll(".madden-icon");
+
+  if (gameType === "college") {
+    maddenIcons.forEach((icon) => {
+      icon.classList.add("inactive");
+    });
+
+    return;
+  }
+
   const iconsToDisable = document.querySelectorAll(
     '.madden-icon:not([data-year="' + year + '"])',
   );
@@ -133,7 +150,29 @@ function toggleMaddenIcons(year) {
     icon.classList.add("inactive");
   });
 
-  iconToEnable.classList.remove("inactive");
+  if (iconToEnable) {
+    iconToEnable.classList.remove("inactive");
+  }
+}
+
+function toggleCfbIcons(year, gameType) {
+  const cfbIcons = document.querySelectorAll(".cfb-icon");
+
+  cfbIcons.forEach((icon) => {
+    icon.classList.add("inactive");
+  });
+
+  if (gameType !== "college") {
+    return;
+  }
+
+  const iconToEnable = document.querySelector(
+    '.cfb-icon[data-year="' + year + '"]',
+  );
+
+  if (iconToEnable) {
+    iconToEnable.classList.remove("inactive");
+  }
 }
 
 function addOpenScheduleListener() {
