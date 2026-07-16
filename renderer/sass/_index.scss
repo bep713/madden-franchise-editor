@@ -68,14 +68,18 @@ $brand-color: $brand-primary;
   }
 
   .app-title-right {
-    .madden-icon {
-      // cursor: pointer;
-    }
-
     .madden-icons {
       display: flex;
       height: 43px;
       align-items: center;
+    }
+
+    .cfb-icons {
+      display: flex;
+      height: 43px;
+      align-items: center;
+      justify-content: flex-end;
+      margin-top: 6px;
     }
   }
 

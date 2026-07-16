@@ -20,7 +20,107 @@ class FranchiseFileManager {
     this.activeFiles = new Map();
     this._nextFileId = 1;
     this._schemaDirectory = path.join(app.getPath("userData"), "schemas");
+    this._preferencesProvider = null;
     this._ensureSchemaDirectory();
+  }
+
+  /**
+   * Register a preferences provider used for file-level settings.
+   * @param {Function|null} provider
+   */
+  setPreferencesProvider(provider) {
+    this._preferencesProvider = typeof provider === "function" ? provider : null;
+  }
+
+  /**
+   * Get the latest preferences snapshot, if available.
+   * @returns {object|null}
+   * @private
+   */
+  _getPreferences() {
+    if (!this._preferencesProvider) {
+      return null;
+    }
+
+    try {
+      return this._preferencesProvider() || null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * Normalize checkbox-based preference values into booleans.
+   * @param {*} value
+   * @returns {boolean}
+   * @private
+   */
+  _isPreferenceEnabled(value) {
+    if (Array.isArray(value)) {
+      return value.includes(true);
+    }
+
+    return Boolean(value);
+  }
+
+  /**
+   * Build file settings for a franchise file from open options and preferences.
+   * @param {object} options
+   * @returns {object}
+   * @private
+   */
+  _buildFileSettings(options = {}) {
+    const preferences = this._getPreferences();
+    const autoUnempty =
+      options.autoUnempty ??
+      this._isPreferenceEnabled(preferences?.general?.autoUnempty);
+
+    const settings = {
+      schemaDirectory: options.schemaDirectory || this._schemaDirectory,
+      autoParse: true,
+      autoUnempty,
+    };
+
+    if (options.schemaOverride) {
+      settings.schemaOverride = options.schemaOverride;
+    }
+
+    return settings;
+  }
+
+  /**
+   * Apply managed editor preferences to a loaded file instance.
+   * @param {FranchiseFile} file
+   * @param {object} preferences
+   * @returns {void}
+   * @private
+   */
+  _applyPreferencesToFile(file, preferences = null) {
+    if (!file) {
+      return;
+    }
+
+    const resolvedPreferences = preferences || this._getPreferences();
+
+    file.settings = {
+      ...(file.settings || {}),
+      autoUnempty: this._isPreferenceEnabled(
+        resolvedPreferences?.general?.autoUnempty,
+      ),
+    };
+  }
+
+  /**
+   * Apply current preferences to all active files.
+   * @param {object} preferences
+   * @returns {{ updatedFileCount: number }}
+   */
+  applyPreferenceSettings(preferences = null) {
+    this.activeFiles.forEach(({ file }) => {
+      this._applyPreferencesToFile(file, preferences);
+    });
+
+    return { updatedFileCount: this.activeFiles.size };
   }
 
   /**
@@ -42,6 +142,111 @@ class FranchiseFileManager {
   }
 
   /**
+   * Create a renderer-safe placeholder for a cell that could not be read.
+   * @returns {string}
+   */
+  _getUnreadableCellPlaceholder() {
+    return "Error loading cell";
+  }
+
+  /**
+   * Normalize thrown values into a readable message.
+   * @param {*} error
+   * @returns {string}
+   */
+  _getErrorMessage(error) {
+    return error?.message || String(error);
+  }
+
+  /**
+   * Serialize a single record into a renderer-safe plain object.
+   * @param {object} record
+   * @param {number} recordIndex
+   * @param {object} cellErrors
+   * @returns {object}
+   * @private
+   */
+  _serializeRecord(record, recordIndex, cellErrors = {}) {
+    return record.fieldsArray.reduce((accum, field) => {
+      try {
+        accum[field.key] = field.value;
+      } catch (error) {
+        if (!cellErrors[recordIndex]) {
+          cellErrors[recordIndex] = {};
+        }
+
+        cellErrors[recordIndex][field.key] = this._getErrorMessage(error);
+        accum[field.key] = this._getUnreadableCellPlaceholder();
+      }
+
+      return accum;
+    }, {});
+  }
+
+  /**
+   * Serialize renderer-relevant metadata for a single record.
+   * @param {object} record
+   * @param {number} recordIndex
+   * @returns {object}
+   * @private
+   */
+  _serializeRecordMeta(record, recordIndex) {
+    return {
+      index: recordIndex,
+      isEmpty: Boolean(record?.isEmpty),
+    };
+  }
+
+  /**
+   * Convert table.emptyRecords into a stable array of record indices.
+   * @param {*} emptyRecords
+   * @returns {number[]}
+   * @private
+   */
+  _serializeEmptyRecordIndices(emptyRecords) {
+    if (!emptyRecords) {
+      return [];
+    }
+
+    if (emptyRecords instanceof Map) {
+      return Array.from(emptyRecords.keys())
+        .map((value) => Number(value))
+        .filter((value) => Number.isInteger(value))
+        .sort((a, b) => a - b);
+    }
+
+    if (emptyRecords instanceof Set) {
+      return Array.from(emptyRecords)
+        .map((value) => Number(value))
+        .filter((value) => Number.isInteger(value))
+        .sort((a, b) => a - b);
+    }
+
+    if (Array.isArray(emptyRecords)) {
+      return emptyRecords
+        .map((value, index) => {
+          if (typeof value === "number") return value;
+          if (value && typeof value === "object") {
+            if (Number.isInteger(value.recordIndex)) return value.recordIndex;
+            if (Number.isInteger(value.index)) return value.index;
+          }
+          return Number.isInteger(index) ? index : null;
+        })
+        .filter((value) => Number.isInteger(value))
+        .sort((a, b) => a - b);
+    }
+
+    if (typeof emptyRecords === "object") {
+      return Object.keys(emptyRecords)
+        .map((value) => Number(value))
+        .filter((value) => Number.isInteger(value))
+        .sort((a, b) => a - b);
+    }
+
+    return [];
+  }
+
+  /**
    * Open a franchise file
    * @param {string} filePath - Absolute path to the file
    * @param {object} options - Options for opening the file
@@ -50,14 +255,7 @@ class FranchiseFileManager {
    * @returns {Promise<{ fileId: string, metadata: object }>}
    */
   async openFile(filePath, options = {}) {
-    const settings = {
-      schemaDirectory: options.schemaDirectory || this._schemaDirectory,
-      autoParse: true,
-    };
-
-    if (options.schemaOverride) {
-      settings.schemaOverride = options.schemaOverride;
-    }
+    const settings = this._buildFileSettings(options);
 
     return new Promise((resolve, reject) => {
       const file = new FranchiseFile(filePath, settings);
@@ -69,6 +267,7 @@ class FranchiseFileManager {
 
       file.on("ready", () => {
         file.off("error", reject);
+        this._applyPreferencesToFile(file);
 
         // Assume m22 if no game year is set
         if (!file._gameYear) {
@@ -116,6 +315,16 @@ class FranchiseFileManager {
     const entry = this.activeFiles.get(fileId);
     if (!entry) return null;
     return this._buildMetadata(entry.file);
+  }
+
+  /**
+   * Get an active franchise file by ID.
+   * @param {string} fileId
+   * @returns {FranchiseFile|null}
+   */
+  getFile(fileId) {
+    const entry = this.activeFiles.get(fileId);
+    return entry ? entry.file : null;
   }
 
   /**
@@ -387,16 +596,23 @@ class FranchiseFileManager {
 
     await table.readRecords(fields);
 
+    const cellErrors = {};
+    const records = table.records.map((record, recordIndex) =>
+      this._serializeRecord(record, recordIndex, cellErrors),
+    );
+    const recordMeta = table.records.map((record, recordIndex) =>
+      this._serializeRecordMeta(record, recordIndex),
+    );
+
     return {
       tableId: table.header.tableId,
+      header: { ...table.header },
       name: table.name,
       recordCount: table.records.length,
-      records: table.records.map((r) =>
-        r.fieldsArray.reduce((accum, cur) => {
-          accum[cur.key] = cur.value;
-          return accum;
-        }, {}),
-      ),
+      records,
+      recordMeta,
+      emptyRecordIndices: this._serializeEmptyRecordIndices(table.emptyRecords),
+      cellErrors,
       headers: table.offsetTable
         ? table.offsetTable.map((o) => ({
             name: o.name,
@@ -444,7 +660,77 @@ class FranchiseFileManager {
       throw new Error(`Record not found: ${recordIndex}`);
     }
 
+    const previousMeta = this._serializeRecordMeta(
+      table.records[recordIndex],
+      recordIndex,
+    );
+
     table.records[recordIndex][fieldName] = value;
+
+    const cellErrors = {};
+    const updatedRecord = this._serializeRecord(
+      table.records[recordIndex],
+      recordIndex,
+      cellErrors,
+    );
+    const updatedMeta = this._serializeRecordMeta(
+      table.records[recordIndex],
+      recordIndex,
+    );
+
+    return {
+      record: updatedRecord,
+      recordMeta: updatedMeta,
+      previousRecordMeta: previousMeta,
+      emptyRecordIndices: this._serializeEmptyRecordIndices(table.emptyRecords),
+      cellErrors: cellErrors[recordIndex] || null,
+    };
+  }
+
+  /**
+   * Set one or more records as empty for a table.
+   * @param {string} fileId
+   * @param {number} tableId
+   * @param {number[]} recordIndices
+   * @returns {Promise<object>}
+   */
+  async setTableRecordsEmpty(fileId, tableId, recordIndices = []) {
+    const entry = this.activeFiles.get(fileId);
+    if (!entry) {
+      throw new Error(`File not found: ${fileId}`);
+    }
+
+    const table = entry.file.getTableById(tableId);
+    if (!table) {
+      throw new Error(`Table not found: ${tableId}`);
+    }
+
+    if (!Array.isArray(recordIndices) || recordIndices.length === 0) {
+      return { affectedCount: 0, emptyRecordIndices: this._serializeEmptyRecordIndices(table.emptyRecords) };
+    }
+
+    await table.readRecords();
+
+    const uniqueIndices = Array.from(new Set(recordIndices))
+      .map((value) => Number(value))
+      .filter((value) => Number.isInteger(value) && value >= 0);
+
+    uniqueIndices.forEach((recordIndex) => {
+      if (!table.records[recordIndex]) {
+        throw new Error(`Record not found: ${recordIndex}`);
+      }
+
+      if (!table.records[recordIndex].isEmpty) {
+        table.records[recordIndex].empty();
+      }
+    });
+
+    table.recalculateEmptyRecordReferences();
+
+    return {
+      affectedCount: uniqueIndices.length,
+      emptyRecordIndices: this._serializeEmptyRecordIndices(table.emptyRecords),
+    };
   }
 
   /**
@@ -495,6 +781,103 @@ class FranchiseFileManager {
     const entry = this.activeFiles.get(fileId);
     if (!entry) return null;
     return entry.file.rawContents;
+  }
+
+  /**
+   * Get all records that reference a specific record.
+   * Falls back to a manual scan when the library helper is unavailable.
+   * @param {string} fileId
+   * @param {number} tableId
+   * @param {number} recordIndex
+   * @returns {Promise<Array<{tableId: number, name: string, recordIndex: number, fieldName?: string}>>}
+   */
+  async getReferencesToRecord(fileId, tableId, recordIndex) {
+    const entry = this.activeFiles.get(fileId);
+    if (!entry) {
+      throw new Error(`File not found: ${fileId}`);
+    }
+
+    const file = entry.file;
+    if (typeof file.getReferencesToRecord === "function") {
+      const result = file.getReferencesToRecord(tableId, recordIndex);
+      // Ensure the result is a plain array of plain objects
+      if (Array.isArray(result)) {
+        return result.map((ref) => ({
+          tableId: Number(ref.tableId),
+          name: String(ref.name),
+          recordIndex: Number(ref.recordIndex),
+          fieldName: ref.fieldName ? String(ref.fieldName) : undefined,
+        }));
+      }
+      return [];
+    }
+
+    const targetTableId = Number(tableId);
+    const targetRecordIndex = Number(recordIndex);
+    const references = [];
+    const seen = new Set();
+
+    for (const table of file.tables || []) {
+      const referenceHeaders = (table.offsetTable || []).filter(
+        (header) => header && header.isReference,
+      );
+
+      if (referenceHeaders.length === 0) {
+        continue;
+      }
+
+      try {
+        await table.readRecords();
+      } catch (error) {
+        console.warn(`Failed to read records for table ${table.name}:`, error);
+        continue;
+      }
+
+      if (!Array.isArray(table.records)) {
+        continue;
+      }
+
+      table.records.forEach((record, sourceRecordIndex) => {
+        if (!record) return;
+
+        for (const header of referenceHeaders) {
+          let referenceData;
+
+          try {
+            referenceData = record.getReferenceDataByKey(header.name);
+          } catch (error) {
+            continue;
+          }
+
+          if (!referenceData) {
+            continue;
+          }
+
+          const referencedTableId = Number(referenceData.tableId);
+          const referencedRecordIndex = Number(referenceData.recordIndex);
+
+          if (
+            referencedTableId === targetTableId &&
+            referencedRecordIndex === targetRecordIndex
+          ) {
+            const key = `${table.header.tableId}:${sourceRecordIndex}:${header.name}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              // Create a plain object with only serializable properties
+              references.push({
+                tableId: Number(table.header.tableId),
+                name: String(table.name),
+                recordIndex: Number(sourceRecordIndex),
+                fieldName: String(header.name),
+              });
+            }
+            break;
+          }
+        }
+      });
+    }
+
+    return references;
   }
 
   /**
@@ -609,14 +992,30 @@ class FranchiseFileManager {
       "franchise:write-table-cell",
       async (event, fileId, tableId, recordIndex, fieldName, value) => {
         try {
-          await this.writeTableCell(
+          const result = await this.writeTableCell(
             fileId,
             tableId,
             recordIndex,
             fieldName,
             value,
           );
-          return { success: true };
+          return { success: true, ...result };
+        } catch (err) {
+          return { error: err.message };
+        }
+      },
+    );
+
+    loggedIpc.handle(
+      "franchise:set-table-records-empty",
+      async (event, fileId, tableId, recordIndices) => {
+        try {
+          const result = await this.setTableRecordsEmpty(
+            fileId,
+            tableId,
+            recordIndices,
+          );
+          return { success: true, ...result };
         } catch (err) {
           return { error: err.message };
         }
@@ -663,11 +1062,11 @@ class FranchiseFileManager {
       "franchise:get-references-to-record",
       async (event, fileId, tableId, recordIndex) => {
         try {
-          const file = this.getFile(fileId);
-          if (!file) {
-            return { error: "File not found" };
-          }
-          const references = file.getReferencesToRecord(tableId, recordIndex);
+          const references = await this.getReferencesToRecord(
+            fileId,
+            tableId,
+            recordIndex,
+          );
           return { data: references };
         } catch (err) {
           return { error: err.message };

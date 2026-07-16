@@ -47,6 +47,7 @@ function registerSchemaViewerHandlers(loggedIpc, franchiseFileManager) {
       return {
         schemaInfo: file.schemaList.meta,
         expectedSchemaVersion: file.expectedSchemaVersion,
+        gameType: file.gameType,
       };
     } catch (error) {
       throw new Error(`Failed to get schema info: ${error.message}`);

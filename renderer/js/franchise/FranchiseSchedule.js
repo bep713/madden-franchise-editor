@@ -188,9 +188,11 @@ class FranchiseSchedule extends EventEmitter {
       });
 
     seasonGameData.records.forEach((record, index) => {
+      // Skip epoch logic for M21+ as it causes issues with schedule editing in some files, and it's only needed for the Replace All function
+      // which doesn't work on these game years anyway
       if (
         record.IsPractice ||
-        record.SeasonYear !== this.startTimes.seasonYear
+        (record.SeasonYear !== this.startTimes.seasonYear && this.gameYear < 21)
       ) {
         return;
       }

@@ -151,6 +151,12 @@ h1 {
     display: flex;
     height: 43px;
     align-items: center; }
+  .welcome .app-title-right .cfb-icons {
+    display: flex;
+    height: 43px;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: 6px; }
   .welcome .link-item {
     color: #0066cc;
     cursor: pointer; }
@@ -642,6 +648,11 @@ td.active-row {
   .table-cell--with-button.table-cell-button--show-on-hover:hover button {
     display: inherit; }
 
+.handsontable td.table-cell--error {
+  background-color: #e3e3e3;
+  color: #666;
+  font-style: italic; }
+
 .table-cell-button {
   flex-shrink: 0; }
   .table-cell-button.table-cell-button--right {
@@ -783,6 +794,16 @@ td.active-row {
   .madden-icon + .madden-icon {
     margin-left: 15px; }
   .madden-icon.inactive {
+    filter: saturate(0) blur(1px); }
+
+.cfb-icon {
+  background-repeat: no-repeat;
+  background-size: contain;
+  height: 36px;
+  width: 36px; }
+  .cfb-icon + .cfb-icon {
+    margin-left: 15px; }
+  .cfb-icon.inactive {
     filter: saturate(0) blur(1px); }
 
 #m19-icon {
@@ -1024,6 +1045,9 @@ td.active-row {
 
 #m98-icon {
   background-image: url(../img/M98.PNG); }
+
+#cfb27-icon {
+  background-image: url(../img/C27.png); }
 
 .format-selection-choices {
   display: grid;

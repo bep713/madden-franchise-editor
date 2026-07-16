@@ -34,10 +34,12 @@ schemaViewerService.runStartupTasks = async function () {
   schemaViewerService.schemaInfo = schemaInfoResult.schemaInfo;
   schemaViewerService.expectedSchemaVersion =
     schemaInfoResult.expectedSchemaVersion;
+  schemaViewerService.gameType = schemaInfoResult.gameType;
 
   manageSchemaVersionInfo(
     schemaViewerService.schemaInfo,
     schemaViewerService.expectedSchemaVersion,
+    schemaViewerService.gameType,
   );
   loadFields(
     schemaViewerService.fields,
@@ -165,7 +167,7 @@ function clearFields() {
   }
 }
 
-function manageSchemaVersionInfo(schemaInfo, expectedSchemaVersion) {
+function manageSchemaVersionInfo(schemaInfo, expectedSchemaVersion, gameType = "madden") {
   const major = document.querySelector(".schema-version-wrapper .major");
   const minor = document.querySelector(".schema-version-wrapper .minor");
   const year = document.querySelector(".schema-version-wrapper .year");
@@ -174,7 +176,7 @@ function manageSchemaVersionInfo(schemaInfo, expectedSchemaVersion) {
   minor.innerHTML = schemaInfo.minor;
 
   if (schemaInfo.gameYear) {
-    year.innerHTML = "M" + schemaInfo.gameYear;
+    year.innerHTML = (gameType === "college" ? "C" : "M") + schemaInfo.gameYear;
     year.classList.remove("hidden");
   } else {
     year.innerHTML = "M20";
@@ -195,7 +197,7 @@ function manageSchemaVersionInfo(schemaInfo, expectedSchemaVersion) {
   expectedMinor.innerHTML = expectedSchemaVersion.minor;
 
   if (expectedSchemaVersion.gameYear) {
-    expectedYear.innerHTML = "M" + expectedSchemaVersion.gameYear;
+    expectedYear.innerHTML = (gameType === "college" ? "C" : "M") + expectedSchemaVersion.gameYear;
     expectedYear.classList.remove("hidden");
   } else {
     expectedYear.innerHTML = "ANY";

@@ -27,6 +27,7 @@ class TableEditorView {
     this.currentlySelectedRow = 0;
     this.initialTableToSelect = initialTableToSelect;
     this.currentlySelectedColumn = 0;
+    this.cellErrors = {};
     this.loader = document.querySelector(".loader-wrapper");
     this.referenceEditorSelector = this.parent.referenceEditorSelector;
 
@@ -42,6 +43,7 @@ class TableEditorView {
       licenseKey: "non-commercial-and-evaluation",
       afterChange: this._processChanges.bind(this),
       afterSelection: this._processSelection.bind(this),
+      cells: this._getCellProperties.bind(this),
       contextMenu: contextMenuService.getContextMenu(this),
       rowHeaders: function (index) {
         return index;
@@ -58,7 +60,7 @@ class TableEditorView {
   }
 
   async _processChanges(changes, source) {
-    if (changes && source !== "onEmpty") {
+    if (changes && source !== "onEmpty" && source !== "cell-write-revert") {
       // Write each change to the main process via IPC
       for (const change of changes) {
         const recordIndex = this.hot.toPhysicalRow(change[0]);
@@ -68,7 +70,7 @@ class TableEditorView {
 
         try {
           // Write to main process via IPC
-          await window.franchiseAPI.writeTableCell(
+          const result = await window.franchiseAPI.writeTableCell(
             this.fileId,
             this.selectedTable.tableId,
             recordIndex,
@@ -76,16 +78,48 @@ class TableEditorView {
             newValue,
           );
 
-          // Update local cache
-          if (this.selectedTable.records[recordIndex]) {
+          if (result?.error) {
+            throw new Error(result.error);
+          }
+
+          // Keep local cache and row metadata in sync with main-process state
+          if (result?.record && this.selectedTable.records[recordIndex]) {
+            this.selectedTable.records[recordIndex] = result.record;
+          } else if (this.selectedTable.records[recordIndex]) {
             this.selectedTable.records[recordIndex][fieldName] = newValue;
+          }
+
+          if (result?.recordMeta) {
+            this.selectedTable.recordMeta = this.selectedTable.recordMeta || [];
+            this.selectedTable.recordMeta[recordIndex] = result.recordMeta;
+          }
+
+          if (Array.isArray(result?.emptyRecordIndices)) {
+            this.selectedTable.emptyRecordIndices = result.emptyRecordIndices;
+          }
+
+          if (result?.cellErrors) {
+            this.cellErrors[recordIndex] = result.cellErrors;
+          } else if (this.cellErrors[recordIndex]) {
+            delete this.cellErrors[recordIndex][fieldName];
+            if (Object.keys(this.cellErrors[recordIndex]).length === 0) {
+              delete this.cellErrors[recordIndex];
+            }
+          }
+
+          const wasEmpty = Boolean(result?.previousRecordMeta?.isEmpty);
+          const isEmpty = Boolean(result?.recordMeta?.isEmpty);
+
+          if (result?.record && wasEmpty && !isEmpty) {
+            this._syncVisibleRowFromRecord(change[0], result.record);
           }
         } catch (err) {
           // Revert the cell on error
           this.hot.setDataAtCell(
-            recordIndex,
+            change[0],
             this._getColumnIndex(fieldName),
             oldValue,
+            "cell-write-revert",
           );
           console.warn("Failed to write cell value:", err);
         }
@@ -100,6 +134,20 @@ class TableEditorView {
         window.franchiseAPI.saveFile(this.parent.fileId);
       }
     }
+  }
+
+  _syncVisibleRowFromRecord(visualRow, rowData) {
+    if (!this.selectedTable?.headers?.length || !rowData) {
+      return;
+    }
+
+    const rowUpdates = this.selectedTable.headers.map((header) => [
+      visualRow,
+      header.name,
+      rowData[header.name],
+    ]);
+
+    this.hot.setDataAtRowProp(rowUpdates, "onEmpty");
   }
 
   _getColumnIndex(fieldName) {
@@ -232,6 +280,11 @@ class TableEditorView {
       this.fileId,
       tableId,
     );
+
+    if (tableData?.error) {
+      throw new Error(tableData.error);
+    }
+
     this.selectedTable = tableData;
     this.loadTable(tableData);
     return tableData;
@@ -325,6 +378,7 @@ class TableEditorView {
 
   loadTable(table) {
     if (isDev()) console.time("get data");
+    this.cellErrors = table.cellErrors || {};
     const data = this._formatTable(table);
     if (isDev()) console.timeEnd("get data");
     const headers = this._formatHeaders(table);
@@ -341,6 +395,54 @@ class TableEditorView {
     this.hot.selectCell(this.rowIndexToSelect, this.columnIndexToSelect);
 
     utilService.hide(this.loader);
+  }
+
+  _getCellProperties(row, col) {
+    if (!this.selectedTable?.headers?.length) {
+      return {};
+    }
+
+    const physicalRow = this.hot?.toPhysicalRow ? this.hot.toPhysicalRow(row) : row;
+    const physicalColumn = this.hot?.toPhysicalColumn
+      ? this.hot.toPhysicalColumn(col)
+      : col;
+    const header = this.selectedTable.headers[physicalColumn];
+
+    if (!header) {
+      return {};
+    }
+
+    const errorMessage = this._getCellError(physicalRow, header.name);
+
+    if (!errorMessage) {
+      return {};
+    }
+
+    return {
+      className: "table-cell--error",
+      readOnly: true,
+      editor: false,
+      renderer: this._renderErrorCell.bind(this),
+      errorMessage,
+    };
+  }
+
+  _getCellError(recordIndex, fieldName) {
+    if (recordIndex === null || recordIndex === undefined || !fieldName) {
+      return null;
+    }
+
+    return this.cellErrors?.[recordIndex]?.[fieldName] || null;
+  }
+
+  _renderErrorCell(instance, td, row, col, prop, value, cellProperties) {
+    utilService.removeChildNodes(td);
+
+    td.classList.add("table-cell--error");
+    td.title = cellProperties.errorMessage || "";
+    td.textContent = value || "Error loading cell";
+
+    return td;
   }
 
   _formatTable(table) {
