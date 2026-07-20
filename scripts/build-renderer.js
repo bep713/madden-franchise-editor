@@ -20,23 +20,23 @@ if (isWatchMode) {
 
 const bundles = [
   {
-    entry: "renderer/js/index.js",
-    output: "renderer/js/bundle.js",
+    entry: "../renderer/js/index.js",
+    output: "../renderer/js/bundle.js",
     label: "Main renderer",
   },
   {
-    entry: "renderer/js/schemaManager.js",
-    output: "renderer/js/schemaManager.bundle.js",
+    entry: "../renderer/js/schemaManager.js",
+    output: "../renderer/js/schemaManager.bundle.js",
     label: "Schema manager",
   },
   {
-    entry: "renderer/js/settingsManager.js",
-    output: "renderer/js/settingsManager.bundle.js",
+    entry: "../renderer/js/settingsManager.js",
+    output: "../renderer/js/settingsManager.bundle.js",
     label: "Settings manager",
   },
   {
-    entry: "renderer/js/worker.js",
-    output: "renderer/js/worker.bundle.js",
+    entry: "../renderer/js/worker.js",
+    output: "../renderer/js/worker.bundle.js",
     label: "Worker",
   },
 ];
@@ -59,7 +59,7 @@ function createBundler(entry, label) {
   }
 
   // Shim electron module for renderer (contextIsolation: true)
-  b.require("./renderer/js/electron-shim.js", { expose: "electron" });
+  b.require("../renderer/js/electron-shim.js", { expose: "electron" });
   // Ignore madden-franchise since it runs in main process
   b.ignore("madden-franchise");
   // Ignore lz4-napi (native module, runs in main process)
