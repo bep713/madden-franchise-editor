@@ -93,7 +93,7 @@ ipcRenderer.send("open-external-url", url);
 
 ### Build System
 
-- **Renderer bundling:** `build-renderer.js` uses browserify to create 4 bundles
+- **Renderer bundling:** `scripts/build-renderer.js` uses browserify to create 4 bundles
 - **SASS:** `gulpfile.js` compiles SASS → CSS
 - **Native modules:** `electron-rebuild` for `lz4-napi`
 - **Patches:** `patch-package` runs on postinstall

@@ -1,10 +1,14 @@
+@use "sass:color";
+@use "framework";
+@use "index";
+
 .notification-wrapper {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
   padding: 20px;
-  background: $welcome-link-color;
+  background: index.$welcome-link-color;
   color: #FFF;
   z-index: 1000;
   transition: transform 300ms ease-in-out;
@@ -13,14 +17,14 @@
   flex-direction: column;
 
   &.notification-wrapper--green {
-    background: $success-primary;
+    background: framework.$success-primary;
   }
 
   &.notification-wrapper--red {
-    background: $error-primary;
+    background: framework.$error-primary;
   }
 
-  @media(min-width: $breakpoint-md) {
+  @media(min-width: framework.$breakpoint-md) {
     flex-direction: row;
   }
 
@@ -28,18 +32,18 @@
     margin-top: 15px;
     text-align: right;
 
-    @media(min-width: $breakpoint-md) {
+    @media(min-width: framework.$breakpoint-md) {
       margin-top: 0;
       flex-basis: 50%;
       align-self: center;
     }
 
-    @media(min-width: $breakpoint-lg) {
+    @media(min-width: framework.$breakpoint-lg) {
       flex-basis: inherit;
     }
 
     &.action-buttons--sm {
-      @media(min-width: $breakpoint-md) {
+      @media(min-width: framework.$breakpoint-md) {
         flex-basis: inherit;
       }
     }
@@ -70,17 +74,17 @@
 
   .primary-button {
     background-color: #FFF;
-    color: $welcome-link-color;
+    color: index.$welcome-link-color;
     border-radius: 4px;
 
     &:hover,
     &:focus {
-      color: $welcome-link-color;
-      background-color: darken(#FFF, 5%);
+      color: index.$welcome-link-color;
+      background-color: color.adjust(#FFF, $lightness: -5%);
     }
 
     &:active {
-      background-color: darken(#FFF, 15%);
+      background-color: color.adjust(#FFF, $lightness: -15%);
     }
 
     &:active,
@@ -91,28 +95,28 @@
 }
 
 .notification-text {
-  @media(min-width: $breakpoint-sm) {
+  @media(min-width: framework.$breakpoint-sm) {
     flex-basis: 40%;
   }
 
-  @media(min-width: $breakpoint-md) {
+  @media(min-width: framework.$breakpoint-md) {
     flex-basis: 50%;
   }
 
-  @media(min-width: $breakpoint-lg) {
+  @media(min-width: framework.$breakpoint-lg) {
     flex-basis: inherit;
   }
 
   &.notification-text--lg {
-    @media(min-width: $breakpoint-sm) {
+    @media(min-width: framework.$breakpoint-sm) {
       flex-basis: inherit;
     }
   
-    @media(min-width: $breakpoint-md) {
+    @media(min-width: framework.$breakpoint-md) {
       flex-basis: inherit;
     }
   
-    @media(min-width: $breakpoint-lg) {
+    @media(min-width: framework.$breakpoint-lg) {
       flex-basis: inherit;
     }
   }

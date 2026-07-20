@@ -1,12 +1,16 @@
+@use "sass:color";
+@use "framework";
+@use "index";
+
 .settings-manager {
     overflow: inherit;
-    background: $welcome-bg-color;
+    background: index.$welcome-bg-color;
 }
 
 .title-wrapper {
     padding: 20px;
     text-align: center;
-    background-color: $brand-link-color;
+    background-color: framework.$brand-link-color;
     color: #FFF;
 
     h1 {
@@ -21,7 +25,7 @@
 }
 
 .settings-container-content {
-    background: $welcome-bg-color;
+    background: index.$welcome-bg-color;
     padding: 40px 40px 100px 40px;
 
     
@@ -70,17 +74,17 @@
     right: 0;
     padding: 10px 20px;
     background-color: #fff;
-    border-top: 1px solid $brand-link-color;
+    border-top: 1px solid framework.$brand-link-color;
     
     .btn {
-        border: 1px solid $brand-link-color;
+        border: 1px solid framework.$brand-link-color;
         border-radius: 2px;
-        background: $welcome-bg-color;
+        background: index.$welcome-bg-color;
         padding: 15px;
         cursor: pointer;
     
         &:hover {
-            background: darken($welcome-bg-color, 3);
+            background: color.adjust(index.$welcome-bg-color, $lightness: -3%);
         }
     }
 }

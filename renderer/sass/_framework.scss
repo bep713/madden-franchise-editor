@@ -1,3 +1,4 @@
+@use "sass:color";
 $brand-primary: #e98819;
 $brand-black: #333;
 $brand-link-color: #0079c1;
@@ -17,7 +18,7 @@ $font-weight-bold: 600;
 
 $button-orange: #e9881947;
 $button-orange-hover: #ffd7aa;
-$button-orange-active: darken(#ffd7aa, 5%);
+$button-orange-active: color.adjust(#ffd7aa, $lightness: -5%);
 
 $background-color: #f0f0f0;
 
@@ -66,7 +67,7 @@ h1 {
   &:hover,
   &:focus,
   &:active {
-    background-color: darken($brand-primary, 5%);
+    background-color: color.adjust($brand-primary, $lightness: -5%);
   }
 }
 

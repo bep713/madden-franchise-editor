@@ -1,8 +1,10 @@
+@use "framework";
+
 .context-menu {
   width: 150px;
   position: absolute;
   z-index: 2;
-  border: 1px solid $brand-black;
+  border: 1px solid framework.$brand-black;
   background: #FFF;
 
   ul {

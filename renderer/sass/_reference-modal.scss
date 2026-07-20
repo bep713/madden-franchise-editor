@@ -1,3 +1,5 @@
+@use "framework";
+
 .reference-modal {
     max-height: 80%;
     overflow: auto;
@@ -12,11 +14,11 @@
         cursor: pointer;
 
         &:hover{
-            background-color: $button-orange-hover;
+            background-color: framework.$button-orange-hover;
         }
 
         &:active {
-            background-color: $button-orange-active;
+            background-color: framework.$button-orange-active;
         }
 
         + .reference-link {

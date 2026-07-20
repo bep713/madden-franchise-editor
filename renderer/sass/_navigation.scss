@@ -1,3 +1,6 @@
+@use "framework";
+@use "index";
+
 $navigation-breakpoint: 900px;
 
 .navigation {
@@ -22,13 +25,13 @@ $navigation-breakpoint: 900px;
 .nav-item {
   display: none;
   cursor: pointer;
-  color: $welcome-link-color;
+  color: index.$welcome-link-color;
   // padding: 30px 0;
   padding: 0 50px;
   background-size: 50%;
   background-repeat: no-repeat;
   background-position: center;
-  font-size: $font-size-small;
+  font-size: framework.$font-size-small;
   // border-bottom: 1px solid #d1d1d1;
 
   @media (min-width: $navigation-breakpoint) {
@@ -43,12 +46,12 @@ $navigation-breakpoint: 900px;
   }
 
   &.active {
-    color: $brand-black;
+    color: framework.$brand-black;
     cursor: default;
     background-color: #fff;
 
     &:hover {
-      color: $brand-black;
+      color: framework.$brand-black;
     }
   }
 

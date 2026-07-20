@@ -1,6 +1,9 @@
+@use "sass:color";
+@use "framework";
+
 $welcome-link-color: #0066cc;
 $welcome-bg-color: #e9e9e9;
-$brand-color: $brand-primary;
+$brand-color: framework.$brand-primary;
 
 .app-brand {
   height: 50px;
@@ -56,7 +59,7 @@ $brand-color: $brand-primary;
       margin-bottom: 0;
       font-size: 28px;
 
-      @media(min-width: $breakpoint-md) {
+      @media(min-width: framework.$breakpoint-md) {
         font-size: 36px;
       }
     }
@@ -88,15 +91,15 @@ $brand-color: $brand-primary;
     cursor: pointer;
 
     &:hover {
-      color: darken($welcome-link-color, 10%);
+      color: color.adjust($welcome-link-color, $lightness: -10%);
     }
 
     &.disabled {
-      color: $brand-black;
+      color: framework.$brand-black;
       cursor: default;
 
       &:hover {
-        color: $brand-black;
+        color: framework.$brand-black;
       }
     }
 
@@ -113,11 +116,11 @@ $brand-color: $brand-primary;
   }
 
   .file-path {
-    color: $brand-black;
+    color: framework.$brand-black;
   }
 
   .time {
-    color: $brand-black;
+    color: framework.$brand-black;
     font-style: italic;
     font-size: 14px;
   }

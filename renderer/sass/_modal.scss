@@ -1,3 +1,5 @@
+@use "framework";
+
 $modal-bg-color: #F2F2F2;
 
 .modal {
@@ -7,10 +9,10 @@ $modal-bg-color: #F2F2F2;
   z-index: 201;
   background-color: $modal-bg-color;
   padding: 20px;
-  border: 1px solid $brand-black;
+  border: 1px solid framework.$brand-black;
   margin-left: -20px;
 
-  @media (min-width: $breakpoint-md) {
+  @media (min-width: framework.$breakpoint-md) {
     margin-left: 0;
     left: calc(50% - 300px);
     width: 600px;

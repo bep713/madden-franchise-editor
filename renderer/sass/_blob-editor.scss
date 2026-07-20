@@ -1,10 +1,12 @@
+@use "framework";
+
 .blob-editor-modal {
     max-height: 80%;
     display: grid;
     grid-template-rows: 38px calc(100% - 38px);
 
     .close-modal {
-        color: $brand-link-color;
+        color: framework.$brand-link-color;
     }
 }
 

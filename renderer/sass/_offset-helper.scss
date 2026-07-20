@@ -1,3 +1,5 @@
+@use "framework";
+
 %textarea-size {
   width: 1000px;
   height: 250px;
@@ -141,5 +143,5 @@ textarea {
 }
 
 .offset-match {
-  background-color: $brand-primary;
+  background-color: framework.$brand-primary;
 }
