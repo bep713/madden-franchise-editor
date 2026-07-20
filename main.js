@@ -63,14 +63,24 @@ if (isDev) {
       path.join(__dirname, "preload"),
       path.join(__dirname, "renderer", "js", "bundle.js"),
       path.join(__dirname, "renderer", "js", "*.bundle.js"),
+      path.join(__dirname, "renderer", "css", "app-manifest.css"),
+      path.join(__dirname, "renderer", "*.html"),
     ],
     {
+      electron: path.join(
+        __dirname,
+        "node_modules",
+        ".bin",
+        process.platform === "win32" ? "electron.cmd" : "electron",
+      ),
+      hardResetMethod: "exit",
       // Ignore node_modules (except madden-franchise), dotfiles, temp dirs
       ignored: [
         /node_modules\/(?!madden-franchise)/,
         /[\/\\]\./,
         /temp/,
         /\.watcher-ready$/,
+        /renderer\/sass/,
       ],
     },
   );
