@@ -94,7 +94,7 @@ const loggedIpc = createLoggedIpcMain(ipcMain);
 
 // Register franchise IPC handlers
 franchiseFileManager.setPreferencesProvider(() =>
-  preferencesHandler.getPreferencesInstance()?.value(),
+  preferencesHandler.getPreferencesInstance()?.value(undefined, ""),
 );
 franchiseFileManager.registerIpcHandlers(loggedIpc);
 registerExternalDataHandlers(loggedIpc, franchiseFileManager);

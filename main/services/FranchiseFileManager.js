@@ -72,14 +72,18 @@ class FranchiseFileManager {
    */
   _buildFileSettings(options = {}) {
     const preferences = this._getPreferences();
+    const autoSave =
+      options.autoSave ??
+      this._isPreferenceEnabled(preferences?.general?.autoSave);
     const autoUnempty =
       options.autoUnempty ??
       this._isPreferenceEnabled(preferences?.general?.autoUnempty);
 
     const settings = {
-      schemaDirectory: options.schemaDirectory || this._schemaDirectory,
       autoParse: true,
       autoUnempty,
+      saveOnChange: autoSave,
+      schemaDirectory: options.schemaDirectory || this._schemaDirectory,
     };
 
     if (options.schemaOverride) {
@@ -107,6 +111,9 @@ class FranchiseFileManager {
       ...(file.settings || {}),
       autoUnempty: this._isPreferenceEnabled(
         resolvedPreferences?.general?.autoUnempty,
+      ),
+      saveOnChange: this._isPreferenceEnabled(
+        resolvedPreferences?.general?.autoSave,
       ),
     };
   }

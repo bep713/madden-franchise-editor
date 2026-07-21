@@ -241,8 +241,8 @@ class ExternalDataHandler {
         this.tableEditorWrapper.fileId,
         table.tableId,
       );
-      this.tableEditorWrapper.selectedTableEditor.loadTable(
-        this.tableEditorWrapper.selectedTableEditor.selectedTable,
+      await this.tableEditorWrapper.selectedTableEditor.loadTableById(
+        table.tableId,
       );
       this.loader.hide();
       ipcRenderer.send("imported");

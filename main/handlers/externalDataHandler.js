@@ -149,8 +149,8 @@ function registerExternalDataHandlers(loggedIpc, franchiseFileManager) {
         console.timeEnd("recalc");
 
         if (flipSaveOnChange) {
-          this.tableEditorWrapper.file.save();
-          this.tableEditorWrapper.file.settings.saveOnChange = true;
+          entry.file.save();
+          entry.file.settings.saveOnChange = true;
         }
 
         console.timeEnd("import-bulk");

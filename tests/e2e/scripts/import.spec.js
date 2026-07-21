@@ -4,18 +4,15 @@ const { test } = require("@playwright/test");
 
 const electron = require("../util/Electron");
 const FilePaths = require("../util/FilePaths");
+const TestUtil = require("../util/TestUtil");
 
 const App = require("../models/App");
 const WelcomePage = require("../models/WelcomePage");
 const TableEditorPage = require("../models/TableEditorPage");
 const SettingsManager = require("../models/SettingsManager");
 
-test.beforeAll(async () => {
-  // Overwrite the test file so that we never change the pristine career file.
-  // It will always start with the same state.
-  const pristineCareer = await fs.readFile(FilePaths.m22.career.pristine);
-  await fs.writeFile(FilePaths.m22.career.test, pristineCareer);
-});
+test.beforeAll(TestUtil.overwriteTestCareer);
+test.afterAll(TestUtil.overwriteTestCareer);
 
 test("import table e2e test", async () => {
   const electronApp = await electron.launchWithDefaultOptions();
@@ -136,7 +133,7 @@ test("import table e2e test", async () => {
   async function toggleAutoSave(val) {
     await app._clickMenuItem("ViewReleaseNotes");
 
-    await wait(1000);
+    await wait(1500);
     const settingsManagerWindow = await app.getSettingsManager();
     const settingsManager = new SettingsManager(settingsManagerWindow);
 

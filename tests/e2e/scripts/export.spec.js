@@ -6,17 +6,14 @@ const { test } = require("@playwright/test");
 
 const electron = require("../util/Electron");
 const FilePaths = require("../util/FilePaths");
+const TestUtil = require("../util/TestUtil");
 
 const App = require("../models/App");
 const WelcomePage = require("../models/WelcomePage");
 const TableEditorPage = require("../models/TableEditorPage");
 
-test.beforeAll(async () => {
-  // Overwrite the test file so that we never change the pristine career file.
-  // It will always start with the same state.
-  const pristineCareer = await fs.readFile(FilePaths.m22.career.pristine);
-  await fs.writeFile(FilePaths.m22.career.test, pristineCareer);
-});
+test.beforeAll(TestUtil.overwriteTestCareer);
+test.afterAll(TestUtil.overwriteTestCareer);
 
 test("export table e2e test", async () => {
   const electronApp = await electron.launchWithDefaultOptions();

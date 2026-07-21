@@ -1,81 +1,77 @@
-const path = require('path');
-const fs = require('fs/promises');
-const { expect } = require('chai');
-const { test,  } = require('@playwright/test');
+const path = require("path");
+const fs = require("fs/promises");
+const { expect } = require("chai");
+const { test } = require("@playwright/test");
 
-const electron = require('../util/Electron');
-const FilePaths = require('../util/FilePaths');
+const electron = require("../util/Electron");
+const FilePaths = require("../util/FilePaths");
+const TestUtil = require("../util/TestUtil");
 
-const App = require('../models/App');
-const WelcomePage = require('../models/WelcomePage');
-const TableEditorPage = require('../models/TableEditorPage');
-const ReferenceEditorModal = require('../models/ReferenceEditorModal');
+const App = require("../models/App");
+const WelcomePage = require("../models/WelcomePage");
+const TableEditorPage = require("../models/TableEditorPage");
+const ReferenceEditorModal = require("../models/ReferenceEditorModal");
 
-test.beforeAll(async () => {
-  // Overwrite the test file so that we never change the pristine career file.
-  // It will always start with the same state.
-  const pristineCareer = await fs.readFile(FilePaths.m22.career.pristine);
-  await fs.writeFile(FilePaths.m22.career.test, pristineCareer);
-});
+test.beforeAll(TestUtil.overwriteTestCareer);
+test.afterAll(TestUtil.overwriteTestCareer);
 
-test('back button e2e test', async () => {
-    const electronApp = await electron.launchWithDefaultOptions();
-    const app = new App(electronApp);
-    
-    const window = await app.getMainWindow();
+test("back button e2e test", async () => {
+  const electronApp = await electron.launchWithDefaultOptions();
+  const app = new App(electronApp);
 
-    const welcome = new WelcomePage(window);
+  const window = await app.getMainWindow();
 
-    await welcome.waitForPageLoad();
+  const welcome = new WelcomePage(window);
 
-    // can open the table editor
-    await welcome.openFranchiseFile(FilePaths.m22.career.test);
-    await welcome.openTableEditor();
+  await welcome.waitForPageLoad();
 
-    const tableEditor = new TableEditorPage(window);
+  // can open the table editor
+  await welcome.openFranchiseFile(FilePaths.m22.career.test);
+  await welcome.openTableEditor();
 
-    // Can go back one table
-    await tableEditor.openTableById(7482);
-    await tableEditor.clickBackButton();
+  const tableEditor = new TableEditorPage(window);
 
-    let tableName = await tableEditor.getSelectedTableName();
-    expect(tableName).to.equal('4097 - OverallPercentage');
-   
-    // can go back after clicking on a reference
-    await tableEditor.followSelectedCellReference();
-    await tableEditor.clickBackButton();
-    tableName = await tableEditor.getSelectedTableName();
-    expect(tableName).to.equal('4097 - OverallPercentage');
+  // Can go back one table
+  await tableEditor.openTableById(7482);
+  await tableEditor.clickBackButton();
 
-    // can go back to the specific cell that you were on
-    await tableEditor.selectCellAt(5, 0);
-    await tableEditor.followSelectedCellReference();
-    await tableEditor.clickBackButton();
-    let cellText = await tableEditor.getTextAtSelectedCell();
-    expect(cellText).to.equal('Spline - 5');
+  let tableName = await tableEditor.getSelectedTableName();
+  expect(tableName).to.equal("4097 - OverallPercentage");
 
-    // can go back multiple tables and cells
-    await tableEditor.followSelectedCellReference();
-    await tableEditor.selectCellAt(5, 1);
-    await tableEditor.followSelectedCellReference();
-    await tableEditor.clickBackButton();
-    tableName = await tableEditor.getSelectedTableName();
-    expect(tableName).to.equal('7022 - Spline');
-    cellText = await tableEditor.getTextAtSelectedCell();
-    expect(cellText).to.equal('int[] - 10');
+  // can go back after clicking on a reference
+  await tableEditor.followSelectedCellReference();
+  await tableEditor.clickBackButton();
+  tableName = await tableEditor.getSelectedTableName();
+  expect(tableName).to.equal("4097 - OverallPercentage");
 
-    await tableEditor.clickBackButton();
-    tableName = await tableEditor.getSelectedTableName();
-    expect(tableName).to.equal('4097 - OverallPercentage');
-    cellText = await tableEditor.getTextAtSelectedCell();
-    expect(cellText).to.equal('Spline - 5');
+  // can go back to the specific cell that you were on
+  await tableEditor.selectCellAt(5, 0);
+  await tableEditor.followSelectedCellReference();
+  await tableEditor.clickBackButton();
+  let cellText = await tableEditor.getTextAtSelectedCell();
+  expect(cellText).to.equal("Spline - 5");
+
+  // can go back multiple tables and cells
+  await tableEditor.followSelectedCellReference();
+  await tableEditor.selectCellAt(5, 1);
+  await tableEditor.followSelectedCellReference();
+  await tableEditor.clickBackButton();
+  tableName = await tableEditor.getSelectedTableName();
+  expect(tableName).to.equal("7022 - Spline");
+  cellText = await tableEditor.getTextAtSelectedCell();
+  expect(cellText).to.equal("int[] - 10");
+
+  await tableEditor.clickBackButton();
+  tableName = await tableEditor.getSelectedTableName();
+  expect(tableName).to.equal("4097 - OverallPercentage");
+  cellText = await tableEditor.getTextAtSelectedCell();
+  expect(cellText).to.equal("Spline - 5");
 });
 
 async function wait(ms) {
-    await new Promise((resolve) => {
-      setTimeout(() => {
-        resolve();
-      }, ms)
-    });
-  };
-  
+  await new Promise((resolve) => {
+    setTimeout(() => {
+      resolve();
+    }, ms);
+  });
+}
