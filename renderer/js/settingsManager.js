@@ -40,6 +40,8 @@ async function initializeSettingsManagerAsync() {
     setTimeout(() => {
       showPages(pagesToShow);
     }, 1000);
+  } else {
+    window.electronAPI.preferences.hideWindow();
   }
 }
 
