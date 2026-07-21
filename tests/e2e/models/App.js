@@ -28,15 +28,18 @@ class App {
     const fileId = await mainWindow.evaluate(() =>
       window.franchiseAPI.getActiveFileId(),
     );
-    await mainWindow.evaluate((id) => window.franchiseAPI.saveFile(id), fileId);
-    await mainWindow.waitForFunction(() => document.title.includes("Saved"), {
-      timeout: 5000,
-    });
+    await mainWindow.evaluate(
+      async (id) => await window.franchiseAPI.saveFile(id),
+      fileId,
+    );
   }
 
   async _clickMenuItem(menuItemId) {
     const mainWindow = await this.getMainWindow();
-    await mainWindow.evaluate((id) => window.electronAPI.menu.clickItem(id));
+    await mainWindow.evaluate(
+      (id) => window.electronAPI.menu.clickItem(id),
+      menuItemId,
+    );
   }
 }
 

@@ -9,6 +9,10 @@ const isDev = process.env.NODE_ENV === "development";
  */
 function createLoggedIpcMain(ipcMain) {
   return {
+    emit(eventName, ...args) {
+      log.debug(`[Main] ${eventName}`);
+      ipcMain.emit(eventName, ...args);
+    },
     handle(channel, handler) {
       return ipcMain.handle(channel, async (event, ...args) => {
         if (isDev) {

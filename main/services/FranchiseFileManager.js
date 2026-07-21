@@ -29,7 +29,8 @@ class FranchiseFileManager {
    * @param {Function|null} provider
    */
   setPreferencesProvider(provider) {
-    this._preferencesProvider = typeof provider === "function" ? provider : null;
+    this._preferencesProvider =
+      typeof provider === "function" ? provider : null;
   }
 
   /**
@@ -362,9 +363,10 @@ class FranchiseFileManager {
    * @param {string} fileId
    * @param {object} options
    * @param {boolean} [options.sync] - Use synchronous save
+   * @param {object} loggedIpc
    * @returns {Promise<string>}
    */
-  async saveFile(fileId, options = {}) {
+  async saveFile(fileId, options = {}, loggedIpc) {
     const entry = this.activeFiles.get(fileId);
     if (!entry) {
       throw new Error(`File not found: ${fileId}`);
@@ -373,7 +375,7 @@ class FranchiseFileManager {
     const { file } = entry;
 
     return new Promise((resolve, reject) => {
-      file.emit("saving");
+      loggedIpc.emit("saving");
 
       const savePromise = options.sync
         ? Promise.resolve(file.save(null, { sync: true }))
@@ -381,7 +383,7 @@ class FranchiseFileManager {
 
       savePromise
         .then(() => {
-          file.emit("saved");
+          loggedIpc.emit("saved");
           resolve(file.filePath || entry.path);
         })
         .catch(reject);
@@ -392,9 +394,10 @@ class FranchiseFileManager {
    * Save file to a new path
    * @param {string} fileId
    * @param {string} newPath
+   * @param {Object} loggedIpc
    * @returns {Promise<string>}
    */
-  async saveFileAs(fileId, newPath) {
+  async saveFileAs(fileId, newPath, loggedIpc) {
     const entry = this.activeFiles.get(fileId);
     if (!entry) {
       throw new Error(`File not found: ${fileId}`);
@@ -402,7 +405,7 @@ class FranchiseFileManager {
 
     entry.file.filePath = newPath;
     entry.path = newPath;
-    return this.saveFile(fileId);
+    return this.saveFile(fileId, {}, loggedIpc);
   }
 
   /**
@@ -706,7 +709,12 @@ class FranchiseFileManager {
     }
 
     if (!Array.isArray(recordIndices) || recordIndices.length === 0) {
-      return { affectedCount: 0, emptyRecordIndices: this._serializeEmptyRecordIndices(table.emptyRecords) };
+      return {
+        affectedCount: 0,
+        emptyRecordIndices: this._serializeEmptyRecordIndices(
+          table.emptyRecords,
+        ),
+      };
     }
 
     await table.readRecords();
@@ -921,7 +929,7 @@ class FranchiseFileManager {
 
     loggedIpc.handle("franchise:save-file", async (event, fileId, options) => {
       try {
-        const path = await this.saveFile(fileId, options);
+        const path = await this.saveFile(fileId, options, loggedIpc);
         return { path };
       } catch (err) {
         return { error: err.message };
@@ -932,7 +940,7 @@ class FranchiseFileManager {
       "franchise:save-file-as",
       async (event, fileId, newPath) => {
         try {
-          const path = await this.saveFileAs(fileId, newPath);
+          const path = await this.saveFileAs(fileId, newPath, loggedIpc);
           return { path };
         } catch (err) {
           return { error: err.message };

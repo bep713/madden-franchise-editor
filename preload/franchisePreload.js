@@ -12,7 +12,7 @@ ipcRenderer.invoke = async (channel, ...args) => {
   try {
     const result = await originalInvoke(channel, ...args);
     if (isDev) {
-      console.debug(`[IPC ← Renderer] ${channel} (success)`);
+      console.debug(`[IPC ← Renderer] ${channel} (success) Result:\n`, result);
     }
     return result;
   } catch (error) {
@@ -262,11 +262,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // Preferences operations
   preferences: {
     get: () => ipcRenderer.invoke("preferences:get"),
-    set: (prefs) => ipcRenderer.invoke("preferences:set", prefs),
     getValue: (keyPath) => ipcRenderer.invoke("preferences:get-value", keyPath),
     getDocumentsPath: () =>
       ipcRenderer.invoke("preferences:get-documents-path"),
     getSections: () => ipcRenderer.invoke("preferences:get-sections"),
+    hideWindow: () => ipcRenderer.invoke("preferences:hide-window"),
+    set: (prefs) => ipcRenderer.invoke("preferences:set", prefs),
   },
 
   // Recent files operations

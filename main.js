@@ -783,6 +783,12 @@ function addIpcListeners() {
   ipcMain.on("open-path", (event, filePath) => {
     shell.openPath(filePath);
   });
+
+  ipcMain.handle("preferences:hide-window", () => {
+    if (settingsWindow) {
+      settingsWindow.hide();
+    }
+  });
 }
 
 function createSchemaWindow(show) {

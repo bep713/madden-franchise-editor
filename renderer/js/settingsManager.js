@@ -64,7 +64,26 @@ function addIpcListeners() {
     showPages(pagesToShow);
   });
 
-  ipcRenderer.on("show-settings-dialog", () => {});
+  ipcRenderer.on("show-settings-dialog", () => {
+    let pagesToShow = [];
+
+    for (let page in preferences.settingsManager) {
+      if (page === "appVersions") break;
+      pagesToShow.push(page);
+    }
+
+    pagesToShow = pagesToShow
+      .map((page) => {
+        return pageData.items.find((data) => {
+          return data.id === page;
+        });
+      })
+      .sort((a, b) => {
+        return a.order - b.order;
+      });
+
+    showPages(pagesToShow);
+  });
 }
 
 function showPages(pages) {
@@ -78,7 +97,7 @@ function showPages(pages) {
 
     if (!currentPage) {
       setAllSettingsAsShown();
-      window.close();
+      window.electronAPI.preferences.hideWindow();
       return;
     }
 

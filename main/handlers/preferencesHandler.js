@@ -61,7 +61,7 @@ function registerPreferencesHandlers(loggedIpc, franchiseFileManager = null) {
       if (!preferencesInstance) {
         throw new Error("Preferences not initialized");
       }
-      return preferencesInstance.value();
+      return preferencesInstance.value(undefined, ""); // Bug with preferences module: we need to pass a non-null value to get all prefs.
     } catch (error) {
       throw new Error(`Failed to get preferences: ${error.message}`);
     }
@@ -85,7 +85,9 @@ function registerPreferencesHandlers(loggedIpc, franchiseFileManager = null) {
       }
 
       if (franchiseFileManager?.applyPreferenceSettings) {
-        franchiseFileManager.applyPreferenceSettings(preferencesInstance.value());
+        franchiseFileManager.applyPreferenceSettings(
+          preferencesInstance.value(),
+        );
       }
 
       return true;
