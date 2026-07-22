@@ -16,7 +16,7 @@ const ReferenceEditorModal = require("../models/ReferenceEditorModal");
 test.beforeAll(TestUtil.overwriteTestCareer);
 test.afterAll(TestUtil.overwriteTestCareer);
 
-test("basic test", async () => {
+test("tabs test", async () => {
   const electronApp = await electron.launchWithDefaultOptions();
   const app = new App(electronApp);
 

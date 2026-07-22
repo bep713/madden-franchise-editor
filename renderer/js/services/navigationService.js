@@ -362,7 +362,7 @@ navigationService.onTableEditorClicked = async function () {
   appendNavigation();
   postGenerateNavigation();
 
-  tableEditorWrapper.start(navigationService.currentlyOpenedFile.fileId);
+  await tableEditorWrapper.start(navigationService.currentlyOpenedFile.fileId);
 
   const activeTab = navigationService.getActiveTab();
 

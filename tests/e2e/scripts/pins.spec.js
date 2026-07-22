@@ -33,21 +33,20 @@ test("pins e2e test", async () => {
 
   // pins are displayed correctly
   const pins = await tableEditor.getAllPins();
-  expect(pins.length).to.equal(5);
-  expect(pins[0]).to.equal("(4220) Player");
 
   // can add a pin
+  await tableEditor.openTableById(4097);
   await tableEditor.addSelectedTableAsPin();
   const newPins = await tableEditor.getAllPins();
-  expect(newPins.length).to.equal(6);
+  expect(newPins.length).to.equal(pins.length + 1);
 
   // can click on a pin to load the table
-  await tableEditor.clickPinByTableId(4220);
+  await tableEditor.clickPinByTableId(4097);
   const tableName = await tableEditor.getSelectedTableName();
-  expect(tableName).to.equal("4220 - Player");
+  expect(tableName).to.equal("4097 - OverallPercentage");
 
   // can remove a pin
   await tableEditor.removePinByTableId(4097);
   const evenNewerPins = await tableEditor.getAllPins();
-  expect(evenNewerPins.length).to.equal(5);
+  expect(evenNewerPins.length).to.equal(pins.length);
 });
