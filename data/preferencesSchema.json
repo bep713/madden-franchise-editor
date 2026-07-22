@@ -116,19 +116,31 @@
           "key": "madden24Directory",
           "label": "Madden 24 game directory",
           "type": "directory",
-          "defaultValue": "C:\\Program Files (x86)\\Origin Games\\Madden NFL 24"
+          "defaultValue": "C:\\Program Files\\EA Games\\Madden NFL 24"
         },
         {
           "key": "madden25Directory",
           "label": "Madden 25 game directory",
           "type": "directory",
-          "defaultValue": "C:\\Program Files (x86)\\Origin Games\\Madden NFL 25"
+          "defaultValue": "C:\\Program Files\\EA Games\\Madden NFL 25"
         },
         {
           "key": "madden26Directory",
           "label": "Madden 26 game directory",
           "type": "directory",
-          "defaultValue": "C:\\Program Files (x86)\\Origin Games\\Madden NFL 26"
+          "defaultValue": "C:\\Program Files\\EA Games\\Madden NFL 26"
+        },
+        {
+          "key": "madden27Directory",
+          "label": "Madden 27 game directory",
+          "type": "directory",
+          "defaultValue": "C:\\Program Files\\EA Games\\Madden NFL 27"
+        },
+        {
+          "key": "collegeFootball27Directory",
+          "label": "College Football 27 game directory",
+          "type": "directory",
+          "defaultValue": "C:\\Program Files\\EA Games\\EA SPORTS College Football 27"
         }
       ]
     }
@@ -151,7 +163,9 @@
       "madden23DirectorySet": false,
       "madden24DirectorySet": false,
       "madden25DirectorySet": false,
-      "madden26DirectorySet": false
+      "madden26DirectorySet": false,
+      "madden27DirectorySet": false,
+      "collegeFootball27DirectorySet": false
     },
     "appVersions": {
       "4_0_0": false,
