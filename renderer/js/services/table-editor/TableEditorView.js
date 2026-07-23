@@ -28,6 +28,7 @@ class TableEditorView {
     this.initialTableToSelect = initialTableToSelect;
     this.currentlySelectedColumn = 0;
     this.cellErrors = {};
+    this.emptyRecordIndices = new Set();
     this.loader = document.querySelector(".loader-wrapper");
     this.referenceEditorSelector = this.parent.referenceEditorSelector;
 
@@ -43,6 +44,7 @@ class TableEditorView {
       licenseKey: "non-commercial-and-evaluation",
       afterChange: this._processChanges.bind(this),
       afterSelection: this._processSelection.bind(this),
+      beforeChange: this._beforeChange.bind(this),
       cells: this._getCellProperties.bind(this),
       contextMenu: contextMenuService.getContextMenu(this),
       rowHeaders: function (index) {
@@ -52,6 +54,22 @@ class TableEditorView {
 
     this._addEventListeners();
     this.initialLoadPromise = this._initialLoad();
+  }
+
+  _beforeChange(changes, source) {
+    if (!changes) {
+      return;
+    }
+
+    // Filter out changes where the old value is the same as the new value
+    const filteredChanges = changes.filter(
+      ([row, prop, oldValue, newValue]) => oldValue !== newValue,
+    );
+
+    // If no changes remain after filtering, cancel the operation
+    if (filteredChanges.length === 0) {
+      return false; // Returning false cancels the changes
+    }
   }
 
   _processSelection(row, col, row2, col2) {
@@ -111,7 +129,14 @@ class TableEditorView {
           const isEmpty = Boolean(result?.recordMeta?.isEmpty);
 
           if (result?.record && wasEmpty && !isEmpty) {
+            this.emptyRecordIndices.delete(recordIndex);
             this._syncVisibleRowFromRecord(change[0], result.record);
+
+            // reset the empty class name
+            for (let i = 0; i < this.selectedTable.headers.length; i++) {
+              this.hot.setCellMeta(change[0], i, "className", "");
+            }
+            this.hot.render();
           }
         } catch (err) {
           // Revert the cell on error
@@ -379,6 +404,7 @@ class TableEditorView {
   loadTable(table) {
     if (isDev()) console.time("get data");
     this.cellErrors = table.cellErrors || {};
+    this.emptyRecordIndices = new Set(table.emptyRecordIndices || []);
     const data = this._formatTable(table);
     if (isDev()) console.timeEnd("get data");
     const headers = this._formatHeaders(table);
@@ -402,7 +428,9 @@ class TableEditorView {
       return {};
     }
 
-    const physicalRow = this.hot?.toPhysicalRow ? this.hot.toPhysicalRow(row) : row;
+    const physicalRow = this.hot?.toPhysicalRow
+      ? this.hot.toPhysicalRow(row)
+      : row;
     const physicalColumn = this.hot?.toPhysicalColumn
       ? this.hot.toPhysicalColumn(col)
       : col;
@@ -414,17 +442,24 @@ class TableEditorView {
 
     const errorMessage = this._getCellError(physicalRow, header.name);
 
-    if (!errorMessage) {
-      return {};
+    if (errorMessage) {
+      return {
+        className: "table-cell--error",
+        readOnly: true,
+        editor: false,
+        renderer: this._renderErrorCell.bind(this),
+        errorMessage,
+      };
     }
 
-    return {
-      className: "table-cell--error",
-      readOnly: true,
-      editor: false,
-      renderer: this._renderErrorCell.bind(this),
-      errorMessage,
-    };
+    const isCellEmpty = this.emptyRecordIndices.has(physicalRow);
+    if (isCellEmpty) {
+      return {
+        className: "table-cell--empty",
+      };
+    }
+
+    return {};
   }
 
   _getCellError(recordIndex, fieldName) {

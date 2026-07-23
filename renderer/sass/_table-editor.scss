@@ -1,6 +1,8 @@
 @use "framework";
 @use "index";
 
+$color-table-cell-attention-bg: #e3e3e3;
+
 .table-editor-wrapper {
   height: calc(100% - 10px);
 }
@@ -118,8 +120,11 @@ td.active-row {
   }
 }
 
-.handsontable td.table-cell--error {
-  background-color: #e3e3e3;
+.handsontable td.table-cell--error,
+.handsontable td.table-cell--error.active-row,
+.handsontable td.table-cell--empty,
+.handsontable td.table-cell--empty.active-row  {
+  background-color: $color-table-cell-attention-bg;
   color: #666;
   font-style: italic;
 }

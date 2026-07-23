@@ -111,6 +111,7 @@ class ReferenceRenderer {
       td.innerHTML = value;
     }
 
+    td.classList = cellProperties?.className || "";
     return td;
   }
 
