@@ -22,6 +22,7 @@ class FranchiseFileManager {
     this._schemaDirectory = path.join(app.getPath("userData"), "schemas");
     this._preferencesProvider = null;
     this._ensureSchemaDirectory();
+    this._loggedIpc = {};
   }
 
   /**
@@ -299,6 +300,9 @@ class FranchiseFileManager {
           });
         });
 
+        file.on("saving", () => this._loggedIpc?.emit("saving"));
+        file.on("saved", () => this._loggedIpc?.emit("saved"));
+
         const metadata = this._buildMetadata(file);
         resolve({ fileId, metadata });
       });
@@ -370,10 +374,9 @@ class FranchiseFileManager {
    * @param {string} fileId
    * @param {object} options
    * @param {boolean} [options.sync] - Use synchronous save
-   * @param {object} loggedIpc
    * @returns {Promise<string>}
    */
-  async saveFile(fileId, options = {}, loggedIpc) {
+  async saveFile(fileId, options = {}) {
     const entry = this.activeFiles.get(fileId);
     if (!entry) {
       throw new Error(`File not found: ${fileId}`);
@@ -382,15 +385,12 @@ class FranchiseFileManager {
     const { file } = entry;
 
     return new Promise((resolve, reject) => {
-      loggedIpc.emit("saving");
-
       const savePromise = options.sync
         ? Promise.resolve(file.save(null, { sync: true }))
         : file.save();
 
       savePromise
         .then(() => {
-          loggedIpc.emit("saved");
           resolve(file.filePath || entry.path);
         })
         .catch(reject);
@@ -401,10 +401,9 @@ class FranchiseFileManager {
    * Save file to a new path
    * @param {string} fileId
    * @param {string} newPath
-   * @param {Object} loggedIpc
    * @returns {Promise<string>}
    */
-  async saveFileAs(fileId, newPath, loggedIpc) {
+  async saveFileAs(fileId, newPath) {
     const entry = this.activeFiles.get(fileId);
     if (!entry) {
       throw new Error(`File not found: ${fileId}`);
@@ -412,7 +411,7 @@ class FranchiseFileManager {
 
     entry.file.filePath = newPath;
     entry.path = newPath;
-    return this.saveFile(fileId, {}, loggedIpc);
+    return this.saveFile(fileId, {});
   }
 
   /**
@@ -914,6 +913,8 @@ class FranchiseFileManager {
    * @param {Object} loggedIpc - Wrapped IPC with dev logging
    */
   registerIpcHandlers(loggedIpc) {
+    this._loggedIpc = loggedIpc;
+
     // File operations
     loggedIpc.handle(
       "franchise:open-file",
@@ -936,7 +937,7 @@ class FranchiseFileManager {
 
     loggedIpc.handle("franchise:save-file", async (event, fileId, options) => {
       try {
-        const path = await this.saveFile(fileId, options, loggedIpc);
+        const path = await this.saveFile(fileId, options);
         return { path };
       } catch (err) {
         return { error: err.message };
@@ -947,7 +948,7 @@ class FranchiseFileManager {
       "franchise:save-file-as",
       async (event, fileId, newPath) => {
         try {
-          const path = await this.saveFileAs(fileId, newPath, loggedIpc);
+          const path = await this.saveFileAs(fileId, newPath);
           return { path };
         } catch (err) {
           return { error: err.message };

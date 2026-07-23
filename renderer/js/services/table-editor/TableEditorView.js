@@ -149,15 +149,6 @@ class TableEditorView {
           console.warn("Failed to write cell value:", err);
         }
       }
-
-      // Auto-save after changes (only if enabled in preferences)
-      if (
-        this.parent &&
-        this.parent.fileId &&
-        preferencesService.getValue("general.autoSave")?.[0]
-      ) {
-        window.franchiseAPI.saveFile(this.parent.fileId);
-      }
     }
   }
 
