@@ -72,7 +72,8 @@ navigationService.generateMainNavigationTabs = function () {
   const applicableNavigationData = navigationData.items.filter((navigation) => {
     return (
       navigation.availableVersions.includes(metadata.gameYear) &&
-      navigation.availableFormats.includes(metadata.format)
+      navigation.availableFormats.includes(metadata.format) &&
+      (navigation.availableTypes?.includes(metadata.type.gameType) ?? true)
     );
   });
 
