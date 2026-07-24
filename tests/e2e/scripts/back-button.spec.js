@@ -67,11 +67,3 @@ test("back button e2e test", async () => {
   cellText = await tableEditor.getTextAtSelectedCell();
   expect(cellText).to.equal("Spline - 5");
 });
-
-async function wait(ms) {
-  await new Promise((resolve) => {
-    setTimeout(() => {
-      resolve();
-    }, ms);
-  });
-}

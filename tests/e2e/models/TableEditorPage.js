@@ -5,6 +5,7 @@ const HotComponent = require("./HotComponent");
 const PinComponent = require("./PinComponent");
 const SelectrComponent = require("./SelectrComponent");
 const TabComponent = require("./TabComponent");
+const TableEditorContextMenu = require("./TableEditorContextMenu");
 
 class TableEditorPage {
   constructor(window) {
@@ -17,6 +18,10 @@ class TableEditorPage {
     this.tableSelector = new SelectrComponent(
       this.window,
       ".table-list-top-bar > .selectr-container",
+    );
+    this.tableEditorContextMenu = new TableEditorContextMenu(
+      this.window,
+      '.htContextMenu:not([class*="htContextMenuSub_"])',
     );
 
     this.locators = {
@@ -144,6 +149,26 @@ class TableEditorPage {
   async importRawTable(filePath) {
     await util.enterFilePath(this.window, "#import-raw-table", filePath);
     await this._waitForTableToLoad();
+  }
+
+  async openContextMenu() {
+    await this.table.openContextMenu();
+  }
+
+  async openReferencesToRecordModal() {
+    await this.openContextMenu();
+    await this.tableEditorContextMenu.clickFindReferencesToRecord();
+  }
+
+  async setSelectedRecordToEmpty() {
+    await this.openContextMenu();
+    await this.tableEditorContextMenu.clickSetEmpty();
+  }
+
+  async isSelectedCellEmpty() {
+    const cellClass =
+      await this.table.locators.selectedCell.getAttribute("class");
+    return cellClass.includes("table-cell--empty");
   }
 }
 

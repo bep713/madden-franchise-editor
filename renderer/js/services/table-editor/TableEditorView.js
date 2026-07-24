@@ -129,14 +129,14 @@ class TableEditorView {
           const isEmpty = Boolean(result?.recordMeta?.isEmpty);
 
           if (result?.record && wasEmpty && !isEmpty) {
-            this.emptyRecordIndices.delete(recordIndex);
-            this._syncVisibleRowFromRecord(change[0], result.record);
+            this.syncVisibleRowFromRecord(change[0], result.record); // change[0] is the VISUAL row index
 
             // reset the empty class name
             for (let i = 0; i < this.selectedTable.headers.length; i++) {
               this.hot.setCellMeta(change[0], i, "className", "");
             }
-            this.hot.render();
+
+            this.syncEmptyRecords(result.emptyRecords);
           }
         } catch (err) {
           // Revert the cell on error
@@ -152,18 +152,62 @@ class TableEditorView {
     }
   }
 
-  _syncVisibleRowFromRecord(visualRow, rowData) {
-    if (!this.selectedTable?.headers?.length || !rowData) {
+  syncEmptyRecords(emptyRecords) {
+    this.emptyRecordIndices = new Set();
+    const bulkUpdates = [];
+
+    (emptyRecords || []).forEach(({ index, record }) => {
+      this.emptyRecordIndices.add(index);
+      bulkUpdates.push(this._getEmptyRecordRowEdits(index, record));
+    });
+
+    console.time("set source data");
+    this.hot.setSourceDataAtCell(bulkUpdates.flat(), "onEmpty");
+    console.timeEnd("set source data");
+    this.hot.render();
+  }
+
+  syncVisibleRowFromRecord(visualRow, rowData) {
+    this.hot.setDataAtRowProp(
+      this._getBulkRowEdits(visualRow, rowData),
+      "onEmpty",
+    );
+  }
+
+  syncPhysicalRowFromRecord(physicalRowIndex, record) {
+    this.hot.setSourceDataAtCell(
+      this._getBulkRowEdits(physicalRowIndex, record),
+      "onEmpty",
+    );
+  }
+
+  _getBulkRowEdits(rowIndex, record) {
+    if (!this.selectedTable?.headers?.length || !record) {
       return;
     }
 
     const rowUpdates = this.selectedTable.headers.map((header) => [
-      visualRow,
+      rowIndex,
       header.name,
-      rowData[header.name],
+      record[header.name],
     ]);
 
-    this.hot.setDataAtRowProp(rowUpdates, "onEmpty");
+    return rowUpdates;
+  }
+
+  _getEmptyRecordRowEdits(rowIndex, record) {
+    // Setting a record to empty will only impact the first 4 bytes
+    const changedFieldsInFirst4Bytes = this.selectedTable.headers.filter(
+      (header) => header.offset < 32,
+    );
+
+    const rowUpdates = (changedFieldsInFirst4Bytes || []).map((header) => [
+      rowIndex,
+      header.name,
+      record[header.name],
+    ]);
+
+    return rowUpdates;
   }
 
   _getColumnIndex(fieldName) {

@@ -300,6 +300,7 @@ class FranchiseFileManager {
           });
         });
 
+        // forward the saving and saved events to main
         file.on("saving", () => this._loggedIpc?.emit("saving"));
         file.on("saved", () => this._loggedIpc?.emit("saved"));
 
@@ -686,12 +687,19 @@ class FranchiseFileManager {
       table.records[recordIndex],
       recordIndex,
     );
+    const emptyRecordIndices = this._serializeEmptyRecordIndices(
+      table.emptyRecords,
+    );
 
     return {
       record: updatedRecord,
       recordMeta: updatedMeta,
       previousRecordMeta: previousMeta,
-      emptyRecordIndices: this._serializeEmptyRecordIndices(table.emptyRecords),
+      emptyRecordIndices,
+      emptyRecords: emptyRecordIndices.map((index) => ({
+        index,
+        record: this._serializeRecord(table.records[index]),
+      })),
       cellErrors: cellErrors[recordIndex] || null,
     };
   }
@@ -741,9 +749,17 @@ class FranchiseFileManager {
 
     table.recalculateEmptyRecordReferences();
 
+    const emptyRecordIndices = this._serializeEmptyRecordIndices(
+      table.emptyRecords,
+    );
+
     return {
       affectedCount: uniqueIndices.length,
-      emptyRecordIndices: this._serializeEmptyRecordIndices(table.emptyRecords),
+      emptyRecordIndices,
+      emptyRecords: emptyRecordIndices.map((index) => ({
+        index,
+        record: this._serializeRecord(table.records[index]),
+      })),
     };
   }
 

@@ -9,6 +9,7 @@ const FilePaths = require("../util/FilePaths");
 const TestUtil = require("../util/TestUtil");
 
 const App = require("../models/App");
+const SettingsManager = require("../models/SettingsManager");
 const WelcomePage = require("../models/WelcomePage");
 const TableEditorPage = require("../models/TableEditorPage");
 
@@ -30,6 +31,7 @@ test("export table e2e test", async () => {
   // can export a table
   const tableEditor = new TableEditorPage(window);
   await tableEditor._waitForTableToLoad();
+  await TestUtil.setAutoOpenExcel(app, false);
   await tableEditor.exportTable(FilePaths.m22.exports.test);
   await window.waitForTimeout(1000);
   xlsxCompare(

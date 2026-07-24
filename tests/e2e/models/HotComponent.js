@@ -1,78 +1,88 @@
 const BaseComponent = require("./BaseComponent");
+const ContextMenu = require("./TableEditorContextMenu");
 
 class HotComponent extends BaseComponent {
-    constructor(window, baseSelector) {
-        super(window, baseSelector);
+  constructor(window, baseSelector) {
+    super(window, baseSelector);
 
-        this.locators = {
-            container: this.baseLocator.locator('.ht_master .wtHolder'),
-            selectedCell: this.baseLocator.locator('.table-content-wrapper td.current'),
-            topLeftCell: this.baseLocator.locator('.ht_clone_top_left_corner thead th:first-child'),
-            firstCell: this.baseLocator.locator('.ht_master tbody tr:nth-of-type(1) td:nth-of-type(1)'),
-        };
-
-        this._selectedTableCell = {
-            row: 0,
-            col: 0
-        };
+    this.locators = {
+      container: this.baseLocator.locator(".ht_master .wtHolder"),
+      selectedCell: this.baseLocator.locator(
+        ".table-content-wrapper td.current",
+      ),
+      topLeftCell: this.baseLocator.locator(
+        ".ht_clone_top_left_corner thead th:first-child",
+      ),
+      firstCell: this.baseLocator.locator(
+        ".ht_master tbody tr:nth-of-type(1) td:nth-of-type(1)",
+      ),
     };
 
-    get selectedTableCellMeta() {
-        return this._selectedTableCell;
+    this._selectedTableCell = {
+      row: 0,
+      col: 0,
     };
+  }
 
-    get selectedTableCellLocator() {
-        return this.locators.selectedCell;
-    };
+  get selectedTableCellMeta() {
+    return this._selectedTableCell;
+  }
 
-    setSelectedTableCell(row, col) {
-        this._selectedTableCell.row = row;
-        this._selectedTableCell.col = col;
-    };
+  get selectedTableCellLocator() {
+    return this.locators.selectedCell;
+  }
 
-    async getTextAtSelectedCell() {
-        return this._getCellText(`.table-content-wrapper td.current`);
-    };
+  setSelectedTableCell(row, col) {
+    this._selectedTableCell.row = row;
+    this._selectedTableCell.col = col;
+  }
 
-    async _getCellText(baseCellSelector) {
-        let text = await this.window.textContent(baseCellSelector);
-    
-        if (!text) {
-            return this.window.textContent(`${baseCellSelector} > div > a`);
-        }
-        else {
-            return text.replace('▼', '');
-        }
-    };
+  async getTextAtSelectedCell() {
+    return this._getCellText(`.table-content-wrapper td.current`);
+  }
 
-    async selectCellAt(row, col) {
-        await this._selectFirstCell();
+  async _getCellText(baseCellSelector) {
+    let text = await this.window.textContent(baseCellSelector);
 
-        // Move to desired cell
-        let promises = [];
+    if (!text) {
+      return this.window.textContent(`${baseCellSelector} > div > a`);
+    } else {
+      return text.replace("▼", "");
+    }
+  }
 
-        for (let i = 0; i < col; i++) {
-            promises.push(this.window.keyboard.press('ArrowRight'));
-        }
+  async selectCellAt(row, col) {
+    await this._selectFirstCell();
 
-        for (let i = 0; i < row; i++) {
-            promises.push(this.window.keyboard.press('ArrowDown'));
-        }
+    // Move to desired cell
+    let promises = [];
 
-        await Promise.all(promises);
-        this.setSelectedTableCell(row, col);
-    };
+    for (let i = 0; i < col; i++) {
+      promises.push(this.window.keyboard.press("ArrowRight"));
+    }
 
-    async _selectFirstCell() {
-        await this.locators.topLeftCell.click();
-        await this.window.keyboard.press('ArrowUp');
-    };
+    for (let i = 0; i < row; i++) {
+      promises.push(this.window.keyboard.press("ArrowDown"));
+    }
 
-    async setTextAtSelectedCell(text) {
-        await this.locators.selectedCell.type(text);
-        await this.window.keyboard.press('Enter');
-        await this.window.keyboard.press('ArrowUp');
-    };
-};
+    await Promise.all(promises);
+    this.setSelectedTableCell(row, col);
+  }
+
+  async _selectFirstCell() {
+    await this.locators.topLeftCell.click();
+    await this.window.keyboard.press("ArrowUp");
+  }
+
+  async setTextAtSelectedCell(text) {
+    await this.locators.selectedCell.type(text);
+    await this.window.keyboard.press("Enter");
+    await this.window.keyboard.press("ArrowUp");
+  }
+
+  async openContextMenu() {
+    await this.locators.selectedCell.click({ button: "right" });
+  }
+}
 
 module.exports = HotComponent;

@@ -176,11 +176,3 @@ test("tabs test", async () => {
 
   await electronApp.close();
 });
-
-async function wait(ms) {
-  await new Promise((resolve) => {
-    setTimeout(() => {
-      resolve();
-    }, ms);
-  });
-}

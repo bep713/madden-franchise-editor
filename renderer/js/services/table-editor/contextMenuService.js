@@ -1,3 +1,5 @@
+const Loader = require("./Loader");
+
 module.exports = {
   getContextMenu(tableEditorView) {
     return {
@@ -33,10 +35,7 @@ module.exports = {
               references.errorMessage = result.error;
             }
 
-            tableEditorView.showReferenceViewer(
-              selectedRecordData,
-              references,
-            );
+            tableEditorView.showReferenceViewer(selectedRecordData, references);
           },
         },
         open_new_tab: {
@@ -100,7 +99,8 @@ module.exports = {
             }
 
             for (let recordIndex = start; recordIndex <= end; recordIndex++) {
-              const meta = tableEditorView.selectedTable?.recordMeta?.[recordIndex];
+              const meta =
+                tableEditorView.selectedTable?.recordMeta?.[recordIndex];
               const isEmpty = Boolean(meta?.isEmpty);
               if (!isEmpty) {
                 return false;
@@ -110,10 +110,12 @@ module.exports = {
             return true;
           },
           callback: async (key, selection, clickEvent) => {
+            const loader = new Loader();
             const selectedRange = tableEditorView.hot.getSelectedLast();
             if (!selectedRange) {
               return;
             }
+            loader.show();
 
             const physicalStart = tableEditorView.hot.toPhysicalRow(
               selectedRange[0],
@@ -127,13 +129,15 @@ module.exports = {
             const targetIndices = [];
 
             for (let recordIndex = start; recordIndex <= end; recordIndex++) {
-              const meta = tableEditorView.selectedTable?.recordMeta?.[recordIndex];
+              const meta =
+                tableEditorView.selectedTable?.recordMeta?.[recordIndex];
               if (!meta?.isEmpty) {
                 targetIndices.push(recordIndex);
               }
             }
 
             if (!targetIndices.length) {
+              loader.hide();
               return;
             }
 
@@ -145,11 +149,13 @@ module.exports = {
 
             if (result?.error) {
               console.error("Failed to set records empty:", result.error);
+              loader.hide();
               return;
             }
 
-            await tableEditorView.loadTableById(tableEditorView.selectedTable.tableId);
-            tableEditorView.hot.selectCell(selectedRange[0], selectedRange[1]);
+            // await tableEditorView.loadTableById(tableEditorView.selectedTable.tableId);
+            tableEditorView.syncEmptyRecords(result.emptyRecords);
+            loader.hide();
           },
         },
         advanced: {
