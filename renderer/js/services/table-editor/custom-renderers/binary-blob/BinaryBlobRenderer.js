@@ -18,7 +18,8 @@ class BinaryBlobRenderer {
 
     const blobEditorText = document.createElement("div");
     blobEditorText.classList.add("blob-editor-text-content");
-    blobEditorText.innerText = value;
+    blobEditorText.innerText =
+      value?.length > 100 ? `${value.slice(0, 100)}...` : value;
 
     const blobEditorButton = document.createElement("button");
     blobEditorButton.classList.add(
