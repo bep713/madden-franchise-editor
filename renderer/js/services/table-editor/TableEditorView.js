@@ -445,9 +445,8 @@ class TableEditorView {
     const headers = this._formatHeaders(table);
     const columns = this._formatColumns(table);
 
-    // this.hot.loadData(data);
+    this.hot.loadData(data);
     this.hot.updateSettings({
-      data: data,
       colHeaders: headers,
       columns: columns,
       colWidths: this._calculateColumnWidths(columns, table),
