@@ -3,6 +3,7 @@ const {
   schemaPicker,
   schemaGenerator,
   utilService,
+  FranchiseFileRecord,
 } = require("madden-franchise");
 const { app, BrowserWindow } = require("electron");
 const fs = require("fs");
@@ -169,7 +170,7 @@ class FranchiseFileManager {
 
   /**
    * Serialize a single record into a renderer-safe plain object.
-   * @param {object} record
+   * @param {FranchiseFileRecord} record
    * @param {number} recordIndex
    * @param {object} cellErrors
    * @returns {object}
@@ -178,7 +179,11 @@ class FranchiseFileManager {
   _serializeRecord(record, recordIndex, cellErrors = {}) {
     return record.fieldsArray.reduce((accum, field) => {
       try {
-        accum[field.key] = field.value || "[empty]";
+        accum[field.key] = field.value;
+
+        if (!field.value && field.offset.valueInThirdTable) {
+          accum[field.key] = "[empty]";
+        }
       } catch (error) {
         if (!cellErrors[recordIndex]) {
           cellErrors[recordIndex] = {};
