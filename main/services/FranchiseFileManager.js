@@ -178,7 +178,7 @@ class FranchiseFileManager {
   _serializeRecord(record, recordIndex, cellErrors = {}) {
     return record.fieldsArray.reduce((accum, field) => {
       try {
-        accum[field.key] = field.value;
+        accum[field.key] = field.value || "[empty]";
       } catch (error) {
         if (!cellErrors[recordIndex]) {
           cellErrors[recordIndex] = {};
