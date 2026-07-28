@@ -266,14 +266,16 @@ class FranchiseFileManager {
    * @param {object} options - Options for opening the file
    * @param {string} [options.schemaDirectory] - Custom schema directory
    * @param {object} [options.schemaOverride] - Override schema path
+   * @param {object} metaOptions - Options strictly related to the FranchiseFileManager
+   * @param {string} [metaOptions.fileId] - Use this id as the file's id, do not generate a new one
    * @returns {Promise<{ fileId: string, metadata: object }>}
    */
-  async openFile(filePath, options = {}) {
+  async openFile(filePath, options = {}, metaOptions = {}) {
     const settings = this._buildFileSettings(options);
 
     return new Promise((resolve, reject) => {
       const file = new FranchiseFile(filePath, settings);
-      const fileId = this._generateFileId();
+      const fileId = metaOptions.fileId ?? this._generateFileId();
 
       file.once("error", (err) => {
         reject(err);
@@ -434,42 +436,55 @@ class FranchiseFileManager {
     }
 
     const { file } = entry;
-
-    return new Promise((resolve, reject) => {
-      // Create new file instance with schema override
-      const newFile = new FranchiseFile(entry.path, {
+    const { metadata } = await this.openFile(
+      entry.path,
+      {
+        ...file.settings,
         schemaDirectory: this._schemaDirectory,
         schemaOverride: { path: schemaPath },
-      });
+      },
+      {
+        fileId,
+      },
+    );
 
-      newFile.once("error", (err) => {
-        reject(err);
-      });
+    return { status: "successful", metadata };
 
-      newFile.on("ready", () => {
-        newFile.off("error", reject);
+    // return new Promise((resolve, reject) => {
+    //   // Create new file instance with schema override
+    //   const newFile = new FranchiseFile(entry.path, {
+    //     schemaDirectory: this._schemaDirectory,
+    //     schemaOverride: { path: schemaPath },
+    //   });
 
-        // Replace the old file reference
-        entry.file = newFile;
+    //   newFile.once("error", (err) => {
+    //     reject(err);
+    //   });
 
-        // Re-setup change event forwarding
-        newFile.on("change", (table) => {
-          this._emitToFileWindows(fileId, "franchise:table-changed", {
-            fileId,
-            tableId: table.header.tableId,
-            name: table.name,
-          });
-        });
+    //   newFile.on("ready", () => {
+    //     newFile.off("error", reject);
 
-        // Optionally save the schema
-        if (saveSchema && newFile.schemaList) {
-          this._saveSchemaForFile(newFile, schemaPath);
-        }
+    //     // Replace the old file reference
+    //     entry.file = newFile;
 
-        const metadata = this._buildMetadata(newFile);
-        resolve({ status: "successful", metadata });
-      });
-    });
+    //     // Re-setup change event forwarding
+    //     newFile.on("change", (table) => {
+    //       this._emitToFileWindows(fileId, "franchise:table-changed", {
+    //         fileId,
+    //         tableId: table.header.tableId,
+    //         name: table.name,
+    //       });
+    //     });
+
+    //     // Optionally save the schema
+    //     if (saveSchema && newFile.schemaList) {
+    //       this._saveSchemaForFile(newFile, schemaPath);
+    //     }
+
+    //     const metadata = this._buildMetadata(newFile);
+    //     resolve({ status: "successful", metadata });
+    //   });
+    // });
   }
 
   /**
