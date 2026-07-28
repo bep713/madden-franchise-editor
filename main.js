@@ -213,6 +213,13 @@ function createApplicationMenu() {
           enabled: false,
         },
         {
+          id: "CopyUniqueId",
+          label: "Copy Table Unique ID",
+          accelerator: "CmdOrCtrl+U",
+          click: () => loggedMain.send("copy-unique-id"),
+          enabled: false,
+        },
+        {
           id: "ExportRawTable",
           label: "Export Raw Table",
           click: () => loggedMain.send("export-raw-table"),

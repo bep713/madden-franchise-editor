@@ -10,7 +10,7 @@
       "availableVersions": [19, 20, 21, 22, 23, 24, 25, 26, 27],
       "availableFormats": ["franchise", "franchise-common"],
       "menu": {
-        "disable": ["Save", "Export", "Import", "LogTable", "ExportRawTable", "ExportFRT", "ImportRawTable"]
+        "disable": ["Save", "Export", "Import", "LogTable", "ExportRawTable", "ExportFRT", "ImportRawTable", "CopyUniqueId"]
       }
     },
     {
@@ -25,7 +25,7 @@
       "availableTypes": ["madden"],
       "menu": {
         "enable": ["Save"],
-        "disable": ["Export", "Import", "LogTable", "ExportRawTable", "ExportFRT", "ImportRawTable"]
+        "disable": ["Export", "Import", "LogTable", "ExportRawTable", "ExportFRT", "ImportRawTable", "CopyUniqueId"]
       }
     },
     {
@@ -39,7 +39,7 @@
       "availableFormats": ["franchise"],
       "menu": {
         "enable": ["Save"],
-        "disable": ["Export", "Import", "LogTable", "ExportRawTable", "ExportFRT", "ImportRawTable"]
+        "disable": ["Export", "Import", "LogTable", "ExportRawTable", "ExportFRT", "ImportRawTable", "CopyUniqueId"]
       }
     },
     {
@@ -52,7 +52,7 @@
       "availableVersions": [19,20, 21, 22, 23, 24, 25, 26, 27],
       "availableFormats": ["franchise", "franchise-common"],
       "menu": {
-        "disable": ["Save", "Export", "Import", "LogTable", "ExportRawTable", "ExportFRT", "ImportRawTable"]
+        "disable": ["Save", "Export", "Import", "LogTable", "ExportRawTable", "ExportFRT", "ImportRawTable", "CopyUniqueId"]
       }
     },
     {
@@ -65,7 +65,7 @@
       "availableFormats": ["franchise", "franchise-common"],
       "availableVersions": [19, 20, 21, 22, 23, 24, 25, 26, 27],
       "menu": {
-        "enable": ["Save", "Export", "Import", "LogTable", "ExportRawTable", "ExportFRT", "ImportRawTable"]
+        "enable": ["Save", "Export", "Import", "LogTable", "ExportRawTable", "ExportFRT", "ImportRawTable", "CopyUniqueId"]
       }
     }
   ],
@@ -81,7 +81,7 @@
       "availableFormats": ["franchise"],
       "menu": {
         "enable": ["Save"],
-        "disable": ["Export", "Import", "LogTable", "ExportRawTable", "ExportFRT", "ImportRawTable"]
+        "disable": ["Export", "Import", "LogTable", "ExportRawTable", "ExportFRT", "ImportRawTable", "CopyUniqueId"]
       }
     }
   ]
