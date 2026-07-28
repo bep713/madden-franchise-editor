@@ -449,42 +449,6 @@ class FranchiseFileManager {
     );
 
     return { status: "successful", metadata };
-
-    // return new Promise((resolve, reject) => {
-    //   // Create new file instance with schema override
-    //   const newFile = new FranchiseFile(entry.path, {
-    //     schemaDirectory: this._schemaDirectory,
-    //     schemaOverride: { path: schemaPath },
-    //   });
-
-    //   newFile.once("error", (err) => {
-    //     reject(err);
-    //   });
-
-    //   newFile.on("ready", () => {
-    //     newFile.off("error", reject);
-
-    //     // Replace the old file reference
-    //     entry.file = newFile;
-
-    //     // Re-setup change event forwarding
-    //     newFile.on("change", (table) => {
-    //       this._emitToFileWindows(fileId, "franchise:table-changed", {
-    //         fileId,
-    //         tableId: table.header.tableId,
-    //         name: table.name,
-    //       });
-    //     });
-
-    //     // Optionally save the schema
-    //     if (saveSchema && newFile.schemaList) {
-    //       this._saveSchemaForFile(newFile, schemaPath);
-    //     }
-
-    //     const metadata = this._buildMetadata(newFile);
-    //     resolve({ status: "successful", metadata });
-    //   });
-    // });
   }
 
   /**
