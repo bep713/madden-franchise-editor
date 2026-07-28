@@ -40,6 +40,10 @@ menuService.logTable = function () {
   ipcRenderer.send("log-table");
 };
 
+menuService.copyUniqueId = function () {
+  ipcRenderer.send("copy-unique-id");
+}
+
 menuService.exportRawTable = function () {
   ipcRenderer.send("export-raw-table");
 };

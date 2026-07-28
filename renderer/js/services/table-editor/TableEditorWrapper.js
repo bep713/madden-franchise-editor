@@ -95,6 +95,10 @@ class TableEditorWrapper {
         ref: this._onLogTable.bind(this),
       },
       {
+        event: "copy-unique-id",
+        ref: this._onCopyUniqueId.bind(this),
+      },
+      {
         event: "export-raw-table",
         ref: this._onExportRawTable.bind(this),
       },
@@ -127,6 +131,19 @@ class TableEditorWrapper {
 
   _onLogTable() {
     console.log(this.selectedTableEditor.selectedTable);
+  }
+
+  _onCopyUniqueId() {
+    const uniqueId = this.selectedTableEditor.selectedTable.header.uniqueId;
+    if (uniqueId) {
+      navigator.clipboard.writeText(uniqueId).then(() => {
+        console.log(`Copied Unique ID: ${uniqueId}`);
+      }).catch((err) => {
+        console.error('Failed to copy Unique ID: ', err);
+      });
+    } else {
+      console.warn('No Unique ID found for the selected table.');
+    }
   }
 
   _onExportRawTable() {
