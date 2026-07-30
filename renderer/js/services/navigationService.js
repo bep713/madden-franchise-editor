@@ -541,10 +541,14 @@ function addIpcListeners() {
   window.electronAPI.on("get-schema-info-request", function (arg) {
     if (navigationService.currentlyOpenedFile.metadata) {
       window.electronAPI.send("get-schema-info-response", {
+        activeFileMetadata: {
+          gameYear: navigationService.currentlyOpenedFile.gameYear,
+          type: navigationService.currentlyOpenedFile.type,
+        },
+        autoSelect: arg,
         expected:
           navigationService.currentlyOpenedFile.metadata.expectedSchemaVersion,
         loaded: navigationService.currentlyOpenedFile.metadata.schemaList?.meta,
-        autoSelect: arg,
       });
     }
   });
@@ -725,6 +729,10 @@ function showSchemaManager() {
   if (!metadata) return;
 
   window.electronAPI.send("show-schema-manager", {
+    activeFileMetadata: {
+      gameYear: metadata.gameYear,
+      type: metadata.type,
+    },
     expected: metadata.expectedSchemaVersion,
     loaded: metadata.schemaList?.meta ?? null,
   });

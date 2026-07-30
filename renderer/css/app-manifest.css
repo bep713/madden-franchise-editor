@@ -1875,6 +1875,10 @@ td.active-row {
   background: #FFFFFF;
 }
 
+.schema-search-wrapper--not-available {
+  margin-top: 15px;
+}
+
 .settings-manager {
   overflow: inherit;
   background: #e9e9e9;

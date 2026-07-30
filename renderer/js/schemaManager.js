@@ -94,6 +94,14 @@ function setupListeners() {
       quickSchemaScan(maddenInstallDirectory[0]);
     }
   });
+
+  const links = document.querySelectorAll(".external-link");
+  links.forEach((link) =>
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      window.electronAPI.openExternalUrl(link.href);
+    }),
+  );
 }
 
 function saveSchemas(directoriesToSearch) {
@@ -204,6 +212,21 @@ function setupIpcListeners() {
           expectedSchema.click();
         }
       }
+    }
+
+    const schemaSearchControlsWrapper = document.querySelector(
+      ".schema-search-wrapper",
+    );
+    const schemaSearchUnavailable = document.querySelector(
+      ".schema-search-wrapper--not-available",
+    );
+
+    if (schemaInformation.activeFileMetadata.gameYear >= 25) {
+      utilService.hide(schemaSearchControlsWrapper);
+      utilService.show(schemaSearchUnavailable);
+    } else {
+      utilService.show(schemaSearchControlsWrapper);
+      utilService.hide(schemaSearchUnavailable);
     }
   });
 

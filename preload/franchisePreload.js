@@ -185,6 +185,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   showOpenDialog: (options) => ipcRenderer.invoke("dialog:show-open", options),
   showMessageBox: (options) =>
     ipcRenderer.invoke("dialog:show-message", options),
+  openExternalUrl: (url) => ipcRenderer.send("open-external-url", url),
 
   // App info
   isDev,
