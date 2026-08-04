@@ -731,8 +731,6 @@ class FranchiseFileManager {
       }
     });
 
-    table.recalculateEmptyRecordReferences();
-
     const emptyRecordIndices = this._serializeEmptyRecordIndices(
       table.emptyRecords,
     );
