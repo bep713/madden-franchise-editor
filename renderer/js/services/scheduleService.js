@@ -22,11 +22,11 @@ scheduleService.eventEmitter = new EventEmitter();
 scheduleService.loadSchedule = async function (fileId) {
   utilService.show(document.querySelector(".loader-wrapper"));
 
+  // Fetch file metadata via IPC to get gameYear
+  const metadata = await window.franchiseAPI.getMetadata(fileId);
+
   setTimeout(async () => {
     scheduleService.fileId = fileId;
-
-    // Fetch file metadata via IPC to get gameYear
-    const metadata = await window.franchiseAPI.getMetadata(fileId);
 
     scheduleService.file = {
       schedule: new FranchiseSchedule(fileId),
@@ -35,7 +35,15 @@ scheduleService.loadSchedule = async function (fileId) {
     };
 
     scheduleService.file.schedule.on("ready", () => {
+      utilService.hide(document.getElementById("error-message"));
       this.loadGamesByWeek(0);
+      utilService.hide(document.querySelector(".loader-wrapper"));
+    });
+
+    scheduleService.file.schedule.on("error", (err) => {
+      utilService.show(document.getElementById("error-message"));
+      const text = document.getElementById("error-message--text");
+      text.innerText = err;
       utilService.hide(document.querySelector(".loader-wrapper"));
     });
 
@@ -100,8 +108,7 @@ function addEventListeners() {
     spinner.classList.remove("hidden");
 
     try {
-      const scheduleFile =
-        await window.electronAPI.schedules.read(selectedFile);
+      const scheduleFile = await window.scheduleAPI.read(selectedFile);
       if (scheduleFile) {
         scheduleService.file.schedule.replaceAllGamesWithFile(scheduleFile);
         scheduleService.loadGamesByWeek(0);
@@ -115,14 +122,17 @@ function addEventListeners() {
     }
   });
 
-  const replaceAll = document.querySelector('#replace-all');
-  replaceAll.addEventListener('click', function () {
-    // Full schedule replacement doesn't work for M21 and newer
-    if (scheduleService.file.file.gameYear >= 21) {
-      return;
-    }
-    const replaceAllModal = document.querySelector('.replace-all-modal');
-    const underlay = document.querySelector('.underlay');
+  const replaceAll = document.querySelector("#replace-all");
+  // Full schedule replacement doesn't work for M21 and newer
+  if (scheduleService.file.gameYear >= 21) {
+    utilService.hide(replaceAll);
+  } else {
+    utilService.show(replaceAll);
+  }
+
+  replaceAll.addEventListener("click", function () {
+    const replaceAllModal = document.querySelector(".replace-all-modal");
+    const underlay = document.querySelector(".underlay");
 
     replaceAllModal.classList.remove("hidden");
     underlay.classList.remove("hidden");
@@ -400,7 +410,7 @@ function getDayChoices() {
 }
 
 async function loadScheduleChoices() {
-  const years = await window.electronAPI.schedules.list();
+  const years = await window.scheduleAPI.list();
   return years.map((year) => {
     return {
       value: year,

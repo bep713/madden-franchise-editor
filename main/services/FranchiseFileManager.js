@@ -627,6 +627,9 @@ class FranchiseFileManager {
               : null,
           }))
         : [],
+      usingGenericSchema:
+        table.offsetTable.filter((o) => !o.name.startsWith("Field")).length ===
+        0,
     };
   }
 

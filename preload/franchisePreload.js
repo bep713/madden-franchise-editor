@@ -178,6 +178,12 @@ contextBridge.exposeInMainWorld("franchiseAPI", {
   },
 });
 
+contextBridge.exposeInMainWorld("scheduleAPI", {
+  // Schedule operations
+  list: () => ipcRenderer.invoke("schedules:list"),
+  read: (filename) => ipcRenderer.invoke("schedules:read", filename),
+});
+
 // Expose app/dialog API (replaces @electron/remote usage)
 contextBridge.exposeInMainWorld("electronAPI", {
   // Dialog operations
@@ -237,12 +243,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
     removeActionListener: (callback) => {
       removeListener("menu:action", callback);
     },
-  },
-
-  // Schedule operations
-  schedules: {
-    list: () => ipcRenderer.invoke("schedules:list"),
-    read: (filename) => ipcRenderer.invoke("schedules:read", filename),
   },
 
   // External data operations (xlsx/csv import/export handled in main)

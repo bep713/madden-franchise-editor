@@ -17,8 +17,6 @@ class FranchiseSchedule extends EventEmitter {
     this._teamData = teamData;
     this.file = null; // Will be populated when needed
 
-    // For now, we'll parse immediately
-    // In a full migration, this would wait for file metadata
     this.parse();
   }
 
@@ -90,8 +88,7 @@ class FranchiseSchedule extends EventEmitter {
       !appointmentData ||
       !gameEventData
     ) {
-      console.error("Failed to load required tables");
-      return;
+      this.emit("error", "Failed to load required tables");
     }
 
     // Validate that tables have records arrays
@@ -101,8 +98,21 @@ class FranchiseSchedule extends EventEmitter {
       !appointmentData.records ||
       !gameEventData.records
     ) {
-      console.error("One or more tables missing records array");
-      return;
+      this.emit("error", "One or more tables missing records array");
+    }
+
+    // Validate that none of the tables are using generic schemas
+    if (
+      seasonGameData.usingGenericSchema ||
+      schedulerData.usingGenericSchema ||
+      appointmentData.usingGenericSchema ||
+      gameEventData.usingGenericSchema ||
+      teamTableData.usingGenericSchema
+    ) {
+      this.emit(
+        "error",
+        "One or more tables are missing their schemas. Failed to load table data. Navigate to the 'Schemas' tab and ensure the schema is correct.",
+      );
     }
 
     const that = this;
@@ -111,7 +121,7 @@ class FranchiseSchedule extends EventEmitter {
     const startTimesRaw =
       await window.franchiseAPI.schedule.getStartTimes(fileId);
     if (!startTimesRaw) {
-      console.error("Failed to get schedule start times");
+      this.emit("error", "Failed to get schedule start times");
       return;
     }
 
