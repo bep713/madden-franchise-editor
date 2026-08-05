@@ -183,6 +183,15 @@ function setupIpcListeners() {
   window.electronAPI.on("get-schema-info-response", function (arg) {
     schemaInformation = arg;
 
+    // Clear previously loaded schema and expected schema
+    document
+      .querySelectorAll(".loaded-schema")
+      .forEach((e) => e.classList.remove("loaded-schema"));
+
+    document
+      .querySelectorAll(".expected-schema")
+      .forEach((e) => e.classList.remove("expected-schema"));
+
     // Guard against undefined loaded schema (e.g., no schema loaded yet)
     if (schemaInformation.loaded) {
       const loadedSchema = document.querySelector(
