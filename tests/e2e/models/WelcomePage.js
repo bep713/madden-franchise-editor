@@ -8,7 +8,6 @@ class WelcomePage {
       scheduleLink: this.window.locator("#open-schedule"),
       tableEditorLink: this.window.locator("#open-table-editor"),
       schemaViewerLink: this.window.locator("#open-schema-viewer"),
-      abilityEditorLink: this.window.locator("#open-ability-editor"),
       mostRecentlyOpenedFile: this.window.locator(
         ".load-recent-file > ul > li:first-child .file-item",
       ),

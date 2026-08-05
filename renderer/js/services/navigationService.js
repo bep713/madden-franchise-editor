@@ -385,16 +385,6 @@ navigationService.onSchemaViewerClicked = async function () {
   schemaViewerService.start(navigationService.currentlyOpenedFile.fileId);
 };
 
-navigationService.onAbilityEditorClicked = async function () {
-  navigationService.selectTab("Abilities");
-  onNavigate(abilityEditorService);
-  await navigationService.loadPage("ability-editor.html");
-  appendNavigation();
-  postGenerateNavigation();
-
-  abilityEditorService.start(navigationService.currentlyOpenedFile.fileId);
-};
-
 navigationService.onLeagueEditorClicked = function () {
   navigationService.selectTab(leagueEditorService.name);
   onNavigate(leagueEditorService);
@@ -653,10 +643,6 @@ function setupEvents() {
 
   welcomeService.eventEmitter.on("open-schema-viewer", function () {
     navigationService.onSchemaViewerClicked();
-  });
-
-  welcomeService.eventEmitter.on("open-ability-editor", function () {
-    navigationService.onAbilityEditorClicked();
   });
 
   scheduleService.eventEmitter.on(

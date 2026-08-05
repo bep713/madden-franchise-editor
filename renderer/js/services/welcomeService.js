@@ -52,7 +52,6 @@ function addListeners() {
   addOpenScheduleListener();
   addOpenTableEditorListener();
   addOpenSchemaViewerListener();
-  addOpenAbilityEditorListener();
 }
 
 function addOpenFileListener() {
@@ -92,13 +91,10 @@ function onFileClosed() {
 
 function toggleNavigationLinks(type) {
   const scheduleLink = document.querySelector("#open-schedule");
-  const abilityLink = document.querySelector("#open-ability-editor");
 
   if (type.format === "franchise-common") {
-    abilityLink.classList.add("unavailable");
     scheduleLink.classList.add("unavailable");
   } else if (type.year === 19) {
-    abilityLink.classList.add("unavailable");
     scheduleLink.classList.remove("unavailable");
   } else if (
     type.year === 21 ||
@@ -109,14 +105,11 @@ function toggleNavigationLinks(type) {
     type.year === 26 ||
     type.year === 27
   ) {
-    abilityLink.classList.add("unavailable");
-
     // Disable schedule editor for CFB
-    if(type.gameType === "college") {
+    if (type.gameType === "college") {
       scheduleLink.classList.add("unavailable");
     }
   } else {
-    abilityLink.classList.remove("unavailable");
     scheduleLink.classList.remove("unavailable");
   }
 }
@@ -193,13 +186,6 @@ function addOpenSchemaViewerListener() {
   const openTableEditor = document.querySelector("#open-schema-viewer");
   openTableEditor.addEventListener("click", function () {
     welcomeService.eventEmitter.emit("open-schema-viewer");
-  });
-}
-
-function addOpenAbilityEditorListener() {
-  const openAbilityEditor = document.querySelector("#open-ability-editor");
-  openAbilityEditor.addEventListener("click", function () {
-    welcomeService.eventEmitter.emit("open-ability-editor");
   });
 }
 
