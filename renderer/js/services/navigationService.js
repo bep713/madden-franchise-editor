@@ -333,8 +333,15 @@ navigationService.onTableEditorClicked = async function () {
     // The first call to this function will remove the placeholder tab
     // and replace with a table editor tab.
     navigationService.closeTab(placeholderTab);
-    let newTab = navigationService.addTab("New Tab", "onNewTabClicked");
-    newTab.isActive = true;
+
+    const newTabExists = navigationService.tabs.find(
+      (tab) => tab.name === "New Tab",
+    );
+
+    if (!newTabExists) {
+      let newTab = navigationService.addTab("New Tab", "onNewTabClicked");
+      newTab.isActive = true;
+    }
   } else {
     // check if a table editor tab is active
     let activeTab = navigationService.getActiveTab();
