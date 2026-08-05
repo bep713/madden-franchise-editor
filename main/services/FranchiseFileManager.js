@@ -92,6 +92,20 @@ class FranchiseFileManager {
       settings.schemaOverride = options.schemaOverride;
     }
 
+    if (
+      options.gameYearOverride !== undefined &&
+      options.gameYearOverride !== null
+    ) {
+      settings.gameYearOverride = options.gameYearOverride;
+    }
+
+    if (
+      options.gameTypeOverride !== undefined &&
+      options.gameTypeOverride !== null
+    ) {
+      settings.gameTypeOverride = options.gameTypeOverride;
+    }
+
     return settings;
   }
 
@@ -935,6 +949,14 @@ class FranchiseFileManager {
     loggedIpc.handle("franchise:get-metadata", async (event, fileId) => {
       return this.getFileMetadata(fileId);
     });
+
+    loggedIpc.handle(
+      "franchise:get-metadata-from-file-path",
+      async (event, filePath) => {
+        const tempFile = await FranchiseFile.create(filePath);
+        return this._buildMetadata(tempFile);
+      },
+    );
 
     loggedIpc.handle("franchise:save-file", async (event, fileId, options) => {
       try {

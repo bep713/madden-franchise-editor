@@ -1,0 +1,54 @@
+.ftc-override-modal {
+  max-width: 500px;
+
+  .ftc-override-description {
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+
+  .ftc-override-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .ftc-override-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    label {
+      font-weight: 500;
+      font-size: 0.9em;
+    }
+
+    .ftc-select {
+      padding: 8px 10px;
+      font-size: 1em;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      background: #fff;
+      width: 100%;
+    }
+  }
+
+  .ftc-override-actions {
+    display: flex;
+    justify-content: flex-end;
+
+    .ftc-override-confirm {
+      padding: 8px 24px;
+      background-color: #1a73e8;
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      font-size: 1em;
+      cursor: pointer;
+
+      &:hover {
+        background-color: #1558b0;
+      }
+    }
+  }
+}

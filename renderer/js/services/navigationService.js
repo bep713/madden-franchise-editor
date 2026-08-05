@@ -15,6 +15,7 @@ const schemaViewerService = require("./schemaViewerService");
 const abilityEditorService = require("./abilityEditorService");
 const schemaMismatchService = require("./schemaMismatchService");
 const preferencesService = require("./preferencesService");
+const ftcModalService = require("./ftcModalService.js");
 
 const TableEditorWrapper = require("./table-editor/TableEditorWrapper");
 const tableEditorWrapper = new TableEditorWrapper();
@@ -44,6 +45,7 @@ addIpcListeners();
 
 reloadFileService.initialize();
 updateService.initialize();
+ftcModalService.initialize();
 
 conditionallyShowCheckForUpdatesNotification();
 
@@ -570,9 +572,22 @@ function setupEvents() {
     navigationService.currentlyOpenedFile.path = file;
 
     try {
-      const result = await window.franchiseAPI.openFile(file, {
+      const initialMetadata =
+        await window.franchiseAPI.getMetadataFromFilePath(file);
+
+      const openOptions = {
         schemaDirectory: savedSchemaService.getSchemaPath(),
-      });
+      };
+
+      if (initialMetadata.format === "franchise-common") {
+        const selectedOverrides = await ftcModalService.promptForFtcOverrides();
+        if (selectedOverrides) {
+          openOptions.gameYearOverride = selectedOverrides.gameYear;
+          openOptions.gameTypeOverride = selectedOverrides.gameType;
+        }
+      }
+
+      const result = await window.franchiseAPI.openFile(file, openOptions);
 
       if (result.error) {
         // Schema not found, prompt user to pick one

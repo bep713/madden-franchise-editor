@@ -74,6 +74,34 @@
               "value": true
             }
           ]
+        },
+        {
+          "key": "ftcGameYearOverride",
+          "label": "Default game year for FTCs",
+          "type": "dropdown",
+          "defaultValue": "22",
+          "options": [
+            { "label": "Madden/CFB 27", "value": "27" },
+            { "label": "Madden 26", "value": "26" },
+            { "label": "Madden 25", "value": "25" },
+            { "label": "Madden 24", "value": "24" },
+            { "label": "Madden 23", "value": "23" },
+            { "label": "Madden 22", "value": "22" },
+            { "label": "Madden 21", "value": "21" },
+            { "label": "Madden 20", "value": "20" },
+            { "label": "Madden 19", "value": "19" }
+          ]
+        },
+        {
+          "key": "ftcGameTypeOverride",
+          "label": "Default game type for FTCs",
+          "type": "dropdown",
+          "defaultValue": "madden",
+          "options": [
+            { "label": "Madden", "value": "madden" },
+            { "label": "College Football (CFB)", "value": "college" }
+          ],
+          "help": "Choose the game type"
         }
       ]
     },
@@ -153,7 +181,9 @@
       "autoSaveSet": false,
       "autoUnemptySet": false,
       "checkForSchemaUpdatesSet": false,
-      "openExcelAfterImportSet": false
+      "openExcelAfterImportSet": false,
+      "ftcGameYearOverride": 22,
+      "ftcGameTypeOverride": "madden"
     },
     "gameVersions": {
       "madden19DirectorySet": false,
