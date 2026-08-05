@@ -27,13 +27,22 @@ ftcModalService.promptForFtcOverrides = async () => {
     const confirmBtn = document.getElementById("ftc-override-confirm");
     const yearSelect = document.getElementById("ftc-game-year");
     const typeSelect = document.getElementById("ftc-game-type");
+    const savePrefsCheckbox = document.getElementById("save-prefs-checkbox");
 
-    if (!underlay || !modal || !confirmBtn || !yearSelect || !typeSelect) {
+    if (
+      !underlay ||
+      !modal ||
+      !confirmBtn ||
+      !yearSelect ||
+      !typeSelect ||
+      !savePrefsCheckbox
+    ) {
       resolve(null);
     }
 
     underlay.classList.remove("hidden");
     modal.classList.remove("hidden");
+    savePrefsCheckbox.checked = false;
 
     const prefs = await window.electronAPI.preferences.get();
 
@@ -56,6 +65,12 @@ ftcModalService.promptForFtcOverrides = async () => {
 
       underlay.classList.add("hidden");
       modal.classList.add("hidden");
+
+      if (savePrefsCheckbox?.checked) {
+        prefs.general.ftcGameYearOverride = yearSelect.value;
+        prefs.general.ftcGameTypeOverride = typeSelect.value;
+        await window.electronAPI.preferences.set(prefs);
+      }
 
       resolve({ gameYear, gameType });
     }

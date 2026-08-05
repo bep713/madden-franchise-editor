@@ -371,7 +371,7 @@ navigationService.onTableEditorClicked = async function () {
 
   if (activeTab && tableEditorWrapper.selectedTableEditor) {
     tableEditorWrapper.selectedTableEditor.navSteps = activeTab.tabHistory;
-    tableEditorWrapper.selectedTableEditor.navSteps.pop();
+    tableEditorWrapper.selectedTableEditor.navSteps?.pop();
   }
 };
 

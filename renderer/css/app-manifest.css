@@ -36,14 +36,18 @@ h1 {
 }
 
 .btn {
-  border: 1px solid #333;
-  background-color: #e98819;
+  border: 1px solid #e98819;
+  background-color: rgba(233, 136, 25, 0.2784313725);
   cursor: pointer;
-  padding: 10px;
-  border-radius: 3px;
+  padding: 10px 15px;
+  border-radius: 2px;
 }
-.btn:hover, .btn:focus, .btn:active {
-  background-color: rgb(212.2023809524, 122.7083333333, 20.2976190476);
+.btn:hover {
+  background-color: #ffd7aa;
+  cursor: pointer;
+}
+.btn:active {
+  background-color: rgb(255, 203, 144.5);
 }
 
 .loader-wrapper {
@@ -2354,7 +2358,7 @@ td.active-row {
 }
 .ftc-override-modal .ftc-override-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
 }
 .ftc-override-modal .ftc-override-actions .ftc-override-confirm {
   padding: 8px 24px;

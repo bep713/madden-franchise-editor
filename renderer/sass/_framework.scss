@@ -1,4 +1,5 @@
 @use "sass:color";
+
 $brand-primary: #e98819;
 $brand-black: #333;
 $brand-link-color: #0079c1;
@@ -58,16 +59,19 @@ h1 {
 }
 
 .btn {
-  border: 1px solid $brand-black;
-  background-color: $brand-primary;
+  border: 1px solid $brand-primary;
+  background-color: $button-orange;
   cursor: pointer;
-  padding: 10px;
-  border-radius: 3px;
+  padding: 10px 15px;
+  border-radius: 2px;
 
-  &:hover,
-  &:focus,
+  &:hover {
+      background-color: $button-orange-hover;
+      cursor: pointer;
+  }
+
   &:active {
-    background-color: color.adjust($brand-primary, $lightness: -5%);
+      background-color: $button-orange-active;
   }
 }
 
