@@ -278,9 +278,6 @@ async function openFileFromPath(filePath) {
         welcomeService.eventEmitter.emit(editorToOpen);
       } else {
         showOpenedFileLinks();
-        setTimeout(() => {
-          utilService.hide(document.querySelector(".loader-wrapper"));
-        }, 50);
       }
     }, 50);
   } else {

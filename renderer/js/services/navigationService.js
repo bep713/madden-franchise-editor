@@ -593,6 +593,7 @@ function setupEvents() {
             "The selected file does not contain schema data. Please select one on the following screen.",
         });
         showSchemaManager();
+        utilService.hide(document.querySelector(".loader-wrapper"));
         return;
       }
 
@@ -637,6 +638,8 @@ function setupEvents() {
       });
     } catch (err) {
       console.error("Error opening file:", err);
+    } finally {
+      utilService.hide(document.querySelector(".loader-wrapper"));
     }
   });
 
