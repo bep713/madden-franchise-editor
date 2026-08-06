@@ -48,10 +48,12 @@ settingsManagerUtil.addListeners = function (preferences) {
 
 settingsManagerUtil.createFields = async function (category) {
   const preferenceOptions = await window.electronAPI.preferences.getSections();
-  const preferences = preferencesService.get();
+  const preferences = await preferencesService.getAll();
 
   if (!preferences) {
-    throw new Error("Preferences not loaded. Call preferencesService.load() first.");
+    throw new Error(
+      "Preferences not loaded. Call preferencesService.load() first.",
+    );
   }
 
   settingsManagerUtil.addListeners(preferences);
@@ -120,7 +122,9 @@ settingsManagerUtil.createFields = async function (category) {
     ) {
       return preferences[category][key];
     } else {
-      console.warn(`Preference key "${key}" not found in category "${category}"`);
+      console.warn(
+        `Preference key "${key}" not found in category "${category}"`,
+      );
       return undefined;
     }
   }
@@ -146,7 +150,9 @@ settingsManagerUtil.createFields = async function (category) {
           break;
       }
     } else {
-      console.warn(`Cannot set preference "${field.key}" in category "${category}" - key does not exist`);
+      console.warn(
+        `Cannot set preference "${field.key}" in category "${category}" - key does not exist`,
+      );
     }
   }
 };

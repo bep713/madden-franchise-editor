@@ -17,11 +17,38 @@
             </li>
             <li>
                 <div class="list-content">
-                    <div class="header">Internal library updates</div>
+                    <div class="header">Empty Records fixes</div>
                     <ul class="inner-list">
-                        <li>Updated madden-franchise library to the latest version (multiple FTC file fixes & more)</li>
+                        <li>Empty records display with a gray background now to more easily spot them.</li>
+                        <li>Table2 & Table3 empty records display more correctly as "[empty]" rather than showing an invalid value.</li>
+                        <li>Fixed a few issues related to incorrectly cached values when a record is emptied.</li>
+                    </ul>
+                </div>
+            </li>
+            <li>
+                <div class="list-content">
+                    <div class="header">FTC file fixes</div>
+                    <ul class="inner-list">
+                        <li>Added a workflow to select game type and year when opening FTC files (credit: WiiMaster)</li>
+                        <li>Fixed a longstanding bug where the file would save many times when autosave was enabled and an FTC string field was changed.</li>
+                        <li>Fixed an issue where FTC tables were always reading with compact table2 data, when this is not always the case.</li>
+                        <li>Added detection for compact table2 data and a new table header field hasCompactTable2</li>
+                        <li>Modified the strategy to check for compact table2 rather than assume based on file type</li>
+                        <li>Fixed an issue where editing a table2 field when the table had empty records would cause an exception</li>
+                        <li>Fixed an issue where un-emptying a table2 field would not properly save</li>
+                        <li>Fixed an issue where empty table2 fields in compact tables would display incorrect partial data, due to the empty row pointer being mistaken as a table2 offset (similar to the table3 bug fixed previously)</li>
+                        <li>Fixed an issue where editing a table2 field in an FTC file would not properly recalculate the offsets</li>
+                    </ul>
+                </div>
+            </li>
+            <li>
+                <div class="list-content">
+                    <div class="header">General fixes</div>
+                    <ul class="inner-list">
+                        <li>Updated madden-franchise library to the latest version</li>
                         <li>Updated the internal Electron version. Thanks to WiiMaster for all the help!</li>
-                        <li>Added new preferences/workflow to select game year and type when opening FTC files.</li>
+                        <li>Fixed a longstanding issue when selecting a schema, where a previously selected schema was still showing as active.</li>
+                        <li>Fixed a longstanding issue when reloading a file that was changed externally. The reload action should work properly now.</li>
                     </ul>
                 </div>
             </li>
