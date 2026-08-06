@@ -4,9 +4,10 @@ const { shell } = require("electron");
  * Register IPC handlers for update-related operations.
  * This moves Electron API usage (shell) from renderer to main process.
  */
-function registerUpdateHandlers(loggedIpc, autoUpdater, isDev, loggedMain) {
+function registerUpdateHandlers(loggedIpc, autoUpdater, isDev, getLoggedMain) {
   // Check for updates
   loggedIpc.on("update:check", () => {
+    const loggedMain = getLoggedMain();
     try {
       if (isDev) {
         autoUpdater.checkForUpdates();
@@ -23,6 +24,7 @@ function registerUpdateHandlers(loggedIpc, autoUpdater, isDev, loggedMain) {
 
   // Install update (download and quit to install)
   loggedIpc.on("update:install", () => {
+    const loggedMain = getLoggedMain();
     try {
       loggedMain.send("update-downloading");
       autoUpdater.downloadUpdate().then(() => {

@@ -110,7 +110,7 @@ registerSchemaMismatchHandlers(loggedIpc, franchiseFileManager);
 registerSchemaSearchHandlers(loggedIpc, franchiseFileManager);
 registerSchemaViewerHandlers(loggedIpc, franchiseFileManager);
 registerScheduleHandlers(loggedIpc, franchiseFileManager);
-registerUpdateHandlers(loggedIpc, autoUpdater, isDev, loggedMain);
+registerUpdateHandlers(loggedIpc, autoUpdater, isDev, () => loggedMain);
 
 // Register external URL handler
 loggedIpc.on("open-external-url", (event, url) => {
