@@ -405,11 +405,12 @@ class FranchiseFileManager {
     }
 
     const { file } = entry;
+    const { path } = options;
 
     return new Promise((resolve, reject) => {
       const savePromise = options.sync
-        ? Promise.resolve(file.save(null, { sync: true }))
-        : file.save();
+        ? Promise.resolve(file.save(path, { sync: true }))
+        : file.save(path);
 
       savePromise
         .then(() => {
@@ -426,6 +427,21 @@ class FranchiseFileManager {
    * @returns {Promise<string>}
    */
   async saveFileAs(fileId, newPath) {
+    const entry = this.activeFiles.get(fileId);
+    if (!entry) {
+      throw new Error(`File not found: ${fileId}`);
+    }
+
+    return this.saveFile(fileId, { path: newPath });
+  }
+
+  /**
+   * Save file to a new path and open it at the new path
+   * @param {string} fileId
+   * @param {string} newPath
+   * @returns {Promise<string>}
+   */
+  async saveFileAsAndOpen(fileId, newPath) {
     const entry = this.activeFiles.get(fileId);
     if (!entry) {
       throw new Error(`File not found: ${fileId}`);
@@ -972,6 +988,18 @@ class FranchiseFileManager {
       async (event, fileId, newPath) => {
         try {
           const path = await this.saveFileAs(fileId, newPath);
+          return { path };
+        } catch (err) {
+          return { error: err.message };
+        }
+      },
+    );
+
+    loggedIpc.handle(
+      "franchise:save-file-as-and-open",
+      async (event, fileId, newPath) => {
+        try {
+          const path = await this.saveFileAsAndOpen(fileId, newPath);
           return { path };
         } catch (err) {
           return { error: err.message };

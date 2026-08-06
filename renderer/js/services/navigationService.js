@@ -472,7 +472,7 @@ function addIpcListeners() {
     window.electronAPI.send("close-file");
   });
 
-  window.electronAPI.on("save-new-file", async function () {
+  window.electronAPI.on("save-file-as", async function () {
     const result = await window.electronAPI.showSaveDialog({
       title: "Save as...",
       defaultPath: preferencesService.getValue("general.defaultDirectory"),
@@ -482,6 +482,19 @@ function addIpcListeners() {
     if (savePath) {
       const fileId = navigationService.currentlyOpenedFile.fileId;
       await window.franchiseAPI.saveFileAs(fileId, savePath);
+    }
+  });
+
+  window.electronAPI.on("save-new-file", async function () {
+    const result = await window.electronAPI.showSaveDialog({
+      title: "Save as...",
+      defaultPath: preferencesService.getValue("general.defaultDirectory"),
+    });
+
+    const savePath = result.filePath;
+    if (savePath) {
+      const fileId = navigationService.currentlyOpenedFile.fileId;
+      await window.franchiseAPI.saveFileAsAndOpen(fileId, savePath);
 
       navigationService.currentlyOpenedFile.path = savePath;
       window.electronAPI.send("file-loaded", {

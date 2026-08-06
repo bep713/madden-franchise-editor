@@ -21,6 +21,10 @@ menuService.saveFile = function () {
   ipcRenderer.send("save-file");
 };
 
+menuService.saveFileAs = function () {
+  ipcRenderer.send("save-file-as");
+};
+
 menuService.closeFile = function () {
   ipcRenderer.send("close-file");
 };
@@ -42,7 +46,7 @@ menuService.logTable = function () {
 
 menuService.copyUniqueId = function () {
   ipcRenderer.send("copy-unique-id");
-}
+};
 
 menuService.exportRawTable = function () {
   ipcRenderer.send("export-raw-table");

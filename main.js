@@ -50,7 +50,7 @@ let pendingMainEvents = [];
 let pendingWorkerEvents = [];
 const isDev = process.env.NODE_ENV === "development";
 
-let fileDependentMenuItems = ["CloseFile", "RevealInExplorer"];
+let fileDependentMenuItems = ["CloseFile", "RevealInExplorer", "SaveAs"];
 
 if (isDev) {
   // Watch main process files and bundle outputs only.
@@ -142,6 +142,13 @@ function createApplicationMenu() {
           label: "Save",
           accelerator: "CmdOrCtrl+S",
           click: () => loggedMain.send("save-file"),
+          enabled: false,
+        },
+        {
+          id: "SaveAs",
+          label: "Save As...",
+          accelerator: "CmdOrCtrl+Shift+S",
+          click: () => loggedMain.send("save-file-as"),
           enabled: false,
         },
         {

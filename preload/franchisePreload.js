@@ -76,8 +76,10 @@ contextBridge.exposeInMainWorld("franchiseAPI", {
     ipcRenderer.invoke("franchise:get-metadata-from-file-path", filePath),
   saveFile: (fileId, options) =>
     ipcRenderer.invoke("franchise:save-file", fileId, options),
-  saveFileAs: (fileId, newPath) =>
-    ipcRenderer.invoke("franchise:save-file-as", fileId, newPath),
+  saveFileAs: (fileId, options) =>
+    ipcRenderer.invoke("franchise:save-file-as", fileId, options),
+  saveFileAsAndOpen: (fileId, newPath) =>
+    ipcRenderer.invoke("franchise:save-file-as-and-open", fileId, newPath),
   loadSchema: (fileId, schemaPath, saveSchema) =>
     ipcRenderer.invoke("franchise:load-schema", fileId, schemaPath, saveSchema),
   getActiveFileId: () => ipcRenderer.invoke("app:get-active-file-id"),
