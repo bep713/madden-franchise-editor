@@ -1048,7 +1048,7 @@ function watchFile(filePath) {
     baseFileWatcher.close();
   }
 
-  baseFileWatcher = chokidar.watch(filePath).on("change", (event, path) => {
+  baseFileWatcher = chokidar.watch(filePath).on("change", (path) => {
     if (!waitForFileSaved && pendingSaves.length === 0) {
       loggedMain.send("file-changed", path);
     }

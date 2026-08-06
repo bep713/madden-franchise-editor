@@ -636,6 +636,10 @@ function setupEvents() {
       window.franchiseAPI.onFileSaved(function () {
         window.electronAPI.send("saved");
       });
+
+      if (navigationService.currentlyOpenService) {
+        navigationService.refreshCurrentPage();
+      }
     } catch (err) {
       console.error("Error opening file:", err);
     } finally {

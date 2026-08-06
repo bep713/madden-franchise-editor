@@ -1,5 +1,6 @@
 .ftc-override-modal {
   max-width: 500px;
+  z-index: 1041; // above loader
 
   .ftc-override-description {
     margin-bottom: 20px;

@@ -2328,6 +2328,7 @@ td.active-row {
 
 .ftc-override-modal {
   max-width: 500px;
+  z-index: 1041;
 }
 .ftc-override-modal .ftc-override-description {
   margin-bottom: 20px;

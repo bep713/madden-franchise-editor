@@ -8,6 +8,7 @@ addIpcListeners();
 reloadFileService.initialize = () => {
   const reloadWrapper = document.querySelector(`.${BASE_CLASS}`);
   reloadFileService.reloadWrapper = reloadWrapper;
+  reloadFileService.path = "";
   reloadWrapper.classList.add(HIDDEN_CLASS);
   reloadWrapper.classList.add(WRAPPER_HIDDEN_CLASS);
   addEventListeners();
@@ -20,10 +21,12 @@ reloadFileService.hide = () => {
 module.exports = reloadFileService;
 
 function addIpcListeners() {
-  window.electronAPI.onFileChanged(function () {
+  window.electronAPI.onFileChanged(function (path) {
     if (!reloadFileService.reloadWrapper) {
       return;
     }
+
+    reloadFileService.path = path;
     reloadFileService.reloadWrapper.classList.remove(HIDDEN_CLASS);
 
     setTimeout(() => {
@@ -40,7 +43,7 @@ function addEventListeners() {
   const reloadAction =
     reloadFileService.reloadWrapper.querySelector(".primary-button");
   reloadAction.addEventListener("click", function () {
-    window.electronAPI.send("reload-file");
+    window.electronAPI.send("reload-file", reloadFileService.path);
     hideReloadWrapper();
   });
 

@@ -4,18 +4,20 @@
  */
 
 function registerReloadFileHandlers(loggedIpc, options = {}) {
-  const { loggedMain, setTemporaryWindowTitle } = options;
+  const { loggedMain: getLoggedMain, setTemporaryWindowTitle } = options;
 
-  loggedIpc.on("reload-file", function () {
+  loggedIpc.on("reload-file", function (_event, path) {
     if (setTemporaryWindowTitle) {
       setTemporaryWindowTitle("Reloading...");
     }
+    const loggedMain = getLoggedMain();
     if (loggedMain) {
-      loggedMain.send("reload-file");
+      loggedMain.send("reload-file", path);
     }
   });
 
   loggedIpc.on("save-new-file", function () {
+    const loggedMain = getLoggedMain();
     if (loggedMain) {
       loggedMain.send("save-new-file");
     }
