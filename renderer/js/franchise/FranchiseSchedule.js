@@ -16,7 +16,6 @@ class FranchiseSchedule extends EventEmitter {
     this.startTimes = null;
     this._teamData = teamData;
     this.file = null; // Will be populated when needed
-    this.seasonGameTableId = null;
 
     this.parse();
   }
