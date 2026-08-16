@@ -34,19 +34,33 @@ settingsManagerUtil.getFieldMetadata = function (
   });
 };
 
-settingsManagerUtil.addListeners = function (preferences) {
+settingsManagerUtil.addListeners = function ({
+  onBack,
+  onContinue,
+  preferences,
+}) {
   const savePreferences = async function () {
     await preferencesService.setAll(preferences);
   };
 
   const continueButton = document.querySelector(".continue-btn");
-  continueButton.addEventListener("click", savePreferences);
+  continueButton.addEventListener("click", async () => {
+    await savePreferences();
+    onContinue();
+  });
 
   const previousButton = document.querySelector(".back-btn");
-  previousButton.addEventListener("click", savePreferences);
+  previousButton.addEventListener("click", async () => {
+    await savePreferences();
+    onBack();
+  });
 };
 
-settingsManagerUtil.createFields = async function (category) {
+settingsManagerUtil.createFields = async function ({
+  category,
+  onBack,
+  onContinue,
+}) {
   const preferenceOptions = await window.electronAPI.preferences.getSections();
   const preferences = await preferencesService.getAll();
 
@@ -56,7 +70,11 @@ settingsManagerUtil.createFields = async function (category) {
     );
   }
 
-  settingsManagerUtil.addListeners(preferences);
+  settingsManagerUtil.addListeners({
+    onBack,
+    onContinue,
+    preferences,
+  });
 
   const section = preferenceOptions.find((section) => {
     return section.id === category;

@@ -106,7 +106,15 @@ function showPages(pages) {
     const currentService = services[index];
 
     await loadPage(currentPage);
-    currentService.initialize();
+
+    currentService.initialize({
+      onBack: function () {
+        loadPageAtMetaIndex(index - 1);
+      },
+      onContinue: function () {
+        loadPageAtMetaIndex(index + 1);
+      },
+    });
 
     const backButton = document.querySelector(currentPage.backButtonSelector);
     const continueButton = document.querySelector(
@@ -126,14 +134,6 @@ function showPages(pages) {
           .replace("Continue", "Close");
       }
     }
-
-    backButton.addEventListener("click", () => {
-      loadPageAtMetaIndex(index - 1);
-    });
-
-    continueButton.addEventListener("click", () => {
-      loadPageAtMetaIndex(index + 1);
-    });
   }
 
   function loadServices(pages) {
