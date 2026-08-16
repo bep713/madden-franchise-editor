@@ -6,6 +6,16 @@ const preferencesService = {
 };
 
 /**
+ * Register an event listener to refresh preference cache on change.
+ * If user updates their preferences via preference window, that change
+ * will not be reflected in the renderer window preferencesService
+ * because there is 1 preferencesService per renderer process.
+ */
+window.electronAPI.preferences.onPreferencesUpdate((preferences) => {
+  preferencesService._cache = preferences;
+});
+
+/**
  * Load preferences from main process and cache them.
  * Call this once at app startup.
  */

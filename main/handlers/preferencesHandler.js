@@ -55,7 +55,11 @@ function buildPreferenceSections() {
 /**
  * Register IPC handlers for preferences operations.
  */
-function registerPreferencesHandlers(loggedIpc, franchiseFileManager = null) {
+function registerPreferencesHandlers(
+  loggedIpc,
+  franchiseFileManager = null,
+  { loggedMain: getLoggedMain },
+) {
   loggedIpc.handle("preferences:get", async () => {
     try {
       if (!preferencesInstance) {
@@ -89,6 +93,12 @@ function registerPreferencesHandlers(loggedIpc, franchiseFileManager = null) {
           preferencesInstance.value(),
         );
       }
+
+      const loggedMain = getLoggedMain();
+      loggedMain.send(
+        "preferences:update",
+        preferencesInstance.value(undefined, ""),
+      );
 
       return true;
     } catch (error) {

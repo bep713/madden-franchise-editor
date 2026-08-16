@@ -98,7 +98,13 @@ franchiseFileManager.setPreferencesProvider(() =>
 );
 franchiseFileManager.registerIpcHandlers(loggedIpc);
 registerExternalDataHandlers(loggedIpc, franchiseFileManager);
-preferencesHandler.registerPreferencesHandlers(loggedIpc, franchiseFileManager);
+preferencesHandler.registerPreferencesHandlers(
+  loggedIpc,
+  franchiseFileManager,
+  {
+    loggedMain: () => loggedMain,
+  },
+);
 registerRecentFilesHandlers(loggedIpc);
 registerWelcomeHandlers(loggedIpc, franchiseFileManager);
 registerReloadFileHandlers(loggedIpc, {

@@ -273,6 +273,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
     getSections: () => ipcRenderer.invoke("preferences:get-sections"),
     hideWindow: () => ipcRenderer.invoke("preferences:hide-window"),
     set: (prefs) => ipcRenderer.invoke("preferences:set", prefs),
+    onPreferencesUpdate: (callback) => {
+      addListener("preferences:update", callback, (_event, prefs) => {
+        if (typeof callback === "function") callback(prefs);
+      });
+    },
   },
 
   // Recent files operations
