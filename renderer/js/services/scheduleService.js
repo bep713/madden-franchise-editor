@@ -47,7 +47,7 @@ scheduleService.loadSchedule = async function (fileId) {
       utilService.hide(document.querySelector(".loader-wrapper"));
     });
 
-    addEventListeners();
+    await addEventListeners();
     this.loadWeeks();
   }, 1);
 };
@@ -71,7 +71,7 @@ scheduleService.onClose = function () {
 
 module.exports = scheduleService;
 
-function addEventListeners() {
+async function addEventListeners() {
   const gamesListElement = document.querySelector(".games-wrapper");
   gamesListElement.addEventListener("click", function () {
     hideContextMenu();
@@ -80,13 +80,6 @@ function addEventListeners() {
 
   const contextMenu = document.querySelector(".context-menu");
   contextMenu.addEventListener("click", hideContextMenu);
-
-  const viewTableEditor = document.querySelector("#view-table-editor");
-  viewTableEditor.addEventListener("click", function () {
-    const gameOffset = parseInt(contextMenu.getAttribute("data-game"));
-    // SeasonGame table ID is 1001
-    scheduleService.eventEmitter.emit("open-table-editor", 1001, gameOffset);
-  });
 
   const modalClose = document.querySelectorAll(".modal-header .close-modal");
   modalClose.forEach((modalClose) => {
@@ -137,6 +130,24 @@ function addEventListeners() {
     replaceAllModal.classList.remove("hidden");
     underlay.classList.remove("hidden");
   });
+
+  const seasonGameTables = await window.franchiseAPI.findTablesByName(
+    scheduleService.fileId,
+    "SeasonGame",
+  );
+
+  if (seasonGameTables.length > 0) {
+    const viewTableEditor = document.querySelector("#view-table-editor");
+    viewTableEditor.addEventListener("click", function () {
+      const gameOffset = parseInt(contextMenu.getAttribute("data-game"));
+      // SeasonGame table ID is 1001
+      scheduleService.eventEmitter.emit(
+        "open-table-editor",
+        seasonGameTables[0].id,
+        gameOffset,
+      );
+    });
+  }
 }
 
 function populateHexViewWrapper(event, data, header) {

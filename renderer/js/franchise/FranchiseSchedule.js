@@ -16,6 +16,7 @@ class FranchiseSchedule extends EventEmitter {
     this.startTimes = null;
     this._teamData = teamData;
     this.file = null; // Will be populated when needed
+    this.seasonGameTableId = null;
 
     this.parse();
   }
@@ -45,6 +46,8 @@ class FranchiseSchedule extends EventEmitter {
     const teamTable = teamTables.find(
       (t) => t.name === "Team" && t.recordCount > 1,
     );
+
+    this.seasonGameTableId = seasonGameTables?.[0]?.id;
 
     // Get table data via IPC
     const [
