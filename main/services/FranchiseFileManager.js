@@ -722,6 +722,56 @@ class FranchiseFileManager {
   }
 
   /**
+   * Writes many table cells at once
+   * @param {string} fileId
+   * @param {Array<object>} changes
+   * @returns {Promise<Array<object>>}
+   */
+  async writeBulkTableCells(fileId, changes) {
+    const entry = this.activeFiles.get(fileId);
+    if (!entry) {
+      throw new Error(`File not found: ${fileId}`);
+    }
+
+    const flipSaveOnChange = entry.file.settings.saveOnChange;
+    entry.file.settings.saveOnChange = false;
+
+    const results = [];
+    let index = 0;
+
+    for (const change of changes) {
+      try {
+        const result = await this.writeTableCell(
+          fileId,
+          change.tableId,
+          change.recordIndex,
+          change.fieldName,
+          change.value,
+        );
+        results.push({
+          success: true,
+          index,
+          ...result,
+        });
+      } catch (err) {
+        results.push({
+          success: false,
+          index,
+          error: err,
+        });
+      }
+
+      index += 1;
+    }
+
+    if (flipSaveOnChange) {
+      entry.file.settings.saveOnChange = flipSaveOnChange;
+      await entry.file.save();
+    }
+    return results;
+  }
+
+  /**
    * Set one or more records as empty for a table.
    * @param {string} fileId
    * @param {number} tableId
@@ -1067,6 +1117,18 @@ class FranchiseFileManager {
             value,
           );
           return { success: true, ...result };
+        } catch (err) {
+          return { error: err.message };
+        }
+      },
+    );
+
+    loggedIpc.handle(
+      "franchise:write-bulk-table-cells",
+      async (event, fileId, changes) => {
+        try {
+          const results = await this.writeBulkTableCells(fileId, changes);
+          return { success: true, results };
         } catch (err) {
           return { error: err.message };
         }

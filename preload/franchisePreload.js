@@ -110,6 +110,8 @@ contextBridge.exposeInMainWorld("franchiseAPI", {
       fieldName,
       value,
     ),
+  writeBulkTableCells: (fileId, changes) =>
+    ipcRenderer.invoke("franchise:write-bulk-table-cells", fileId, changes),
   setTableRecordsEmpty: (fileId, tableId, recordIndices) =>
     ipcRenderer.invoke(
       "franchise:set-table-records-empty",

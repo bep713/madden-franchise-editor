@@ -79,22 +79,41 @@ class TableEditorView {
 
   async _processChanges(changes, source) {
     if (changes && source !== "onEmpty" && source !== "cell-write-revert") {
-      // Write each change to the main process via IPC
-      for (const change of changes) {
-        const recordIndex = this.hot.toPhysicalRow(change[0]);
-        const fieldName = change[1];
-        const oldValue = change[2];
-        const newValue = change[3];
+      if (changes.length > 1) {
+        utilService.show(this.loader);
+      }
+      try {
+        const results = await window.franchiseAPI.writeBulkTableCells(
+          this.fileId,
+          changes.map((change) => ({
+            tableId: this.selectedTable.tableId,
+            recordIndex: this.hot.toPhysicalRow(change[0]),
+            fieldName: change[1],
+            value: change[3],
+          })),
+        );
 
-        try {
-          // Write to main process via IPC
-          const result = await window.franchiseAPI.writeTableCell(
-            this.fileId,
-            this.selectedTable.tableId,
-            recordIndex,
-            fieldName,
-            newValue,
-          );
+        if (!results.success) {
+          changes.forEach((change) => {
+            // Revert the cell on error
+            this.hot.setDataAtCell(
+              change[0],
+              this._getColumnIndex(change[1]),
+              change[2],
+              "cell-write-revert",
+            );
+            console.warn("Failed to write cell value:", err);
+          });
+        }
+
+        results.results.forEach((result) => {
+          const changeIndex = result.index;
+          const change = changes[changeIndex];
+
+          const recordIndex = this.hot.toPhysicalRow(change[0]);
+          const fieldName = change[1];
+          const oldValue = change[2];
+          const newValue = change[3];
 
           if (result?.error) {
             throw new Error(result.error);
@@ -138,17 +157,21 @@ class TableEditorView {
 
             this.syncEmptyRecords(result.emptyRecords);
           }
-        } catch (err) {
+        });
+      } catch (err) {
+        changes.forEach((change) => {
           // Revert the cell on error
           this.hot.setDataAtCell(
             change[0],
-            this._getColumnIndex(fieldName),
-            oldValue,
+            this._getColumnIndex(change[1]),
+            change[2],
             "cell-write-revert",
           );
           console.warn("Failed to write cell value:", err);
-        }
+        });
       }
+
+      utilService.hide(this.loader);
     }
   }
 
