@@ -4,6 +4,7 @@ const {
   schemaGenerator,
   utilService,
   FranchiseFileRecord,
+  FranchiseSchema,
 } = require("madden-franchise");
 const { app, BrowserWindow } = require("electron");
 const fs = require("fs");
@@ -481,7 +482,7 @@ class FranchiseFileManager {
     if (saveSchema) {
       const { file: reloadedFile } = this.activeFiles.get(fileId);
       if (reloadedFile.schemaList?.meta) {
-        await this._saveSchemaForFile(reloadedFile, schemaPath);
+        await this._saveSchema(reloadedFile.schemaList.meta, schemaPath);
       } else {
         console.warn(`Schema loaded but has no meta; not saved: ${schemaPath}`);
       }
@@ -491,14 +492,55 @@ class FranchiseFileManager {
   }
 
   /**
+   * Save a schema file to the schema directory without loading it into the
+   * open file. Also reports whether it exactly matches the schema version
+   * the open file expects.
+   * @param {string} fileId
+   * @param {string} schemaPath
+   * @returns {Promise<{meta: {gameYear: number, major: number, minor: number}, savedPath: string, matchesExpected: boolean}>}
+   */
+  async addSchema(fileId, schemaPath) {
+    const schema = new FranchiseSchema(schemaPath);
+    await new Promise((resolve, reject) => {
+      // Listen before evaluate(); the .gz path emits synchronously
+      schema.once("schemas:done", resolve);
+      try {
+        schema.evaluate();
+      } catch (err) {
+        reject(err);
+      }
+    });
+
+    if (!schema.meta) {
+      throw new Error("Schema file has no version information");
+    }
+    const { gameYear, major, minor } = schema.meta;
+    const savedPath = await this._saveSchema(
+      { gameYear, major, minor },
+      schemaPath,
+    );
+
+    const expected = this.activeFiles.get(fileId)?.file.expectedSchemaVersion;
+    const matchesExpected =
+      !!expected &&
+      expected.major === major &&
+      expected.minor === minor &&
+      (expected.gameYear === undefined ||
+        expected.gameYear === null ||
+        expected.gameYear === gameYear);
+
+    return { meta: { gameYear, major, minor }, savedPath, matchesExpected };
+  }
+
+  /**
    * Copy a schema file into the schema directory, named by its game year and version
-   * @param {FranchiseFile} file - File whose schemaList.meta describes the schema
+   * @param {{gameYear: number, major: number, minor: number}} meta - Schema version info
    * @param {string} schemaPath - Path of the schema file to copy
-   * @returns {Promise<void>}
+   * @returns {Promise<string>} Path of the saved schema file
    * @private
    */
-  async _saveSchemaForFile(file, schemaPath) {
-    const { gameYear, major, minor } = file.schemaList.meta;
+  async _saveSchema(meta, schemaPath) {
+    const { gameYear, major, minor } = meta;
     const fileExtension = path.extname(schemaPath);
 
     await fs.promises.mkdir(this._schemaDirectory, { recursive: true });
@@ -508,6 +550,7 @@ class FranchiseFileManager {
     );
 
     await fs.promises.copyFile(schemaPath, destPath);
+    return destPath;
   }
 
   /**
@@ -1074,6 +1117,14 @@ class FranchiseFileManager {
         }
       },
     );
+
+    loggedIpc.handle("franchise:add-schema", async (event, fileId, schemaPath) => {
+      try {
+        return await this.addSchema(fileId, schemaPath);
+      } catch (err) {
+        return { error: err.message };
+      }
+    });
 
     // Schema operations
     loggedIpc.handle("franchise:get-saved-schemas", async () => {

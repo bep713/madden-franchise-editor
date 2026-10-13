@@ -5,6 +5,7 @@ const preferencesService = require("./services/preferencesService");
 
 let schemaInformation;
 let isCurrentlySearching = false;
+let pendingAddedSchemaLabel = null;
 
 setupListeners();
 setupIpcListeners();
@@ -28,14 +29,38 @@ function setupListeners() {
 
     const customSchemaFile = result.filePaths;
     if (customSchemaFile && customSchemaFile.length > 0) {
-      utilService.show(document.querySelector(".loader-wrapper"));
+      const loader = document.querySelector(".loader-wrapper");
+      utilService.show(loader);
 
-      setTimeout(() => {
+      const fileId = await window.franchiseAPI.getActiveFileId();
+      const addResult = await window.franchiseAPI.addSchema(
+        fileId,
+        customSchemaFile[0],
+      );
+
+      if (!addResult || addResult.error) {
+        utilService.hide(loader);
+        showSchemaErrorNotification(
+          `Could not add schema: ${addResult?.error ?? "unknown error"}`,
+        );
+        return;
+      }
+
+      await parseAvailableSchemas();
+      const { meta } = addResult;
+      const label = `M${meta.gameYear} ${meta.major}.${meta.minor}`;
+
+      if (addResult.matchesExpected) {
+        // Keep the loader up until load-schema-done arrives
+        pendingAddedSchemaLabel = label;
         window.electronAPI.send("load-schema", {
-          path: customSchemaFile[0],
-          saveSchema: true,
+          path: addResult.savedPath,
+          saveSchema: false,
         });
-      }, 20);
+      } else {
+        utilService.hide(loader);
+        showSchemaLoadedNotification(`Schema ${label} added.`);
+      }
     }
   });
 
@@ -172,9 +197,18 @@ function setupIpcListeners() {
   window.electronAPI.on("load-schema-done", async function (arg) {
     utilService.hide(document.querySelector(".loader-wrapper"));
 
+    const addedLabel = pendingAddedSchemaLabel;
+    pendingAddedSchemaLabel = null;
+
     if (arg.status === "successful") {
       await parseAvailableSchemas();
-      showSchemaLoadedNotification();
+      showSchemaLoadedNotification(
+        addedLabel ? `Schema ${addedLabel} added and loaded.` : undefined,
+      );
+    } else if (addedLabel) {
+      showSchemaErrorNotification(
+        `Schema ${addedLabel} was added, but loading it failed${arg?.error ? `: ${arg.error}` : "."}`,
+      );
     } else {
       showSchemaErrorNotification();
     }
@@ -312,11 +346,15 @@ async function parseAvailableSchemas(autoSelect) {
   window.electronAPI.send("get-schema-info-request", autoSelect);
 }
 
-function showSchemaLoadedNotification() {
+function showSchemaLoadedNotification(message = "Schema loaded successfully.") {
+  document.querySelector(".schema-loaded-text").textContent = message;
   utilService.showNotificationElement(".schema-loaded", 3500);
 }
 
-function showSchemaErrorNotification() {
+function showSchemaErrorNotification(
+  message = "There was a problem loading the schema.",
+) {
+  document.querySelector(".schema-error-text").textContent = message;
   utilService.showNotificationElement(".schema-error", 3500);
 }
 

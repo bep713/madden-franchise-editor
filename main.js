@@ -671,15 +671,18 @@ function addIpcListeners() {
 
   // Dialog and App IPC handlers (replaces @electron/remote usage)
   ipcMain.handle("dialog:show-save", async (event, options) => {
-    return await dialog.showSaveDialog(mainWindow, options);
+    const parent = BrowserWindow.fromWebContents(event.sender) ?? mainWindow;
+    return await dialog.showSaveDialog(parent, options);
   });
 
   ipcMain.handle("dialog:show-open", async (event, options) => {
-    return await dialog.showOpenDialog(mainWindow, options);
+    const parent = BrowserWindow.fromWebContents(event.sender) ?? mainWindow;
+    return await dialog.showOpenDialog(parent, options);
   });
 
   ipcMain.handle("dialog:show-message", async (event, options) => {
-    return await dialog.showMessageBox(mainWindow, options);
+    const parent = BrowserWindow.fromWebContents(event.sender) ?? mainWindow;
+    return await dialog.showMessageBox(parent, options);
   });
 
   ipcMain.handle("app:get-user-data-path", () => {
