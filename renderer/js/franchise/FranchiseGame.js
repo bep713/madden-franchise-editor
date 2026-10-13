@@ -23,7 +23,7 @@ class FranchiseGame extends EventEmitter {
   set awayTeam (metadata) {
     this._awayTeam = metadata;
     this.gameRecord.AwayTeam = this.gameRecord.AwayTeam.substring(0, 16) + utilService.dec2bin(metadata.referenceIndex, 16);
-    this.emit('change');
+    this.emit('change', { AwayTeam: this.gameRecord.AwayTeam });
   };
 
   get awayTeam () {
@@ -33,7 +33,7 @@ class FranchiseGame extends EventEmitter {
   set homeTeam (metadata) {
     this._homeTeam = metadata;
     this.gameRecord.HomeTeam = this.gameRecord.HomeTeam.substring(0, 16) + utilService.dec2bin(metadata.referenceIndex, 16);
-    this.emit('change');
+    this.emit('change', { HomeTeam: this.gameRecord.HomeTeam });
   };
 
   get homeTeam () {
@@ -47,7 +47,7 @@ class FranchiseGame extends EventEmitter {
   set dayOfWeek (metadata) {
     this._dayOfWeek = metadata;
     this.gameRecord.DayOfWeek = metadata.name;
-    this.emit('change');
+    this.emit('change', { DayOfWeek: this.gameRecord.DayOfWeek });
   };
 
   get time () {
@@ -61,7 +61,7 @@ class FranchiseGame extends EventEmitter {
 
     this._time = time;
     this.gameRecord.TimeOfDay = totalMinutes;
-    this.emit('change');
+    this.emit('change', { TimeOfDay: this.gameRecord.TimeOfDay });
   };
 
   get seasonWeek () {

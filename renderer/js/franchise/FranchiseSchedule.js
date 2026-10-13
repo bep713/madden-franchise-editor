@@ -228,9 +228,24 @@ class FranchiseSchedule extends EventEmitter {
       game.appointment = appointmentMap[record.index];
       this.games.push(game);
 
-      game.on("change", async () => {
-        if (preferencesService.getValue("general.autoSave")?.[0]) {
-          await window.franchiseAPI.saveFile(fileId);
+      game.on("change", async (fields) => {
+        const result = await window.franchiseAPI.writeBulkTableCells(
+          fileId,
+          Object.entries(fields).map(([fieldName, value]) => ({
+            tableId: this.seasonGameTableId,
+            recordIndex: game.index,
+            fieldName,
+            value,
+          })),
+        );
+
+        if (!result?.success || result.results.some((r) => !r.success)) {
+          console.error("Failed to write schedule change:", result);
+          window.electronAPI.showMessageBox({
+            type: "error",
+            title: "Unable to save schedule change",
+            message: "The schedule change could not be written to the file.",
+          });
         }
       });
     });
