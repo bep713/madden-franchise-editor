@@ -32,6 +32,9 @@ class TableEditorView {
     this.loader = document.querySelector(".loader-wrapper");
     this.referenceEditorSelector = this.parent.referenceEditorSelector;
 
+    this.isDestroyed = false;
+    this.columnSelector = null;
+
     this.hot = new Handsontable(this.baseContainer, {
       // filters: true,
       width: "100%",
@@ -247,9 +250,12 @@ class TableEditorView {
     const jumpRow = document.querySelector(".jump-row");
 
     const columnSelect = document.querySelector("#available-columns");
+    // Never wrap the same <select> twice
+    columnSelect?.selectr?.destroy();
     let columnSelectr = new Selectr(columnSelect, {
       data: null,
     });
+    this.columnSelector = columnSelectr;
 
     const closeModalButton = document.querySelector(".close-modal");
     closeModalButton.addEventListener("click", () => {
@@ -373,10 +379,36 @@ class TableEditorView {
     return tableData;
   }
 
+  destroy() {
+    if (this.isDestroyed) return;
+    this.isDestroyed = true;
+
+    try {
+      if (this.hot && !this.hot.isDestroyed) {
+        this.hot.destroy();
+      }
+    } catch (err) {
+      console.error("Failed to destroy Handsontable:", err);
+    }
+
+    [this.tableSelector, this.columnSelector].forEach((selector) => {
+      try {
+        selector?.destroy();
+      } catch (err) {
+        console.error("Failed to destroy Selectr:", err);
+      }
+    });
+    this.tableSelector = null;
+    this.columnSelector = null;
+  }
+
   async _initialLoad() {
     try {
       // Fetch table list via IPC
       this.tableList = await window.franchiseAPI.getTableList(this.fileId);
+
+      // The view was torn down while the table list was loading
+      if (this.isDestroyed) return;
 
       const tableChoices = this.tableList.map((table, index) => {
         return {
@@ -393,6 +425,8 @@ class TableEditorView {
       }
 
       const tableSelector = document.querySelector(".table-selector");
+      // Never wrap the same <select> twice (would render two dropdowns)
+      tableSelector.selectr?.destroy();
       this.tableSelector = new Selectr(tableSelector, {
         data: tableChoices,
       });

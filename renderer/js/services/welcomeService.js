@@ -273,10 +273,9 @@ async function openFileFromPath(filePath) {
     setTimeout(async () => {
       welcomeService.eventEmitter.emit("open-file", filePath);
       await recentFileService.addFile(filePath);
+      // Non-home default editors are opened by navigationService once the file is open
       const editorToOpen = preferencesService.getValue("general.defaultEditor");
-      if (editorToOpen && editorToOpen !== "open-home") {
-        welcomeService.eventEmitter.emit(editorToOpen);
-      } else {
+      if (!editorToOpen || editorToOpen === "open-home") {
         showOpenedFileLinks();
       }
     }, 50);

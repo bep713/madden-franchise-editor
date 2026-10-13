@@ -308,7 +308,8 @@ navigationService.onNewTabClicked = function () {
 
 navigationService.onHomeClicked = async function () {
   onNavigate(welcomeService);
-  await navigationService.loadPage("welcome.html");
+  const navToken = currentNavToken;
+  if (!(await navigationService.loadPage("welcome.html", navToken))) return;
   postGenerateNavigation();
 
   welcomeService.start(navigationService.currentlyOpenedFile);
@@ -317,7 +318,8 @@ navigationService.onHomeClicked = async function () {
 navigationService.onScheduleEditorClicked = async function () {
   navigationService.selectTab("Schedule");
   onNavigate(scheduleService);
-  await navigationService.loadPage("schedule.html");
+  const navToken = currentNavToken;
+  if (!(await navigationService.loadPage("schedule.html", navToken))) return;
   appendNavigation();
   postGenerateNavigation();
 
@@ -368,11 +370,13 @@ navigationService.onTableEditorClicked = async function () {
   }
 
   onNavigate(tableEditorWrapper);
-  await navigationService.loadPage("table-editor.html");
+  const navToken = currentNavToken;
+  if (!(await navigationService.loadPage("table-editor.html", navToken))) return;
   appendNavigation();
   postGenerateNavigation();
 
   await tableEditorWrapper.start(navigationService.currentlyOpenedFile.fileId);
+  if (navToken !== currentNavToken) return;
 
   const activeTab = navigationService.getActiveTab();
 
@@ -385,7 +389,9 @@ navigationService.onTableEditorClicked = async function () {
 navigationService.onSchemaViewerClicked = async function () {
   navigationService.selectTab("Schemas");
   onNavigate(schemaViewerService);
-  await navigationService.loadPage("schema-viewer.html");
+  const navToken = currentNavToken;
+  if (!(await navigationService.loadPage("schema-viewer.html", navToken)))
+    return;
   appendNavigation();
   postGenerateNavigation();
 
@@ -408,11 +414,17 @@ navigationService.refreshCurrentPage = function () {
   ]();
 };
 
-navigationService.loadPage = async function (pagePath) {
+// Returns false (without injecting the page) if a newer navigation has
+// started since the given token was captured.
+navigationService.loadPage = async function (pagePath, navToken) {
   const fullPath = `renderer/${pagePath}`;
   const page = await window.electronAPI.fs.readFile(fullPath);
+  if (navToken !== undefined && navToken !== currentNavToken) {
+    return false;
+  }
   const content = document.querySelector("#content");
   content.innerHTML = page;
+  return true;
 };
 
 navigationService.runCloseFunction = function () {
@@ -430,7 +442,11 @@ if (window.electronAPI?.isTest) {
 
 module.exports = navigationService;
 
+// Incremented on every navigation so superseded navigations can bail out
+let currentNavToken = 0;
+
 function onNavigate(service) {
+  currentNavToken++;
   navigationService.runCloseFunction();
   navigationService.currentlyOpenService = service;
 
@@ -650,7 +666,10 @@ function setupEvents() {
         window.electronAPI.send("saved");
       });
 
-      if (navigationService.currentlyOpenService) {
+      const editorToOpen = preferencesService.getValue("general.defaultEditor");
+      if (editorToOpen && editorToOpen !== "open-home") {
+        welcomeService.eventEmitter.emit(editorToOpen);
+      } else if (navigationService.currentlyOpenService) {
         navigationService.refreshCurrentPage();
       }
     } catch (err) {

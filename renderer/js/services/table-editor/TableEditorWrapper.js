@@ -34,6 +34,10 @@ class TableEditorWrapper {
   }
 
   async start(fileId) {
+    // Make sure a previous start can't leak views or listeners
+    this._teardown();
+    const startId = this._startId;
+
     this.fileId = fileId;
     this.file = null; // No longer holds raw file object
     this.tableEditors = [];
@@ -48,7 +52,10 @@ class TableEditorWrapper {
     const metadata = await window.franchiseAPI.getMetadata(fileId);
     this.fileMetadata = metadata;
 
-    this.onReady();
+    // Closed or restarted while waiting on metadata
+    if (startId !== this._startId) return;
+
+    await this.onReady();
   }
 
   async onReady() {
@@ -370,17 +377,37 @@ class TableEditorWrapper {
   }
 
   onClose() {
-    this._ipcListeners.forEach((listener) => {
+    this._teardown();
+  }
+
+  // Idempotent. Safe to call when start() never ran.
+  _teardown() {
+    this._startId = (this._startId || 0) + 1;
+
+    (this._ipcListeners || []).forEach((listener) => {
       ipcRenderer.removeListener(listener.event, listener.ref);
     });
+    this._ipcListeners = [];
 
-    this._windowListeners.forEach((listener) => {
+    (this._windowListeners || []).forEach((listener) => {
       window.removeEventListener(listener.event, listener.ref);
     });
+    this._windowListeners = [];
 
-    this._referenceListeners.forEach((listener) => {
+    (this._referenceListeners || []).forEach((listener) => {
       referenceViewerService.eventEmitter.off(listener.event, listener.ref);
     });
+    this._referenceListeners = [];
+
+    (this.tableEditors || []).forEach((view) => {
+      try {
+        view.destroy();
+      } catch (err) {
+        console.error("Failed to destroy table editor view:", err);
+      }
+    });
+    this.tableEditors = [];
+    this.selectedTableEditor = null;
   }
 }
 
