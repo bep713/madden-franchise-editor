@@ -525,6 +525,10 @@ function addIpcListeners() {
 
   window.electronAPI.on("load-schema", async function (args) {
     if (!navigationService.currentlyOpenedFile.path) {
+      window.electronAPI.send("load-schema-done", {
+        status: "error",
+        error: "No franchise file is open.",
+      });
       return;
     }
     utilService.show(document.querySelector(".loader-wrapper"));

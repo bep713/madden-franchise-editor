@@ -478,29 +478,36 @@ class FranchiseFileManager {
       },
     );
 
+    if (saveSchema) {
+      const { file: reloadedFile } = this.activeFiles.get(fileId);
+      if (reloadedFile.schemaList?.meta) {
+        await this._saveSchemaForFile(reloadedFile, schemaPath);
+      } else {
+        console.warn(`Schema loaded but has no meta; not saved: ${schemaPath}`);
+      }
+    }
+
     return { status: "successful", metadata };
   }
 
   /**
-   * Save schema for a file
-   * @param {FranchiseFile} file
-   * @param {string} schemaPath
+   * Copy a schema file into the schema directory, named by its game year and version
+   * @param {FranchiseFile} file - File whose schemaList.meta describes the schema
+   * @param {string} schemaPath - Path of the schema file to copy
+   * @returns {Promise<void>}
    * @private
    */
-  _saveSchemaForFile(file, schemaPath) {
-    const meta = {
-      gameYear: file.schemaList.meta.gameYear,
-      major: file.schemaList.meta.major,
-      minor: file.schemaList.meta.minor,
-      fileExtension: path.extname(file.schemaList.path),
-    };
+  async _saveSchemaForFile(file, schemaPath) {
+    const { gameYear, major, minor } = file.schemaList.meta;
+    const fileExtension = path.extname(schemaPath);
 
+    await fs.promises.mkdir(this._schemaDirectory, { recursive: true });
     const destPath = path.join(
       this._schemaDirectory,
-      `M${meta.gameYear}_${meta.major}_${meta.minor}${meta.fileExtension}`,
+      `M${gameYear}_${major}_${minor}${fileExtension}`,
     );
 
-    fs.createReadStream(schemaPath).pipe(fs.createWriteStream(destPath));
+    await fs.promises.copyFile(schemaPath, destPath);
   }
 
   /**
