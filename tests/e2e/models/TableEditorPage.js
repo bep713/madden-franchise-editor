@@ -165,6 +165,49 @@ class TableEditorPage {
     await this.tableEditorContextMenu.clickSetEmpty();
   }
 
+  async goToCell(row, columnName) {
+    await this.jumpToColumn(columnName, row);
+  }
+
+  async pasteAtSelectedCell() {
+    await this._watchForLoader();
+    await util.sendPasteKeyboardShortcut(this.window);
+  }
+
+  async undo() {
+    await this._watchForLoader();
+    await util.sendUndoKeyboardShortcut(this.window);
+  }
+
+  async redo() {
+    await this._watchForLoader();
+    await util.sendRedoKeyboardShortcut(this.window);
+  }
+
+  // Use after a multi-cell paste/undo/redo. Fails if the loader never appears.
+  async waitForLoaderToShowAndHide() {
+    await this.window.waitForFunction(() => window.loaderWasShown, null, {
+      timeout: 30000,
+    });
+    await this._waitForTableToLoad();
+  }
+
+  // Remembers if the loader is shown at any point, even for a moment
+  async _watchForLoader() {
+    await this.window.evaluate(() => {
+      window.loaderWasShown = false;
+      const loader = document.querySelector(".loader-wrapper");
+
+      const observer = new MutationObserver(() => {
+        if (!loader.classList.contains("hidden")) {
+          window.loaderWasShown = true;
+          observer.disconnect();
+        }
+      });
+      observer.observe(loader, { attributes: true, attributeFilter: ["class"] });
+    });
+  }
+
   async isSelectedCellEmpty() {
     const cellClass =
       await this.table.locators.selectedCell.getAttribute("class");

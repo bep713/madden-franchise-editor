@@ -276,6 +276,25 @@ class FranchiseFileManager {
   }
 
   /**
+   * Serialize a table's empty-record state (indices plus each empty record).
+   * @param {object} table
+   * @returns {{emptyRecordIndices: number[], emptyRecords: Array<{index: number, record: object}>}}
+   * @private
+   */
+  _serializeEmptyState(table) {
+    const emptyRecordIndices = this._serializeEmptyRecordIndices(
+      table.emptyRecords,
+    );
+    return {
+      emptyRecordIndices,
+      emptyRecords: emptyRecordIndices.map((index) => ({
+        index,
+        record: this._serializeRecord(table.records[index]),
+      })),
+    };
+  }
+
+  /**
    * Open a franchise file
    * @param {string} filePath - Absolute path to the file
    * @param {object} options - Options for opening the file
@@ -315,6 +334,8 @@ class FranchiseFileManager {
 
         // Set up change event forwarding
         file.on("change", (table) => {
+          const current = this.activeFiles.get(fileId);
+          if (current?.suppressChangeEvents) return;
           this._emitToFileWindows(fileId, "franchise:table-changed", {
             fileId,
             tableId: table.header.tableId,
@@ -714,15 +735,15 @@ class FranchiseFileManager {
   }
 
   /**
-   * Write a value to a table cell
+   * Writes a single cell. Does not serialize anything; callers build the response.
    * @param {string} fileId
    * @param {number} tableId
    * @param {number} recordIndex
    * @param {string} fieldName
    * @param {*} value
-   * @returns {Promise<void>}
+   * @returns {{ table: object, wasEmpty: boolean }}
    */
-  async writeTableCell(fileId, tableId, recordIndex, fieldName, value) {
+  writeTableCell(fileId, tableId, recordIndex, fieldName, value) {
     const entry = this.activeFiles.get(fileId);
     if (!entry) {
       throw new Error(`File not found: ${fileId}`);
@@ -733,49 +754,22 @@ class FranchiseFileManager {
       throw new Error(`Table not found: ${tableId}`);
     }
 
-    if (!table.records[recordIndex]) {
+    const record = table.records[recordIndex];
+    if (!record) {
       throw new Error(`Record not found: ${recordIndex}`);
     }
 
-    const previousMeta = this._serializeRecordMeta(
-      table.records[recordIndex],
-      recordIndex,
-    );
-
-    table.records[recordIndex][fieldName] = value;
-
-    const cellErrors = {};
-    const updatedRecord = this._serializeRecord(
-      table.records[recordIndex],
-      recordIndex,
-      cellErrors,
-    );
-    const updatedMeta = this._serializeRecordMeta(
-      table.records[recordIndex],
-      recordIndex,
-    );
-    const emptyRecordIndices = this._serializeEmptyRecordIndices(
-      table.emptyRecords,
-    );
-
-    return {
-      record: updatedRecord,
-      recordMeta: updatedMeta,
-      previousRecordMeta: previousMeta,
-      emptyRecordIndices,
-      emptyRecords: emptyRecordIndices.map((index) => ({
-        index,
-        record: this._serializeRecord(table.records[index]),
-      })),
-      cellErrors: cellErrors[recordIndex] || null,
-    };
+    const wasEmpty = Boolean(record.isEmpty);
+    record[fieldName] = value;
+    return { table, wasEmpty };
   }
 
   /**
-   * Writes many table cells at once
+   * Writes many table cells at once. Records are serialized once per unique
+   * row and empty-record state once per table, instead of once per cell.
    * @param {string} fileId
    * @param {Array<object>} changes
-   * @returns {Promise<Array<object>>}
+   * @returns {Promise<{results: Array<object>, records: Array<object>, emptyStates: Array<object>}>}
    */
   async writeBulkTableCells(fileId, changes) {
     const entry = this.activeFiles.get(fileId);
@@ -783,42 +777,97 @@ class FranchiseFileManager {
       throw new Error(`File not found: ${fileId}`);
     }
 
-    const flipSaveOnChange = entry.file.settings.saveOnChange;
-    entry.file.settings.saveOnChange = false;
+    const file = entry.file;
+    const originalSaveOnChange = file.settings.saveOnChange;
+    file.settings.saveOnChange = false;
+    entry.suppressChangeEvents = true; // coalesced table-changed events are sent below
 
     const results = [];
-    let index = 0;
+    const touchedRows = new Map(); // `${tableId}:${recordIndex}` -> {table, tableId, recordIndex, wasEmpty}
+    const YIELD_EVERY = 500;
 
-    for (const change of changes) {
-      try {
-        const result = await this.writeTableCell(
-          fileId,
-          change.tableId,
-          change.recordIndex,
-          change.fieldName,
-          change.value,
-        );
-        results.push({
-          success: true,
-          index,
-          ...result,
-        });
-      } catch (err) {
-        results.push({
-          success: false,
-          index,
-          error: err,
-        });
+    try {
+      for (let index = 0; index < changes.length; index++) {
+        const { tableId, recordIndex, fieldName, value } = changes[index];
+        try {
+          const { table, wasEmpty } = this.writeTableCell(
+            fileId,
+            tableId,
+            recordIndex,
+            fieldName,
+            value,
+          );
+          const key = `${tableId}:${recordIndex}`;
+          if (!touchedRows.has(key)) {
+            // keep the state from the FIRST write to this row
+            touchedRows.set(key, { table, tableId, recordIndex, wasEmpty });
+          }
+          results.push({ success: true, index });
+        } catch (err) {
+          results.push({
+            success: false,
+            index,
+            error: err?.message || String(err),
+          });
+        }
+
+        if ((index + 1) % YIELD_EVERY === 0) {
+          // let the main process handle other events during big batches
+          await new Promise((resolve) => setImmediate(resolve));
+        }
       }
-
-      index += 1;
+    } finally {
+      file.settings.saveOnChange = originalSaveOnChange;
+      entry.suppressChangeEvents = false;
     }
 
-    if (flipSaveOnChange) {
-      entry.file.settings.saveOnChange = flipSaveOnChange;
-      await entry.file.save();
+    // Serialize once per unique row
+    const records = [];
+    const unemptiedTables = new Map();
+    const changedTables = new Map();
+    for (const {
+      table,
+      tableId,
+      recordIndex,
+      wasEmpty,
+    } of touchedRows.values()) {
+      const record = table.records[recordIndex];
+      const cellErrors = {};
+      const recordMeta = this._serializeRecordMeta(record, recordIndex);
+      records.push({
+        tableId,
+        recordIndex,
+        record: this._serializeRecord(record, recordIndex, cellErrors),
+        recordMeta,
+        previousRecordMeta: { index: recordIndex, isEmpty: wasEmpty },
+        cellErrors: cellErrors[recordIndex] || null,
+      });
+      changedTables.set(tableId, table);
+      if (wasEmpty && !recordMeta.isEmpty) {
+        unemptiedTables.set(tableId, table);
+      }
     }
-    return results;
+
+    // Empty-record state: once per table, and only if a row was un-emptied
+    const emptyStates = [];
+    for (const [tableId, table] of unemptiedTables) {
+      emptyStates.push({ tableId, ...this._serializeEmptyState(table) });
+    }
+
+    // One coalesced change event per table instead of one per field set
+    for (const table of changedTables.values()) {
+      this._emitToFileWindows(fileId, "franchise:table-changed", {
+        fileId,
+        tableId: table.header.tableId,
+        name: table.name,
+      });
+    }
+
+    if (originalSaveOnChange && changedTables.size > 0) {
+      await file.save();
+    }
+
+    return { results, records, emptyStates };
   }
 
   /**
@@ -864,17 +913,9 @@ class FranchiseFileManager {
       }
     });
 
-    const emptyRecordIndices = this._serializeEmptyRecordIndices(
-      table.emptyRecords,
-    );
-
     return {
       affectedCount: uniqueIndices.length,
-      emptyRecordIndices,
-      emptyRecords: emptyRecordIndices.map((index) => ({
-        index,
-        record: this._serializeRecord(table.records[index]),
-      })),
+      ...this._serializeEmptyState(table),
     };
   }
 
@@ -1118,13 +1159,16 @@ class FranchiseFileManager {
       },
     );
 
-    loggedIpc.handle("franchise:add-schema", async (event, fileId, schemaPath) => {
-      try {
-        return await this.addSchema(fileId, schemaPath);
-      } catch (err) {
-        return { error: err.message };
-      }
-    });
+    loggedIpc.handle(
+      "franchise:add-schema",
+      async (event, fileId, schemaPath) => {
+        try {
+          return await this.addSchema(fileId, schemaPath);
+        } catch (err) {
+          return { error: err.message };
+        }
+      },
+    );
 
     // Schema operations
     loggedIpc.handle("franchise:get-saved-schemas", async () => {
@@ -1164,31 +1208,14 @@ class FranchiseFileManager {
     );
 
     loggedIpc.handle(
-      "franchise:write-table-cell",
-      async (event, fileId, tableId, recordIndex, fieldName, value) => {
-        try {
-          const result = await this.writeTableCell(
-            fileId,
-            tableId,
-            recordIndex,
-            fieldName,
-            value,
-          );
-          return { success: true, ...result };
-        } catch (err) {
-          return { error: err.message };
-        }
-      },
-    );
-
-    loggedIpc.handle(
       "franchise:write-bulk-table-cells",
       async (event, fileId, changes) => {
         try {
-          const results = await this.writeBulkTableCells(fileId, changes);
-          return { success: true, results };
+          const { results, records, emptyStates } =
+            await this.writeBulkTableCells(fileId, changes);
+          return { success: true, results, records, emptyStates };
         } catch (err) {
-          return { error: err.message };
+          return { success: false, error: err.message };
         }
       },
     );

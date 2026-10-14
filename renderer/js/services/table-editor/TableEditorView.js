@@ -64,13 +64,21 @@ class TableEditorView {
       return;
     }
 
-    // Filter out changes where the old value is the same as the new value
-    const filteredChanges = changes.filter(
-      ([row, prop, oldValue, newValue]) => oldValue !== newValue,
-    );
+    // Drop changes where the old value is the same as the new value.
+    // Handsontable skips any entry set to null.
+    let remaining = 0;
+    for (let i = 0; i < changes.length; i++) {
+      const change = changes[i];
+      if (!change) continue;
+      if (change[2] === change[3]) {
+        changes[i] = null;
+      } else {
+        remaining++;
+      }
+    }
 
     // If no changes remain after filtering, cancel the operation
-    if (filteredChanges.length === 0) {
+    if (remaining === 0) {
       return false; // Returning false cancels the changes
     }
   }
@@ -81,101 +89,133 @@ class TableEditorView {
   }
 
   async _processChanges(changes, source) {
-    if (changes && source !== "onEmpty" && source !== "cell-write-revert") {
-      if (changes.length > 1) {
-        utilService.show(this.loader);
-      }
-      try {
-        const results = await window.franchiseAPI.writeBulkTableCells(
-          this.fileId,
-          changes.map((change) => ({
-            tableId: this.selectedTable.tableId,
-            recordIndex: this.hot.toPhysicalRow(change[0]),
-            fieldName: change[1],
-            value: change[3],
-          })),
-        );
+    if (
+      !changes ||
+      source === "onEmpty" ||
+      source === "cell-write-revert" ||
+      source === "loadData"
+    ) {
+      return;
+    }
 
-        if (!results.success) {
-          changes.forEach((change) => {
-            // Revert the cell on error
-            this.hot.setDataAtCell(
-              change[0],
-              this._getColumnIndex(change[1]),
-              change[2],
-              "cell-write-revert",
-            );
-            console.warn("Failed to write cell value:", err);
-          });
+    // afterChange may still receive no-op changes, so filter again
+    const changesToSend = changes.filter((c) => c && c[2] !== c[3]);
+    if (changesToSend.length === 0) {
+      return;
+    }
+
+    const showLoader = changesToSend.length > 1;
+    if (showLoader) {
+      utilService.show(this.loader);
+      // give the browser a frame to paint the loader before the (potentially long) IPC
+      await new Promise((resolve) =>
+        requestAnimationFrame(() => setTimeout(resolve, 0)),
+      );
+    }
+
+    const tableId = this.selectedTable.tableId;
+    let response;
+    try {
+      response = await window.franchiseAPI.writeBulkTableCells(
+        this.fileId,
+        changesToSend.map((change) => ({
+          tableId,
+          recordIndex: this.hot.toPhysicalRow(change[0]),
+          fieldName: change[1],
+          value: change[3],
+        })),
+      );
+    } catch (err) {
+      response = { success: false, error: err?.message || String(err) };
+    }
+
+    try {
+      if (!response?.success) {
+        console.warn("Failed to write cells:", response?.error);
+        this._revertChanges(changesToSend);
+        return;
+      }
+
+      // 1. Revert only the cells that failed
+      const failedResults = (response.results || []).filter((r) => !r.success);
+      if (failedResults.length) {
+        console.warn("Failed to write some cells:", failedResults);
+        this._revertChanges(failedResults.map((r) => changesToSend[r.index]));
+      }
+
+      // 2. Apply per-row updates (one per unique row)
+      const sourceEdits = [];
+      const unemptiedRows = [];
+      for (const row of response.records || []) {
+        if (row.tableId !== tableId) continue; // the user switched tables while waiting
+
+        const { recordIndex } = row;
+        if (this.selectedTable.records[recordIndex]) {
+          // mutate in place so Handsontable's source row object stays the same reference
+          Object.assign(this.selectedTable.records[recordIndex], row.record);
         }
 
-        results.results.forEach((result) => {
-          const changeIndex = result.index;
-          const change = changes[changeIndex];
+        this.selectedTable.recordMeta = this.selectedTable.recordMeta || [];
+        this.selectedTable.recordMeta[recordIndex] = row.recordMeta;
 
-          const recordIndex = this.hot.toPhysicalRow(change[0]);
-          const fieldName = change[1];
-          const oldValue = change[2];
-          const newValue = change[3];
+        if (row.cellErrors) {
+          this.cellErrors[recordIndex] = row.cellErrors;
+        } else {
+          delete this.cellErrors[recordIndex];
+        }
 
-          if (result?.error) {
-            throw new Error(result.error);
-          }
+        if (row.previousRecordMeta?.isEmpty && !row.recordMeta?.isEmpty) {
+          unemptiedRows.push(recordIndex);
+          sourceEdits.push(...(this._getBulkRowEdits(recordIndex, row.record) || []));
+        }
+      }
 
-          // Keep local cache and row metadata in sync with main-process state
-          if (result?.record && this.selectedTable.records[recordIndex]) {
-            this.selectedTable.records[recordIndex] = result.record;
-          } else if (this.selectedTable.records[recordIndex]) {
-            this.selectedTable.records[recordIndex][fieldName] = newValue;
-          }
+      // 3. Empty-record state (once)
+      const emptyState = (response.emptyStates || []).find(
+        (e) => e.tableId === tableId,
+      );
+      if (emptyState) {
+        this.selectedTable.emptyRecordIndices = emptyState.emptyRecordIndices;
+        this.emptyRecordIndices = new Set(emptyState.emptyRecordIndices);
+        for (const { index, record } of emptyState.emptyRecords || []) {
+          sourceEdits.push(...this._getEmptyRecordRowEdits(index, record));
+        }
+      }
 
-          if (result?.recordMeta) {
-            this.selectedTable.recordMeta = this.selectedTable.recordMeta || [];
-            this.selectedTable.recordMeta[recordIndex] = result.recordMeta;
-          }
-
-          if (Array.isArray(result?.emptyRecordIndices)) {
-            this.selectedTable.emptyRecordIndices = result.emptyRecordIndices;
-          }
-
-          if (result?.cellErrors) {
-            this.cellErrors[recordIndex] = result.cellErrors;
-          } else if (this.cellErrors[recordIndex]) {
-            delete this.cellErrors[recordIndex][fieldName];
-            if (Object.keys(this.cellErrors[recordIndex]).length === 0) {
-              delete this.cellErrors[recordIndex];
+      // Clear any stale empty class name left in cell meta on un-emptied rows
+      if (unemptiedRows.length) {
+        const columnCount = this.selectedTable.headers.length;
+        this.hot.batch(() => {
+          for (const recordIndex of unemptiedRows) {
+            const visualRow = this.hot.toVisualRow(recordIndex);
+            if (visualRow === null) continue;
+            for (let col = 0; col < columnCount; col++) {
+              this.hot.setCellMeta(visualRow, col, "className", "");
             }
           }
-
-          const wasEmpty = Boolean(result?.previousRecordMeta?.isEmpty);
-          const isEmpty = Boolean(result?.recordMeta?.isEmpty);
-
-          if (result?.record && wasEmpty && !isEmpty) {
-            this.syncVisibleRowFromRecord(change[0], result.record); // change[0] is the VISUAL row index
-
-            // reset the empty class name
-            for (let i = 0; i < this.selectedTable.headers.length; i++) {
-              this.hot.setCellMeta(change[0], i, "className", "");
-            }
-
-            this.syncEmptyRecords(result.emptyRecords);
-          }
-        });
-      } catch (err) {
-        changes.forEach((change) => {
-          // Revert the cell on error
-          this.hot.setDataAtCell(
-            change[0],
-            this._getColumnIndex(change[1]),
-            change[2],
-            "cell-write-revert",
-          );
-          console.warn("Failed to write cell value:", err);
         });
       }
 
-      utilService.hide(this.loader);
+      if (sourceEdits.length) {
+        this.hot.setSourceDataAtCell(sourceEdits, "onEmpty"); // physical indices
+      }
+      this.hot.render(); // exactly one render
+    } finally {
+      if (showLoader) {
+        utilService.hide(this.loader);
+      }
     }
+  }
+
+  _revertChanges(changes) {
+    this.hot.setDataAtCell(
+      changes.map((change) => [
+        change[0],
+        this._getColumnIndex(change[1]),
+        change[2],
+      ]),
+      "cell-write-revert",
+    );
   }
 
   syncEmptyRecords(emptyRecords) {

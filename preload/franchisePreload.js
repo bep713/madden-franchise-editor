@@ -103,15 +103,6 @@ contextBridge.exposeInMainWorld("franchiseAPI", {
   // Table operations
   readTableData: (fileId, tableId, fields) =>
     ipcRenderer.invoke("franchise:read-table-data", fileId, tableId, fields),
-  writeTableCell: (fileId, tableId, recordIndex, fieldName, value) =>
-    ipcRenderer.invoke(
-      "franchise:write-table-cell",
-      fileId,
-      tableId,
-      recordIndex,
-      fieldName,
-      value,
-    ),
   writeBulkTableCells: (fileId, changes) =>
     ipcRenderer.invoke("franchise:write-bulk-table-cells", fileId, changes),
   setTableRecordsEmpty: (fileId, tableId, recordIndices) =>

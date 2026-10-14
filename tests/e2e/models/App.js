@@ -34,6 +34,41 @@ class App {
     );
   }
 
+  async close() {
+    await this.app.close();
+  }
+
+  async copyToClipboard(text) {
+    // The clipboard lives in the main process
+    await this.app.evaluate(({ clipboard }, text) => {
+      clipboard.writeText(text);
+    }, text);
+  }
+
+  // Reads table data straight from the open file (not from the grid)
+  async readTable(tableId, fields) {
+    const mainWindow = await this.getMainWindow();
+    return mainWindow.evaluate(
+      async ({ tableId, fields }) => {
+        const fileId = await window.franchiseAPI.getActiveFileId();
+        return window.franchiseAPI.readTableData(fileId, tableId, fields);
+      },
+      { tableId, fields },
+    );
+  }
+
+  async findTableIdByName(tableName) {
+    const mainWindow = await this.getMainWindow();
+    return mainWindow.evaluate(async (tableName) => {
+      const fileId = await window.franchiseAPI.getActiveFileId();
+      const tables = await window.franchiseAPI.findTablesByName(
+        fileId,
+        tableName,
+      );
+      return tables[0].id;
+    }, tableName);
+  }
+
   async _clickMenuItem(menuItemId) {
     const mainWindow = await this.getMainWindow();
     await mainWindow.evaluate(

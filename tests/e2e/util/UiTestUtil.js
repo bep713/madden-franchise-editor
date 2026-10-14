@@ -18,4 +18,8 @@ module.exports = {
   sendRedoKeyboardShortcut: async (page) => {
     await page.keyboard.press("Control+y");
   },
+
+  sendPasteKeyboardShortcut: async (page) => {
+    await page.keyboard.press("Control+v");
+  },
 };
