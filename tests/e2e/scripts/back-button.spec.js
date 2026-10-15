@@ -30,6 +30,7 @@ test("back button e2e test", async () => {
   await welcome.openTableEditor();
 
   const tableEditor = new TableEditorPage(window);
+  await tableEditor.waitForSelectedTable();
 
   // Can go back one table
   await tableEditor.openTableById(7482);

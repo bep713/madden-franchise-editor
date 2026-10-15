@@ -84,6 +84,20 @@ class TableEditorPage {
     await this._waitForTableToLoad();
   }
 
+  // Polls until the selector shows a table, i.e. the initial table has loaded
+  async waitForSelectedTable(timeout = 15000) {
+    const deadline = Date.now() + timeout;
+    let name = await this.getSelectedTableName();
+
+    while (!/^\d+ - /.test(name || "") && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      name = await this.getSelectedTableName();
+    }
+
+    await this._waitForTableToLoad();
+    return name;
+  }
+
   async getSelectedTableName() {
     return this.tableSelector.getSelectedOptionText();
   }

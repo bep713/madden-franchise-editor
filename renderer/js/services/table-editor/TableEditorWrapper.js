@@ -33,12 +33,13 @@ class TableEditorWrapper {
     this.blobRenderer = new BinaryBlobRenderer(this);
   }
 
-  async start(fileId) {
+  async start(fileId, navSteps) {
     // Make sure a previous start can't leak views or listeners
     this._teardown();
     const startId = this._startId;
 
     this.fileId = fileId;
+    this.initialNavSteps = navSteps;
     this.file = null; // No longer holds raw file object
     this.tableEditors = [];
     this.pinListElement = null;
@@ -68,6 +69,10 @@ class TableEditorWrapper {
       this,
       this.initialTableToSelect,
     );
+    if (this.initialNavSteps) {
+      this.selectedTableEditor.navSteps = this.initialNavSteps;
+      this.initialNavSteps = null;
+    }
     this.tableEditors.push(this.selectedTableEditor);
 
     this._initializeEditors();
@@ -275,6 +280,11 @@ class TableEditorWrapper {
         this.pinListElement.appendChild(pinElement);
       });
     }
+
+    const selectedTable = this.selectedTableEditor?.selectedTable;
+    if (selectedTable) {
+      this._toggleAddPinButton(selectedTable.tableId);
+    }
   }
 
   _createPinElement(pin) {
@@ -338,6 +348,9 @@ class TableEditorWrapper {
   _toggleAddPinButton(tableId) {
     const tableIsPinned = pinnedTableService.findPin(tableId);
     const addNewPinButton = document.querySelector(".add-new-pin");
+
+    // The pins list may not be built yet when the first table finishes loading
+    if (!addNewPinButton) return;
 
     if (tableIsPinned) {
       utilService.hide(addNewPinButton);

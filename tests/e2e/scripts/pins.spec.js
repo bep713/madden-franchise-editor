@@ -30,6 +30,7 @@ test("pins e2e test", async () => {
   await welcome.openTableEditor();
 
   const tableEditor = new TableEditorPage(window);
+  await tableEditor._waitForTableToLoad();
 
   // pins are displayed correctly
   const pins = await tableEditor.getAllPins();

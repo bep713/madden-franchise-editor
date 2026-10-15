@@ -19,6 +19,8 @@ test("import table e2e test", async () => {
   const app = new App(electronApp);
 
   const window = await app.getMainWindow();
+  // Fail a stuck action fast instead of burning the whole 60s test timeout
+  window.setDefaultTimeout(10 * 1000);
 
   const welcome = new WelcomePage(window);
 
@@ -121,12 +123,55 @@ test("import table e2e test", async () => {
 
     // updates table which imported single column correctly
     await tableEditor.openTableById(4104);
-    await tableEditor.jumpToColumn("Name", 8);
+    await tableEditor.jumpToColumn("Name", 1);
     text = await tableEditor.getTextAtSelectedCell();
     expect(text).to.equal("Test Stadium Name");
 
-    await tableEditor.jumpToColumn("STADIUM_AIRPORTCODE", 0);
+    await tableEditor.jumpToColumn("STADIUM_AIRPORTCODE", 2);
     text = await tableEditor.getTextAtSelectedCell();
     expect(text).to.equal("LAS");
+  }
+});
+
+test("import table with auto un-empty enabled", async () => {
+  const electronApp = await electron.launchWithDefaultOptions();
+  const app = new App(electronApp);
+
+  const window = await app.getMainWindow();
+  window.setDefaultTimeout(10 * 1000);
+
+  const welcome = new WelcomePage(window);
+
+  await welcome.waitForPageLoad();
+  await TestUtil.setAutoSave(app, false);
+  await TestUtil.setAutoUnempty(app, true);
+
+  try {
+    await welcome.openFranchiseFile(FilePaths.m22.career.test);
+    await welcome.openTableEditor();
+
+    const tableEditor = new TableEditorPage(window);
+    await tableEditor._waitForTableToLoad();
+
+    // The first column of this fixture holds empty-record pointers
+    await tableEditor.openTableById(7482);
+    await tableEditor.importTable(FilePaths.m22.imports.team);
+
+    await tableEditor.jumpToColumn("LongName", 5);
+    const text = await tableEditor.getTextAtSelectedCell();
+    expect(text).to.equal("TEST");
+
+    // The file should still save and reopen cleanly
+    await app.saveFile();
+    await app.closeFile();
+    await welcome.waitForPageLoad();
+    await welcome.openFranchiseFile(FilePaths.m22.career.test);
+    await welcome.openTableEditor();
+    await tableEditor.openTableById(7482);
+    await tableEditor.jumpToColumn("LongName", 5);
+    expect(await tableEditor.getTextAtSelectedCell()).to.equal("TEST");
+  } finally {
+    await TestUtil.setAutoUnempty(app, false);
+    await electronApp.close();
   }
 });

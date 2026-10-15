@@ -1,6 +1,61 @@
 const xlsx = require("xlsx");
 const fs = require("fs");
 
+const FLOAT_TOLERANCE = 1e-6;
+
+function normalizeCell(value) {
+  return value === null || value === undefined ? "" : String(value);
+}
+
+// Spreadsheet cells come back as strings, and empty records export as "", so a
+// strict compare would rewrite (and un-empty) rows that did not change.
+function cellsMatch(current, imported) {
+  if (normalizeCell(current) === normalizeCell(imported)) return true;
+
+  // Booleans come back as "TRUE"/"FALSE". Strings stay case-sensitive so
+  // case-only edits are still imported.
+  if (typeof current === "boolean") {
+    return String(current) === normalizeCell(imported).toLowerCase();
+  }
+
+  if (typeof current === "number" && imported !== "" && imported !== null) {
+    const importedNumber = Number(imported);
+    return (
+      Number.isFinite(importedNumber) &&
+      Math.abs(current - importedNumber) <=
+        FLOAT_TOLERANCE * Math.max(1, Math.abs(current))
+    );
+  }
+
+  return false;
+}
+
+/**
+ * Writes imported rows onto a table's existing records. Empty records skip the
+ * fields in their first 4 bytes, which hold the empty-record chain pointer that
+ * the library maintains itself.
+ * @param {FranchiseFileTable} table
+ * @param {Object[]} rows
+ */
+function applyImportedRows(table, rows) {
+  const firstFourByteFields = new Set(
+    table.offsetTable
+      .filter((offset) => offset.indexOffset < 32)
+      .map((offset) => offset.name),
+  );
+
+  const wasEmpty = table.records.map((record) => record.isEmpty);
+
+  rows.slice(0, table.records.length).forEach((row, index) => {
+    const franchiseRecord = table.records[index];
+    Object.keys(row).forEach((key) => {
+      if (wasEmpty[index] && firstFourByteFields.has(key)) return;
+      if (cellsMatch(franchiseRecord[key], row[key])) return;
+      franchiseRecord[key] = row[key];
+    });
+  });
+}
+
 /**
  * Registers IPC handlers for external data import/export operations.
  * Moves xlsx processing and table/file operations from renderer to main process.
@@ -129,23 +184,18 @@ function registerExternalDataHandlers(loggedIpc, franchiseFileManager) {
 
         // Follow the renderer's original logic: only update existing records
         // up to the current record count, ignoring any extra rows.
-        const existingCount = table.records.length;
-        const trimmedRows = rows.slice(0, existingCount);
-
         console.time("set");
-        trimmedRows.forEach((record, index) => {
-          const franchiseRecord = table.records[index];
-          Object.keys(record).forEach((key) => {
-            if (franchiseRecord[key] !== record[key]) {
-              franchiseRecord[key] = record[key];
-            }
-          });
-        });
+        applyImportedRows(table, rows);
         console.timeEnd("set");
 
-        // Recalculate any empty‑record references as the UI does.
         console.time("recalc");
-        table.recalculateEmptyRecordReferences();
+        try {
+          table.recalculateEmptyRecordReferences();
+        } catch (recalcError) {
+          console.warn(
+            `Could not recalculate empty record references for table ${tableId}: ${recalcError.message}`,
+          );
+        }
         console.timeEnd("recalc");
 
         if (flipSaveOnChange) {
@@ -163,4 +213,4 @@ function registerExternalDataHandlers(loggedIpc, franchiseFileManager) {
   );
 }
 
-module.exports = { registerExternalDataHandlers };
+module.exports = { registerExternalDataHandlers, applyImportedRows };

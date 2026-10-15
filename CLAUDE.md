@@ -11,7 +11,7 @@ The app was recently upgraded from an older Electron that ran renderers with `no
 ## Commands
 
 ```bash
-npm install                 # also runs patch-package (patches/)
+npm install                 # also runs patch-package (patches/, currently none)
 npm run dev                 # sass watch + browserify watch + electron (NODE_ENV=development), with auto-reload
 npm run build:renderer      # one-off browserify build of the 4 renderer bundles
 npm run sass:build          # compile renderer/sass/app-manifest.scss -> renderer/css/app-manifest.css
@@ -86,4 +86,4 @@ New code should call `window.franchiseAPI` / `window.electronAPI` directly.
   - Prefer `getTableByUniqueId()` over `getTableById()`, because IDs shift between schema versions.
   - Assign fields directly: `table.records[i][field] = value`.
   - Empty records can't be written.
-- `patches/` contains a patch-package patch for `madden-franchise`. Check that it still applies whenever you bump the library version.
+- There is currently no `patches/` directory; `postinstall` runs patch-package, which is a no-op without patches. If you add one for `madden-franchise`, re-check it applies whenever you bump the library version.

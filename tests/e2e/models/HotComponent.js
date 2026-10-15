@@ -45,7 +45,12 @@ class HotComponent extends BaseComponent {
     let text = await this.window.textContent(baseCellSelector);
 
     if (!text) {
-      return this.window.textContent(`${baseCellSelector} > div > a`);
+      const linkSelector = `${baseCellSelector} > div > a`;
+      // Empty cells (e.g. strings on empty records) have no link child
+      if ((await this.window.locator(linkSelector).count()) === 0) {
+        return "";
+      }
+      return this.window.textContent(linkSelector);
     } else {
       return text.replace("▼", "");
     }

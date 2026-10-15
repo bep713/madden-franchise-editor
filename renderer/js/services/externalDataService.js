@@ -30,9 +30,7 @@ externalDataService.exportTableData = async function (options, table) {
   }
 
   const headers = table.headers.map((offset) => offset.name);
-  const rows = table.records.map((record) => headers.map((h) => record[h]));
-
-  console.log(headers, rows);
+  const rows = table.records.map((record) => headers.map((h) => record[h] ?? ""));
 
   await window.electronAPI.externalData.export(
     options.outputFilePath,

@@ -7,15 +7,15 @@ pinnedTableService.initialize = async (gameYear) => {
 
   const allPins = await window.electronAPI.fs.readJson(PINS_FILENAME);
 
-  if (!allPins) {
-    pinnedTableService.allPins = getInitialPins();
-    await pinnedTableService.savePins();
-  } else {
-    pinnedTableService.allPins = allPins;
-  }
-
+  pinnedTableService.allPins = allPins || getInitialPins();
   pinnedTableService.applicablePins =
     pinnedTableService.getPinsByGameYear(gameYear);
+
+  // Save after applicablePins is set so table loads that run while the file is
+  // being written never see it undefined.
+  if (!allPins) {
+    await pinnedTableService.savePins();
+  }
 
   if (!pinnedTableService.applicablePins) {
     const initialPins = getInitialPins();
@@ -74,7 +74,8 @@ pinnedTableService.savePins = async () => {
 };
 
 pinnedTableService.findPin = (tableId) => {
-  return pinnedTableService.applicablePins.find((pin) => {
+  // Can be called by the first table load before the pins finish initializing
+  return (pinnedTableService.applicablePins || []).find((pin) => {
     return pin.tableId === tableId;
   });
 };

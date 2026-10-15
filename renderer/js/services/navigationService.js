@@ -375,15 +375,18 @@ navigationService.onTableEditorClicked = async function () {
   appendNavigation();
   postGenerateNavigation();
 
-  await tableEditorWrapper.start(navigationService.currentlyOpenedFile.fileId);
-  if (navToken !== currentNavToken) return;
-
+  // The tab's history has to be in place before the view loads its first
+  // table, otherwise a slow start() lets that load push to a history that is
+  // then overwritten. The last step is dropped because loading the tab's
+  // table pushes it again.
   const activeTab = navigationService.getActiveTab();
+  const tabHistory = activeTab?.tabHistory;
+  tabHistory?.pop();
 
-  if (activeTab && tableEditorWrapper.selectedTableEditor) {
-    tableEditorWrapper.selectedTableEditor.navSteps = activeTab.tabHistory;
-    tableEditorWrapper.selectedTableEditor.navSteps?.pop();
-  }
+  await tableEditorWrapper.start(
+    navigationService.currentlyOpenedFile.fileId,
+    tabHistory,
+  );
 };
 
 navigationService.onSchemaViewerClicked = async function () {

@@ -5,8 +5,27 @@ class App {
 
   async getMainWindow() {
     if (!this.mainWindow) {
-      // Wait for the first window to be created using the window event
-      this.mainWindow = await this.app.waitForEvent("window");
+      // The app opens several windows at once (worker, schema manager,
+      // settings), so pick the main one by its URL.
+      const findMain = () =>
+        this.app.windows().find((w) => w.url().includes("index.html"));
+      const deadline = Date.now() + 30 * 1000;
+      let main = findMain();
+
+      while (!main && Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        main = findMain();
+      }
+
+      if (!main) {
+        const urls = this.app.windows().map((w) => w.url());
+        throw new Error(
+          `Main window (index.html) not found. Open windows: ${JSON.stringify(urls)}`,
+        );
+      }
+
+      await main.waitForLoadState("domcontentloaded");
+      this.mainWindow = main;
     }
 
     return this.mainWindow;
