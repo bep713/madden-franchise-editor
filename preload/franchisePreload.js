@@ -120,8 +120,6 @@ contextBridge.exposeInMainWorld("franchiseAPI", {
   // Utility operations
   getUtilReferenceData: (epochValue) =>
     ipcRenderer.invoke("franchise:get-util-reference-data", epochValue),
-  getRawContents: (fileId) =>
-    ipcRenderer.invoke("franchise:get-raw-contents", fileId),
   getReferencesToRecord: (fileId, tableId, recordIndex) =>
     ipcRenderer.invoke(
       "franchise:get-references-to-record",
@@ -217,8 +215,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
     readFile: (filePath) => ipcRenderer.invoke("fs:read-file", filePath),
     readFileBase64: (filePath) =>
       ipcRenderer.invoke("fs:read-file-base64", filePath),
-    writeFileBase64: (filePath, base64Data) =>
-      ipcRenderer.invoke("fs:write-file-base64", filePath, base64Data),
     writeFile: (filePath, data) =>
       ipcRenderer.invoke("fs:write-file", filePath, data),
     mkdir: (dirPath) => ipcRenderer.invoke("fs:mkdir", dirPath),

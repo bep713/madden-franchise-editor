@@ -740,11 +740,6 @@ function addIpcListeners() {
     return realFs.readFileSync(filePath).toString("base64");
   });
 
-  // Write a file from base64 data
-  ipcMain.handle("fs:write-file-base64", (event, filePath, base64Data) => {
-    realFs.writeFileSync(filePath, Buffer.from(base64Data, "base64"));
-  });
-
   // Write a file from string
   ipcMain.handle("fs:write-file", (event, filePath, data) => {
     realFs.writeFileSync(filePath, data);

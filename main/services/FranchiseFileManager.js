@@ -347,10 +347,36 @@ class FranchiseFileManager {
         file.on("saving", () => this._loggedIpc?.emit("saving"));
         file.on("saved", () => this._loggedIpc?.emit("saved"));
 
+        // Back up the original bytes on user-initiated opens only
+        // (internal reopens pass an existing fileId)
+        if (!metaOptions.fileId) {
+          this._backupFile(file);
+        }
+
         const metadata = this._buildMetadata(file);
         resolve({ fileId, metadata });
       });
     });
+  }
+
+  /**
+   * Write the file's original on-disk bytes to a single backup file.
+   * Fire-and-forget: errors are logged, never thrown.
+   * @param {FranchiseFile} file
+   */
+  _backupFile(file) {
+    const backupDir = path.join(app.getPath("userData"), "backup");
+    fs.promises
+      .mkdir(backupDir, { recursive: true })
+      .then(() =>
+        fs.promises.writeFile(
+          path.join(backupDir, "backup.bak"),
+          file.rawContents,
+        ),
+      )
+      .catch((err) => {
+        console.warn("Failed to backup file:", err);
+      });
   }
 
   /**
@@ -959,17 +985,6 @@ class FranchiseFileManager {
   }
 
   /**
-   * Get raw file contents for backup
-   * @param {string} fileId
-   * @returns {Buffer|null}
-   */
-  getRawContents(fileId) {
-    const entry = this.activeFiles.get(fileId);
-    if (!entry) return null;
-    return entry.file.rawContents;
-  }
-
-  /**
    * Get all records that reference a specific record.
    * Falls back to a manual scan when the library helper is unavailable.
    * @param {string} fileId
@@ -1262,14 +1277,6 @@ class FranchiseFileManager {
         return this.getUtilReferenceData(epochValue);
       },
     );
-
-    loggedIpc.handle("franchise:get-raw-contents", async (event, fileId) => {
-      const contents = this.getRawContents(fileId);
-      if (contents) {
-        return { data: contents.toString("base64") };
-      }
-      return { error: "File not found" };
-    });
 
     // Reference lookup operations
     loggedIpc.handle(

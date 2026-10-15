@@ -659,8 +659,6 @@ function setupEvents() {
         fileId: fileId,
       });
 
-      backupFile(fileId);
-
       window.electronAPI.send("is-currently-searching");
 
       // Set up event listeners for saving/saved
@@ -802,26 +800,6 @@ function attachServicesToNavigationData() {
 
 function appendNavigation() {
   navigationService.generateNavigation();
-}
-
-async function backupFile(fileId) {
-  const backupDir = "temp/backup";
-  const exists = await window.electronAPI.fs.exists(backupDir);
-  if (!exists) {
-    await window.electronAPI.fs.mkdir(backupDir);
-  }
-
-  try {
-    const result = await window.franchiseAPI.getRawContents(fileId);
-    if (result.data) {
-      await window.electronAPI.fs.writeFileBase64(
-        `${backupDir}/backup.bak`,
-        result.data,
-      );
-    }
-  } catch (err) {
-    console.error("Failed to backup file:", err);
-  }
 }
 
 function conditionallyShowCheckForUpdatesNotification() {
