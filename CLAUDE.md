@@ -23,7 +23,7 @@ npx playwright test -g "basic test"                  # single test by title
 ```
 
 - There is no linter and no gulp. `.github/copilot-instructions.md` mentions `gulp sass:watch`, but that is outdated. Use the npm sass scripts.
-- `renderer/js/bundle.js` and `renderer/js/*.bundle.js` are gitignored build outputs. Run `npm run build:renderer` (or `npm run dev`) before launching the app or running e2e tests. `renderer/css/app-manifest.css` is committed, so regenerate it whenever you edit Sass.
+- `renderer/js/bundle.js`, `renderer/js/*.bundle.js` and `renderer/css/app-manifest.css(.map)` are gitignored build outputs. Run `npm run sass:build` and `npm run build:renderer` (or `npm run dev`) before launching the app. `npm run e2eTest` and `npm run build:app` run both for you; if you call `npx playwright test` directly, build first.
 - In dev, `electron-reload` watches `main.js`, `main/`, `preload/`, the bundles, the CSS and `renderer/*.html`, so the app relaunches or reloads on its own.
 - If `lz4-napi` fails to load, run `npx electron-rebuild`.
 
@@ -96,3 +96,4 @@ New code should call `window.franchiseAPI` / `window.electronAPI` directly.
 - **Why `allowPrerelease`, not `channel`**: electron-updater 4.6.1's GitHub provider ignores `autoUpdater.channel` and always fetches `latest.yml`. The nightly workflow builds with `-c.detectUpdateChannel=false` so a prerelease version still emits `latest.yml`.
 - **Do not upgrade electron-updater to 6.x** without redesigning this. Its GitHub provider skips non-semver tags, which breaks the rolling `nightly` tag.
 - `build.win.publish` names the `bep713/madden-franchise-editor` repo explicitly because the git remote still uses the old `madden-schedule-editor` name. `electron-builder` is a pinned devDependency.
+- `build.nsis.artifactName` is fixed to `Madden-Franchise-Editor-Setup-${version}.${ext}` (no spaces). The nightly uploads with `gh`, which keeps on-disk names, and GitHub turns spaces into dots, so the asset would no longer match the dashed URL electron-builder writes into `latest.yml`. Keep the name space-free.

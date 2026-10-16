@@ -9,3 +9,5 @@ out
 renderer/js/bundle.js
 renderer/js/*.bundle.js
 .watcher-ready
+renderer/css/app-manifest.css
+renderer/css/app-manifest.css.map

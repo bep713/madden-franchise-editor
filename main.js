@@ -970,7 +970,8 @@ function addAutoUpdaterListeners() {
     loggedMain.send("update-ready", {
       version: info?.version,
       currentVersion: app.getVersion(),
-      channel: getUpdateChannel(),
+      // Channel of the offered build, not the user's preference: nightly users are also offered stable releases.
+      channel: /-nightly\./.test(info?.version || "") ? "nightly" : "stable",
       releaseName: info?.releaseName,
     });
   });

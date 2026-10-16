@@ -44,6 +44,10 @@ jobs:
           test -f dist/latest.yml || { echo "dist/latest.yml is missing"; exit 1; }
           cat dist/latest.yml
           grep -q "^version: ${{ steps.version.outputs.version }}$" dist/latest.yml || { echo "latest.yml version does not match ${{ steps.version.outputs.version }}"; exit 1; }
+          for f in $(grep -E '^\s*(-\s*url|path):' dist/latest.yml | awk '{print $NF}' | sort -u); do
+            test -f "dist/$f" || { echo "latest.yml references $f but dist/$f does not exist"; ls dist; exit 1; }
+            test -f "dist/$f.blockmap" || { echo "Missing dist/$f.blockmap"; ls dist; exit 1; }
+          done
 
       - name: Replace nightly release
         shell: bash

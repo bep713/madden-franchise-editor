@@ -4,12 +4,12 @@
   "description": "An app that can modify Madden franchise files.",
   "main": "main.js",
   "scripts": {
-    "build:app": "npm run build:renderer && electron-builder build -w",
+    "build:app": "npm run sass:build && npm run build:renderer && electron-builder build -w",
     "build:renderer": "node scripts/build-renderer.js",
     "dev": "concurrently -k -p \"[{name}]\" -n \"SASS,BNDL,ELEC\" -c \"magenta,blue,green\" \"npm run sass:dev\" \"npm run watch:renderer\" \"npm run dev:wait-and-start\"",
     "dev:electron": "cross-env NODE_ENV=development electron .",
     "dev:wait-and-start": "wait-on scripts/.watcher-ready && npm run dev:electron",
-    "e2eTest": "npx playwright test",
+    "e2eTest": "npm run sass:build && npm run build:renderer && npx playwright test",
     "postinstall": "patch-package",
     "sass:build": "sass renderer/sass/app-manifest.scss renderer/css/app-manifest.css --no-source-map",
     "sass:dev": "sass renderer/sass/app-manifest.scss renderer/css/app-manifest.css --source-map --watch",
@@ -67,6 +67,9 @@
           "repo": "madden-franchise-editor"
         }
       ]
+    },
+    "nsis": {
+      "artifactName": "Madden-Franchise-Editor-Setup-${version}.${ext}"
     },
     "electronVersion": "41.0.3"
   }
