@@ -19,7 +19,7 @@ The proprietary format relies on **schema files** that define every table and fi
 npm install
 
 # Watch SASS compilation (terminal 1)
-gulp sass:watch
+npm run sass:dev
 
 # Run app in dev mode (terminal 2) — hot-reloads renderer
 npm run dev
@@ -94,7 +94,7 @@ ipcRenderer.send("open-external-url", url);
 ### Build System
 
 - **Renderer bundling:** `scripts/build-renderer.js` uses browserify to create 4 bundles
-- **SASS:** `gulpfile.js` compiles SASS → CSS
+- **SASS:** `npm run sass:build` / `npm run sass:dev` compile SASS → CSS
 - **Native modules:** `electron-rebuild` for `lz4-napi`
 - **Patches:** `patch-package` runs on postinstall
 
@@ -136,7 +136,7 @@ Schema-related functionality spans multiple handlers:
 ## Common Pitfalls
 
 1. **Native module rebuilds:** After `npm install`, run `npx electron-rebuild` if `lz4-napi` fails
-2. **SASS watch required:** App styles won't update without `gulp sass:watch` running
+2. **SASS watch required:** App styles won't update without `npm run sass:dev` running
 3. **Main process restart:** Changes to `main.js` or `main/` files require full app restart (not just renderer refresh)
 4. **File locking:** Always make copies of franchise files before editing — the app autosaves on changes
 5. **Schema version mismatches:** Loading a franchise with a different schema version than expected triggers the mismatch handler

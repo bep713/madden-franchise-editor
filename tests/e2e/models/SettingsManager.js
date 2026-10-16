@@ -11,6 +11,7 @@ class SettingsManager {
       openExcelAfterExportCheckbox: this.window.locator(
         "#openExcelAfterImport",
       ),
+      updateChannelSelect: this.window.locator("#updateChannel"),
     };
   }
 
@@ -39,6 +40,14 @@ class SettingsManager {
       this.locators.openExcelAfterExportCheckbox,
       open,
     );
+  }
+
+  async setUpdateChannel(value) {
+    await this.locators.updateChannelSelect.selectOption(value);
+  }
+
+  async getUpdateChannel() {
+    return await this.locators.updateChannelSelect.inputValue();
   }
 
   async setAutoUnemptySetting(autoUnempty) {

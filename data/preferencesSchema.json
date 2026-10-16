@@ -36,6 +36,17 @@
           "help": "If checked, the app will check to see if a new release has been made each time you start the app."
         },
         {
+          "key": "updateChannel",
+          "label": "Update channel",
+          "type": "dropdown",
+          "defaultValue": "stable",
+          "options": [
+            { "label": "Stable", "value": "stable" },
+            { "label": "Nightly (may be unstable)", "value": "nightly" }
+          ],
+          "help": "Stable receives tested releases. Nightly receives a build of every change and may be unstable."
+        },
+        {
           "key": "autoSave",
           "label": "Save the file after any change",
           "type": "checkbox",
@@ -177,6 +188,7 @@
       "defaultDirectorySet": false,
       "defaultEditorSet": false,
       "checkForUpdatesSet": false,
+      "updateChannelSet": false,
       "autoSaveSet": false,
       "autoUnemptySet": false,
       "checkForSchemaUpdatesSet": false,

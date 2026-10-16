@@ -87,3 +87,12 @@ New code should call `window.franchiseAPI` / `window.electronAPI` directly.
   - Assign fields directly: `table.records[i][field] = value`.
   - Empty records can't be written.
 - There is currently no `patches/` directory; `postinstall` runs patch-package, which is a no-op without patches. If you add one for `madden-franchise`, re-check it applies whenever you bump the library version.
+
+## Release channels
+
+- **Stable**: pushing to the `release` branch runs `.github/workflows/release.yml`, which builds and creates a **draft** GitHub release `v<version>` (it fails if that tag already exists). Review and publish it by hand.
+- **Nightly**: every push to `master` runs `.github/workflows/nightly.yml`, which deletes and recreates one rolling `nightly` prerelease holding the exe, blockmap and `latest.yml`.
+- **Nightly version**: `scripts/set-nightly-version.js` (CI only, never committed) sets `<major>.<minor>.<patch+1>-nightly.<GITHUB_RUN_NUMBER>`, for example `4.6.1-nightly.42`. Stable `4.6.1` sorts above it, so nightly users move to the next stable on their own. Leaving nightly for stable needs `allowDowngrade`.
+- **Why `allowPrerelease`, not `channel`**: electron-updater 4.6.1's GitHub provider ignores `autoUpdater.channel` and always fetches `latest.yml`. The nightly workflow builds with `-c.detectUpdateChannel=false` so a prerelease version still emits `latest.yml`.
+- **Do not upgrade electron-updater to 6.x** without redesigning this. Its GitHub provider skips non-semver tags, which breaks the rolling `nightly` tag.
+- `build.win.publish` names the `bep713/madden-franchise-editor` repo explicitly because the git remote still uses the old `madden-schedule-editor` name. `electron-builder` is a pinned devDependency.

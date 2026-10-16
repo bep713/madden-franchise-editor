@@ -1,0 +1,60 @@
+name: Nightly
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nightly
+  cancel-in-progress: true
+
+jobs:
+  nightly:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run sass:build
+      - run: npm run build:renderer
+
+      - name: Set nightly version
+        id: version
+        shell: bash
+        env:
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+        run: echo "version=$(node scripts/set-nightly-version.js)" >> "$GITHUB_OUTPUT"
+
+      # detectUpdateChannel=false makes the build emit latest.yml instead of nightly.yml.
+      - name: Build installer
+        shell: bash
+        run: npx electron-builder -w --publish never -c.detectUpdateChannel=false
+
+      - name: Verify latest.yml
+        shell: bash
+        run: |
+          test -f dist/latest.yml || { echo "dist/latest.yml is missing"; exit 1; }
+          cat dist/latest.yml
+          grep -q "^version: ${{ steps.version.outputs.version }}$" dist/latest.yml || { echo "latest.yml version does not match ${{ steps.version.outputs.version }}"; exit 1; }
+
+      - name: Replace nightly release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh release delete nightly --cleanup-tag -y || true
+          gh release create nightly \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Nightly $VERSION" \
+            --notes "Commit $GITHUB_SHA"$'\n\n'"$(git log -1 --pretty=%B)" \
+            dist/*.exe dist/*.exe.blockmap dist/latest.yml

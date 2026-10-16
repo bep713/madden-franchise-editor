@@ -72,10 +72,21 @@ function addIpcListeners() {
     showElement(updateService.checkingForUpdatesElement);
   });
 
-  window.electronAPI.on("update-ready", function () {
+  window.electronAPI.on("update-ready", function (info) {
     if (!updateService.notificationElement) {
       return;
     }
+
+    if (info && info.version) {
+      const textElement =
+        updateService.notificationElement.querySelector(".update-ready-text");
+      if (textElement) {
+        const label =
+          info.channel === "nightly" ? "Nightly build" : "Version";
+        textElement.textContent = `${label} ${info.version} is available (you have ${info.currentVersion}). It will take less than 5 minutes to install.`;
+      }
+    }
+
     showElement(updateService.notificationElement);
   });
 

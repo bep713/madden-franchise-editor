@@ -28,6 +28,7 @@
     "cross-env": "^10.1.0",
     "debug": "^4.3.3",
     "electron": "^41.0.3",
+    "electron-builder": "26.15.3",
     "electron-packager": "^13.1.1",
     "electron-rebuild": "^3.2.7",
     "electron-reload": "^1.5.0",
@@ -60,7 +61,11 @@
     "win": {
       "icon": "renderer/img/icon.ico",
       "publish": [
-        "github"
+        {
+          "provider": "github",
+          "owner": "bep713",
+          "repo": "madden-franchise-editor"
+        }
       ]
     },
     "electronVersion": "41.0.3"

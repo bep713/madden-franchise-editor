@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  push:
+    branches: [release]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Fail if release tag already exists
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [ -n "$(git ls-remote --tags origin "refs/tags/v$VERSION")" ]; then
+            echo "Tag v$VERSION already exists. Bump the version in package.json before releasing."
+            exit 1
+          fi
+
+      - run: npm ci
+      - run: npm run sass:build
+      - run: npm run build:renderer
+
+      # Creates a draft release for v<version>; review and publish it by hand.
+      - name: Build and publish draft release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: npx electron-builder -w --publish always

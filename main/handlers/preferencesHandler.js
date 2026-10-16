@@ -4,6 +4,19 @@ const ElectronPreferences = require("electron-preferences");
 const preferencesSchema = require("../../data/preferencesSchema.json");
 
 let preferencesInstance = null;
+const changeCallbacks = new Map();
+
+/**
+ * Subscribe to changes of a preference made through `preferences:set`.
+ * The callback receives (newValue, oldValue). (electron-preferences' 'save'
+ * event does not fire on this write path, so the hook lives in the handler.)
+ */
+function onPreferenceChange(keyPath, cb) {
+  if (!changeCallbacks.has(keyPath)) {
+    changeCallbacks.set(keyPath, []);
+  }
+  changeCallbacks.get(keyPath).push(cb);
+}
 
 /**
  * Initialize the ElectronPreferences instance.
@@ -79,6 +92,11 @@ function registerPreferencesHandlers(
       if (!preferences || typeof preferences !== "object") {
         throw new Error("Invalid preferences object");
       }
+      const watchedBefore = new Map();
+      for (const keyPath of changeCallbacks.keys()) {
+        watchedBefore.set(keyPath, preferencesInstance.value(keyPath));
+      }
+
       // Write each top-level section
       for (const [section, values] of Object.entries(preferences)) {
         if (typeof values === "object" && !Array.isArray(values)) {
@@ -92,6 +110,19 @@ function registerPreferencesHandlers(
         franchiseFileManager.applyPreferenceSettings(
           preferencesInstance.value(),
         );
+      }
+
+      for (const [keyPath, before] of watchedBefore) {
+        const after = preferencesInstance.value(keyPath);
+        if (JSON.stringify(before) !== JSON.stringify(after)) {
+          for (const cb of changeCallbacks.get(keyPath)) {
+            try {
+              cb(after, before);
+            } catch (err) {
+              console.error(`Preference change callback failed (${keyPath}):`, err);
+            }
+          }
+        }
       }
 
       const loggedMain = getLoggedMain();
@@ -174,4 +205,5 @@ module.exports = {
   registerPreferencesHandlers,
   getPreferenceDefaults,
   getPreferencesInstance,
+  onPreferenceChange,
 };

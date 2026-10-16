@@ -32,6 +32,11 @@ const {
 } = require("./main/handlers/schemaViewerHandler");
 const { registerScheduleHandlers } = require("./main/handlers/scheduleHandler");
 const { registerUpdateHandlers } = require("./main/handlers/updateHandler");
+const {
+  getUpdateChannel,
+  applyUpdateChannel,
+  getReleasePageUrl,
+} = require("./main/services/updateChannelService");
 const { registerWelcomeHandlers } = require("./main/handlers/welcomeHandler");
 const {
   createLoggedIpcMain,
@@ -116,7 +121,11 @@ registerSchemaMismatchHandlers(loggedIpc, franchiseFileManager);
 registerSchemaSearchHandlers(loggedIpc, franchiseFileManager);
 registerSchemaViewerHandlers(loggedIpc, franchiseFileManager);
 registerScheduleHandlers(loggedIpc, franchiseFileManager);
-registerUpdateHandlers(loggedIpc, autoUpdater, isDev, () => loggedMain);
+registerUpdateHandlers(loggedIpc, autoUpdater, () => loggedMain, {
+  runUpdateCheck,
+  getReleasePageUrl,
+  getUpdateChannel,
+});
 
 // Register external URL handler
 loggedIpc.on("open-external-url", (event, url) => {
@@ -282,10 +291,7 @@ function createApplicationMenu() {
         {
           id: "CheckForUpdate",
           label: "Check for Update",
-          click: () => {
-            if (isDev) autoUpdater.checkForUpdates();
-            else autoUpdater.checkForUpdatesAndNotify();
-          },
+          click: () => runUpdateCheck(),
         },
         {
           id: "ViewReleaseNotes",
@@ -406,11 +412,7 @@ function createWindow() {
       : undefined;
 
     if (checkboxSettingIsEnabled(checkForUpdates)) {
-      if (isDev) {
-        autoUpdater.checkForUpdates();
-      } else {
-        autoUpdater.checkForUpdatesAndNotify();
-      }
+      runUpdateCheck();
     }
 
     const checkForSchemas = preferencesInstance
@@ -419,12 +421,6 @@ function createWindow() {
 
     if (checkboxSettingIsEnabled(checkForSchemas)) {
       loggedSchema.send("schema-quick-scan", 24);
-    }
-
-    function checkboxSettingIsEnabled(setting) {
-      return (
-        setting !== undefined && setting.length === 1 && setting[0] === true
-      );
     }
   });
 
@@ -463,6 +459,18 @@ function createWindow() {
   preferencesHandler.initialize();
   autoUpdater.autoInstallOnAppQuit = false;
   autoUpdater.autoDownload = false;
+  applyUpdateChannel(autoUpdater, getUpdateChannel());
+
+  preferencesHandler.onPreferenceChange("general.updateChannel", (value) => {
+    applyUpdateChannel(autoUpdater, value === "nightly" ? "nightly" : "stable");
+
+    const checkForUpdates = preferencesHandler
+      .getPreferencesInstance()
+      ?.value("general.checkForUpdates");
+    if (checkboxSettingIsEnabled(checkForUpdates)) {
+      runUpdateCheck();
+    }
+  });
 
   createSchemaWindow(isDev);
   createSettingsWindow(isDev);
@@ -925,6 +933,30 @@ function openPreferencesWindow() {
   sendSettingsWindowEvent("show-settings-dialog");
 }
 
+function checkboxSettingIsEnabled(setting) {
+  return setting !== undefined && setting.length === 1 && setting[0] === true;
+}
+
+function runUpdateCheck() {
+  const reportError = (error) => {
+    console.error("Failed to check for updates:", error);
+    loggedMain.send("update-error", {
+      message: error.message,
+    });
+  };
+
+  try {
+    const result = isDev
+      ? autoUpdater.checkForUpdates()
+      : autoUpdater.checkForUpdatesAndNotify();
+    if (result && typeof result.catch === "function") {
+      result.catch(reportError);
+    }
+  } catch (error) {
+    reportError(error);
+  }
+}
+
 function addAutoUpdaterListeners() {
   function sendStatusToWindow(text) {
     // mainWindow.webContents.send('message', text);
@@ -935,7 +967,12 @@ function addAutoUpdaterListeners() {
   });
 
   autoUpdater.on("update-available", (info) => {
-    loggedMain.send("update-ready");
+    loggedMain.send("update-ready", {
+      version: info?.version,
+      currentVersion: app.getVersion(),
+      channel: getUpdateChannel(),
+      releaseName: info?.releaseName,
+    });
   });
 
   autoUpdater.on("update-not-available", (info) => {
