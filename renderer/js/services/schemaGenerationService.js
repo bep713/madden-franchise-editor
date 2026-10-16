@@ -1,113 +1,29 @@
-const fs = require('fs');
-const LZ4 = require('lz4');
-const zlib = require('zlib');
-const Readable = require('stream').Readable;
-const utilService = require('./utilService');
-const schemaGenerator = require('madden-franchise/services/schemaGenerator');
+const schemaGenerationService = {};
 
-let schemaGenerationService = {};
-
-schemaGenerationService.generate = (data) => {
-  return new Promise((resolve, reject) => {
-    const uncompressedSchema = generateUncompressedSchema(data);
-  
-    const readable = new Readable();
-    readable._read = () => {};
-    readable.push(uncompressedSchema);
-    readable.push(null);
-  
-    schemaGenerator.generateFromStream(readable);
-  
-    schemaGenerator.eventEmitter.once('schemas:done', (root) => {
-      const newData = {
-        'meta': root.meta,
-        'schemas': root.schemas
-      };
-
-      const data = zlib.gzipSync(JSON.stringify(newData));
-
-      resolve({
-        'meta': {
-          'gameYear': root.meta.gameYear,
-          'major': root.meta.major,
-          'minor': root.meta.minor,
-          'fileExtension': '.gz'
-        },
-        'data': data
-      });
-    });
-  });
+/**
+ * Generate schema data from raw block data.
+ * @param {object} data - Schema block data
+ * @returns {Promise<object>} Generated schema with meta and data properties
+ */
+schemaGenerationService.generate = async (data) => {
+  if (!data) {
+    throw new Error("Invalid arguments: data is required");
+  }
+  return await window.franchiseAPI.generateSchema(data);
 };
 
-schemaGenerationService.writeXmlSchema = (data, outputPath) => {
-  return new Promise((resolve, reject) => {
-    const uncompressedSchema = generateUncompressedSchema(data);
-
-    if (fs.existsSync(outputPath)) {
-      outputPath += '_1';
-    }
-
-    fs.writeFile(outputPath, uncompressedSchema, function (err) {
-      if (err) reject(err);
-      resolve();
-    });
-  });
+/**
+ * Generate schema and write to XML file.
+ * All file operations (existence check, path renaming, writing) are handled in main process.
+ * @param {object} data - Schema block data
+ * @param {string} outputPath - Absolute path to write the schema file
+ * @returns {Promise<{success: boolean, outputPath: string}>}
+ */
+schemaGenerationService.writeXmlSchema = async (data, outputPath) => {
+  if (!data || !outputPath) {
+    throw new Error("Invalid arguments: data and outputPath are required");
+  }
+  return await window.franchiseAPI.writeXmlSchema(data, outputPath);
 };
-
-schemaGenerationService._generateUncompressedSchema = generateUncompressedSchema;
 
 module.exports = schemaGenerationService;
-
-// function readChunk(chunk) {
-//   let data = chunk.slice(0x8);
-//   let uncompressedChunk = Buffer.alloc(0x20000);
-//   let uncompressedSize = LZ4.decodeBlock(data, uncompressedChunk);
-//   return uncompressedChunk.slice(0, uncompressedSize);
-// };
-
-function decompressBlock(block) {
-  let uncompressedBlock = Buffer.alloc(block.meta.size);
-  let uncompressedSize = LZ4.decodeBlock(block.data, uncompressedBlock);
-  return uncompressedBlock.slice(0, uncompressedSize);
-};
-
-function generateUncompressedSchema(chunk) {
-  let uncompressed = Buffer.alloc(0);
-
-  chunk.blocks.forEach((block) => {
-    const uncompressedBlock = decompressBlock(block);
-    uncompressed = Buffer.concat([uncompressed, uncompressedBlock]);
-  });
-
-  return uncompressed;
-
-  // let chunkIndicies = [];
-
-  // let currentIndex = 6;
-  // while (currentIndex <= data.length) {
-  //   const chunkSizeHex = data.slice(currentIndex, currentIndex + 2);
-  //   const chunkSize = utilService.byteArrayToLong(chunkSizeHex, true);
-
-  //   const start = currentIndex - 6;
-  //   chunkIndicies.push({
-  //     'start': start,
-  //     'end': start + (chunkSize + 8)
-  //   });
-
-  //   currentIndex += (chunkSize + 8);
-  // }
-  
-  // let chunks = [];
-
-  // chunkIndicies.forEach((chunkIndex) => {
-  //   chunks.push(data.slice(chunkIndex.start, chunkIndex.end));
-  // });
-
-  // let uncompressed = Buffer.alloc(0);
-  // chunks.forEach((chunk, idx) => {
-  //   let formattedChunk = readChunk(chunk);
-  //   uncompressed = Buffer.concat([uncompressed, formattedChunk]);
-  // });
-  
-  // return uncompressed;
-}

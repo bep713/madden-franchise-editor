@@ -1,144 +1,232 @@
-const util = require('../util/UiTestUtil');
-const ColumnJumpModal = require('./ColumnJumpModal');
+const util = require("../util/UiTestUtil");
+const ColumnJumpModal = require("./ColumnJumpModal");
 
 const HotComponent = require("./HotComponent");
 const PinComponent = require("./PinComponent");
 const SelectrComponent = require("./SelectrComponent");
-const TabComponent = require('./TabComponent');
+const TabComponent = require("./TabComponent");
+const TableEditorContextMenu = require("./TableEditorContextMenu");
 
 class TableEditorPage {
-    constructor(window) {
-        this.window = window;
+  constructor(window) {
+    this.window = window;
 
-        this.tabs = new TabComponent(this.window, '.tab-wrapper');
-        this.jumpToColumnModal = new ColumnJumpModal(this.window);
-        this.table = new HotComponent(this.window, '.table-wrapper');
-        this.pins = new PinComponent(this.window, '.table-pins-wrapper');
-        this.tableSelector = new SelectrComponent(this.window, '.table-list-top-bar > .selectr-container');
+    this.tabs = new TabComponent(this.window, ".tab-wrapper");
+    this.jumpToColumnModal = new ColumnJumpModal(this.window);
+    this.table = new HotComponent(this.window, ".table-wrapper");
+    this.pins = new PinComponent(this.window, ".table-pins-wrapper");
+    this.tableSelector = new SelectrComponent(
+      this.window,
+      ".table-list-top-bar > .selectr-container",
+    );
+    this.tableEditorContextMenu = new TableEditorContextMenu(
+      this.window,
+      '.htContextMenu:not([class*="htContextMenuSub_"])',
+    );
 
-        this.locators = {
-            backButton: this.window.locator('.back-link'),
-            jumpToColumn: this.window.locator('.jump-to-column'),
-            loadingSpinner: this.window.locator('.loader-wrapper'),
-            exportTableInput: this.window.locator('#export-table-input'),
-            jumpToColumnModalSelector: this.window.locator('.jump-to-column-modal .selectr-container'),
-            selectedCellEditReference: this.window.locator('.table-content-wrapper td.current .edit-button'),
-        };
+    this.locators = {
+      backButton: this.window.locator(".back-link"),
+      jumpToColumn: this.window.locator(".jump-to-column"),
+      loadingSpinner: this.window.locator(".loader-wrapper"),
+      exportTableInput: this.window.locator("#export-table-input"),
+      jumpToColumnModalSelector: this.window.locator(
+        ".jump-to-column-modal .selectr-container",
+      ),
+      selectedCellEditReference: this.window.locator(
+        ".table-content-wrapper td.current .edit-button",
+      ),
     };
+  }
 
-    get selectedTableCell() {
-        return this.table.selectedTableCellMeta;
-    };
+  get selectedTableCell() {
+    return this.table.selectedTableCellMeta;
+  }
 
-    setSelectedTableCell(row, col) {
-        this.table.setSelectedTableCell(row, col);
-    };
+  setSelectedTableCell(row, col) {
+    this.table.setSelectedTableCell(row, col);
+  }
 
-    async openTableById(tableId) {
-        await this.tableSelector.selectOption(`${tableId}`);
-        await this._waitForTableToLoad();
-    };
+  async openTableById(tableId) {
+    await this.tableSelector.selectOption(`${tableId}`);
+    await this._waitForTableToLoad();
+  }
 
-    async _waitForTableToLoad() {
-        await this.locators.loadingSpinner.waitFor({
-            state: 'hidden'
-        });
-    };
+  async _waitForTableToLoad() {
+    await this.locators.loadingSpinner.waitFor({
+      state: "hidden",
+    });
+  }
 
-    async getTextAtSelectedCell() {
-        return this.table.getTextAtSelectedCell();
-    };
+  async getTextAtSelectedCell() {
+    return this.table.getTextAtSelectedCell();
+  }
 
-    async selectCellAt(row, col) {
-        await this.table.selectCellAt(row, col);
-    };
+  async selectCellAt(row, col) {
+    await this.table.selectCellAt(row, col);
+  }
 
-    async setTextAtSelectedCell(text) {
-        await this.table.setTextAtSelectedCell(text);
-    };
+  async setTextAtSelectedCell(text) {
+    await this.table.setTextAtSelectedCell(text);
+  }
 
-    async followSelectedCellReference() {
-        await this.table.selectedTableCellLocator.click({
-            position: {
-                x: 20,
-                y: 20
-            }
-        });
+  async followSelectedCellReference() {
+    const referenceText = await this.table.getTextAtSelectedCell();
+    const rowIndex = parseInt(referenceText.match(/.+-\s(\d+)/)[1]);
+    this.table.setSelectedTableCell(rowIndex, 0);
 
-        const referenceText = await this.table.getTextAtSelectedCell();
-        const rowIndex = parseInt(referenceText.match(/.+-\s(\d+)/)[1]);
+    await this.table.selectedTableCellLocator.click({
+      position: {
+        x: 20,
+        y: 20,
+      },
+    });
 
-        this.table.setSelectedTableCell(rowIndex, 0);
+    await this._waitForTableToLoad();
+  }
 
-        await this._waitForTableToLoad();
-    };
+  // Polls until the selector shows a table, i.e. the initial table has loaded
+  async waitForSelectedTable(timeout = 15000) {
+    const deadline = Date.now() + timeout;
+    let name = await this.getSelectedTableName();
 
-    async getSelectedTableName() {
-        return this.tableSelector.getSelectedOptionText();
-    };
+    while (!/^\d+ - /.test(name || "") && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      name = await this.getSelectedTableName();
+    }
 
-    async openEditReferenceModalAtSelectedCell() {
-        await this.table.selectedTableCellLocator.hover();
-        await this.locators.selectedCellEditReference.click();
-    };
+    await this._waitForTableToLoad();
+    return name;
+  }
 
-    async getAllPins() {
-        return this.pins.getAllPins();
-    };
+  async getSelectedTableName() {
+    return this.tableSelector.getSelectedOptionText();
+  }
 
-    async addSelectedTableAsPin() {
-        await this.pins.addPin();
-    };
+  async openEditReferenceModalAtSelectedCell() {
+    await this.table.selectedTableCellLocator.hover();
+    await this.locators.selectedCellEditReference.click();
+  }
 
-    async removePinByTableId(tableId) {
-        await this.pins.removePinByTableId(tableId);
-    };
+  async getAllPins() {
+    return this.pins.getAllPins();
+  }
 
-    async clickPinByTableId(tableId) {
-        await this.pins.clickPinByTableId(tableId);
-        await this._waitForTableToLoad();
-    };
+  async addSelectedTableAsPin() {
+    await this.pins.addPin();
+  }
 
-    async clickBackButton() {
-        await this.locators.backButton.click();
-    };
+  async removePinByTableId(tableId) {
+    await this.pins.removePinByTableId(tableId);
+  }
 
-    async exportTable(path) {
-        await util.enterFilePath(this.window, '#export-table-input', path);
-        await this._waitForTableToLoad();
-    };
+  async clickPinByTableId(tableId) {
+    await this.pins.clickPinByTableId(tableId);
+    await this._waitForTableToLoad();
+  }
 
-    async importTable(path) {
-        await util.enterFilePath(this.window, '#import-table-input', path);
-        await this._waitForTableToLoad();
-    };
+  async clickBackButton() {
+    await this.locators.backButton.click();
+  }
 
-    async openColumnJumpModal() {
-        await this.locators.jumpToColumn.click();
-        await this.locators.jumpToColumnModalSelector.click();
-    };
+  async exportTable(path) {
+    await util.enterFilePath(this.window, "#export-table-input", path);
+    await this._waitForTableToLoad();
+  }
 
-    async jumpToColumn(col, row) {
-        await this.openColumnJumpModal();
-        await this.jumpToColumnModal.setColumn(col);
-        await this.jumpToColumnModal.setRowIndex(row);
-        await this.jumpToColumnModal.go();
-    };
+  async importTable(path) {
+    await util.enterFilePath(this.window, "#import-table-input", path);
+    await this._waitForTableToLoad();
+  }
 
-    async exportRawTable(filePath) {
-        await util.enterFilePath(this.window, '#export-raw-table', filePath);
-        await this._waitForTableToLoad();
-    };
+  async openColumnJumpModal() {
+    await this.locators.jumpToColumn.click();
+    await this.locators.jumpToColumnModalSelector.click();
+  }
 
-    async exportRawFrtkFile(filePath) {
-        await util.enterFilePath(this.window, '#export-raw-frtk', filePath);
-        await this._waitForTableToLoad();
-    };
+  async jumpToColumn(col, row) {
+    await this.openColumnJumpModal();
+    await this.jumpToColumnModal.setColumn(col);
+    await this.jumpToColumnModal.setRowIndex(row);
+    await this.jumpToColumnModal.go();
+  }
 
-    async importRawTable(filePath) {
-        await util.enterFilePath(this.window, '#import-raw-table', filePath);
-        await this._waitForTableToLoad();
-    };
-};
+  async exportRawTable(filePath) {
+    await util.enterFilePath(this.window, "#export-raw-table", filePath);
+    await this._waitForTableToLoad();
+  }
+
+  async exportRawFrtkFile(filePath) {
+    await util.enterFilePath(this.window, "#export-raw-frtk", filePath);
+    await this._waitForTableToLoad();
+  }
+
+  async importRawTable(filePath) {
+    await util.enterFilePath(this.window, "#import-raw-table", filePath);
+    await this._waitForTableToLoad();
+  }
+
+  async openContextMenu() {
+    await this.table.openContextMenu();
+  }
+
+  async openReferencesToRecordModal() {
+    await this.openContextMenu();
+    await this.tableEditorContextMenu.clickFindReferencesToRecord();
+  }
+
+  async setSelectedRecordToEmpty() {
+    await this.openContextMenu();
+    await this.tableEditorContextMenu.clickSetEmpty();
+  }
+
+  async goToCell(row, columnName) {
+    await this.jumpToColumn(columnName, row);
+  }
+
+  async pasteAtSelectedCell() {
+    await this._watchForLoader();
+    await util.sendPasteKeyboardShortcut(this.window);
+  }
+
+  async undo() {
+    await this._watchForLoader();
+    await util.sendUndoKeyboardShortcut(this.window);
+  }
+
+  async redo() {
+    await this._watchForLoader();
+    await util.sendRedoKeyboardShortcut(this.window);
+  }
+
+  // Use after a multi-cell paste/undo/redo. Fails if the loader never appears.
+  async waitForLoaderToShowAndHide() {
+    await this.window.waitForFunction(() => window.loaderWasShown, null, {
+      timeout: 30000,
+    });
+    await this._waitForTableToLoad();
+  }
+
+  // Remembers if the loader is shown at any point, even for a moment
+  async _watchForLoader() {
+    await this.window.evaluate(() => {
+      window.loaderWasShown = false;
+      const loader = document.querySelector(".loader-wrapper");
+
+      const observer = new MutationObserver(() => {
+        if (!loader.classList.contains("hidden")) {
+          window.loaderWasShown = true;
+          observer.disconnect();
+        }
+      });
+      observer.observe(loader, { attributes: true, attributeFilter: ["class"] });
+    });
+  }
+
+  async isSelectedCellEmpty() {
+    const cellClass =
+      await this.table.locators.selectedCell.getAttribute("class");
+    return cellClass.includes("table-cell--empty");
+  }
+}
 
 module.exports = TableEditorPage;

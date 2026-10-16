@@ -2,6 +2,7 @@ const { ipcRenderer } = require('electron');
 const Handsontable = require('handsontable').default;
 const utilService = require('../services/utilService');
 const franchiseGameYearService = require('../services/franchiseGameYearService');
+const preferencesService = require('../services/preferencesService');
 
 let abilityEditorService = {};
 abilityEditorService.name = 'scheduleEditorService';
@@ -22,7 +23,7 @@ abilityEditorService.start = function (file) {
   function runStartTasks () {
     abilityEditorService.file = file;
     file.settings = {
-      'saveOnChange': ipcRenderer.sendSync('getPreferences').general.autoSave[0]
+      'saveOnChange': preferencesService.getValue('general.autoSave')?.[0]
     };
   
     abilityEditorService.parseAbilities();

@@ -1,42 +1,29 @@
-const fs = require('fs');
-const path = require('path');
-const { app } = require('@electron/remote');
+// Schema path will be initialized async
+let PATH_TO_SCHEMA_FILES = null;
 
-const schemaPicker = require('madden-franchise/services/schemaPicker');
+const savedSchemaService = {};
 
-const PATH_TO_SCHEMA_FILES = path.join(app.getPath('userData'), 'schemas');
-
-let savedSchemaService = {};
-
-savedSchemaService.initialize = () => {
-  if (!fs.existsSync(PATH_TO_SCHEMA_FILES)) {
-    fs.mkdirSync(PATH_TO_SCHEMA_FILES);
-  }
+savedSchemaService.initialize = async () => {
+  // Get schema path from main process (handles directory creation)
+  PATH_TO_SCHEMA_FILES = await window.electronAPI.schemaSearch.getSchemaDir();
 };
 
-savedSchemaService.getSavedSchemas = () => {
-  return schemaPicker.retrieveSchemas(PATH_TO_SCHEMA_FILES);
+savedSchemaService.getSavedSchemas = async () => {
+  return await window.electronAPI.schemaSearch.getSavedSchemas();
 };
 
-savedSchemaService.schemaExists = (meta) => {
-  const schemas = savedSchemaService.getSavedSchemas();
-  return schemas.find((schema) => { return schema.gameYear === meta.gameYear && schema.major === meta.major && schema.minor === meta.minor });
+savedSchemaService.schemaExists = async (meta) => {
+  return await window.electronAPI.schemaSearch.schemaExists(meta);
 };
 
 savedSchemaService.saveSchema = (pathToSchema, meta) => {
-  fs.createReadStream(pathToSchema).pipe(fs.createWriteStream(path.join(PATH_TO_SCHEMA_FILES, `M${meta.gameYear}_${meta.major}_${meta.minor}${meta.fileExtension}`)));
+  // This is now handled by the main process via IPC
+  // Kept for backward compatibility but should use saveSchemaData instead
+  console.warn("saveSchema is deprecated, use saveSchemaData instead");
 };
 
-savedSchemaService.saveSchemaData = (data, meta) => {
-  return new Promise((resolve, reject) => {
-    fs.writeFile(path.join(PATH_TO_SCHEMA_FILES, `M${meta.gameYear}_${meta.major}_${meta.minor}${meta.fileExtension}`), data, function (err) {
-      if (err) {
-        reject(err);
-      }
-
-      resolve();
-    });
-  });
+savedSchemaService.saveSchemaData = async (data, meta) => {
+  return await window.electronAPI.schemaSearch.saveSchema(data, meta);
 };
 
 savedSchemaService.getSchemaPath = () => {

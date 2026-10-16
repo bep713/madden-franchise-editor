@@ -1,3 +1,8 @@
+@use "framework";
+@use "index";
+
+$color-table-cell-attention-bg: #e3e3e3;
+
 .table-editor-wrapper {
   height: calc(100% - 10px);
 }
@@ -7,7 +12,7 @@
   grid-template-rows: 40px 80px calc(100% - 120px);
   height: 100%;
 
-  @media (min-width: $breakpoint-md) {
+  @media (min-width: framework.$breakpoint-md) {
     grid-template-rows: 40px 73px calc(100% - 113px);
   }
 }
@@ -39,7 +44,7 @@ td.active-row {
   align-items: center;
   justify-content: center;
 
-  @media (min-width: $breakpoint-md) {
+  @media (min-width: framework.$breakpoint-md) {
     flex-wrap: nowrap;
     justify-content: inherit;
   }
@@ -47,7 +52,7 @@ td.active-row {
   .selectr-container {
     order: 2;
 
-    @media (min-width: $breakpoint-md) {
+    @media (min-width: framework.$breakpoint-md) {
       order: 0;
     }
   }
@@ -92,7 +97,7 @@ td.active-row {
 
 .htCore a {
   &:hover {
-    color: $brand-link-color;
+    color: framework.$brand-link-color;
     text-decoration: underline;
     cursor: pointer;
   }
@@ -113,6 +118,15 @@ td.active-row {
       }
     }
   }
+}
+
+.handsontable td.table-cell--error,
+.handsontable td.table-cell--error.active-row,
+.handsontable td.table-cell--empty,
+.handsontable td.table-cell--empty.active-row  {
+  background-color: $color-table-cell-attention-bg;
+  color: #666;
+  font-style: italic;
 }
 
 .table-cell-button {
@@ -136,7 +150,7 @@ td.active-row {
   cursor: pointer;
 
   &:focus {
-    outline-color: $welcome-link-color;
+    outline-color: index.$welcome-link-color;
   }
 }
 

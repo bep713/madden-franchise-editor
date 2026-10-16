@@ -1,3 +1,5 @@
+@use "framework";
+
 .filter-wrapper {
   display: flex;
   justify-content: space-between;
@@ -18,7 +20,7 @@
     margin-right: 20px;
     margin-bottom: 10px;
 
-    @media(min-width: $breakpoint-lg) {
+    @media(min-width: framework.$breakpoint-lg) {
       margin-right: 50px;
     }
 

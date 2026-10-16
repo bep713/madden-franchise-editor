@@ -1,17 +1,21 @@
+@use "sass:color";
+@use "framework";
+@use "index";
+
 .action-button {
-  color: $brand-link-color;
+  color: framework.$brand-link-color;
   cursor: pointer;
 
   &:hover {
-    color: darken($brand-link-color, 10%);
+    color: color.adjust(framework.$brand-link-color, $lightness: -10%);
   }
 
   &.disabled {
-    color: $brand-black;
+    color: framework.$brand-black;
     cursor: default;
 
     &:hover {
-      color: $brand-black;
+      color: framework.$brand-black;
     }
   }
 }
@@ -28,12 +32,12 @@
   overflow-x: hidden;
   overflow-y: auto;
 
-  @media (min-width: $breakpoint-md) {
+  @media (min-width: framework.$breakpoint-md) {
     display: grid;
     grid-template-columns: 1fr 1fr;
   }
 
-  @media (min-width: $breakpoint-lg) {
+  @media (min-width: framework.$breakpoint-lg) {
     grid-template-columns: 1fr 1fr 1fr;
   }
 }
@@ -52,7 +56,7 @@
     background-color: $checkboard-alt-color;
   }
 
-  @media (min-width: $breakpoint-md) {
+  @media (min-width: framework.$breakpoint-md) {
     &:nth-child(n+3) {
       background-color: #FFF;
     }
@@ -70,7 +74,7 @@
     }
   }
 
-  @media (min-width: $breakpoint-lg) {
+  @media (min-width: framework.$breakpoint-lg) {
     &:nth-child(n+3) {
       background-color: inherit;
     }
@@ -88,12 +92,12 @@
     }
   }
 
-  @media (min-width: $breakpoint-xlg) {
+  @media (min-width: framework.$breakpoint-xlg) {
     padding: 20px 74px 20px 60px;
   }
 
   > div {
-    @media (min-width: $breakpoint-md) {
+    @media (min-width: framework.$breakpoint-md) {
       padding: 5px;
     }
   }
@@ -129,8 +133,8 @@
   }
 
   input {
-    font-family: $font-base-family;
-    font-size: $font-base-size;
+    font-family: framework.$font-base-family;
+    font-size: framework.$font-base-size;
     background-color: inherit;
     border-color: transparent;
     border-radius: 3px;
@@ -140,7 +144,7 @@
     &:hover,
     &:active,
     &:focus {
-      border-color: $brand-black;
+      border-color: framework.$brand-black;
       margin-right: 0;
     }
 
@@ -171,7 +175,7 @@
 
   .week {
     padding: 20px;
-    color: $welcome-link-color;
+    color: index.$welcome-link-color;
     cursor: pointer;
     
     &:hover {
@@ -179,7 +183,7 @@
     }
 
     &.active {
-      color: $brand-black;
+      color: framework.$brand-black;
       background-color: #F4F4F4;
     }
 

@@ -1,3 +1,6 @@
+@use "sass:color";
+@use "modal";
+
 .format-selection-choices {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -11,6 +14,6 @@
   cursor: pointer;
 
   &:hover {
-    background: darken($modal-bg-color, 10%);
+    background: color.adjust(modal.$modal-bg-color, $lightness: -10%);
   }
 }

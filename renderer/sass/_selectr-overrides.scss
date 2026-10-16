@@ -1,3 +1,5 @@
+@use "framework";
+
 .selectr-selected {
   background-color: inherit;
   border-color: transparent;
@@ -9,7 +11,7 @@
   &:hover,
   &:focus,
   &:active {
-    border-color: $brand-black;
+    border-color: framework.$brand-black;
 
     &:before {
       // display: inherit;

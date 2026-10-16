@@ -1,11 +1,15 @@
-const settingsManagerUtil = require('./settingsManagerUtil');
+const settingsManagerUtil = require("./settingsManagerUtil");
 
 let gameVersionsService = {};
 
-gameVersionsService.initialize = function () {
-    settingsManagerUtil.createFields('gameVersions');
+gameVersionsService.initialize = function ({ onBack, onContinue }) {
+  settingsManagerUtil.createFields({
+    category: "gameVersions",
+    onBack,
+    onContinue,
+  });
 };
 
-gameVersionsService.id = 'gameDirectories';
+gameVersionsService.id = "gameDirectories";
 
 module.exports = gameVersionsService;

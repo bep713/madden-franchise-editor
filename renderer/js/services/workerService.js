@@ -1,7 +1,6 @@
-const { ipcRenderer, shell } = require('electron');
+const { ipcRenderer, shell } = require("electron");
 
-const fs = require('fs');
-const zlib = require('zlib');
+const zlib = require("zlib");
 // const sharp = require('sharp');
 // const dxt = require('dxt-js');
 // const through2 = require('through2');
@@ -14,7 +13,7 @@ const zlib = require('zlib');
 let workerService = {};
 
 workerService.start = function () {
-    // extractAndConvertPlayerPortraits();
+  // extractAndConvertPlayerPortraits();
 };
 
 module.exports = workerService;
@@ -44,11 +43,11 @@ module.exports = workerService;
 //             .pipe(zlib.createInflate())
 //             .pipe(ddsParser)
 //             .pipe(through2(function (buf, _, next) {
-//                 if (this.ddsData === undefined) { 
-//                     this.ddsData = buf; 
+//                 if (this.ddsData === undefined) {
+//                     this.ddsData = buf;
 //                 }
-//                 else { 
-//                     this.ddsData = Buffer.concat([this.ddsData, buf]); 
+//                 else {
+//                     this.ddsData = Buffer.concat([this.ddsData, buf]);
 //                 }
 
 //                 next();

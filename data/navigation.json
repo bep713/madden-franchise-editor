@@ -7,10 +7,19 @@
       "image": "home.png",
       "clickListener": "onHomeClicked",
       "service": "welcomeService",
-      "availableVersions": [19, 20, 21, 22, 23, 24, 25, 26],
+      "availableVersions": [19, 20, 21, 22, 23, 24, 25, 26, 27],
       "availableFormats": ["franchise", "franchise-common"],
       "menu": {
-        "disable": ["Save", "Export", "Import", "LogTable", "ExportRawTable", "ExportFRT", "ImportRawTable"]
+        "disable": [
+          "Save",
+          "Export",
+          "Import",
+          "LogTable",
+          "ExportRawTable",
+          "ExportFRT",
+          "ImportRawTable",
+          "CopyUniqueId"
+        ]
       }
     },
     {
@@ -20,25 +29,20 @@
       "image": "schedule.png",
       "service": "scheduleEditorService",
       "clickListener": "onScheduleEditorClicked",
-      "availableVersions": [19, 20, 21, 22, 23, 24, 25, 26],
+      "availableVersions": [19, 20, 21, 22, 23, 24, 25, 26, 27],
       "availableFormats": ["franchise"],
+      "availableTypes": ["madden"],
       "menu": {
         "enable": ["Save"],
-        "disable": ["Export", "Import", "LogTable", "ExportRawTable", "ExportFRT", "ImportRawTable"]
-      }
-    },
-    {
-      "id": "ability-editor",
-      "text": "Abilities",
-      "classList": [],
-      "image": "",
-      "service": "abilityEditorService",
-      "clickListener": "onAbilityEditorClicked",
-      "availableVersions": [20],
-      "availableFormats": ["franchise"],
-      "menu": {
-        "enable": ["Save"],
-        "disable": ["Export", "Import", "LogTable", "ExportRawTable", "ExportFRT", "ImportRawTable"]
+        "disable": [
+          "Export",
+          "Import",
+          "LogTable",
+          "ExportRawTable",
+          "ExportFRT",
+          "ImportRawTable",
+          "CopyUniqueId"
+        ]
       }
     },
     {
@@ -48,10 +52,19 @@
       "image": "schema.png",
       "service": "schemaViewerService",
       "clickListener": "onSchemaViewerClicked",
-      "availableVersions": [19,20, 21, 22, 23, 24, 25, 26],
+      "availableVersions": [19, 20, 21, 22, 23, 24, 25, 26, 27],
       "availableFormats": ["franchise", "franchise-common"],
       "menu": {
-        "disable": ["Save", "Export", "Import", "LogTable", "ExportRawTable", "ExportFRT", "ImportRawTable"]
+        "disable": [
+          "Save",
+          "Export",
+          "Import",
+          "LogTable",
+          "ExportRawTable",
+          "ExportFRT",
+          "ImportRawTable",
+          "CopyUniqueId"
+        ]
       }
     },
     {
@@ -62,9 +75,18 @@
       "service": "tableEditorService",
       "clickListener": "onTableEditorClicked",
       "availableFormats": ["franchise", "franchise-common"],
-      "availableVersions": [19, 20, 21, 22, 23, 24, 25, 26],
+      "availableVersions": [19, 20, 21, 22, 23, 24, 25, 26, 27],
       "menu": {
-        "enable": ["Save", "Export", "Import", "LogTable", "ExportRawTable", "ExportFRT", "ImportRawTable"]
+        "enable": [
+          "Save",
+          "Export",
+          "Import",
+          "LogTable",
+          "ExportRawTable",
+          "ExportFRT",
+          "ImportRawTable",
+          "CopyUniqueId"
+        ]
       }
     }
   ],
@@ -80,7 +102,37 @@
       "availableFormats": ["franchise"],
       "menu": {
         "enable": ["Save"],
-        "disable": ["Export", "Import", "LogTable", "ExportRawTable", "ExportFRT", "ImportRawTable"]
+        "disable": [
+          "Export",
+          "Import",
+          "LogTable",
+          "ExportRawTable",
+          "ExportFRT",
+          "ImportRawTable",
+          "CopyUniqueId"
+        ]
+      }
+    },
+    {
+      "id": "ability-editor",
+      "text": "Abilities",
+      "classList": [],
+      "image": "",
+      "service": "abilityEditorService",
+      "clickListener": "onAbilityEditorClicked",
+      "availableVersions": [],
+      "availableFormats": ["franchise"],
+      "menu": {
+        "enable": ["Save"],
+        "disable": [
+          "Export",
+          "Import",
+          "LogTable",
+          "ExportRawTable",
+          "ExportFRT",
+          "ImportRawTable",
+          "CopyUniqueId"
+        ]
       }
     }
   ]

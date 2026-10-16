@@ -1,3 +1,6 @@
+@use "sass:color";
+@use "framework";
+
 %tab-border {
     border-right: 1px solid #d1d1d1;
 }
@@ -12,7 +15,7 @@
 .tab-wrapper {
     display: flex;
     margin-bottom: 5px;
-    background-color: $background-color;
+    background-color: framework.$background-color;
     padding-left: 5px;
     flex-wrap: nowrap;
     overflow-x: overlay;
@@ -24,14 +27,14 @@
     }
 
     &::-webkit-scrollbar-thumb {
-        background-color: darken($background-color, 20%);
+        background-color: color.adjust(framework.$background-color, $lightness: -20%);
 
         &:hover {
-            background-color: darken($background-color, 30%);
+            background-color: color.adjust(framework.$background-color, $lightness: -30%);
         }
 
         &:active {
-            background-color: darken($background-color, 40%);
+            background-color: color.adjust(framework.$background-color, $lightness: -40%);
         }
     }
 
@@ -46,7 +49,7 @@
     display: flex;
     align-items: center;
     padding: 7.5px 10px;
-    font-size: $font-size-small;
+    font-size: framework.$font-size-small;
     justify-content: space-between;
     gap: 5px;
     text-overflow: ellipsis;
@@ -84,7 +87,7 @@
         background-repeat: no-repeat;
         
         &:hover {
-            background-color: $background-color;
+            background-color: framework.$background-color;
         }
     }
 }

@@ -13,8 +13,29 @@
   }
 }
 
+.cfb-icon {
+  background-repeat: no-repeat;
+  background-size: contain;
+  height: 36px;
+  width: 36px;
+
+  +.cfb-icon {
+    margin-left: 15px;
+  }
+
+  &.inactive {
+    filter: saturate(0) blur(1px);
+  }
+}
+
 @for $var from 19 to 99 { 
   #m#{$var}-icon {
     background-image: url(../img/M#{$var}.PNG);
+  }
+}
+
+@for $var from 27 to 99 { 
+  #cfb#{$var}-icon {
+    background-image: url(../img/C#{$var}.PNG);
   }
 }

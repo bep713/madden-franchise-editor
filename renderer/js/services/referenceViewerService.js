@@ -23,6 +23,11 @@ module.exports = {
         referencedRecordText.innerHTML = `(${referencedRecordData.tableId}) ${referencedRecordData.name} - Record #${referencedRecordData.recordIndex}:`;
         referenceListWrapper.innerHTML = '';
 
+        if (references && references.errorMessage) {
+            referenceListWrapper.innerText = `Failed to load references: ${references.errorMessage}`;
+            return;
+        }
+
         if (references && references.length > 0) {
             references.forEach((reference) => {
                 let referenceDiv = document.createElement('div');

@@ -26,7 +26,7 @@
       <div class="percent-complete">0%</div>
     </div>
     <div class="notification-wrapper notification-wrapper--hidden update-wrapper hidden">
-      <span class="notification-text notification-text--lg">There is a new update available. It will take less than 5
+      <span class="notification-text notification-text--lg update-ready-text">There is a new update available. It will take less than 5
         minutes to install.</span>
       <div class="action-buttons action-buttons--sm">
         <button class="dismiss-action action-button">Dismiss</button>
@@ -72,9 +72,36 @@
       </div>
     </div>
   </div>
-  <script src="js/index.js"></script>
+  <div class="underlay ftc-override-underlay hidden" id="ftc-override-underlay"></div>
+  <div class="modal ftc-override-modal hidden" id="ftc-override-modal">
+    <div class="modal-header">
+      <h2 class="title">Set File Parameters</h2>
+    </div>
+    <p class="ftc-override-description">
+      This file uses the <strong>franchise-common</strong> format and cannot detect game year or game type
+      automatically. Select values to continue.
+    </p>
+    <div class="ftc-override-fields">
+      <div class="ftc-override-field">
+        <label for="ftc-game-year">Game Year</label>
+        <select id="ftc-game-year" class="ftc-select"></select>
+      </div>
+      <div class="ftc-override-field">
+        <label for="ftc-game-type">Game Type</label>
+        <select id="ftc-game-type" class="ftc-select"></select>
+      </div>
+    </div>
+    <div class="ftc-override-actions">
+      <div class="field-wrapper checkbox-field-wrapper">
+        <input id="save-prefs-checkbox" type="checkbox" />
+        <label for="save-prefs-checkbox" class="field-label">Make these my default choices</label>
+      </div>
+      <button class="btn btn-primary" id="ftc-override-confirm">Confirm</button>
+    </div>
+  </div>
   <script src="../node_modules/handsontable/dist/handsontable.full.min.js"></script>
   <script src="./js/libs/selectr/selectr.js"></script>
+  <script src="js/bundle.js"></script>
 </body>
 
 </html>
