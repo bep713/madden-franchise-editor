@@ -54,6 +54,7 @@ jobs:
           gh release delete nightly --cleanup-tag -y || true
           gh release create nightly \
             --prerelease \
+            --latest=false \
             --target "$GITHUB_SHA" \
             --title "Nightly $VERSION" \
             --notes "Commit $GITHUB_SHA"$'\n\n'"$(git log -1 --pretty=%B)" \
