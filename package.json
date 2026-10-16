@@ -58,6 +58,21 @@
   "build": {
     "appId": "com.github.bep713.maddenfranchiseeditor",
     "productName": "Madden Franchise Editor",
+    "files": [
+      "package.json",
+      "main.js",
+      "main/**/*",
+      "preload/**/*",
+      "renderer/**/*",
+      "!renderer/sass{,/**/*}",
+      "data/**/*",
+      "!data/schemas{,/**/*}",
+      "schedules/**/*",
+      "!node_modules/moment/{locale,min,dist,src}{,/**/*}"
+    ],
+    "electronLanguages": [
+      "en-US"
+    ],
     "win": {
       "icon": "renderer/img/icon.ico",
       "publish": [
