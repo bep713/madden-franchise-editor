@@ -91,9 +91,6 @@ if (isDev) {
   );
 }
 
-const remoteMain = require("@electron/remote/main");
-remoteMain.initialize();
-
 // Create logged IPC wrappers (dev-only logging)
 const loggedIpc = createLoggedIpcMain(ipcMain);
 
@@ -283,7 +280,6 @@ function createApplicationMenu() {
               height: 500,
               parent: mainWindow,
             });
-            remoteMain.enable(creditsWindow.webContents);
             creditsWindow.loadFile("renderer/credits.html");
             creditsWindow.on("closed", () => {});
           },
@@ -367,8 +363,6 @@ function createWindow() {
     icon: path.join(__dirname, "renderer/img/icon.ico"),
   });
 
-  remoteMain.enable(mainWindow.webContents);
-
   // Create logged webContents wrapper for this window
   loggedMain = createLoggedWebContents(mainWindow.webContents);
 
@@ -435,8 +429,6 @@ function createWindow() {
       preload: path.join(__dirname, "preload", "franchisePreload.js"),
     },
   });
-
-  remoteMain.enable(workerWindow.webContents);
 
   // Create logged webContents wrapper for this window
   loggedWorker = createLoggedWebContents(workerWindow.webContents);
@@ -630,8 +622,6 @@ function addIpcListeners() {
       height: 500,
       parent: mainWindow,
     });
-
-    remoteMain.enable(creditsWindow.webContents);
 
     creditsWindow.loadFile(creditsPage);
 
@@ -836,8 +826,6 @@ function createSchemaWindow(show) {
     },
   });
 
-  remoteMain.enable(schemaWindow.webContents);
-
   // Create logged webContents wrapper for this window
   loggedSchema = createLoggedWebContents(schemaWindow.webContents);
 
@@ -881,7 +869,6 @@ function createSettingsWindow(show) {
       preload: path.join(__dirname, "preload", "franchisePreload.js"),
     },
   });
-  remoteMain.enable(settingsWindow.webContents);
 
   // Create logged webContents wrapper for this window
   loggedSettings = createLoggedWebContents(settingsWindow.webContents);

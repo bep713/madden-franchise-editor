@@ -20,7 +20,6 @@
   "homepage": "https://github.com/bep713/madden-franchise-editor",
   "devDependencies": {
     "@playwright/test": "^1.25.0",
-    "browser-resolve": "^2.0.0",
     "browserify": "^17.0.1",
     "chai": "^4.3.4",
     "cheerio": "^1.0.0-rc.10",
@@ -29,21 +28,16 @@
     "debug": "^4.3.3",
     "electron": "^41.0.3",
     "electron-builder": "26.15.3",
-    "electron-packager": "^13.1.1",
     "electron-rebuild": "^3.2.7",
     "electron-reload": "^1.5.0",
+    "patch-package": "^8.0.1",
     "playwright": "^1.59.1",
-    "proxyquire": "^2.1.3",
     "sass": "^1.101.0",
-    "sinon": "^7.5.0",
     "wait-on": "^9.0.10",
     "watchify": "^4.0.0"
   },
   "dependencies": {
-    "@babel/polyfill": "^7.12.1",
-    "@electron/remote": "^2.0.1",
     "chokidar": "^3.5.3",
-    "concat-stream": "^2.0.0",
     "electron-log": "^5.4.3",
     "electron-preferences": "^2.7.0",
     "electron-updater": "^4.6.1",
@@ -51,7 +45,6 @@
     "lz4-napi": "^2.9.0",
     "madden-franchise": "^4.3.6",
     "moment": "^2.29.4",
-    "patch-package": "^8.0.1",
     "stream-parser": "^0.3.1",
     "xlsx": "^0.17.5"
   },
