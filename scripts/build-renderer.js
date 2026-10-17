@@ -44,7 +44,8 @@ const bundles = [
 function createBundler(entry, label) {
   const opts = {
     basedir: __dirname,
-    debug: true,
+    // Inline source maps only for dev; they roughly double the bundle size
+    debug: isWatchMode,
   };
 
   let b;
@@ -141,7 +142,26 @@ if (isWatchMode) {
   process.on("exit", cleanup);
 }
 
+// Handsontable is bundled by browserify, so node_modules isn't packaged for it.
+// Its stylesheet is copied next to the app css instead.
+const VENDOR_FILES = [
+  {
+    from: "../node_modules/handsontable/dist/handsontable.full.min.css",
+    to: "../renderer/css/vendor/handsontable.full.min.css",
+  },
+];
+
+function copyVendorFiles() {
+  for (const { from, to } of VENDOR_FILES) {
+    const dest = path.join(__dirname, to);
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.copyFileSync(path.join(__dirname, from), dest);
+  }
+}
+
 async function buildAll() {
+  copyVendorFiles();
+
   if (isWatchMode) {
     // In watch mode, start all bundles watching in parallel
     console.log(
