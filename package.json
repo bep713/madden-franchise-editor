@@ -11,6 +11,7 @@
     "dev:wait-and-start": "wait-on scripts/.watcher-ready && npm run dev:electron",
     "e2eTest": "npm run sass:build && npm run build:renderer && npx playwright test",
     "postinstall": "patch-package",
+    "prepare": "git config core.hooksPath .githooks",
     "sass:build": "sass renderer/sass/app-manifest.scss renderer/css/app-manifest.css --no-source-map",
     "test:unit": "node --test \"tests/unit/**/*.test.js\"",
     "sass:dev": "sass renderer/sass/app-manifest.scss renderer/css/app-manifest.css --source-map --watch",

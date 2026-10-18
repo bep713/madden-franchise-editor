@@ -12,7 +12,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+
   nightly:
+    needs: test
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4

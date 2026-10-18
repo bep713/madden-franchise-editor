@@ -29,6 +29,8 @@ npx playwright test -g "basic test"                  # single test by title
 
 ### Tests
 
+- CI: `.github/workflows/test.yml` runs the unit and e2e suites on windows-latest for PRs. `nightly.yml` and `release.yml` call it and only build if it passes. When a run fails, the Playwright report and traces are uploaded as the `playwright-report` artifact.
+- `npm install` sets `core.hooksPath` to `.githooks` (the `prepare` script). The `pre-push` hook there runs `npm run test:unit`, and `git push --no-verify` skips it. E2E isn't in the hook because CI runs it.
 - Playwright's `testDir` is `tests/e2e`. Specs live in `tests/e2e/scripts/*.spec.js`. Page-object models are in `tests/e2e/models/` (`App`, `WelcomePage`, `TableEditorPage`, `HotComponent`, `SelectrComponent`, etc.) and helpers in `tests/e2e/util/`. Tests run with one worker.
 - Tests launch `main.js` with `NODE_ENV=testing`. In that mode `navigationService` installs `renderer/js/services/test-utils/TestUtility.js`, which adds hidden `<input>` elements (`#open-file-input`, `#export-table-input`, …) so tests can drive file open, export and import without native dialogs. When you add a new dialog-driven flow that needs test coverage, add a matching hook there.
 - Fixtures are in `tests/data/m22`. `TestUtil.overwriteTestCareer` copies the pristine `career/CAREER-M22TEST` over `career/test/CAREER-E2ETEST` before and after tests, so tests only ever modify the copy.
