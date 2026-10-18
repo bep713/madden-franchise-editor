@@ -115,6 +115,19 @@ Phase 4: bundle.js 6.2MB → 3.6MB (esbuild minify), no long tasks before welcom
 loaded at the update-prompt check. M9 (bundle load) is still ~113ms, above the 80ms threshold
 for the bundle split (4c follow-up).
 
+| 5 polish | real | 10 | 63 | 299 | 3 | 566 | 154 |
+| 5 polish | temp | 10 | 62 | 325 | 3 | 586 | 104 |
+
+Phase 5: update check deferred 3s (#11), global selectr.js script dropped (every user requires it
+from the bundle). Not done: #10 (getVersion is already un-awaited and recent-files calls must stay
+ordered; ~5ms), M25.PNG (only on the settings appVersions page, not welcome), #6 (body background
+is already the default white, so `backgroundColor` changes nothing; `show:false` left unmeasured),
+handsontable CSS (local file, small; moving it risks unstyled flashes).
+
+Net (real profile): welcome − spawn 1108 → 566ms, FCP − window 589 → 299ms.
+Open follow-ups: bundle split (M9 ~117ms), electron-log lazy load (~23ms), first-run settings
+window is created hidden in production and nothing shows it (pre-existing).
+
 Phase 3: createWindow 155 → 90ms; no prefs write on a normal launch (file mtime unchanged).
 Real profile has update checks on, so the electron-updater require (~140ms, now lazy) lands in
 main did-finish-load, overlapping the renderer's editor load (M10 159, M5 202). Phase 5's

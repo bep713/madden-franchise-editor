@@ -342,6 +342,7 @@ const schemaPage = "renderer/schema-manager.html";
 const settingsPage = "renderer/settings-manager.html";
 
 const baseWindowTitle = "Madden Franchise Editor";
+const STARTUP_UPDATE_CHECK_DELAY_MS = 3000;
 let currentFilePath = "";
 let currentFileId = "";
 let waitForFileSaved = false;
@@ -411,8 +412,12 @@ function createWindow() {
       ? preferencesInstance.value("general.checkForUpdates")
       : undefined;
 
+    // Deferred so the check (and loading electron-updater) doesn't compete
+    // with the renderer's startup work.
     if (checkboxSettingIsEnabled(checkForUpdates)) {
-      runUpdateCheck();
+      setTimeout(() => {
+        if (mainWindow) runUpdateCheck();
+      }, STARTUP_UPDATE_CHECK_DELAY_MS);
     }
 
     const checkForSchemas = preferencesInstance
