@@ -29,7 +29,7 @@ npx playwright test -g "basic test"                  # single test by title
 
 ### Tests
 
-- CI: `.github/workflows/test.yml` runs the unit and e2e suites on windows-latest for PRs. `nightly.yml` and `release.yml` call it and only build if it passes. When a run fails, the Playwright report and traces are uploaded as the `playwright-report` artifact.
+- CI: the composite action `.github/actions/build-and-test` runs `npm ci`, the unit suite, the renderer build and the e2e suite. `test.yml` runs it for PRs; `nightly.yml` and `release.yml` run it in the same job as electron-builder, so dependencies and the renderer are built once and the installer is only built if tests pass. When a run fails, the Playwright report and traces are uploaded as the `playwright-report` artifact.
 - `npm install` sets `core.hooksPath` to `.githooks` (the `prepare` script). The `pre-push` hook there runs `npm run test:unit`, and `git push --no-verify` skips it. E2E isn't in the hook because CI runs it.
 - Playwright's `testDir` is `tests/e2e`. Specs live in `tests/e2e/scripts/*.spec.js`. Page-object models are in `tests/e2e/models/` (`App`, `WelcomePage`, `TableEditorPage`, `HotComponent`, `SelectrComponent`, etc.) and helpers in `tests/e2e/util/`. Tests run with one worker.
 - Tests launch `main.js` with `NODE_ENV=testing`. In that mode `navigationService` installs `renderer/js/services/test-utils/TestUtility.js`, which adds hidden `<input>` elements (`#open-file-input`, `#export-table-input`, …) so tests can drive file open, export and import without native dialogs. When you add a new dialog-driven flow that needs test coverage, add a matching hook there.

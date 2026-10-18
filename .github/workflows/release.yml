@@ -12,19 +12,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  test:
-    uses: ./.github/workflows/test.yml
-
   release:
-    needs: test
     runs-on: windows-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
 
       - name: Fail if release tag already exists
         shell: bash
@@ -35,9 +27,8 @@ jobs:
             exit 1
           fi
 
-      - run: npm ci
-      - run: npm run sass:build
-      - run: npm run build:renderer
+      # Tests and the installer share one job so npm ci and the renderer build run once.
+      - uses: ./.github/actions/build-and-test
 
       # Creates a draft release for v<version>; review and publish it by hand.
       - name: Build and publish draft release

@@ -12,23 +12,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
-    uses: ./.github/workflows/test.yml
-
   nightly:
-    needs: test
     runs-on: windows-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - run: npm ci
-      - run: npm run sass:build
-      - run: npm run build:renderer
+      # Tests and the installer share one job so npm ci and the renderer build run once.
+      - uses: ./.github/actions/build-and-test
 
       - name: Set nightly version
         id: version
