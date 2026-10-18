@@ -1,6 +1,6 @@
 const fs = require("fs/promises");
 const { expect } = require("chai");
-const { test } = require("@playwright/test");
+const { test } = require("../util/test");
 
 const electron = require("../util/Electron");
 const FilePaths = require("../util/FilePaths");

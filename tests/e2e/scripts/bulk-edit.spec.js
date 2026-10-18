@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("../util/test");
 
 const electron = require("../util/Electron");
 const FilePaths = require("../util/FilePaths");

@@ -1,7 +1,7 @@
 const path = require("path");
 const fs = require("fs/promises");
 const { expect } = require("chai");
-const { test, expect: playwrightExpect } = require("@playwright/test");
+const { test, expect: playwrightExpect } = require("../util/test");
 
 const electron = require("../util/Electron");
 const FilePaths = require("../util/FilePaths");

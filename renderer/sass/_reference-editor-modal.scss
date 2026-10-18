@@ -6,7 +6,7 @@
     background-color: white;
     border: 1px solid black;
     min-width: 350px;
-    z-index: 1000;
+    z-index: 1001; // above notifications (1000)
 }
 
 .reference-title-wrapper {

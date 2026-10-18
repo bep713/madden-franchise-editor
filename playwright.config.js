@@ -43,8 +43,8 @@ const config = {
     /* Base URL to use in actions like `await page.goto('/')`. */
     // baseURL: 'http://localhost:3000',
 
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: "on-first-retry",
+    /* No `trace` option: it only covers Playwright's own browser fixtures. Electron
+       traces and failure screenshots come from tests/e2e/util/test.js. */
   },
 
   /* Configure projects for major browsers */

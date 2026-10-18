@@ -1,5 +1,8 @@
 const utilService = require("../../../utilService");
 
+// min wins when the range is empty (editor bigger than the window)
+const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
+
 class ReferenceRenderer {
   constructor(tableEditorWrapper) {
     this.tableEditorWrapper = tableEditorWrapper;
@@ -133,20 +136,26 @@ class ReferenceRenderer {
     const referenceEditorClientRect =
       referenceEditorContent.getBoundingClientRect();
     const tdClientRect = td.getBoundingClientRect();
-    const windowClientRect = document.body.getBoundingClientRect();
+    const editorHeight = referenceEditorClientRect.height;
+    const editorWidth = referenceEditorClientRect.width;
 
-    const referenceEditorShouldDisplayOnTop =
-      tdClientRect.bottom + referenceEditorClientRect.height >=
-      windowClientRect.bottom - 20;
+    // Prefer below the cell, then above. If neither fits (short window), use
+    // the roomier side and clamp so the whole editor stays on screen.
+    const spaceBelow = window.innerHeight - 20 - tdClientRect.bottom;
+    const spaceAbove = tdClientRect.top;
+    const displayOnTop =
+      editorHeight > spaceBelow &&
+      (editorHeight <= spaceAbove || spaceAbove > spaceBelow);
 
-    if (referenceEditorShouldDisplayOnTop) {
-      referenceEditorContent.style.top =
-        tdClientRect.top - referenceEditorClientRect.height + "px";
-    } else {
-      referenceEditorContent.style.top = tdClientRect.bottom + "px";
-    }
+    const top = displayOnTop
+      ? tdClientRect.top - editorHeight
+      : tdClientRect.bottom;
+    const left = tdClientRect.left;
 
-    referenceEditorContent.style.left = tdClientRect.left + "px";
+    referenceEditorContent.style.top =
+      clamp(top, 0, window.innerHeight - editorHeight) + "px";
+    referenceEditorContent.style.left =
+      clamp(left, 0, window.innerWidth - editorWidth) + "px";
 
     referenceEditorHighlight.style.top = tdClientRect.top + "px";
     referenceEditorHighlight.style.left = tdClientRect.left + "px";

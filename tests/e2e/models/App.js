@@ -25,6 +25,17 @@ class App {
       }
 
       await main.waitForLoadState("domcontentloaded");
+
+      // E2E_WINDOW_SIZE=1024x728 mimics the small CI desktop locally.
+      const size = /^(\d+)x(\d+)$/.exec(process.env.E2E_WINDOW_SIZE || "");
+      if (size) {
+        const browserWindow = await this.app.browserWindow(main);
+        await browserWindow.evaluate(
+          (win, [width, height]) => win.setSize(width, height),
+          [Number(size[1]), Number(size[2])],
+        );
+      }
+
       this.mainWindow = main;
     }
 

@@ -58,12 +58,20 @@ class Electron {
         }
 
         this.electron = await electron.launch({
-            args: ['main.js', `--user-data-dir=${this.userDataDir}`],
+            args: [
+                'main.js',
+                `--user-data-dir=${this.userDataDir}`,
+                // E2E_SCALE=1 mimics the CI display (with E2E_WINDOW_SIZE, see App.js)
+                ...(process.env.E2E_SCALE ? [`--force-device-scale-factor=${process.env.E2E_SCALE}`] : [])
+            ],
             env: {
                 ...process.env,
                 'NODE_ENV': 'testing'
             }
         });
+
+        // Saved on failure by the fixture in util/test.js.
+        await this.electron.context().tracing.start({ screenshots: true, snapshots: true });
 
         const userDataDir = this.userDataDir;
         this.electron.on('close', () => {

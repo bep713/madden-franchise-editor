@@ -1,5 +1,5 @@
 const { expect } = require("chai");
-const { test } = require("@playwright/test");
+const { test } = require("../util/test");
 
 const electron = require("../util/Electron");
 const TestUtil = require("../util/TestUtil");

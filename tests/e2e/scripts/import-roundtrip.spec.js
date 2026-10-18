@@ -3,7 +3,7 @@ const os = require("os");
 const path = require("path");
 const xlsx = require("xlsx");
 const { expect } = require("chai");
-const { test } = require("@playwright/test");
+const { test } = require("../util/test");
 const { FranchiseFile } = require("madden-franchise");
 
 const FilePaths = require("../util/FilePaths");
