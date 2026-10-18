@@ -141,12 +141,21 @@ if (isWatchMode) {
 }
 
 // Handsontable is bundled by browserify, so node_modules isn't packaged for it.
-// Its stylesheet is copied next to the app css instead.
+// Its stylesheet is copied next to the app css instead. The fonts are
+// self-hosted the same way (see renderer/sass/_fonts.scss).
+const FONT_FILES = ["roboto", "roboto-mono"].flatMap((font) =>
+  ["latin", "latin-ext"].map((subset) => ({
+    from: `../node_modules/@fontsource/${font}/files/${font}-${subset}-400-normal.woff2`,
+    to: `../renderer/css/vendor/fonts/${font}-${subset}-400-normal.woff2`,
+  })),
+);
+
 const VENDOR_FILES = [
   {
     from: "../node_modules/handsontable/dist/handsontable.full.min.css",
     to: "../renderer/css/vendor/handsontable.full.min.css",
   },
+  ...FONT_FILES,
 ];
 
 function copyVendorFiles() {

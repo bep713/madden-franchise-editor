@@ -47,6 +47,13 @@ if (enabled) {
       detail: null,
     });
   }
+  // A hidden or occluded window throttles timers and skips paints, which
+  // skews every renderer metric. Flag it so the harness can drop the run.
+  const markHidden = () => {
+    if (document.visibilityState === "hidden") mark("renderer:page-hidden");
+  };
+  markHidden();
+  document.addEventListener("visibilitychange", markHidden);
   observe("paint", (e) => {
     paint.push({ name: e.name, t: epoch(e.startTime) });
     if (onPaint) onPaint();

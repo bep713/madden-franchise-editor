@@ -72,6 +72,10 @@ function markT(run, name) {
 
 const diff = (a, b) => (isNum(a) && isNum(b) ? a - b : null);
 
+function wasHidden(run) {
+  return markT(run, "renderer:page-hidden") !== null;
+}
+
 function missingMarks(run) {
   return MANDATORY_MARKS.filter((n) => markT(run, n) === null);
 }
@@ -188,7 +192,9 @@ function median(arr) {
  */
 function summarize(runs, opts = {}) {
   const sizes = opts.sizes || {};
-  const valid = runs.map((r, i) => ({ r, i })).filter((x) => x.r);
+  // Runs where the main window was hidden (screen off/locked, occluded) are
+  // throttled by Chromium and not comparable, so they are left out of stats.
+  const valid = runs.map((r, i) => ({ r, i })).filter((x) => x.r && !wasHidden(x.r));
   const perRun = valid.map(({ r, i }) => computeRunMetrics(r, { spawnT: opts.spawnTs && opts.spawnTs[i] }));
 
   const keys = [];
@@ -250,15 +256,18 @@ function summarize(runs, opts = {}) {
   const perRunStatus = runs.map((r, i) => (r ? {
     run: i,
     timedOut: !!r.timedOut,
+    hidden: wasHidden(r),
     missingMarks: missingMarks(r)
-  } : { run: i, noJson: true, timedOut: null, missingMarks: MANDATORY_MARKS.slice() }));
+  } : { run: i, noJson: true, timedOut: null, hidden: null, missingMarks: MANDATORY_MARKS.slice() }));
   const timedOutCount = perRunStatus.filter((s) => s.timedOut).length;
+  const hiddenCount = perRunStatus.filter((s) => s.hidden).length;
 
   const summary = {
     label: opts.label || "run",
     runsRequested: runs.length,
     runsWithJson: valid.length,
     timedOutCount,
+    hiddenCount,
     metrics,
     coldish,
     topRequires,
@@ -279,7 +288,7 @@ function summarize(runs, opts = {}) {
   };
   const head = ["| Metric | median | p90 | min | cold-ish (1st measured) | n |", "|---|---|---|---|---|---|"];
   L.push(`# Startup perf summary: ${summary.label}`, "");
-  L.push(`Measured runs: ${runs.length} (with JSON: ${valid.length}), timed out: ${timedOutCount}. Warmup runs excluded.`, "");
+  L.push(`Measured runs: ${runs.length} (used: ${valid.length}), timed out: ${timedOutCount}, window hidden (excluded): ${hiddenCount}. Warmup runs excluded.`, "");
   L.push("## Headline", "", ...head);
   for (const k of HEADLINE_KEYS) L.push(row(k));
   L.push("");
@@ -310,10 +319,11 @@ function summarize(runs, opts = {}) {
   for (const [f, b] of Object.entries(sizes)) L.push(`| ${f} | ${isNum(b) ? (b / 1024).toFixed(1) : "n/a"} |`);
   if (!Object.keys(sizes).length) L.push("| n/a | n/a |");
   L.push("", "## Per-run status", "", `Timed out runs: ${timedOutCount}`, "");
-  L.push("| run | timedOut | missing mandatory marks |", "|---|---|---|");
+  L.push("| run | timedOut | hidden | missing mandatory marks |", "|---|---|---|---|");
   for (const s of perRunStatus) {
     const miss = s.noJson ? "no JSON written" : (s.missingMarks.length ? s.missingMarks.join(", ") : "none");
-    L.push(`| ${s.run} | ${s.timedOut === null ? "n/a" : s.timedOut} | ${miss} |`);
+    const na = (v) => (v === null ? "n/a" : v);
+    L.push(`| ${s.run} | ${na(s.timedOut)} | ${na(s.hidden)} | ${miss} |`);
   }
   L.push("");
   return { summary, markdown: L.join("\n") };
@@ -487,6 +497,9 @@ async function main() {
   fs.writeFileSync(path.join(outDir, "summary.json"), JSON.stringify(summary, null, 2));
   fs.writeFileSync(path.join(outDir, "summary.md"), markdown);
   console.log(`\nWrote summary.json and summary.md to ${outDir}`);
+  if (summary.hiddenCount) {
+    console.warn(`WARNING: ${summary.hiddenCount} run(s) had a hidden main window and were excluded. Keep the screen on and unobstructed.`);
+  }
 }
 
 module.exports = { summarize, computeRunMetrics, stats, percentile, parseArgs, MANDATORY_MARKS };

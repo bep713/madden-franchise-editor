@@ -91,6 +91,22 @@ Measurement caveats:
 - Temp-profile p90s are network-driven until fonts are self-hosted.
 - GPU process CPU ~640ms real vs ~400ms temp, unexplained (possibly saved window size). Minor.
 
+## Results (implementation, see `startup-perf-implementation.md`)
+
+Medians (ms), 10 measured runs. `perf-startup.js` now drops runs where the main window was hidden
+(`renderer:page-hidden` mark). A hidden or occluded window (screen off or locked, covered) throttles
+timers to ~1s and skips paints, which added ~900ms to welcome in some runs. Keep the screen on and
+unobstructed while measuring. "n" counts runs actually used.
+
+| Phase | Profile | n | M2 requires | M8 FCP−win | M10 editors | M12 welcome−spawn | M5 loop max |
+|---|---|---|---|---|---|---|---|
+| baseline | real | 10 | 318 | 589 | 119 | 1108 | 177 |
+| baseline | temp | 10 | 315 | 721 | 120 | 1265 | 164 |
+| 1 fonts | real | 10 | 307 | 569 | 111 | 1075 | 172 |
+| 1 fonts | temp | 4 | 308 | 557 | 111 | 1071 | 174 |
+
+Phase 1 new temp baseline: temp ≈ real now (network noise gone). Later phases compare against the phase-1 rows.
+
 ## Tier 1 — biggest likely wins
 
 1. **4 BrowserWindows at startup** (`main.js:355, 421, 470, 471`). Schema and settings windows
