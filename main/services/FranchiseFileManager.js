@@ -732,6 +732,7 @@ class FranchiseFileManager {
 
     return {
       tableId: table.header.tableId,
+      uniqueId: table.header.uniqueId,
       header: { ...table.header },
       name: table.name,
       recordCount: table.records.length,
@@ -963,6 +964,7 @@ class FranchiseFileManager {
 
     return entry.file.tables.map((t) => ({
       id: t.header.tableId,
+      uniqueId: t.header.uniqueId,
       name: t.name,
       recordCount: t.header.data1RecordCount,
       isArray: t.isArray,

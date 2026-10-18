@@ -221,6 +221,11 @@ td.active-row {
         display: block;
       }
     }
+
+    .pin--unavailable {
+      opacity: 0.5;
+      cursor: default;
+    }
   }
 
   .add-new-pin {

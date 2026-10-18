@@ -41,7 +41,8 @@ class Electron {
         this.userDataDir = null;
     };
 
-    async launchWithDefaultOptions() {
+    // options.pins: contents to seed pins.json with
+    async launchWithDefaultOptions(options = {}) {
         // Each instance gets its own userData so tests never touch the real
         // preferences, pins, recent files or schemas.
         this.userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mfe-e2e-'));
@@ -49,6 +50,12 @@ class Electron {
             path.join(this.userDataDir, 'preferences.json'),
             JSON.stringify(buildTestPreferences(), null, 2)
         );
+        if (options.pins) {
+            fs.writeFileSync(
+                path.join(this.userDataDir, 'pins.json'),
+                JSON.stringify(options.pins, null, 2)
+            );
+        }
 
         this.electron = await electron.launch({
             args: ['main.js', `--user-data-dir=${this.userDataDir}`],

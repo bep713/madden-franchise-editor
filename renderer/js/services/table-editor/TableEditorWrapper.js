@@ -76,7 +76,10 @@ class TableEditorWrapper {
     this.tableEditors.push(this.selectedTableEditor);
 
     this._initializeEditors();
-    await this._initializePins(this.fileMetadata?.gameYear);
+    await this._initializePins(
+      this.fileMetadata?.gameYear,
+      this.fileMetadata?.type?.gameType,
+    );
     this._windowResizeListener();
     this._selectionListener();
 
@@ -267,8 +270,14 @@ class TableEditorWrapper {
     this.blobEditor.initialize();
   }
 
-  async _initializePins(gameYear) {
-    await pinnedTableService.initialize(gameYear);
+  async _initializePins(gameYear, gameType) {
+    // Pins are matched against the file's table list, so wait for it to load
+    await this.selectedTableEditor.initialLoadPromise;
+    await pinnedTableService.initialize(
+      gameYear,
+      this.selectedTableEditor.tableList,
+      gameType,
+    );
 
     this.pinListElement = document.querySelector(".pins-list");
     utilService.removeChildNodes(this.pinListElement);
@@ -283,33 +292,46 @@ class TableEditorWrapper {
 
     const selectedTable = this.selectedTableEditor?.selectedTable;
     if (selectedTable) {
-      this._toggleAddPinButton(selectedTable.tableId);
+      this._toggleAddPinButton(selectedTable);
     }
   }
 
   _createPinElement(pin) {
+    const resolvedTable = pinnedTableService.resolvePin(pin);
+    const tableId = resolvedTable ? resolvedTable.id : pin.tableId;
+
     const pinWrapper = document.createElement("div");
     pinWrapper.classList.add("pin-wrapper");
 
     const pinElement = document.createElement("div");
     pinElement.classList.add("pin", "action-button");
-    pinElement.innerText = `(${pin.tableId}) ${pin.tableName}`;
-    pinElement.setAttribute("tableId", pin.tableId);
+    pinElement.innerText = `(${tableId}) ${pin.tableName}`;
+    pinElement.setAttribute("tableId", tableId);
+    if (pin.uniqueId) {
+      pinElement.setAttribute("uniqueId", pin.uniqueId);
+    }
+
+    if (!resolvedTable) {
+      pinElement.classList.add("pin--unavailable");
+      pinElement.title = "Table not found in this file";
+    }
 
     const deletePinButton = document.createElement("div");
     deletePinButton.classList.add("delete-pin", "action-button");
 
     deletePinButton.addEventListener("click", () => {
-      pinnedTableService.removePin(pin.tableId);
+      pinnedTableService.removePin(pin);
       pinWrapper.parentNode.removeChild(pinWrapper);
 
-      if (this.selectedTableEditor.selectedTable.tableId === pin.tableId) {
-        this._toggleAddPinButton(pin.tableId);
+      const selectedTable = this.selectedTableEditor.selectedTable;
+      if (pinnedTableService.pinMatches(pin, selectedTable)) {
+        this._toggleAddPinButton(selectedTable);
       }
     });
 
     pinElement.addEventListener("click", () => {
-      this.selectedTableEditor.tableSelector.setValue(pin.tableId);
+      if (!resolvedTable) return;
+      this.selectedTableEditor.tableSelector.setValue(resolvedTable.id);
     });
 
     pinWrapper.appendChild(pinElement);
@@ -324,20 +346,22 @@ class TableEditorWrapper {
     addPinButton.innerText = "+ Add";
 
     addPinButton.addEventListener("click", () => {
-      const selectedTableId = this.selectedTableEditor.selectedTable.tableId;
-      const selectedTableName = this.selectedTableEditor.selectedTable.name;
-
-      const tableAlreadyPinned = pinnedTableService.findPin(selectedTableId);
+      const selectedTable = this.selectedTableEditor.selectedTable;
+      const tableAlreadyPinned = pinnedTableService.findPin(selectedTable);
 
       if (!tableAlreadyPinned) {
-        pinnedTableService.addPin(selectedTableId, selectedTableName);
-        this.pinListElement.appendChild(
-          this._createPinElement({
-            tableId: selectedTableId,
-            tableName: selectedTableName,
-          }),
-          addPinButton,
-        );
+        pinnedTableService.addPin({
+          uniqueId: selectedTable.uniqueId,
+          tableId: selectedTable.tableId,
+          tableName: selectedTable.name,
+        });
+
+        // addPin stores the new pin last
+        const newPin =
+          pinnedTableService.applicablePins[
+            pinnedTableService.applicablePins.length - 1
+          ];
+        this.pinListElement.appendChild(this._createPinElement(newPin));
         utilService.hide(addPinButton);
       }
     });
@@ -345,8 +369,11 @@ class TableEditorWrapper {
     return addPinButton;
   }
 
-  _toggleAddPinButton(tableId) {
-    const tableIsPinned = pinnedTableService.findPin(tableId);
+  /**
+   * @param {{tableId: number, uniqueId?: number}} table
+   */
+  _toggleAddPinButton(table) {
+    const tableIsPinned = pinnedTableService.findPin(table);
     const addNewPinButton = document.querySelector(".add-new-pin");
 
     // The pins list may not be built yet when the first table finishes loading

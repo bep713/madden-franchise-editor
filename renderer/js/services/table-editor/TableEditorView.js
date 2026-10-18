@@ -503,7 +503,7 @@ class TableEditorView {
 
           utilService.hide(this.loader);
 
-          this.parent._toggleAddPinButton(tableData.tableId);
+          this.parent._toggleAddPinButton(tableData);
           this.parent._onTableChanged(tableData.tableId, tableData.name);
 
           if (isDev()) console.timeEnd("change");
