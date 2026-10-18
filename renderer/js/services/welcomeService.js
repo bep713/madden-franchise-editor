@@ -4,6 +4,7 @@ const EventEmitter = require("events").EventEmitter;
 const utilService = require("./utilService");
 const recentFileService = require("./recentFileService");
 const preferencesService = require("./preferencesService");
+const perfService = require("./perfService");
 
 let welcomeService = {};
 welcomeService.name = "welcomeService";
@@ -23,6 +24,7 @@ welcomeService.start = function (file) {
     toggleNavigationLinks(file.type);
     toggleGameIcons(file.type);
   }
+  perfService.mark("renderer:welcome-interactive");
 };
 
 welcomeService.addRecentFile = async (filePath) => {
@@ -192,6 +194,8 @@ function addOpenSchemaViewerListener() {
 async function addRecentFiles() {
   await recentFileService.initialize();
   await refreshRecentFilesList();
+  perfService.mark("renderer:recent-files-rendered");
+  perfService.report();
 }
 
 async function refreshRecentFilesList() {

@@ -90,3 +90,4 @@ class Electron {
 };
 
 module.exports = new Electron();
+module.exports.buildTestPreferences = buildTestPreferences;

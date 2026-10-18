@@ -15,6 +15,7 @@ const schemaViewerService = require("./schemaViewerService");
 const abilityEditorService = require("./abilityEditorService");
 const schemaMismatchService = require("./schemaMismatchService");
 const preferencesService = require("./preferencesService");
+const perfService = require("./perfService");
 const ftcModalService = require("./ftcModalService.js");
 
 const TableEditorWrapper = require("./table-editor/TableEditorWrapper");
@@ -309,7 +310,9 @@ navigationService.onNewTabClicked = function () {
 navigationService.onHomeClicked = async function () {
   onNavigate(welcomeService);
   const navToken = currentNavToken;
+  perfService.mark("renderer:welcome-html-requested");
   if (!(await navigationService.loadPage("welcome.html", navToken))) return;
+  perfService.mark("renderer:welcome-visible");
   postGenerateNavigation();
 
   welcomeService.start(navigationService.currentlyOpenedFile);
@@ -803,6 +806,9 @@ function appendNavigation() {
 }
 
 function conditionallyShowCheckForUpdatesNotification() {
+  perfService.mark("renderer:update-prompt-check", {
+    prefsLoaded: preferencesService.get() != null,
+  });
   const checkForUpdates = preferencesService.getValue(
     "general.checkForUpdates",
   );

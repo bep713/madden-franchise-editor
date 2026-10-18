@@ -1,3 +1,9 @@
+const startupProfiler = require("./main/services/startupProfiler");
+if (startupProfiler.enabled) {
+  startupProfiler.installRequireHook();
+  startupProfiler.startEventLoopMonitor();
+  startupProfiler.mark("main:module-start");
+}
 const path = require("path");
 const chokidar = require("chokidar");
 const {
@@ -43,6 +49,7 @@ const {
   createLoggedWebContents,
 } = require("./main/utils/ipcLogger");
 const packageJson = require("./package.json");
+startupProfiler.mark("main:requires-done");
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -348,8 +355,10 @@ let pendingSaves = [];
 let baseFileWatcher;
 
 function createWindow() {
+  startupProfiler.mark("main:create-window-start");
   // Create the application menu
   createApplicationMenu();
+  startupProfiler.mark("main:menu-done");
 
   // Create the browser window.
   mainWindow = new BrowserWindow({
@@ -362,6 +371,8 @@ function createWindow() {
     },
     icon: path.join(__dirname, "renderer/img/icon.ico"),
   });
+  startupProfiler.trackWindow("main", mainWindow);
+  startupProfiler.mark("main:main-window-created");
 
   // Create logged webContents wrapper for this window
   loggedMain = createLoggedWebContents(mainWindow.webContents);
@@ -414,6 +425,7 @@ function createWindow() {
       : undefined;
 
     if (checkboxSettingIsEnabled(checkForSchemas)) {
+      startupProfiler.mark("main:schema-quick-scan-sent");
       loggedSchema.send("schema-quick-scan", 24);
     }
   });
@@ -429,6 +441,8 @@ function createWindow() {
       preload: path.join(__dirname, "preload", "franchisePreload.js"),
     },
   });
+  startupProfiler.trackWindow("worker", workerWindow);
+  startupProfiler.mark("main:worker-window-created");
 
   // Create logged webContents wrapper for this window
   loggedWorker = createLoggedWebContents(workerWindow.webContents);
@@ -448,7 +462,9 @@ function createWindow() {
     sendAllPendingWorkerEvents();
   });
 
+  startupProfiler.mark("main:prefs-init-start");
   preferencesHandler.initialize();
+  startupProfiler.mark("main:prefs-init-end");
   autoUpdater.autoInstallOnAppQuit = false;
   autoUpdater.autoDownload = false;
   applyUpdateChannel(autoUpdater, getUpdateChannel());
@@ -466,11 +482,18 @@ function createWindow() {
 
   createSchemaWindow(isDev);
   createSettingsWindow(isDev);
+  startupProfiler.mark("main:create-window-end");
 }
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
+if (startupProfiler.enabled) {
+  app.on("ready", () => {
+    startupProfiler.mark("main:ready");
+    startupProfiler.startTracing();
+  });
+}
 app.on("ready", createWindow);
 
 // Quit when all windows are closed.
@@ -668,6 +691,15 @@ function addIpcListeners() {
   });
 
   // Dialog and App IPC handlers (replaces @electron/remote usage)
+  if (startupProfiler.enabled) {
+    ipcMain.handle("perf:report", (event, payload) => {
+      startupProfiler.addRendererMarks(
+        startupProfiler.windowNameFor(event.sender),
+        payload,
+      );
+    });
+  }
+
   ipcMain.handle("dialog:show-save", async (event, options) => {
     const parent = BrowserWindow.fromWebContents(event.sender) ?? mainWindow;
     return await dialog.showSaveDialog(parent, options);
@@ -825,6 +857,8 @@ function createSchemaWindow(show) {
       preload: path.join(__dirname, "preload", "franchisePreload.js"),
     },
   });
+  startupProfiler.trackWindow("schema", schemaWindow);
+  startupProfiler.mark("main:schema-window-created");
 
   // Create logged webContents wrapper for this window
   loggedSchema = createLoggedWebContents(schemaWindow.webContents);
@@ -869,6 +903,8 @@ function createSettingsWindow(show) {
       preload: path.join(__dirname, "preload", "franchisePreload.js"),
     },
   });
+  startupProfiler.trackWindow("settings", settingsWindow);
+  startupProfiler.mark("main:settings-window-created");
 
   // Create logged webContents wrapper for this window
   loggedSettings = createLoggedWebContents(settingsWindow.webContents);
@@ -925,6 +961,7 @@ function checkboxSettingIsEnabled(setting) {
 }
 
 function runUpdateCheck() {
+  startupProfiler.mark("main:update-check");
   const reportError = (error) => {
     console.error("Failed to check for updates:", error);
     loggedMain.send("update-error", {
