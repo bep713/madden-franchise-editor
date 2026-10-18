@@ -32,7 +32,6 @@ description: "Analyze a console error in the target file, find root cause, and c
      - Incorrect file ID usage (should use FranchiseFileManager map)
      - SASS not compiled (run `gulp sass:watch`)
      - Main process needs restart (not just renderer refresh)
-     - Native module issues (`lz4-napi` needs `electron-rebuild`)
      - Schema version mismatches
    - Check if the error is a symptom of a deeper issue
 

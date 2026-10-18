@@ -1,0 +1,2 @@
+# Unit test goldens are compared byte for byte; keep their line endings.
+tests/unit/fixtures/** -text

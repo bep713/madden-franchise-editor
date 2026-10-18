@@ -17,6 +17,7 @@ npm run build:renderer      # one-off browserify build of the 4 renderer bundles
 npm run sass:build          # compile renderer/sass/app-manifest.scss -> renderer/css/app-manifest.css
 npm run build:app           # electron-builder Windows build (publishes to GitHub releases)
 npm run e2eTest             # all Playwright e2e tests (npx playwright test)
+npm run test:unit           # node:test unit tests in tests/unit (no build needed)
 
 npx playwright test tests/e2e/scripts/tabs.spec.js   # single spec file
 npx playwright test -g "basic test"                  # single test by title
@@ -25,13 +26,13 @@ npx playwright test -g "basic test"                  # single test by title
 - There is no linter and no gulp. `.github/copilot-instructions.md` mentions `gulp sass:watch`, but that is outdated. Use the npm sass scripts.
 - `renderer/js/bundle.js`, `renderer/js/*.bundle.js` and `renderer/css/app-manifest.css(.map)` are gitignored build outputs. Run `npm run sass:build` and `npm run build:renderer` (or `npm run dev`) before launching the app. `npm run e2eTest` and `npm run build:app` run both for you; if you call `npx playwright test` directly, build first.
 - In dev, `electron-reload` watches `main.js`, `main/`, `preload/`, the bundles, the CSS and `renderer/*.html`, so the app relaunches or reloads on its own.
-- If `lz4-napi` fails to load, run `npx electron-rebuild`.
 
 ### Tests
 
 - Playwright's `testDir` is `tests/e2e`. Specs live in `tests/e2e/scripts/*.spec.js`. Page-object models are in `tests/e2e/models/` (`App`, `WelcomePage`, `TableEditorPage`, `HotComponent`, `SelectrComponent`, etc.) and helpers in `tests/e2e/util/`. Tests run with one worker.
 - Tests launch `main.js` with `NODE_ENV=testing`. In that mode `navigationService` installs `renderer/js/services/test-utils/TestUtility.js`, which adds hidden `<input>` elements (`#open-file-input`, `#export-table-input`, …) so tests can drive file open, export and import without native dialogs. When you add a new dialog-driven flow that needs test coverage, add a matching hook there.
 - Fixtures are in `tests/data/m22`. `TestUtil.overwriteTestCareer` copies the pristine `career/CAREER-M22TEST` over `career/test/CAREER-E2ETEST` before and after tests, so tests only ever modify the copy.
+- Unit tests: `tests/unit/*.test.js` use Node's built-in `node:test`. `tests/unit/helpers/electronStub.js` stubs `require("electron")` so main-process modules load in plain Node. They are regression tests for the xlsx import/export path, the LZ4 decoder and the preferences store. The fixtures in `tests/unit/fixtures/` are compared byte for byte (`.gitattributes` keeps their line endings), so only change them for an intended behavior change.
 - The top-level `tests/*.spec.js` files are legacy mocha/chai/sinon/proxyquire unit tests. Playwright doesn't pick them up, and mocha, sinon and proxyquire aren't installed.
 
 ## Architecture
@@ -53,7 +54,7 @@ renderer service (vanilla JS, browserify bundle)
 
 ### Renderer bundling and the `electron` shim
 
-`scripts/build-renderer.js` browserifies four entries: `index.js` → `bundle.js` (main window), `schemaManager.js`, `settingsManager.js` and `worker.js`. It maps `require("electron")` to `renderer/js/electron-shim.js` and ignores `madden-franchise`, `lz4-napi` and some Node builtins. Legacy renderer code that still does `const { ipcRenderer } = require("electron")` goes through this shim. Watch for two quirks:
+`scripts/build-renderer.js` browserifies four entries: `index.js` → `bundle.js` (main window), `schemaManager.js`, `settingsManager.js` and `worker.js`. It maps `require("electron")` to `renderer/js/electron-shim.js` and ignores `madden-franchise` and some Node builtins. Legacy renderer code that still does `const { ipcRenderer } = require("electron")` goes through this shim. Watch for two quirks:
 - `ipcRenderer.invoke(name, ...)` calls `window.franchiseAPI[name]` and treats `name` as a **preload method name**, not a channel string. Unknown names silently return `null`.
 - `ipcRenderer.removeListener` removes **all** listeners on that channel.
 
@@ -74,7 +75,7 @@ New code should call `window.franchiseAPI` / `window.electronAPI` directly.
 
 - **Schedule editor** (`scheduleService.js` with `main/handlers/scheduleHandler.js`): reads the schedule tables and edits them through the library. Historical schedules are in `schedules/*.json`.
 - **Schema viewer** (`schemaViewerService.js`, `schemaViewerHandler.js`), **schema manager window** (`schema-manager.html`, `schemaManager.js`), schema search over game CAS files (`schemaSearchHandler.js`, `main/libs/CASBlockParser.js`), and schema mismatch prompts (`schemaMismatchHandler.js`). The schema search doesn't work for some game versions.
-- **Settings manager window** (`settings-manager.html`, `services/settings-manager/`). Preferences use `electron-preferences` with `data/preferencesSchema.json`. The renderer caches them in `preferencesService`, and changes are synced between windows over IPC.
+- **Settings manager window** (`settings-manager.html`, `services/settings-manager/`). Preferences are stored by `main/services/preferencesStore.js` (a small JSON store that kept `electron-preferences`' file format and merge rules) with `data/preferencesSchema.json`. The renderer caches them in `preferencesService`, and changes are synced between windows over IPC.
 - Recent files, external-modification reload prompts, and GitHub-release auto-updates are handled by `recentFilesHandler`, `reloadFileHandler` + the chokidar watcher in `main.js`, and `updateHandler` + `electron-updater`.
 
 ## Domain notes

@@ -63,8 +63,6 @@ function createBundler(entry, label) {
   b.require("../renderer/js/electron-shim.js", { expose: "electron" });
   // Ignore madden-franchise since it runs in main process
   b.ignore("madden-franchise");
-  // Ignore lz4-napi (native module, runs in main process)
-  b.ignore("lz4-napi");
   // Stub fs/promises for schemaSearchService (runs in main process)
   b.exclude("fs/promises");
   // Exclude Node builtins that can't be polyfilled for browser

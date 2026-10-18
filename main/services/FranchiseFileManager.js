@@ -11,6 +11,7 @@ const fs = require("fs");
 const path = require("path");
 const zlib = require("zlib");
 const { Readable } = require("stream");
+const { decodeBlock } = require("../libs/lz4Block");
 
 /**
  * Manages FranchiseFile instances in the main process.
@@ -675,12 +676,16 @@ class FranchiseFileManager {
    * @private
    */
   _generateUncompressedSchema(data) {
-    const LZ4 = require("lz4-napi");
     let uncompressed = Buffer.alloc(0);
 
     data.blocks.forEach((block) => {
       let uncompressedBlock = Buffer.alloc(block.meta.size);
-      let uncompressedSize = LZ4.decodeBlock(block.data, uncompressedBlock);
+      const uncompressedSize = decodeBlock(block.data, uncompressedBlock);
+      if (uncompressedSize < 0) {
+        throw new Error(
+          `LZ4 block decode failed at input byte ${-uncompressedSize}`,
+        );
+      }
       uncompressedBlock = uncompressedBlock.slice(0, uncompressedSize);
       uncompressed = Buffer.concat([uncompressed, uncompressedBlock]);
     });

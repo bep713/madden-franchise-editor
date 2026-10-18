@@ -12,6 +12,7 @@
     "e2eTest": "npm run sass:build && npm run build:renderer && npx playwright test",
     "postinstall": "patch-package",
     "sass:build": "sass renderer/sass/app-manifest.scss renderer/css/app-manifest.css --no-source-map",
+    "test:unit": "node --test \"tests/unit/**/*.test.js\"",
     "sass:dev": "sass renderer/sass/app-manifest.scss renderer/css/app-manifest.css --source-map --watch",
     "watch:renderer": "node scripts/build-renderer.js --watch"
   },
@@ -28,7 +29,6 @@
     "debug": "^4.3.3",
     "electron": "^41.0.3",
     "electron-builder": "26.15.3",
-    "electron-rebuild": "^3.2.7",
     "electron-reload": "^1.5.0",
     "handsontable": "11.1.0",
     "patch-package": "^8.0.1",
@@ -40,13 +40,11 @@
   "dependencies": {
     "chokidar": "^3.5.3",
     "electron-log": "^5.4.3",
-    "electron-preferences": "^2.7.0",
     "electron-updater": "^4.6.1",
-    "lz4-napi": "^2.9.0",
     "madden-franchise": "^4.3.6",
     "moment": "^2.29.4",
     "stream-parser": "^0.3.1",
-    "xlsx": "^0.17.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "build": {
     "appId": "com.github.bep713.maddenfranchiseeditor",
@@ -61,7 +59,10 @@
       "data/**/*",
       "!data/schemas{,/**/*}",
       "schedules/**/*",
-      "!node_modules/moment/{locale,min,dist,src}{,/**/*}"
+      "!node_modules/moment/{locale,min,dist,src}{,/**/*}",
+      "!node_modules/xlsx/{bin,types}{,/**/*}",
+      "!node_modules/xlsx/{xlsx.mjs,xlsxworker.js,bower.json,CHANGELOG.md,README.md}",
+      "!node_modules/xlsx/dist/{*.min.js,*.min.map,xlsx.extendscript.js,xlsx.zahl.js,xlsx.zahl.mjs,cpexcel.full.mjs,*.d.ts}"
     ],
     "electronLanguages": [
       "en-US"

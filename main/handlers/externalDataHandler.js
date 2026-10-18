@@ -97,7 +97,12 @@ function registerExternalDataHandlers(loggedIpc, franchiseFileManager) {
           bookType: isCsv ? "csv" : "xlsx",
         });
 
-        fs.writeFileSync(filePath, buffer);
+        // SheetJS 0.17 ended CSV output with a newline; 0.20 does not.
+        const needsNewline = isCsv && buffer[buffer.length - 1] !== 0x0a;
+        fs.writeFileSync(
+          filePath,
+          needsNewline ? Buffer.concat([buffer, Buffer.from("\n")]) : buffer,
+        );
       } catch (error) {
         throw new Error(`Failed to export table data: ${error.message}`);
       }

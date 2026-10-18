@@ -1,0 +1,87 @@
+{
+    "general": {
+        "defaultDirectory": "C:\\Users\\USER\\Documents\\Madden NFL 24\\saves",
+        "defaultEditor": "open-home",
+        "checkForUpdates": [
+            true
+        ],
+        "updateChannel": "nightly",
+        "autoSave": [],
+        "checkForSchemaUpdates": [
+            true
+        ],
+        "openExcelAfterImport": [
+            true
+        ],
+        "autoUnempty": [
+            true
+        ],
+        "ftcGameYearOverride": "27",
+        "ftcGameTypeOverride": "college"
+    },
+    "gameVersions": {
+        "madden19Directory": "C:\\Program Files (x86)\\Origin Games\\Madden NFL 19",
+        "madden20Directory": "C:\\Program Files (x86)\\Origin Games\\Madden NFL 20",
+        "madden21Directory": "C:\\Program Files (x86)\\Origin Games\\Madden NFL 21",
+        "madden22Directory": "C:\\Program Files (x86)\\Origin Games\\Madden NFL 22",
+        "madden23Directory": "C:\\Program Files (x86)\\Origin Games\\Madden NFL 23",
+        "madden24Directory": "C:\\Program Files (x86)\\Origin Games\\Madden NFL 24",
+        "madden25Directory": "C:\\Program Files (x86)\\Origin Games\\Madden NFL 25",
+        "madden26Directory": "C:\\Program Files\\EA Games\\Madden NFL 27",
+        "madden27Directory": "C:\\Program Files\\EA Games\\Madden NFL 27",
+        "collegeFootball27Directory": "C:\\Program Files\\EA Games\\EA SPORTS College Football 27"
+    },
+    "settingsManager": {
+        "general": {
+            "defaultDirectorySet": true,
+            "defaultEditorSet": true,
+            "checkForUpdatesSet": true,
+            "autoSaveSet": true,
+            "autoUnemptySet": true,
+            "checkForSchemaUpdatesSet": true,
+            "openExcelAfterImportSet": true,
+            "ftcGameYearOverride": true,
+            "ftcGameTypeOverride": true,
+            "updateChannelSet": true
+        },
+        "gameVersions": {
+            "madden19DirectorySet": true,
+            "madden20DirectorySet": true,
+            "madden21DirectorySet": true,
+            "madden22DirectorySet": true,
+            "madden23DirectorySet": true,
+            "madden24DirectorySet": true,
+            "madden25DirectorySet": true,
+            "madden26DirectorySet": true,
+            "madden27DirectorySet": true,
+            "collegeFootball27DirectorySet": true
+        },
+        "appVersions": {
+            "4_0_0": true,
+            "4_1_0": true,
+            "4_1_1": true,
+            "4_2_0": true,
+            "4_2_1": true,
+            "4_3_0": true,
+            "4_3_1": true,
+            "4_3_2": true,
+            "4_3_3": true,
+            "4_3_4": true,
+            "4_3_5": true,
+            "4_3_6": true,
+            "4_4_0": true,
+            "4_4_1": true,
+            "4_5_0": true,
+            "4_5_1": true,
+            "4_5_2": true,
+            "4_5_3": true,
+            "4_5_4": true,
+            "4_5_5": true,
+            "4_5_6": true,
+            "4_5_7": true,
+            "4_5_8": true,
+            "4_5_9": true,
+            "4_6_0": true
+        }
+    }
+}

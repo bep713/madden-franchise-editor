@@ -1,6 +1,6 @@
 const { app } = require("electron");
 const path = require("path");
-const ElectronPreferences = require("electron-preferences");
+const { PreferencesStore } = require("../services/preferencesStore");
 const preferencesSchema = require("../../data/preferencesSchema.json");
 
 let preferencesInstance = null;
@@ -8,8 +8,8 @@ const changeCallbacks = new Map();
 
 /**
  * Subscribe to changes of a preference made through `preferences:set`.
- * The callback receives (newValue, oldValue). (electron-preferences' 'save'
- * event does not fire on this write path, so the hook lives in the handler.)
+ * The callback receives (newValue, oldValue). The store has no change events,
+ * so the hook lives in the handler.
  */
 function onPreferenceChange(keyPath, cb) {
   if (!changeCallbacks.has(keyPath)) {
@@ -19,7 +19,7 @@ function onPreferenceChange(keyPath, cb) {
 }
 
 /**
- * Initialize the ElectronPreferences instance.
+ * Initialize the preferences store.
  * Must be called after app is ready.
  */
 function initialize() {
@@ -29,17 +29,16 @@ function initialize() {
 
   const defaults = getPreferenceDefaults();
 
-  preferencesInstance = new ElectronPreferences({
+  preferencesInstance = new PreferencesStore({
     dataStore: path.resolve(app.getPath("userData"), "preferences.json"),
     defaults: defaults,
-    sections: buildPreferenceSections(),
   });
 
   return preferencesInstance;
 }
 
 /**
- * Build the ElectronPreferences sections config from the shared schema.
+ * Build the preference sections config (for the settings UI) from the shared schema.
  */
 function buildPreferenceSections() {
   return preferencesSchema.sections.map((section) => ({
@@ -78,7 +77,7 @@ function registerPreferencesHandlers(
       if (!preferencesInstance) {
         throw new Error("Preferences not initialized");
       }
-      return preferencesInstance.value(undefined, ""); // Bug with preferences module: we need to pass a non-null value to get all prefs.
+      return preferencesInstance.value(undefined, ""); // PreferencesStore quirk: value() with no arguments returns undefined; pass a non-null value to get all prefs.
     } catch (error) {
       throw new Error(`Failed to get preferences: ${error.message}`);
     }
@@ -188,7 +187,7 @@ function getPreferenceDefaults() {
       defaults[section.id][field.key] = value;
     }
   }
-  // Include settingsManager section (not part of ElectronPreferences form)
+  // Include settingsManager section (not part of the settings form)
   defaults.settingsManager = preferencesSchema.settingsManager;
   return defaults;
 }

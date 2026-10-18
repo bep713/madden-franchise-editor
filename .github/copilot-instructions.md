@@ -95,7 +95,6 @@ ipcRenderer.send("open-external-url", url);
 
 - **Renderer bundling:** `scripts/build-renderer.js` uses browserify to create 4 bundles
 - **SASS:** `npm run sass:build` / `npm run sass:dev` compile SASS → CSS
-- **Native modules:** `electron-rebuild` for `lz4-napi`
 - **Patches:** `patch-package` runs on postinstall
 
 ## Conventions
@@ -135,12 +134,11 @@ Schema-related functionality spans multiple handlers:
 
 ## Common Pitfalls
 
-1. **Native module rebuilds:** After `npm install`, run `npx electron-rebuild` if `lz4-napi` fails
-2. **SASS watch required:** App styles won't update without `npm run sass:dev` running
-3. **Main process restart:** Changes to `main.js` or `main/` files require full app restart (not just renderer refresh)
-4. **File locking:** Always make copies of franchise files before editing — the app autosaves on changes
-5. **Schema version mismatches:** Loading a franchise with a different schema version than expected triggers the mismatch handler
-6. **CAS block parsing:** Schema extraction from `.gz` files uses stream-based parsing — large files may take time
+1. **SASS watch required:** App styles won't update without `npm run sass:dev` running
+2. **Main process restart:** Changes to `main.js` or `main/` files require full app restart (not just renderer refresh)
+3. **File locking:** Always make copies of franchise files before editing — the app autosaves on changes
+4. **Schema version mismatches:** Loading a franchise with a different schema version than expected triggers the mismatch handler
+5. **CAS block parsing:** Schema extraction from `.gz` files uses stream-based parsing — large files may take time
 
 ## Testing
 
