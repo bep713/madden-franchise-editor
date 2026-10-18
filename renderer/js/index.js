@@ -13,9 +13,7 @@ preferencesService
     console.warn("Failed to load preferences:", err);
   });
 
-setTimeout(() => {
-  perfService.mark("renderer:editors-load-start");
-  const navigationService = require("./services/navigationService.js");
-  perfService.mark("renderer:editors-load-end");
-  navigationService.onHomeClicked();
-}, 50);
+perfService.mark("renderer:editors-load-start");
+const navigationService = require("./services/navigationService.js");
+perfService.mark("renderer:editors-load-end");
+navigationService.onHomeClicked();

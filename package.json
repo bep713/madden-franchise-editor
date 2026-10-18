@@ -34,6 +34,7 @@
     "electron": "^41.0.3",
     "electron-builder": "26.15.3",
     "electron-reload": "^1.5.0",
+    "esbuild": "0.28.2",
     "handsontable": "11.1.0",
     "patch-package": "^8.0.1",
     "playwright": "^1.59.1",

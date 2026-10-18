@@ -108,6 +108,12 @@ unobstructed while measuring. "n" counts runs actually used.
 | 2 lazy requires | temp | 10 | 62 | 563 | 113 | 834 | 174 |
 | 3 lazy windows | real | 10 | 63 | 537 | 159 | 808 | 202 |
 | 3 lazy windows | temp | 10 | 62 | 497 | 113 | 767 | 101 |
+| 4 lazy editors + minify | real | 10 | 63 | 309 | 3 | 580 | 206 |
+| 4 lazy editors + minify | temp | 10 | 62 | 327 | 3 | 580 | 102 |
+
+Phase 4: bundle.js 6.2MB → 3.6MB (esbuild minify), no long tasks before welcome, prefs always
+loaded at the update-prompt check. M9 (bundle load) is still ~113ms, above the 80ms threshold
+for the bundle split (4c follow-up).
 
 Phase 3: createWindow 155 → 90ms; no prefs write on a normal launch (file mtime unchanged).
 Real profile has update checks on, so the electron-updater require (~140ms, now lazy) lands in

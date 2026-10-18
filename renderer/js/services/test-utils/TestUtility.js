@@ -1,7 +1,8 @@
 class TestUtility {
-    constructor(welcomeService, tableEditorService) {
+    constructor(welcomeService, getTableEditorService) {
         this.welcomeService = welcomeService;
-        this.tableEditorService = tableEditorService;
+        // resolved at use time because the table editor is loaded lazily
+        this.getTableEditorService = getTableEditorService;
 
         this._initialize();
     };
@@ -38,7 +39,7 @@ class TestUtility {
         const that = this;
 
         this._addTestElement('export-table-input', function () {
-            that.tableEditorService.externalDataHandler._exportTable(this.value);
+            that.getTableEditorService().externalDataHandler._exportTable(this.value);
             this.value = '';
         });
     };
@@ -47,7 +48,7 @@ class TestUtility {
         const that = this;
 
         this._addTestElement('import-table-input', function () {
-            that.tableEditorService.externalDataHandler._importTable(this.value);
+            that.getTableEditorService().externalDataHandler._importTable(this.value);
             this.value = '';
         });
     };
@@ -56,7 +57,7 @@ class TestUtility {
         const that = this;
 
         this._addTestElement('export-raw-table', function () {
-            that.tableEditorService.externalDataHandler._exportRawTable(this.value);
+            that.getTableEditorService().externalDataHandler._exportRawTable(this.value);
             this.value = '';
         });
     };
@@ -65,7 +66,7 @@ class TestUtility {
         const that = this;
 
         this._addTestElement('export-raw-frtk', function () {
-            that.tableEditorService.externalDataHandler._exportRawFrtk(this.value);
+            that.getTableEditorService().externalDataHandler._exportRawFrtk(this.value);
             this.value = '';
         });
     };
@@ -74,7 +75,7 @@ class TestUtility {
         const that = this;
 
         this._addTestElement('import-raw-table', function () {
-            that.tableEditorService.externalDataHandler._importRawTable(this.value);
+            that.getTableEditorService().externalDataHandler._importRawTable(this.value);
             this.value = '';
         });
     };

@@ -2,6 +2,7 @@ const browserify = require("browserify");
 const watchify = require("watchify");
 const fs = require("fs");
 const path = require("path");
+const esbuild = require("esbuild");
 
 const isWatchMode = process.argv.includes("--watch");
 const READY_FILE = path.join(__dirname, ".watcher-ready");
@@ -69,14 +70,31 @@ function createBundler(entry, label) {
 
 function writeBundle(b, output, label) {
   return new Promise((resolve, reject) => {
-    b.bundle((err, buf) => {
+    b.bundle(async (err, buf) => {
       if (err) {
         console.error(`✗ Error bundling ${label}:`, err.message);
         if (!isWatchMode) reject(err);
         return;
       }
 
-      fs.writeFileSync(path.join(__dirname, output), buf);
+      try {
+        // Minify only one-off builds; watch builds stay readable and keep
+        // their inline source maps. keepNames guards against any reliance on
+        // function/class names (e.g. constructor.name).
+        if (!isWatchMode) {
+          const { code } = await esbuild.transform(buf.toString(), {
+            minify: true,
+            keepNames: true,
+          });
+          buf = Buffer.from(code);
+        }
+
+        fs.writeFileSync(path.join(__dirname, output), buf);
+      } catch (writeErr) {
+        console.error(`✗ Error minifying ${label}:`, writeErr.message);
+        reject(writeErr);
+        return;
+      }
       const timestamp = new Date().toLocaleTimeString();
       console.log(`✓ [${timestamp}] ${label} → ${output}`);
       resolve();
