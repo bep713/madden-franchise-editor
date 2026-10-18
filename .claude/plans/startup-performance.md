@@ -104,6 +104,8 @@ unobstructed while measuring. "n" counts runs actually used.
 | baseline | temp | 10 | 315 | 721 | 120 | 1265 | 164 |
 | 1 fonts | real | 10 | 307 | 569 | 111 | 1075 | 172 |
 | 1 fonts | temp | 4 | 308 | 557 | 111 | 1071 | 174 |
+| 2 lazy requires | real | 10 | 63 | 575 | 123 | 840 | 169 |
+| 2 lazy requires | temp | 10 | 62 | 563 | 113 | 834 | 174 |
 
 Phase 1 new temp baseline: temp ≈ real now (network noise gone). Later phases compare against the phase-1 rows.
 

@@ -6,7 +6,7 @@ const { shell } = require("electron");
  */
 function registerUpdateHandlers(
   loggedIpc,
-  autoUpdater,
+  getAutoUpdater,
   getLoggedMain,
   { runUpdateCheck, getReleasePageUrl, getUpdateChannel },
 ) {
@@ -20,6 +20,7 @@ function registerUpdateHandlers(
     const loggedMain = getLoggedMain();
     try {
       loggedMain.send("update-downloading");
+      const autoUpdater = getAutoUpdater();
       autoUpdater
         .downloadUpdate()
         .then(() => {

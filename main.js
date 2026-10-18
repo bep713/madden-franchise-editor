@@ -5,7 +5,6 @@ if (startupProfiler.enabled) {
   startupProfiler.mark("main:module-start");
 }
 const path = require("path");
-const chokidar = require("chokidar");
 const {
   app,
   BrowserWindow,
@@ -14,7 +13,6 @@ const {
   shell,
   dialog,
 } = require("electron");
-const { autoUpdater } = require("electron-updater");
 const preferencesHandler = require("./main/handlers/preferencesHandler");
 const franchiseFileManager = require("./main/services/FranchiseFileManager");
 const {
@@ -43,6 +41,7 @@ const {
   applyUpdateChannel,
   getReleasePageUrl,
 } = require("./main/services/updateChannelService");
+const autoUpdaterService = require("./main/services/autoUpdaterService");
 const { registerWelcomeHandlers } = require("./main/handlers/welcomeHandler");
 const {
   createLoggedIpcMain,
@@ -125,7 +124,7 @@ registerSchemaMismatchHandlers(loggedIpc, franchiseFileManager);
 registerSchemaSearchHandlers(loggedIpc, franchiseFileManager);
 registerSchemaViewerHandlers(loggedIpc, franchiseFileManager);
 registerScheduleHandlers(loggedIpc, franchiseFileManager);
-registerUpdateHandlers(loggedIpc, autoUpdater, () => loggedMain, {
+registerUpdateHandlers(loggedIpc, getAutoUpdater, () => loggedMain, {
   runUpdateCheck,
   getReleasePageUrl,
   getUpdateChannel,
@@ -465,12 +464,15 @@ function createWindow() {
   startupProfiler.mark("main:prefs-init-start");
   preferencesHandler.initialize();
   startupProfiler.mark("main:prefs-init-end");
-  autoUpdater.autoInstallOnAppQuit = false;
-  autoUpdater.autoDownload = false;
-  applyUpdateChannel(autoUpdater, getUpdateChannel());
 
   preferencesHandler.onPreferenceChange("general.updateChannel", (value) => {
-    applyUpdateChannel(autoUpdater, value === "nightly" ? "nightly" : "stable");
+    // If the updater isn't loaded yet, it reads the channel when it loads.
+    if (autoUpdaterService.isLoaded()) {
+      applyUpdateChannel(
+        getAutoUpdater(),
+        value === "nightly" ? "nightly" : "stable",
+      );
+    }
 
     const checkForUpdates = preferencesHandler
       .getPreferencesInstance()
@@ -520,7 +522,7 @@ app.on("activate", () => {
 });
 
 addIpcListeners();
-addAutoUpdaterListeners();
+autoUpdaterService.onCreate(addAutoUpdaterListeners);
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
@@ -970,6 +972,7 @@ function runUpdateCheck() {
   };
 
   try {
+    const autoUpdater = getAutoUpdater();
     const result = isDev
       ? autoUpdater.checkForUpdates()
       : autoUpdater.checkForUpdatesAndNotify();
@@ -981,7 +984,11 @@ function runUpdateCheck() {
   }
 }
 
-function addAutoUpdaterListeners() {
+function getAutoUpdater() {
+  return autoUpdaterService.getAutoUpdater();
+}
+
+function addAutoUpdaterListeners(autoUpdater) {
   function sendStatusToWindow(text) {
     // mainWindow.webContents.send('message', text);
   }
@@ -1121,6 +1128,8 @@ function watchFile(filePath) {
     baseFileWatcher.close();
   }
 
+  // chokidar is required here, not at startup, to keep it off the boot path.
+  const chokidar = require("chokidar");
   baseFileWatcher = chokidar.watch(filePath).on("change", (path) => {
     if (!waitForFileSaved && pendingSaves.length === 0) {
       loggedMain.send("file-changed", path);
