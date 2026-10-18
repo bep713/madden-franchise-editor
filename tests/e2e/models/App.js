@@ -5,8 +5,8 @@ class App {
 
   async getMainWindow() {
     if (!this.mainWindow) {
-      // The app opens several windows at once (worker, schema manager,
-      // settings), so pick the main one by its URL.
+      // Other windows (schema manager, settings) can open too, so pick the
+      // main one by its URL.
       const findMain = () =>
         this.app.windows().find((w) => w.url().includes("index.html"));
       const deadline = Date.now() + 30 * 1000;
@@ -43,10 +43,18 @@ class App {
   }
 
   async getSettingsManager() {
-    const windows = await this.app.windows();
-    return windows.find((window) => {
-      return window.url().indexOf("settings") >= 0;
-    });
+    // The settings window is created on demand, so poll for it.
+    const findSettings = () =>
+      this.app.windows().find((window) => window.url().indexOf("settings") >= 0);
+    const deadline = Date.now() + 30 * 1000;
+    let settings = findSettings();
+
+    while (!settings && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      settings = findSettings();
+    }
+
+    return settings;
   }
 
   async closeFile() {

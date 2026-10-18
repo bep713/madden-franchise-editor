@@ -34,11 +34,6 @@ const bundles = [
     output: "../renderer/js/settingsManager.bundle.js",
     label: "Settings manager",
   },
-  {
-    entry: "../renderer/js/worker.js",
-    output: "../renderer/js/worker.bundle.js",
-    label: "Worker",
-  },
 ];
 
 function createBundler(entry, label) {

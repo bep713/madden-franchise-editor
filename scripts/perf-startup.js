@@ -52,9 +52,8 @@ const fmt = (v, digits = 1) => (isNum(v) ? v.toFixed(digits) : "n/a");
 
 const MANDATORY_MAIN_MARKS = [
   "main:module-start", "main:requires-done", "main:ready", "main:create-window-start",
-  "main:menu-done", "main:main-window-created", "main:worker-window-created",
-  "main:prefs-init-start", "main:prefs-init-end", "main:schema-window-created",
-  "main:settings-window-created", "main:create-window-end"
+  "main:menu-done", "main:main-window-created",
+  "main:prefs-init-start", "main:prefs-init-end", "main:create-window-end"
 ];
 const MANDATORY_RENDERER_MARKS = [
   "renderer:bundle-tag", "renderer:bundle-start", "renderer:prefs-loaded",
@@ -103,15 +102,15 @@ function computeRunMetrics(run, extra = {}) {
   // M4
   add("M4.menu", "createWindow: menu", diff(mt("main:menu-done"), mt("main:create-window-start")), "M4");
   add("M4.mainWindow", "createWindow: main window", diff(mt("main:main-window-created"), mt("main:menu-done")), "M4");
-  add("M4.workerWindow", "createWindow: worker window", diff(mt("main:worker-window-created"), mt("main:main-window-created")), "M4");
   add("M4.prefsInit", "createWindow: preferences init", diff(mt("main:prefs-init-end"), mt("main:prefs-init-start")), "M4");
-  add("M4.schemaWindow", "createWindow: schema window", diff(mt("main:schema-window-created"), mt("main:prefs-init-end")), "M4");
-  add("M4.settingsWindow", "createWindow: settings window", diff(mt("main:settings-window-created"), mt("main:schema-window-created")), "M4");
+  // Schema/settings windows are created on demand, so these are null on a normal launch.
+  add("M4.schemaWindow", "Schema window created (after main window)", diff(mt("main:schema-window-created"), mt("main:main-window-created")), "M4");
+  add("M4.settingsWindow", "Settings window created (after main window)", diff(mt("main:settings-window-created"), mt("main:main-window-created")), "M4");
   // M5
   add("M5.eventLoopMax", "Main event-loop delay max", run.eventLoop && run.eventLoop.maxMs, "M5");
   add("M5.eventLoopP99", "Main event-loop delay p99", run.eventLoop && run.eventLoop.p99Ms, "M5");
   // M6
-  for (const name of ["main", "worker", "schema", "settings"]) {
+  for (const name of ["main", "schema", "settings"]) {
     const w = (run.windows && run.windows[name]) || {};
     add(`M6.${name}`, `did-finish-load - created (${name})`, diff(w.didFinishLoad, w.created), "M6");
   }
@@ -170,7 +169,7 @@ const HEADLINE_KEYS = [
 // M16 sizes (bytes) -> { name: bytes|null }
 function bundleSizes(root = ROOT) {
   const files = ["renderer/js/bundle.js", "renderer/js/schemaManager.bundle.js",
-    "renderer/js/settingsManager.bundle.js", "renderer/js/worker.bundle.js", "renderer/css/app-manifest.css"];
+    "renderer/js/settingsManager.bundle.js", "renderer/css/app-manifest.css"];
   const out = {};
   for (const f of files) {
     try { out[f] = fs.statSync(path.join(root, f)).size; } catch (e) { out[f] = null; }

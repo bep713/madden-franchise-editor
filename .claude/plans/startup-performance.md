@@ -106,6 +106,13 @@ unobstructed while measuring. "n" counts runs actually used.
 | 1 fonts | temp | 4 | 308 | 557 | 111 | 1071 | 174 |
 | 2 lazy requires | real | 10 | 63 | 575 | 123 | 840 | 169 |
 | 2 lazy requires | temp | 10 | 62 | 563 | 113 | 834 | 174 |
+| 3 lazy windows | real | 10 | 63 | 537 | 159 | 808 | 202 |
+| 3 lazy windows | temp | 10 | 62 | 497 | 113 | 767 | 101 |
+
+Phase 3: createWindow 155 → 90ms; no prefs write on a normal launch (file mtime unchanged).
+Real profile has update checks on, so the electron-updater require (~140ms, now lazy) lands in
+main did-finish-load, overlapping the renderer's editor load (M10 159, M5 202). Phase 5's
+deferred update check (#11) removes that.
 
 Phase 1 new temp baseline: temp ≈ real now (network noise gone). Later phases compare against the phase-1 rows.
 

@@ -19,8 +19,14 @@ const serviceRegistry = {
 const pageData = require("../../data/settingsManagerData.json");
 
 let preferences;
+// Set when main asks for a page flow (menu items). Such a request owns the
+// window, so the startup flow must neither hide it nor start a second flow.
+let showRequested = false;
 
-initializeSettingsManagerAsync();
+// This window is created on demand and main sends its event as soon as the
+// page loads, so the listeners must exist before the first await.
+addIpcListeners();
+const initialized = initializeSettingsManagerAsync();
 
 async function initializeSettingsManagerAsync() {
   preferences = await preferencesService.getAll();
@@ -31,22 +37,28 @@ async function initializeSettingsManagerAsync() {
   }
 
   await initializeSettingsManager(preferences);
-  addIpcListeners();
+
+  if (showRequested) {
+    return;
+  }
 
   const pagesToShow = getPagesToShow(preferences);
 
   if (pagesToShow.length > 0) {
     // Window visibility is now managed via IPC
     setTimeout(() => {
-      showPages(pagesToShow);
+      if (!showRequested) showPages(pagesToShow);
     }, 1000);
-  } else {
-    window.electronAPI.preferences.hideWindow();
   }
+  // Otherwise nothing to show. Main only creates this window at startup when
+  // pages are pending, or when a menu item asks for it (showRequested), so it
+  // must not be hidden here: that would race with the requested flow.
 }
 
 function addIpcListeners() {
-  ipcRenderer.on("show-release-notes-dialog", () => {
+  ipcRenderer.on("show-release-notes-dialog", async () => {
+    showRequested = true;
+    await initialized;
     let pagesToShow = [];
 
     for (let page in preferences.settingsManager) {
@@ -66,7 +78,9 @@ function addIpcListeners() {
     showPages(pagesToShow);
   });
 
-  ipcRenderer.on("show-settings-dialog", () => {
+  ipcRenderer.on("show-settings-dialog", async () => {
+    showRequested = true;
+    await initialized;
     let pagesToShow = [];
 
     for (let page in preferences.settingsManager) {
@@ -151,17 +165,28 @@ async function loadPage(page) {
 
 async function initializeSettingsManager(preferences) {
   const preferencesSchema = preferencesService.getPreferenceKeys();
-  setMissingKeys(preferencesSchema, preferences);
-  await preferencesService.setAll(preferences);
+  // Main already fills missing keys, so this normally changes nothing and
+  // skips the write.
+  if (setMissingKeys(preferencesSchema, preferences)) {
+    await preferencesService.setAll(preferences);
+  }
 }
 
+// Returns true if any key was filled in.
 function setMissingKeys(schema, objectToCheck) {
+  let changed = false;
+
   for (let category in schema) {
     if (
       objectToCheck[category] === null ||
       objectToCheck[category] === undefined
     ) {
+      // A null default over a stored null is not a fill.
+      if (objectToCheck[category] === null && schema[category] === null) {
+        continue;
+      }
       objectToCheck[category] = schema[category];
+      changed = true;
     } else {
       const nextLevelDown = schema[category];
       const currentValue = objectToCheck[category];
@@ -173,10 +198,14 @@ function setMissingKeys(schema, objectToCheck) {
         currentValue !== undefined &&
         typeof currentValue === "object"
       ) {
-        setMissingKeys(schema[category], currentValue);
+        if (setMissingKeys(schema[category], currentValue)) {
+          changed = true;
+        }
       }
     }
   }
+
+  return changed;
 }
 
 function getPagesToShow(preferences) {

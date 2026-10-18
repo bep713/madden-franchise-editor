@@ -52,13 +52,9 @@ startupProfiler.mark("main:requires-done");
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-let mainWindow, workerWindow, schemaWindow, settingsWindow;
-// Logged webContents wrappers (assigned in createWindow, used in addIpcListeners)
-let loggedMain, loggedWorker, loggedSchema, loggedSettings;
-let mainReady = false;
-let workerReady = false;
-let pendingMainEvents = [];
-let pendingWorkerEvents = [];
+let mainWindow, schemaWindow, settingsWindow;
+// Logged webContents wrappers (assigned when each window is created)
+let loggedMain, loggedSchema, loggedSettings;
 const isDev = process.env.NODE_ENV === "development";
 
 let fileDependentMenuItems = ["CloseFile", "RevealInExplorer", "SaveAs"];
@@ -341,7 +337,6 @@ function createApplicationMenu() {
 }
 
 const homePage = "renderer/index.html";
-const workerPage = "renderer/worker.html";
 const creditsPage = "renderer/credits.html";
 const schemaPage = "renderer/schema-manager.html";
 const settingsPage = "renderer/settings-manager.html";
@@ -355,6 +350,11 @@ let baseFileWatcher;
 
 function createWindow() {
   startupProfiler.mark("main:create-window-start");
+  // Window gating below reads the prefs, so load them first.
+  startupProfiler.mark("main:prefs-init-start");
+  preferencesHandler.initialize();
+  startupProfiler.mark("main:prefs-init-end");
+
   // Create the application menu
   createApplicationMenu();
   startupProfiler.mark("main:menu-done");
@@ -390,7 +390,6 @@ function createWindow() {
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
     mainWindow = null;
-    workerWindow = null;
 
     // Destroy hidden windows that have preventDefault close handlers
     if (schemaWindow) schemaWindow.destroy();
@@ -407,9 +406,6 @@ function createWindow() {
   });
 
   mainWindow.webContents.on("did-finish-load", () => {
-    mainReady = true;
-    sendAllPendingMainEvents();
-
     const preferencesInstance = preferencesHandler.getPreferencesInstance();
     const checkForUpdates = preferencesInstance
       ? preferencesInstance.value("general.checkForUpdates")
@@ -423,47 +419,28 @@ function createWindow() {
       ? preferencesInstance.value("general.checkForSchemaUpdates")
       : undefined;
 
-    if (checkboxSettingIsEnabled(checkForSchemas)) {
+    // The schema window only exists on demand. Mirror the renderer's check
+    // (schemaManager.js) so it isn't created when the scan would be a no-op.
+    const madden24Directory = preferencesInstance
+      ? preferencesInstance.value("gameVersions.madden24Directory")
+      : undefined;
+
+    if (
+      checkboxSettingIsEnabled(checkForSchemas) &&
+      typeof madden24Directory === "string" &&
+      madden24Directory.length > 0
+    ) {
       startupProfiler.mark("main:schema-quick-scan-sent");
-      loggedSchema.send("schema-quick-scan", 24);
+      // Don't pop an existing (hidden) window back up on a reload.
+      if (!schemaWindow) createSchemaWindow(false);
+      sendWhenLoaded(schemaWindow, loggedSchema, "schema-quick-scan", 24);
+    }
+
+    // The settings window is only needed at startup to show first-run pages.
+    if (!settingsWindow && settingsPagesPending(preferencesInstance)) {
+      createSettingsWindow(isDev);
     }
   });
-
-  workerWindow = new BrowserWindow({
-    title: "Worker",
-    width: 1000,
-    height: 500,
-    show: isDev,
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      preload: path.join(__dirname, "preload", "franchisePreload.js"),
-    },
-  });
-  startupProfiler.trackWindow("worker", workerWindow);
-  startupProfiler.mark("main:worker-window-created");
-
-  // Create logged webContents wrapper for this window
-  loggedWorker = createLoggedWebContents(workerWindow.webContents);
-
-  workerWindow.loadFile(workerPage);
-
-  if (isDev) {
-    workerWindow.webContents.openDevTools();
-  }
-
-  workerWindow.on("closed", () => {
-    workerWindow = null;
-  });
-
-  workerWindow.webContents.on("did-finish-load", function () {
-    workerReady = true;
-    sendAllPendingWorkerEvents();
-  });
-
-  startupProfiler.mark("main:prefs-init-start");
-  preferencesHandler.initialize();
-  startupProfiler.mark("main:prefs-init-end");
 
   preferencesHandler.onPreferenceChange("general.updateChannel", (value) => {
     // If the updater isn't loaded yet, it reads the channel when it loads.
@@ -482,8 +459,6 @@ function createWindow() {
     }
   });
 
-  createSchemaWindow(isDev);
-  createSettingsWindow(isDev);
   startupProfiler.mark("main:create-window-end");
 }
 
@@ -500,12 +475,6 @@ app.on("ready", createWindow);
 
 // Quit when all windows are closed.
 app.on("window-all-closed", () => {
-  mainReady = false;
-  workerReady = false;
-
-  pendingMainEvents = [];
-  pendingWorkerEvents = [];
-
   // On macOS it is common for applications and their menu bar
   // to stay active until the user quits explicitly with Cmd + Q
   if (process.platform !== "darwin") {
@@ -616,14 +585,6 @@ function addIpcListeners() {
     setTemporaryWindowTitle("Imported successfully");
   });
 
-  ipcMain.on("read-schema", function (event, arg) {
-    passOrDelayWorkerIpcEvent("read-schema", arg);
-  });
-
-  ipcMain.on("read-schema-done", function (event, arg) {
-    passOrDelayMainIpcEvent("read-schema-done", arg);
-  });
-
   ipcMain.on("log-table", function () {
     loggedMain.send("log-table");
   });
@@ -657,7 +618,7 @@ function addIpcListeners() {
 
   ipcMain.on("show-schema-manager", function (event, arg) {
     createSchemaWindow();
-    loggedSchema.send("get-schema-info-response", arg);
+    sendWhenLoaded(schemaWindow, loggedSchema, "get-schema-info-response", arg);
   });
 
   ipcMain.on("load-schema", function (event, arg) {
@@ -665,7 +626,7 @@ function addIpcListeners() {
   });
 
   ipcMain.on("load-schema-done", function (event, arg) {
-    loggedSchema.send("load-schema-done", arg);
+    if (schemaWindow) loggedSchema.send("load-schema-done", arg);
   });
 
   ipcMain.on("get-schema-info-request", function (event, arg) {
@@ -673,7 +634,7 @@ function addIpcListeners() {
   });
 
   ipcMain.on("get-schema-info-response", function (event, arg) {
-    loggedSchema.send("get-schema-info-response", arg);
+    if (schemaWindow) loggedSchema.send("get-schema-info-response", arg);
   });
 
   ipcMain.on("show-settings-manager", function () {
@@ -685,6 +646,11 @@ function addIpcListeners() {
   });
 
   ipcMain.on("is-currently-searching", () => {
+    // No schema window means no search is running.
+    if (!schemaWindow) {
+      loggedMain.send("currently-searching-response", false);
+      return;
+    }
     loggedSchema.send("is-currently-searching");
   });
 
@@ -933,21 +899,38 @@ function createSettingsWindow(show) {
   });
 }
 
-function sendSettingsWindowEvent(channel) {
-  createSettingsWindow(true);
-
-  const send = () => {
-    if (loggedSettings) {
-      loggedSettings.send(channel);
-    }
-  };
-
-  if (settingsWindow.webContents.isLoadingMainFrame()) {
-    settingsWindow.webContents.once("did-finish-load", send);
+// Sends now, or once the window has finished loading its page.
+function sendWhenLoaded(win, loggedWc, channel, ...args) {
+  if (win.webContents.isLoadingMainFrame()) {
+    win.webContents.once("did-finish-load", () => {
+      if (loggedWc) loggedWc.send(channel, ...args);
+    });
     return;
   }
 
-  send();
+  loggedWc.send(channel, ...args);
+}
+
+function sendSettingsWindowEvent(channel) {
+  createSettingsWindow(true);
+  sendWhenLoaded(settingsWindow, loggedSettings, channel);
+}
+
+// Main-side port of the settings manager's checkPage: a first-run page needs
+// showing when any of its flags is falsy.
+function settingsPagesPending(preferencesInstance) {
+  const pages = preferencesInstance
+    ? preferencesInstance.value("settingsManager")
+    : undefined;
+
+  if (!pages || typeof pages !== "object") {
+    return false;
+  }
+
+  return Object.values(pages).some(
+    (page) =>
+      page && typeof page === "object" && Object.values(page).some((v) => !v),
+  );
 }
 
 function openReleaseNotesWindow() {
@@ -1040,46 +1023,8 @@ function setTemporaryWindowTitle(message) {
   }, 2500);
 }
 
-function passOrDelayWorkerIpcEvent(event, ...arg) {
-  if (workerReady) {
-    loggedWorker.send(event, arg);
-  } else {
-    pendingWorkerEvents.push({
-      event: "read-schema",
-      args: arg,
-    });
-  }
-}
-
-function passOrDelayMainIpcEvent(event, ...arg) {
-  if (mainReady) {
-    loggedMain.send(event, arg);
-  } else {
-    pendingMainEvents.push({
-      event: event,
-      args: arg,
-    });
-  }
-}
-
 function setCurrentWindowTitle(title) {
   mainWindow.setTitle(title);
-}
-
-function sendAllPendingWorkerEvents() {
-  pendingWorkerEvents.forEach((event) => {
-    loggedWorker.send(event.event, event.arg);
-  });
-
-  pendingWorkerEvents = [];
-}
-
-function sendAllPendingMainEvents() {
-  pendingMainEvents.forEach((event) => {
-    loggedMain.send(event.event, event.arg);
-  });
-
-  pendingMainEvents = [];
 }
 
 function enableFileMenuItems() {
