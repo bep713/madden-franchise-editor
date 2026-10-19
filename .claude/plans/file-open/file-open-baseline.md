@@ -52,3 +52,18 @@ Other medians: backup write 7 ms (m22) / 12 ms (c27); metadata builds per open 2
 - Dev run, not packaged; compare same-flag runs only.
 - Hidden or occluded windows drop runs (first full pass lost 11 to this). Keep the screen on.
 - Not run: `autoSave` on, and the second variance pair on one cell (the c27 re-runs serve as the variance check: medians within ~10%).
+
+## After steps 1-3 (pre-pass sniff, cached metadata, no fixed delay)
+
+Results: `test/perf-results/20261018-2209-after-step1-3-1a42754/`. Medians, ms.
+
+| file | editor | open | baseline M-open-total | after | metadata builds |
+|---|---|---|---|---|---|
+| m22 | home | cold | 698 | 540 | 2 -> 1 |
+| m22 | home | warm | 694 | 158 | 2 -> 1 |
+| m22 | table-editor | cold | 1108 | 908 | 3 -> 1 |
+| m22 | schedule | cold | 1018 | 652 | 4 -> 1 |
+| c27 | home | cold | 5391 | 3451 | 2 -> 1 |
+| c27 | home | warm | 6119 | 1851 | 2 -> 1 |
+
+Pre-pass is now ~8 ms cold / ~2 ms warm. Cold m22 home (540) misses the <250 ms target because the library parse (~480 ms cold) now runs once but un-warmed; the pre-pass previously warmed it. Warm opens meet the targets. The c27 warm-parse slowdown shrank (3.7 s -> 1.8 s median) but p90 is still 2.9 s.
