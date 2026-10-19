@@ -1,5 +1,5 @@
 // Startup profiler. Active only when MFE_PERF=1; otherwise every export is a no-op.
-// Output format: .claude/plans/startup-baseline-contract.md
+// Output format: .claude/plans/startup/startup-baseline-contract.md
 // Keep requires here minimal: perf_hooks, fs, path, module (electron is required lazily).
 const { performance, monitorEventLoopDelay } = require("perf_hooks");
 const fs = require("fs");

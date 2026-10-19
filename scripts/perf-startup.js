@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Startup performance harness. Launches the app N times with MFE_PERF=1, collects the
 // per-run JSON written by main/services/startupProfiler.js and summarizes it.
-// Format and metric definitions: .claude/plans/startup-baseline-contract.md
+// Format and metric definitions: .claude/plans/startup/startup-baseline-contract.md
 // Usage: node scripts/perf-startup.js --help
 "use strict";
 
