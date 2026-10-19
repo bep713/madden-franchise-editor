@@ -1,4 +1,6 @@
 const log = require("electron-log");
+const { performance } = require("perf_hooks");
+const startupProfiler = require("../services/startupProfiler");
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -14,6 +16,17 @@ function createLoggedIpcMain(ipcMain) {
       ipcMain.emit(eventName, ...args);
     },
     handle(channel, handler) {
+      if (startupProfiler.enabled) {
+        const untimedHandler = handler;
+        handler = async (event, ...args) => {
+          const t0 = performance.now();
+          try {
+            return await untimedHandler(event, ...args);
+          } finally {
+            startupProfiler.recordIpc(channel, performance.now() - t0);
+          }
+        };
+      }
       return ipcMain.handle(channel, async (event, ...args) => {
         if (isDev) {
           // log.debug(`[IPC -> Main] ${channel}`, args);

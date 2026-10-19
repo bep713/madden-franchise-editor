@@ -36,7 +36,11 @@ class PreferencesStore {
       this._preferences = this.defaults;
     }
 
-    this.save();
+    // Only write when the file would change, so a normal launch doesn't
+    // rewrite it. A missing or unreadable file counts as changed.
+    if (saved === null || this._render() !== this._readText()) {
+      this.save();
+    }
   }
 
   get defaults() {
@@ -61,25 +65,36 @@ class PreferencesStore {
     }
   }
 
-  /**
-   * Write the file synchronously and atomically (temp file + rename), with
-   * 4-space indent. Like write-json-file, the trailing newline follows the
-   * existing file: kept if it has one, omitted if it does not, added if the
-   * file does not exist yet.
-   */
-  save() {
-    let trailingNewline = "\n";
+  /** The file's raw text, or null when it does not exist. */
+  _readText() {
     try {
-      if (!fs.readFileSync(this.dataStore, "utf8").endsWith("\n")) {
-        trailingNewline = "";
-      }
+      return fs.readFileSync(this.dataStore, "utf8");
     } catch (error) {
       if (error.code !== "ENOENT") {
         throw error;
       }
+      return null;
     }
+  }
 
-    const json = JSON.stringify(this._preferences, null, 4) + trailingNewline;
+  /**
+   * The text save() writes. Like write-json-file, the trailing newline
+   * follows the existing file: kept if it has one, omitted if it does not,
+   * added if the file does not exist yet.
+   */
+  _render() {
+    const existing = this._readText();
+    const trailingNewline =
+      existing !== null && !existing.endsWith("\n") ? "" : "\n";
+    return JSON.stringify(this._preferences, null, 4) + trailingNewline;
+  }
+
+  /**
+   * Write the file synchronously and atomically (temp file + rename), with
+   * 4-space indent.
+   */
+  save() {
+    const json = this._render();
     fs.mkdirSync(path.dirname(this.dataStore), { recursive: true });
     const tempFile = `${this.dataStore}.tmp`;
     fs.writeFileSync(tempFile, json);
@@ -89,6 +104,7 @@ class PreferencesStore {
   /**
    * - value(key): deep clone of the value at the dot path (undefined if absent).
    * - value(key, v): set the dot path (creating intermediate objects), save.
+   * - setMany(entries): set several [key, v] dot paths, save once.
    * - value(undefined, v): deep clone of everything (callers pass "").
    * - value(): undefined (matches electron-preferences; do not rely on it).
    */
@@ -101,6 +117,13 @@ class PreferencesStore {
     } else {
       return clone(this._preferences);
     }
+  }
+
+  setMany(entries) {
+    for (const [key, value] of entries) {
+      this._set(key, value);
+    }
+    this.save();
   }
 
   _get(key) {

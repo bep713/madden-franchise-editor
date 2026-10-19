@@ -2,6 +2,7 @@ const browserify = require("browserify");
 const watchify = require("watchify");
 const fs = require("fs");
 const path = require("path");
+const esbuild = require("esbuild");
 
 const isWatchMode = process.argv.includes("--watch");
 const READY_FILE = path.join(__dirname, ".watcher-ready");
@@ -33,11 +34,6 @@ const bundles = [
     entry: "../renderer/js/settingsManager.js",
     output: "../renderer/js/settingsManager.bundle.js",
     label: "Settings manager",
-  },
-  {
-    entry: "../renderer/js/worker.js",
-    output: "../renderer/js/worker.bundle.js",
-    label: "Worker",
   },
 ];
 
@@ -74,14 +70,31 @@ function createBundler(entry, label) {
 
 function writeBundle(b, output, label) {
   return new Promise((resolve, reject) => {
-    b.bundle((err, buf) => {
+    b.bundle(async (err, buf) => {
       if (err) {
         console.error(`✗ Error bundling ${label}:`, err.message);
         if (!isWatchMode) reject(err);
         return;
       }
 
-      fs.writeFileSync(path.join(__dirname, output), buf);
+      try {
+        // Minify only one-off builds; watch builds stay readable and keep
+        // their inline source maps. keepNames guards against any reliance on
+        // function/class names (e.g. constructor.name).
+        if (!isWatchMode) {
+          const { code } = await esbuild.transform(buf.toString(), {
+            minify: true,
+            keepNames: true,
+          });
+          buf = Buffer.from(code);
+        }
+
+        fs.writeFileSync(path.join(__dirname, output), buf);
+      } catch (writeErr) {
+        console.error(`✗ Error minifying ${label}:`, writeErr.message);
+        reject(writeErr);
+        return;
+      }
       const timestamp = new Date().toLocaleTimeString();
       console.log(`✓ [${timestamp}] ${label} → ${output}`);
       resolve();
@@ -141,12 +154,21 @@ if (isWatchMode) {
 }
 
 // Handsontable is bundled by browserify, so node_modules isn't packaged for it.
-// Its stylesheet is copied next to the app css instead.
+// Its stylesheet is copied next to the app css instead. The fonts are
+// self-hosted the same way (see renderer/sass/_fonts.scss).
+const FONT_FILES = ["roboto", "roboto-mono"].flatMap((font) =>
+  ["latin", "latin-ext"].map((subset) => ({
+    from: `../node_modules/@fontsource/${font}/files/${font}-${subset}-400-normal.woff2`,
+    to: `../renderer/css/vendor/fonts/${font}-${subset}-400-normal.woff2`,
+  })),
+);
+
 const VENDOR_FILES = [
   {
     from: "../node_modules/handsontable/dist/handsontable.full.min.css",
     to: "../renderer/css/vendor/handsontable.full.min.css",
   },
+  ...FONT_FILES,
 ];
 
 function copyVendorFiles() {

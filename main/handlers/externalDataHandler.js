@@ -1,5 +1,12 @@
-const xlsx = require("xlsx");
 const fs = require("fs");
+
+// xlsx takes ~90ms to load, so it is required on first import/export
+// instead of at startup.
+let xlsxModule = null;
+function getXlsx() {
+  if (!xlsxModule) xlsxModule = require("xlsx");
+  return xlsxModule;
+}
 
 const FLOAT_TOLERANCE = 1e-6;
 
@@ -69,6 +76,7 @@ function registerExternalDataHandlers(loggedIpc, franchiseFileManager) {
    */
   loggedIpc.handle("external-data:import", async (event, filePath) => {
     try {
+      const xlsx = getXlsx();
       const buffer = fs.readFileSync(filePath);
       const wb = xlsx.read(buffer, { type: "buffer" });
       const sheet = wb.Sheets[wb.SheetNames[0]];
@@ -86,6 +94,7 @@ function registerExternalDataHandlers(loggedIpc, franchiseFileManager) {
     "external-data:export",
     async (event, filePath, headers, rows) => {
       try {
+        const xlsx = getXlsx();
         const wb = xlsx.utils.book_new();
         const data = [headers, ...rows];
         const ws = xlsx.utils.json_to_sheet(data, { skipHeader: true });

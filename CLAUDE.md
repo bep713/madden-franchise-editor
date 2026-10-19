@@ -13,7 +13,7 @@ The app was recently upgraded from an older Electron that ran renderers with `no
 ```bash
 npm install                 # also runs patch-package (patches/, currently none)
 npm run dev                 # sass watch + browserify watch + electron (NODE_ENV=development), with auto-reload
-npm run build:renderer      # one-off browserify build of the 4 renderer bundles
+npm run build:renderer      # one-off browserify build of the 3 renderer bundles
 npm run sass:build          # compile renderer/sass/app-manifest.scss -> renderer/css/app-manifest.css
 npm run build:app           # electron-builder Windows build (publishes to GitHub releases)
 npm run e2eTest             # all Playwright e2e tests (npx playwright test)
@@ -53,12 +53,12 @@ renderer service (vanilla JS, browserify bundle)
 - **Main** (`main.js`): creates windows, the app menu, auto-updater, the dialog/fs IPC handlers, and a chokidar watcher that warns when the open file changes on disk. It registers every handler module through `createLoggedIpcMain` (`main/utils/ipcLogger.js`), which logs IPC in dev.
 - **`main/services/FranchiseFileManager.js`** owns every `FranchiseFile` instance in `activeFiles: Map<fileId, {file, path}>`. The renderer never holds library objects. It passes a `fileId` and gets back serializable data. The schema directory is `<userData>/schemas` (APPDATA). Schema auto-detection and closest-match selection use `madden-franchise`'s `schemaPicker` against that directory, unless the file embeds its schema or the caller passes `schemaOverride`/`gameYearOverride`.
 - **`main/handlers/*Handler.js`**: each module exports `register*Handlers(ipcMain, franchiseFileManager, ...)` and is wired up at the top of `main.js`. Channel names follow `domain:action`. Long-running work sends fire-and-forget events back with `webContents.send` (for example `franchise:ready`, `franchise:saved`, `franchise:error`).
-- **Preload** (`preload/franchisePreload.js`): the only bridge. All windows (main, schema manager, settings manager, worker) use it with `contextIsolation: true` and `nodeIntegration: false`.
+- **Preload** (`preload/franchisePreload.js`): the only bridge. All windows (main, schema manager, settings manager) use it with `contextIsolation: true` and `nodeIntegration: false`.
 - **Adding an IPC call** takes four edits: the handler in `main/handlers/` (or `FranchiseFileManager.registerIpcHandlers`), its registration in `main.js` if it's a new module, a method on the right `contextBridge` object in the preload, and the renderer call site.
 
 ### Renderer bundling and the `electron` shim
 
-`scripts/build-renderer.js` browserifies four entries: `index.js` → `bundle.js` (main window), `schemaManager.js`, `settingsManager.js` and `worker.js`. It maps `require("electron")` to `renderer/js/electron-shim.js` and ignores `madden-franchise` and some Node builtins. Legacy renderer code that still does `const { ipcRenderer } = require("electron")` goes through this shim. Watch for two quirks:
+`scripts/build-renderer.js` browserifies three entries: `index.js` → `bundle.js` (main window), `schemaManager.js` and `settingsManager.js`. It maps `require("electron")` to `renderer/js/electron-shim.js` and ignores `madden-franchise` and some Node builtins. Legacy renderer code that still does `const { ipcRenderer } = require("electron")` goes through this shim. Watch for two quirks:
 - `ipcRenderer.invoke(name, ...)` calls `window.franchiseAPI[name]` and treats `name` as a **preload method name**, not a channel string. Unknown names silently return `null`.
 - `ipcRenderer.removeListener` removes **all** listeners on that channel.
 

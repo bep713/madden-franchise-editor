@@ -183,6 +183,12 @@ contextBridge.exposeInMainWorld("scheduleAPI", {
 
 // Expose app/dialog API (replaces @electron/remote usage)
 contextBridge.exposeInMainWorld("electronAPI", {
+  // Startup profiling (MFE_PERF=1); see main/services/startupProfiler.js
+  perf: {
+    enabled: process.env.MFE_PERF === "1",
+    report: (payload) => ipcRenderer.invoke("perf:report", payload),
+  },
+
   // Dialog operations
   showSaveDialog: (options) => ipcRenderer.invoke("dialog:show-save", options),
   showOpenDialog: (options) => ipcRenderer.invoke("dialog:show-open", options),

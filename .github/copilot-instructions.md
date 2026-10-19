@@ -43,7 +43,7 @@ npm run e2eTest
 | Renderer | `renderer/index.html`         | Primary UI (welcome, table editor, navigation)   |
 | Preload  | `preload/franchisePreload.js` | Secure bridge between renderer and main          |
 
-Additional windows: `schema-manager.html`, `settings-manager.html`, `worker.html` (stubbed).
+Additional windows: `schema-manager.html`, `settings-manager.html` (both created on demand).
 
 ### Security Model
 
@@ -84,7 +84,7 @@ ipcRenderer.send("open-external-url", url);
 | `main/services/FranchiseFileManager.js` | Central service — manages all franchise file operations, maintains active file map |
 | `main/handlers/`                        | IPC handler modules (10 files), each registers channels with `ipcMain`             |
 | `main/libs/`                            | Binary parsers (`CASBlockParser.js`, `FileParser.js`) for EA CAS block format      |
-| `renderer/js/`                          | Renderer JS — `index.js`, `schemaManager.js`, `settingsManager.js`, `worker.js`    |
+| `renderer/js/`                          | Renderer JS — `index.js`, `schemaManager.js`, `settingsManager.js`    |
 | `renderer/`                             | HTML pages, CSS/SASS, images                                                       |
 | `preload/`                              | Preload scripts exposing secure APIs                                               |
 | `data/`                                 | Static data (team lookups, offsets, preferences schema)                            |

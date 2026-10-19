@@ -3,6 +3,7 @@ const preferencesSchema = require("../../../data/preferencesSchema.json");
 
 const preferencesService = {
   _cache: null,
+  _loadPromise: null,
 };
 
 /**
@@ -19,12 +20,22 @@ window.electronAPI.preferences.onPreferencesUpdate((preferences) => {
  * Load preferences from main process and cache them.
  * Call this once at app startup.
  */
-preferencesService.load = async function () {
-  if (!window.electronAPI || !window.electronAPI.preferences) {
-    throw new Error("Preferences API not available");
-  }
-  this._cache = await window.electronAPI.preferences.get();
-  return this._cache;
+preferencesService.load = function () {
+  this._loadPromise = (async () => {
+    if (!window.electronAPI || !window.electronAPI.preferences) {
+      throw new Error("Preferences API not available");
+    }
+    this._cache = await window.electronAPI.preferences.get();
+    return this._cache;
+  })();
+  return this._loadPromise;
+};
+
+/**
+ * Resolves once the startup load has finished, starting it if it hasn't begun.
+ */
+preferencesService.whenLoaded = function () {
+  return this._loadPromise || this.load();
 };
 
 /**

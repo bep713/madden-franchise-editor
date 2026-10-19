@@ -1,9 +1,9 @@
-const moment = require("moment");
 const EventEmitter = require("events").EventEmitter;
 
 const utilService = require("./utilService");
 const recentFileService = require("./recentFileService");
 const preferencesService = require("./preferencesService");
+const perfService = require("./perfService");
 
 let welcomeService = {};
 welcomeService.name = "welcomeService";
@@ -23,6 +23,7 @@ welcomeService.start = function (file) {
     toggleNavigationLinks(file.type);
     toggleGameIcons(file.type);
   }
+  perfService.mark("renderer:welcome-interactive");
 };
 
 welcomeService.addRecentFile = async (filePath) => {
@@ -45,6 +46,16 @@ async function addVersionNumber() {
   const version = document.querySelector(".version");
   const appVersion = await window.electronAPI.getVersion();
   version.innerHTML = `v${appVersion}`;
+}
+
+// Same output as moment(time).format("MM/DD/YYYY hh:mm A")
+function formatAccessTime(time) {
+  const date = new Date(time);
+  if (isNaN(date.getTime())) return "Invalid date";
+
+  const pad = (n) => String(n).padStart(2, "0");
+  const hours = date.getHours();
+  return `${pad(date.getMonth() + 1)}/${pad(date.getDate())}/${date.getFullYear()} ${pad(hours % 12 || 12)}:${pad(date.getMinutes())} ${hours < 12 ? "AM" : "PM"}`;
 }
 
 function addListeners() {
@@ -192,6 +203,8 @@ function addOpenSchemaViewerListener() {
 async function addRecentFiles() {
   await recentFileService.initialize();
   await refreshRecentFilesList();
+  perfService.mark("renderer:recent-files-rendered");
+  perfService.report();
 }
 
 async function refreshRecentFilesList() {
@@ -233,7 +246,7 @@ async function refreshRecentFilesList() {
 
       const fileAccessTime = document.createElement("span");
       fileAccessTime.classList.add("file-access-time");
-      fileAccessTime.innerHTML = moment(file.time).format("MM/DD/YYYY hh:mm A");
+      fileAccessTime.innerHTML = formatAccessTime(file.time);
 
       filePathDiv.appendChild(fileNameSpan);
       filePathDiv.appendChild(filePathSpan);

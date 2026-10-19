@@ -34,7 +34,43 @@ function initialize() {
     defaults: defaults,
   });
 
+  // The store's merge is one level deep, so a key added to a nested section
+  // (e.g. a new settingsManager page flag) is still missing. Fill it here,
+  // never overwriting a saved value, and write only if something was added.
+  const current = preferencesInstance.value(undefined, "");
+  if (fillMissingKeys(defaults, current)) {
+    preferencesInstance.setMany(Object.entries(current));
+  }
+
   return preferencesInstance;
+}
+
+/**
+ * Recursively copy keys from `defaults` that are null/undefined in `target`.
+ * Same rules as the renderer's setMissingKeys: recurse into plain objects
+ * only, never overwrite an existing value. Returns true if anything was filled.
+ */
+function fillMissingKeys(defaults, target) {
+  let changed = false;
+  for (const key of Object.keys(defaults)) {
+    const defaultValue = defaults[key];
+    const current = target[key];
+    if (current === null || current === undefined) {
+      // A null default over a stored null is not a fill.
+      if (current === null && defaultValue === null) continue;
+      target[key] = structuredClone(defaultValue);
+      changed = true;
+    } else if (
+      defaultValue !== null &&
+      typeof defaultValue === "object" &&
+      !Array.isArray(defaultValue) &&
+      typeof current === "object" &&
+      !Array.isArray(current)
+    ) {
+      if (fillMissingKeys(defaultValue, current)) changed = true;
+    }
+  }
+  return changed;
 }
 
 /**
@@ -96,13 +132,17 @@ function registerPreferencesHandlers(
         watchedBefore.set(keyPath, preferencesInstance.value(keyPath));
       }
 
-      // Write each top-level section
+      // Write each top-level section, saving once
+      const entries = [];
       for (const [section, values] of Object.entries(preferences)) {
         if (typeof values === "object" && !Array.isArray(values)) {
           for (const [key, value] of Object.entries(values)) {
-            preferencesInstance.value(`${section}.${key}`, value);
+            entries.push([`${section}.${key}`, value]);
           }
         }
+      }
+      if (entries.length > 0) {
+        preferencesInstance.setMany(entries);
       }
 
       if (franchiseFileManager?.applyPreferenceSettings) {

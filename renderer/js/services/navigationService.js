@@ -1,33 +1,113 @@
 const Tab = require("./tabs/Tab");
 const TableEditorTab = require("./tabs/TableEditorTab");
 
-const Selectr = require("../libs/selectr/selectr");
 const TestUtility = require("./test-utils/TestUtility");
 
 const utilService = require("./utilService");
 const menuService = require("./menuService.js");
 const updateService = require("./updateService");
 const welcomeService = require("./welcomeService");
-const scheduleService = require("./scheduleService");
 const reloadFileService = require("./reloadFileService");
 const savedSchemaService = require("./savedSchemaService");
-const schemaViewerService = require("./schemaViewerService");
-const abilityEditorService = require("./abilityEditorService");
 const schemaMismatchService = require("./schemaMismatchService");
 const preferencesService = require("./preferencesService");
+const perfService = require("./perfService");
 const ftcModalService = require("./ftcModalService.js");
 
-const TableEditorWrapper = require("./table-editor/TableEditorWrapper");
-const tableEditorWrapper = new TableEditorWrapper();
-
-const services = [
-  welcomeService,
-  scheduleService,
-  tableEditorWrapper,
-  schemaViewerService,
-  abilityEditorService,
-];
 const navigationData = require("../../../data/navigation.json");
+
+// The editors are heavy to load and evaluate, so each one is required on first
+// use. Everything that touches an editor goes through its getter, which also
+// attaches the navigation data and wires the listeners that used to be set up
+// eagerly in setupEvents(). Only welcome is needed before a file is opened.
+let scheduleService = null;
+let schemaViewerService = null;
+let abilityEditorService = null;
+let tableEditorWrapper = null;
+
+function getScheduleService() {
+  if (!scheduleService) {
+    scheduleService = require("./scheduleService");
+    attachNavigationData(scheduleService);
+
+    scheduleService.eventEmitter.on(
+      "open-table-editor",
+      function (tableId, index) {
+        getTableEditorWrapper().initialTableToSelect = {
+          tableId: tableId,
+          recordIndex: index,
+          columnIndex: 0,
+        };
+
+        navigationService.runCloseFunction();
+
+        let scheduleTab = navigationService.getTabByName("Schedule");
+        scheduleTab.isActive = false;
+
+        // check if placeholder tab exists
+        const placeholderTab = navigationService.getTabByName("Open Table...");
+        if (placeholderTab) {
+          navigationService.onTableEditorClicked();
+        } else {
+          navigationService.onNewTabButtonClicked();
+        }
+      },
+    );
+  }
+  return scheduleService;
+}
+
+function getSchemaViewerService() {
+  if (!schemaViewerService) {
+    schemaViewerService = require("./schemaViewerService");
+    attachNavigationData(schemaViewerService);
+
+    schemaViewerService.eventEmitter.on("change-schema", function () {
+      showSchemaManager();
+    });
+  }
+  return schemaViewerService;
+}
+
+// Hidden in navigation.json and not opened from anywhere, kept for parity
+function getAbilityEditorService() {
+  if (!abilityEditorService) {
+    abilityEditorService = require("./abilityEditorService");
+    attachNavigationData(abilityEditorService);
+  }
+  return abilityEditorService;
+}
+
+function getTableEditorWrapper() {
+  if (!tableEditorWrapper) {
+    const TableEditorWrapper = require("./table-editor/TableEditorWrapper");
+    tableEditorWrapper = new TableEditorWrapper();
+    attachNavigationData(tableEditorWrapper);
+
+    tableEditorWrapper.eventEmitter.on("table-changed", (data) => {
+      let tab = navigationService.getActiveTab();
+      tab.name = `${data.tableId} - ${data.name}`;
+      tab.tableId = data.tableId;
+
+      navigationService.generateNavigation();
+    });
+
+    tableEditorWrapper.eventEmitter.on("table-editor:new-tab", () => {
+      const previouslyActiveTab = navigationService.getActiveTab();
+
+      if (previouslyActiveTab instanceof TableEditorTab) {
+        previouslyActiveTab.tableColumn =
+          tableEditorWrapper.lastSelectedCell.column;
+        previouslyActiveTab.tableRow = tableEditorWrapper.lastSelectedCell.row;
+        previouslyActiveTab.tabHistory =
+          tableEditorWrapper.selectedTableEditor.navSteps;
+      }
+
+      navigationService.onNewTabButtonClicked();
+    });
+  }
+  return tableEditorWrapper;
+}
 
 // These will be populated after app is ready
 let PATH_TO_DOCUMENTS = null;
@@ -40,7 +120,7 @@ async function initializePaths() {
 initializePaths();
 
 setupEvents();
-attachServicesToNavigationData();
+attachNavigationData(welcomeService);
 addIpcListeners();
 
 reloadFileService.initialize();
@@ -240,12 +320,10 @@ navigationService.generateNavigation = function () {
           previouslyActiveTab.isActive = false;
 
           if (previouslyActiveTab instanceof TableEditorTab) {
-            previouslyActiveTab.tableRow =
-              tableEditorWrapper.lastSelectedCell.row;
-            previouslyActiveTab.tableColumn =
-              tableEditorWrapper.lastSelectedCell.column;
-            previouslyActiveTab.tabHistory =
-              tableEditorWrapper.selectedTableEditor.navSteps;
+            const editor = getTableEditorWrapper();
+            previouslyActiveTab.tableRow = editor.lastSelectedCell.row;
+            previouslyActiveTab.tableColumn = editor.lastSelectedCell.column;
+            previouslyActiveTab.tabHistory = editor.selectedTableEditor.navSteps;
           }
         }
 
@@ -296,7 +374,7 @@ navigationService.onNewTabClicked = function () {
   const activeTab = navigationService.getActiveTab();
 
   if (activeTab.tableId >= 0) {
-    tableEditorWrapper.initialTableToSelect = {
+    getTableEditorWrapper().initialTableToSelect = {
       tableId: activeTab.tableId,
       recordIndex: activeTab.tableRow,
       columnIndex: activeTab.tableColumn,
@@ -309,7 +387,9 @@ navigationService.onNewTabClicked = function () {
 navigationService.onHomeClicked = async function () {
   onNavigate(welcomeService);
   const navToken = currentNavToken;
+  perfService.mark("renderer:welcome-html-requested");
   if (!(await navigationService.loadPage("welcome.html", navToken))) return;
+  perfService.mark("renderer:welcome-visible");
   postGenerateNavigation();
 
   welcomeService.start(navigationService.currentlyOpenedFile);
@@ -317,6 +397,7 @@ navigationService.onHomeClicked = async function () {
 
 navigationService.onScheduleEditorClicked = async function () {
   navigationService.selectTab("Schedule");
+  const scheduleService = getScheduleService();
   onNavigate(scheduleService);
   const navToken = currentNavToken;
   if (!(await navigationService.loadPage("schedule.html", navToken))) return;
@@ -369,6 +450,7 @@ navigationService.onTableEditorClicked = async function () {
     }
   }
 
+  const tableEditorWrapper = getTableEditorWrapper();
   onNavigate(tableEditorWrapper);
   const navToken = currentNavToken;
   if (!(await navigationService.loadPage("table-editor.html", navToken))) return;
@@ -391,6 +473,7 @@ navigationService.onTableEditorClicked = async function () {
 
 navigationService.onSchemaViewerClicked = async function () {
   navigationService.selectTab("Schemas");
+  const schemaViewerService = getSchemaViewerService();
   onNavigate(schemaViewerService);
   const navToken = currentNavToken;
   if (!(await navigationService.loadPage("schema-viewer.html", navToken)))
@@ -440,7 +523,7 @@ navigationService.runCloseFunction = function () {
 };
 
 if (window.electronAPI?.isTest) {
-  new TestUtility(welcomeService, tableEditorWrapper);
+  new TestUtility(welcomeService, getTableEditorWrapper);
 }
 
 module.exports = navigationService;
@@ -650,7 +733,10 @@ function setupEvents() {
       navigationService.currentlyOpenedFile.gameYear = metadata.gameYear;
       navigationService.currentlyOpenedFile.type = metadata.type;
 
-      tableEditorWrapper.initialTableToSelect = null; // reset table to select on new file
+      // reset table to select on new file (a not-yet-loaded editor has none)
+      if (tableEditorWrapper) {
+        tableEditorWrapper.initialTableToSelect = null;
+      }
       navigationService.generateMainNavigationTabs();
 
       window.electronAPI.send("file-loaded", {
@@ -694,56 +780,6 @@ function setupEvents() {
 
   welcomeService.eventEmitter.on("open-schema-viewer", function () {
     navigationService.onSchemaViewerClicked();
-  });
-
-  scheduleService.eventEmitter.on(
-    "open-table-editor",
-    function (tableId, index) {
-      tableEditorWrapper.initialTableToSelect = {
-        tableId: tableId,
-        recordIndex: index,
-        columnIndex: 0,
-      };
-
-      navigationService.runCloseFunction();
-
-      let scheduleTab = navigationService.getTabByName("Schedule");
-      scheduleTab.isActive = false;
-
-      // check if placeholder tab exists
-      const placeholderTab = navigationService.getTabByName("Open Table...");
-      if (placeholderTab) {
-        navigationService.onTableEditorClicked();
-      } else {
-        navigationService.onNewTabButtonClicked();
-      }
-    },
-  );
-
-  schemaViewerService.eventEmitter.on("change-schema", function () {
-    showSchemaManager();
-  });
-
-  tableEditorWrapper.eventEmitter.on("table-changed", (data) => {
-    let tab = navigationService.getActiveTab();
-    tab.name = `${data.tableId} - ${data.name}`;
-    tab.tableId = data.tableId;
-
-    navigationService.generateNavigation();
-  });
-
-  tableEditorWrapper.eventEmitter.on("table-editor:new-tab", () => {
-    const previouslyActiveTab = navigationService.getActiveTab();
-
-    if (previouslyActiveTab instanceof TableEditorTab) {
-      previouslyActiveTab.tableColumn =
-        tableEditorWrapper.lastSelectedCell.column;
-      previouslyActiveTab.tableRow = tableEditorWrapper.lastSelectedCell.row;
-      previouslyActiveTab.tabHistory =
-        tableEditorWrapper.selectedTableEditor.navSteps;
-    }
-
-    navigationService.onNewTabButtonClicked();
   });
 
   window.addEventListener("resize", () => {
@@ -790,11 +826,9 @@ function showSchemaManager() {
   });
 }
 
-function attachServicesToNavigationData() {
-  services.forEach((service) => {
-    service.navigationData = navigationData.items.find((nav) => {
-      return nav.service === service.name;
-    });
+function attachNavigationData(service) {
+  service.navigationData = navigationData.items.find((nav) => {
+    return nav.service === service.name;
   });
 }
 
@@ -802,7 +836,17 @@ function appendNavigation() {
   navigationService.generateNavigation();
 }
 
-function conditionallyShowCheckForUpdatesNotification() {
+async function conditionallyShowCheckForUpdatesNotification() {
+  // Prefs load in parallel with startup, so wait for them rather than reading
+  // an empty cache and always showing the prompt.
+  try {
+    await preferencesService.whenLoaded();
+  } catch {
+    // the failure is logged by index.js; treat the setting as unset
+  }
+  perfService.mark("renderer:update-prompt-check", {
+    prefsLoaded: preferencesService.get() != null,
+  });
   const checkForUpdates = preferencesService.getValue(
     "general.checkForUpdates",
   );

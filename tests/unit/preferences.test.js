@@ -97,11 +97,83 @@ test("defaults are merged one level deep", async () => {
   });
   // Missing sections come from the defaults.
   assert.deepStrictEqual(prefs.gameVersions, defaults.gameVersions);
-  // One level only: a saved nested object replaces its default wholesale.
-  assert.deepStrictEqual(prefs.settingsManager.appVersions, { "4_0_0": true });
+  // Main then fills missing nested keys without touching saved ones.
+  assert.deepStrictEqual(prefs.settingsManager.appVersions, {
+    ...defaults.settingsManager.appVersions,
+    "4_0_0": true,
+  });
   assert.deepStrictEqual(prefs.settingsManager.general, defaults.settingsManager.general);
   // Unknown sections are kept.
   assert.deepStrictEqual(prefs.legacy, { x: 1 });
+});
+
+/** Count fs.writeFileSync calls made by `fn` (the store writes via a temp file). */
+async function countWrites(fn) {
+  const orig = fs.writeFileSync;
+  let writes = 0;
+  fs.writeFileSync = (...args) => {
+    writes++;
+    return orig.apply(fs, args);
+  };
+  try {
+    await fn();
+  } finally {
+    fs.writeFileSync = orig;
+  }
+  return writes;
+}
+
+test("an unchanged load does not rewrite the file", async () => {
+  boot(); // first launch creates the file
+  const before = fs.readFileSync(prefsFile(), "utf8");
+  const writes = await countWrites(() => boot());
+  assert.equal(writes, 0);
+  assert.equal(fs.readFileSync(prefsFile(), "utf8"), before);
+});
+
+test("a load that changes something still writes", async () => {
+  boot();
+  const prefs = JSON.parse(fs.readFileSync(prefsFile(), "utf8"));
+  delete prefs.general.autoSave;
+  fs.writeFileSync(prefsFile(), json(prefs));
+  const writes = await countWrites(() => boot());
+  assert.equal(writes, 1);
+  assert.deepStrictEqual(
+    JSON.parse(fs.readFileSync(prefsFile(), "utf8")).general.autoSave,
+    boot().handler.getPreferenceDefaults().general.autoSave,
+  );
+});
+
+test("a missing nested settingsManager key is filled from the defaults", async () => {
+  const { handler } = boot();
+  const defaults = handler.getPreferenceDefaults();
+  const saved = JSON.parse(fs.readFileSync(prefsFile(), "utf8"));
+  saved.settingsManager.appVersions = { "4_0_0": true };
+  delete saved.settingsManager.general.autoSaveSet;
+  saved.settingsManager.general.defaultEditorSet = true;
+
+  const { ipc } = boot(json(saved));
+  const prefs = await ipc.invoke("preferences:get");
+  assert.equal(prefs.settingsManager.general.autoSaveSet, false);
+  assert.equal(prefs.settingsManager.general.defaultEditorSet, true);
+  assert.equal(prefs.settingsManager.appVersions["4_0_0"], true);
+  assert.deepStrictEqual(
+    Object.keys(prefs.settingsManager.appVersions).sort(),
+    Object.keys(defaults.settingsManager.appVersions).sort(),
+  );
+  // ...and the fill is persisted.
+  assert.deepStrictEqual(JSON.parse(fs.readFileSync(prefsFile(), "utf8")), prefs);
+});
+
+test("preferences:set writes the file once however many keys it sets", async () => {
+  const { ipc } = boot();
+  const writes = await countWrites(() =>
+    ipc.invoke("preferences:set", {
+      general: { autoSave: [], autoUnempty: [] },
+      gameVersions: { madden24Directory: "/games/madden24" },
+    }),
+  );
+  assert.equal(writes, 1);
 });
 
 test("preferences:set changes only the given keys and survives a restart", async () => {
