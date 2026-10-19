@@ -306,7 +306,8 @@ async function openFileFromPath(filePath) {
     utilService.show(document.querySelector(".loader-wrapper"));
     perfService.mark("open:loader-shown");
 
-    setTimeout(async () => {
+    // Two frames so the loader paints before the open work starts
+    requestAnimationFrame(() => requestAnimationFrame(async () => {
       welcomeService.eventEmitter.emit("open-file", filePath);
       await recentFileService.addFile(filePath);
       // Non-home default editors are opened by navigationService once the file is open
@@ -314,7 +315,7 @@ async function openFileFromPath(filePath) {
       if (!editorToOpen || editorToOpen === "open-home") {
         showOpenedFileLinks();
       }
-    }, 50);
+    }));
   } else {
     window.electronAPI.showMessageBox({
       type: "error",

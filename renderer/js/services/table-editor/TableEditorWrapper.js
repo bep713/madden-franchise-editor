@@ -3,6 +3,7 @@ const { ipcRenderer } = require("electron");
 
 const utilService = require("../utilService");
 const perfService = require("../perfService");
+const { getFileMetadata } = require("../metadataCache");
 const TableEditorView = require("./TableEditorView");
 const pinnedTableService = require("../pinnedTableService");
 const ExternalDataHandler = require("./ExternalDataHandler");
@@ -52,7 +53,7 @@ class TableEditorWrapper {
     this._addEventListeners();
 
     // Get file metadata via IPC
-    const metadata = await window.franchiseAPI.getMetadata(fileId);
+    const metadata = await getFileMetadata(fileId);
     this.fileMetadata = metadata;
     perfService.mark("open:te-metadata");
 
