@@ -13,6 +13,7 @@ const zlib = require("zlib");
 const { Readable } = require("stream");
 const { decodeBlock } = require("../libs/lz4Block");
 const startupProfiler = require("./startupProfiler");
+const { detectFormat } = require("../utils/detectFormat");
 
 /**
  * Manages FranchiseFile instances in the main process.
@@ -1150,10 +1151,16 @@ class FranchiseFileManager {
       "franchise:get-metadata-from-file-path",
       async (event, filePath) => {
         startupProfiler.mark("open:handler-prepass-start");
-        const tempFile = await FranchiseFile.create(filePath);
-        const metadata = this._buildMetadata(tempFile);
-        startupProfiler.mark("open:handler-prepass-end");
-        return metadata;
+        // Only `format` is needed here; sniff the header instead of parsing.
+        let format = await detectFormat(filePath);
+        if (!format) {
+          const tempFile = await FranchiseFile.create(filePath, {
+            autoParse: false,
+          });
+          format = tempFile.type?.format;
+        }
+        startupProfiler.mark("open:handler-prepass-end", { format });
+        return { format };
       },
     );
 
