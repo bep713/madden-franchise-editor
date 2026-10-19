@@ -11,6 +11,8 @@ const paint = [];
 const longtasks = [];
 const observers = [];
 let reported = false;
+let sentMarks = 0;
+let sentLongtasks = 0;
 let onPaint = null;
 
 function epoch(startTime) {
@@ -18,7 +20,7 @@ function epoch(startTime) {
 }
 
 function mark(name, detail) {
-  if (!enabled || reported) return;
+  if (!enabled) return;
   marks.push({
     name,
     t: epoch(performance.now()),
@@ -134,6 +136,8 @@ async function report() {
     },
   };
 
+  sentMarks = marks.length;
+  sentLongtasks = longtasks.length;
   try {
     await window.electronAPI.perf.report(payload);
   } catch (err) {
@@ -141,4 +145,63 @@ async function report() {
   }
 }
 
-module.exports = { enabled, mark, report };
+// File-open profiling: sends marks and longtasks recorded since the startup report.
+async function reportOpen() {
+  if (!enabled) return;
+  observers.forEach((po) => {
+    try {
+      po.takeRecords().forEach((e) => {
+        if (e.entryType === "longtask") {
+          longtasks.push({ t: epoch(e.startTime), duration: e.duration });
+        }
+      });
+    } catch (err) {
+      // ignore
+    }
+  });
+  const payload = {
+    marks: marks.slice(sentMarks),
+    longtasks: longtasks.slice(sentLongtasks),
+  };
+  sentMarks = marks.length;
+  sentLongtasks = longtasks.length;
+  try {
+    await window.electronAPI.perf.reportOpen(payload);
+  } catch (err) {
+    console.warn("perf open report failed", err);
+  }
+}
+
+let openPending = false;
+let interactiveHook = null;
+
+// Start of an open; arms the next openInteractive().
+function openRequested() {
+  if (!enabled) return;
+  openPending = true;
+  mark("open:requested");
+}
+
+// First usable paint of whatever the open lands on; fires once per open.
+function openInteractive() {
+  if (!enabled || !openPending) return;
+  openPending = false;
+  mark("open:interactive");
+  if (interactiveHook) setTimeout(interactiveHook, 500); // let trailing main-process marks land first
+}
+
+function onOpenInteractive(fn) {
+  interactiveHook = fn;
+}
+
+module.exports = {
+  enabled,
+  openRequested,
+  openInteractive,
+  onOpenInteractive,
+  openPath: enabled ? window.electronAPI.perf.openPath || null : null,
+  openWarm: enabled ? !!window.electronAPI.perf.openWarm : false,
+  mark,
+  report,
+  reportOpen,
+};

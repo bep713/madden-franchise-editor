@@ -2,6 +2,7 @@ const Selectr = require("../../libs/selectr/selectr");
 const { default: Handsontable } = require("handsontable");
 
 const utilService = require("../utilService");
+const perfService = require("../perfService");
 const contextMenuService = require("./contextMenuService");
 const referenceViewerService = require("../referenceViewerService");
 const preferencesService = require("../preferencesService");
@@ -446,6 +447,7 @@ class TableEditorView {
     try {
       // Fetch table list via IPC
       this.tableList = await window.franchiseAPI.getTableList(this.fileId);
+      perfService.mark("open:te-tablelist");
 
       // The view was torn down while the table list was loading
       if (this.isDestroyed) return;
@@ -470,6 +472,7 @@ class TableEditorView {
       this.tableSelector = new Selectr(tableSelector, {
         data: tableChoices,
       });
+      perfService.mark("open:te-selectr");
 
       const backLink = document.querySelector(".back-link");
 

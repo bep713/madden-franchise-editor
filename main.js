@@ -523,11 +523,14 @@ function addIpcListeners() {
   ipcMain.on("file-loaded", function (event, file) {
     currentFilePath = file.path;
     currentFileId = file.fileId || "";
+    startupProfiler.mark("open:file-loaded-recv");
     loggedMain.send("file-loaded", file);
 
     setCurrentWindowTitle(`${baseWindowTitle} - ${currentFilePath}`);
     enableFileMenuItems();
+    startupProfiler.mark("open:watch-start");
     watchFile(currentFilePath);
+    startupProfiler.mark("open:watch-end");
   });
 
   ipcMain.on("reveal-in-explorer", function () {
@@ -667,6 +670,12 @@ function addIpcListeners() {
   if (startupProfiler.enabled) {
     ipcMain.handle("perf:report", (event, payload) => {
       startupProfiler.addRendererMarks(
+        startupProfiler.windowNameFor(event.sender),
+        payload,
+      );
+    });
+    ipcMain.handle("perf:report-open", (event, payload) => {
+      startupProfiler.addOpenMarks(
         startupProfiler.windowNameFor(event.sender),
         payload,
       );

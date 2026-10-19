@@ -1,5 +1,6 @@
 const EventEmitter = require("events");
 const utilService = require("./utilService");
+const perfService = require("./perfService");
 
 let schemaViewerService = {};
 schemaViewerService.name = "schemaViewerService";
@@ -13,6 +14,7 @@ schemaViewerService.expectedSchemaVersion = null;
 schemaViewerService.eventEmitter = new EventEmitter();
 
 schemaViewerService.start = async function (fileId) {
+  perfService.mark("open:schema-viewer-start");
   utilService.show(document.querySelector(".loader-wrapper"));
   schemaViewerService.currentOffset = 0;
 
@@ -21,6 +23,8 @@ schemaViewerService.start = async function (fileId) {
   schemaViewerService.fileId = fileId;
   await schemaViewerService.runStartupTasks();
   utilService.hide(document.querySelector(".loader-wrapper"));
+  perfService.mark("open:schema-viewer-end");
+  perfService.openInteractive();
 };
 
 schemaViewerService.runStartupTasks = async function () {

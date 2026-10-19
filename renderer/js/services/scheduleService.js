@@ -2,6 +2,7 @@ const EventEmitter = require("events");
 
 const Selectr = require("../libs/selectr/selectr");
 const utilService = require("./utilService");
+const perfService = require("./perfService");
 const teamData = require("../../../data/teamData.json");
 const dayOfWeekData = require("../../../data/dayOfWeekData.json");
 const seasonWeekData = require("../../../data/seasonWeekData.json");
@@ -20,6 +21,7 @@ scheduleService.fileId = null;
 scheduleService.eventEmitter = new EventEmitter();
 
 scheduleService.loadSchedule = async function (fileId) {
+  perfService.mark("open:schedule-start");
   utilService.show(document.querySelector(".loader-wrapper"));
 
   // Fetch file metadata via IPC to get gameYear
@@ -38,6 +40,8 @@ scheduleService.loadSchedule = async function (fileId) {
       utilService.hide(document.getElementById("error-message"));
       this.loadGamesByWeek(0);
       utilService.hide(document.querySelector(".loader-wrapper"));
+      perfService.mark("open:schedule-end");
+      perfService.openInteractive();
     });
 
     scheduleService.file.schedule.on("error", (err) => {

@@ -204,7 +204,28 @@ async function addRecentFiles() {
   await recentFileService.initialize();
   await refreshRecentFilesList();
   perfService.mark("renderer:recent-files-rendered");
-  perfService.report();
+  await perfService.report();
+  startPerfOpen();
+}
+
+// File-open profiling (MFE_PERF_OPEN): open the file once the startup report is out,
+// optionally a second time (warm), then send the open marks.
+let perfOpenStarted = false;
+function startPerfOpen() {
+  // the welcome page (and so addRecentFiles) runs again whenever home is reloaded
+  if (!perfService.openPath || perfOpenStarted) return;
+  perfOpenStarted = true;
+  let opens = 0;
+  const total = perfService.openWarm ? 2 : 1;
+  perfService.onOpenInteractive(() => {
+    opens++;
+    if (opens < total) {
+      openFileFromPath(perfService.openPath);
+    } else {
+      perfService.reportOpen();
+    }
+  });
+  openFileFromPath(perfService.openPath);
 }
 
 async function refreshRecentFilesList() {
@@ -279,9 +300,11 @@ async function openFile() {
 }
 
 async function openFileFromPath(filePath) {
+  perfService.openRequested();
   const exists = await window.electronAPI.fs.exists(filePath);
   if (exists) {
     utilService.show(document.querySelector(".loader-wrapper"));
+    perfService.mark("open:loader-shown");
 
     setTimeout(async () => {
       welcomeService.eventEmitter.emit("open-file", filePath);

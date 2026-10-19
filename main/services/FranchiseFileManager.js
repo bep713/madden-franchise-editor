@@ -12,6 +12,7 @@ const path = require("path");
 const zlib = require("zlib");
 const { Readable } = require("stream");
 const { decodeBlock } = require("../libs/lz4Block");
+const startupProfiler = require("./startupProfiler");
 
 /**
  * Manages FranchiseFile instances in the main process.
@@ -309,6 +310,7 @@ class FranchiseFileManager {
     const settings = this._buildFileSettings(options);
 
     return new Promise((resolve, reject) => {
+      startupProfiler.mark("open:parse-start");
       const file = new FranchiseFile(filePath, settings);
       const fileId = metaOptions.fileId ?? this._generateFileId();
 
@@ -317,8 +319,10 @@ class FranchiseFileManager {
       });
 
       file.on("ready", () => {
+        startupProfiler.mark("open:parse-ready");
         file.off("error", reject);
         this._applyPreferencesToFile(file);
+        startupProfiler.mark("open:prefs-applied");
 
         // Assume m22 if no game year is set
         if (!file._gameYear) {
@@ -351,6 +355,7 @@ class FranchiseFileManager {
         // Back up the original bytes on user-initiated opens only
         // (internal reopens pass an existing fileId)
         if (!metaOptions.fileId) {
+          startupProfiler.mark("open:backup-start");
           this._backupFile(file);
         }
 
@@ -375,6 +380,7 @@ class FranchiseFileManager {
           file.rawContents,
         ),
       )
+      .then(() => startupProfiler.mark("open:backup-end"))
       .catch((err) => {
         console.warn("Failed to backup file:", err);
       });
@@ -416,6 +422,17 @@ class FranchiseFileManager {
    * @returns {object}
    */
   _buildMetadata(file) {
+    const metadata = this._buildMetadataUntimed(file);
+    if (startupProfiler.enabled) {
+      startupProfiler.mark("open:metadata-built", {
+        tableCount: metadata.tableCount,
+        bytes: Buffer.byteLength(JSON.stringify(metadata)),
+      });
+    }
+    return metadata;
+  }
+
+  _buildMetadataUntimed(file) {
     return {
       gameYear: file._gameYear,
       type: file.type,
@@ -1132,8 +1149,11 @@ class FranchiseFileManager {
     loggedIpc.handle(
       "franchise:get-metadata-from-file-path",
       async (event, filePath) => {
+        startupProfiler.mark("open:handler-prepass-start");
         const tempFile = await FranchiseFile.create(filePath);
-        return this._buildMetadata(tempFile);
+        const metadata = this._buildMetadata(tempFile);
+        startupProfiler.mark("open:handler-prepass-end");
+        return metadata;
       },
     );
 
