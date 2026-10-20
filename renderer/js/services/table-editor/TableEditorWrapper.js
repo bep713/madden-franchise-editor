@@ -51,6 +51,7 @@ class TableEditorWrapper {
 
     this._addIpcListeners();
     this._addEventListeners();
+    pinnedTableService.prefetch();
 
     // Get file metadata via IPC
     const metadata = await getFileMetadata(fileId);

@@ -78,3 +78,16 @@ Results: `test/perf-results/20261019-2012-after-step5-086a6c6/` (c27 open-home, 
 | c27 | home | cold | 3451 | 3430 | | 3479 |
 
 Median is unchanged, but the warm tail is gone (p90 -35%). The remaining c27 cost is library parse (~3.4 s cold, ~1.8 s warm), out of scope for the app. Unit tests (49) and e2e (24) pass.
+
+## After step 4 (prefetch pins.json during table editor start)
+
+Results: `test/perf-results/20261019-2029-after-step4-4d6ba3c/` (table editor, both files, 10 runs + warm). `TableEditorWrapper.start` now begins reading `pins.json` immediately, so it overlaps the table list fetch and Selectr build. Pins still wait for the table list before migrating. Medians, ms, `M-editor-ready`:
+
+| file | open | after steps 1-3 | after step 4 |
+|---|---|---|---|
+| m22 | cold | 375 | 377 |
+| m22 | warm | 165 | 122 |
+| c27 | cold | 404 | 398 |
+| c27 | warm | 203 | 161 |
+
+Cold is unchanged: it is dominated by first-time page load and Handsontable init, not by the pins read. Warm improves ~40 ms (the previous warm medians also predate step 5, so part of the gain may come from it). The page-HTML-fetch-during-`openFile` overlap from the plan was not attempted: it would need `navigationService` to speculatively load the editor before open succeeds, for an expected gain under 130 ms cold. Unit tests (49) and e2e (24) pass.
