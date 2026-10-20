@@ -567,6 +567,9 @@ function addIpcListeners() {
   });
 
   window.electronAPI.on("close-file", function () {
+    if (navigationService.currentlyOpenedFile.fileId) {
+      window.franchiseAPI.closeFile(navigationService.currentlyOpenedFile.fileId);
+    }
     navigationService.currentlyOpenedFile.path = null;
     navigationService.currentlyOpenedFile.fileId = null;
     navigationService.currentlyOpenedFile.metadata = null;
@@ -707,6 +710,13 @@ function setupEvents() {
           openOptions.gameYearOverride = selectedOverrides.gameYear;
           openOptions.gameTypeOverride = selectedOverrides.gameType;
         }
+      }
+
+      // Release the previously open file so two parsed files never coexist in main
+      const previousFileId = navigationService.currentlyOpenedFile.fileId;
+      if (previousFileId) {
+        navigationService.currentlyOpenedFile.fileId = null;
+        await window.franchiseAPI.closeFile(previousFileId);
       }
 
       perfService.mark("open:openfile-ipc-start");

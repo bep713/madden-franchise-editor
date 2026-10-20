@@ -67,3 +67,14 @@ Results: `test/perf-results/20261018-2209-after-step1-3-1a42754/`. Medians, ms.
 | c27 | home | warm | 6119 | 1851 | 2 -> 1 |
 
 Pre-pass is now ~8 ms cold / ~2 ms warm. Cold m22 home (540) misses the <250 ms target because the library parse (~480 ms cold) now runs once but un-warmed; the pre-pass previously warmed it. Warm opens meet the targets. The c27 warm-parse slowdown shrank (3.7 s -> 1.8 s median) but p90 is still 2.9 s.
+
+## After step 5 (close the previous file on re-open)
+
+Results: `test/perf-results/20261019-2012-after-step5-086a6c6/` (c27 open-home, 10 runs). No caller ever invoked `franchiseAPI.closeFile`, so every opened file stayed in `activeFiles` for the session. The renderer now closes the previous `fileId` before opening a new one, and on the `close-file` menu event.
+
+| file | editor | open | median before | median after | p90 before | p90 after |
+|---|---|---|---|---|---|---|
+| c27 | home | warm | 1851 | 1841 | 2900 | 1895 |
+| c27 | home | cold | 3451 | 3430 | | 3479 |
+
+Median is unchanged, but the warm tail is gone (p90 -35%). The remaining c27 cost is library parse (~3.4 s cold, ~1.8 s warm), out of scope for the app. Unit tests (49) and e2e (24) pass.
