@@ -204,7 +204,28 @@ async function addRecentFiles() {
   await recentFileService.initialize();
   await refreshRecentFilesList();
   perfService.mark("renderer:recent-files-rendered");
-  perfService.report();
+  await perfService.report();
+  startPerfOpen();
+}
+
+// File-open profiling (MFE_PERF_OPEN): open the file once the startup report is out,
+// optionally a second time (warm), then send the open marks.
+let perfOpenStarted = false;
+function startPerfOpen() {
+  // the welcome page (and so addRecentFiles) runs again whenever home is reloaded
+  if (!perfService.openPath || perfOpenStarted) return;
+  perfOpenStarted = true;
+  let opens = 0;
+  const total = perfService.openWarm ? 2 : 1;
+  perfService.onOpenInteractive(() => {
+    opens++;
+    if (opens < total) {
+      openFileFromPath(perfService.openPath);
+    } else {
+      perfService.reportOpen();
+    }
+  });
+  openFileFromPath(perfService.openPath);
 }
 
 async function refreshRecentFilesList() {
@@ -279,11 +300,14 @@ async function openFile() {
 }
 
 async function openFileFromPath(filePath) {
+  perfService.openRequested();
   const exists = await window.electronAPI.fs.exists(filePath);
   if (exists) {
     utilService.show(document.querySelector(".loader-wrapper"));
+    perfService.mark("open:loader-shown");
 
-    setTimeout(async () => {
+    // Two frames so the loader paints before the open work starts
+    requestAnimationFrame(() => requestAnimationFrame(async () => {
       welcomeService.eventEmitter.emit("open-file", filePath);
       await recentFileService.addFile(filePath);
       // Non-home default editors are opened by navigationService once the file is open
@@ -291,7 +315,7 @@ async function openFileFromPath(filePath) {
       if (!editorToOpen || editorToOpen === "open-home") {
         showOpenedFileLinks();
       }
-    }, 50);
+    }));
   } else {
     window.electronAPI.showMessageBox({
       type: "error",

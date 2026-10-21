@@ -12,8 +12,9 @@ const flags = {
   trace: env.MFE_PERF_TRACE === "1",
   autoquit: env.MFE_PERF_AUTOQUIT === "1",
 };
+const openMode = !!env.MFE_PERF_OPEN; // file-open profiling; see file-open-baseline-contract.md
 const SETTLE_MS = 3000;
-const TIMEOUT_MS = 30000;
+const TIMEOUT_MS = openMode ? 60000 : 30000;
 const TRACE_CATEGORIES = [
   "devtools.timeline",
   "v8",
@@ -202,8 +203,24 @@ function allWindowsLoaded() {
   return names.length > 0 && names.every((n) => windows[n].didFinishLoad);
 }
 
+function addOpenMarks(windowName, payload) {
+  if (!enabled || !payload) return;
+  for (const m of payload.marks || []) {
+    marks.push({
+      name: m.name,
+      t: m.t,
+      process: `renderer:${windowName}`,
+      detail: m.detail === undefined ? null : m.detail,
+    });
+  }
+  const r = renderer[windowName] || (renderer[windowName] = {});
+  r.openLongtasks = payload.longtasks || [];
+  setTimeout(() => finish(false), 500);
+}
+
 function maybeFinish() {
-  if (!enabled || finished || settleTimer) return;
+  // open mode finishes from addOpenMarks, after the open completes
+  if (!enabled || openMode || finished || settleTimer) return;
   if (rendererRecentFilesRendered && allWindowsLoaded()) {
     settleTimer = setTimeout(() => finish(false), SETTLE_MS);
   }
@@ -305,6 +322,7 @@ module.exports = {
   startEventLoopMonitor,
   recordIpc,
   addRendererMarks,
+  addOpenMarks,
   trackWindow,
   windowNameFor,
   startTracing,

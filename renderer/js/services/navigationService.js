@@ -403,6 +403,7 @@ navigationService.onScheduleEditorClicked = async function () {
   if (!(await navigationService.loadPage("schedule.html", navToken))) return;
   appendNavigation();
   postGenerateNavigation();
+  perfService.mark("open:editor-visible");
 
   scheduleService.loadSchedule(navigationService.currentlyOpenedFile.fileId);
 };
@@ -456,6 +457,7 @@ navigationService.onTableEditorClicked = async function () {
   if (!(await navigationService.loadPage("table-editor.html", navToken))) return;
   appendNavigation();
   postGenerateNavigation();
+  perfService.mark("open:editor-visible");
 
   // The tab's history has to be in place before the view loads its first
   // table, otherwise a slow start() lets that load push to a history that is
@@ -480,6 +482,7 @@ navigationService.onSchemaViewerClicked = async function () {
     return;
   appendNavigation();
   postGenerateNavigation();
+  perfService.mark("open:editor-visible");
 
   schemaViewerService.start(navigationService.currentlyOpenedFile.fileId);
 };
@@ -564,6 +567,9 @@ function addIpcListeners() {
   });
 
   window.electronAPI.on("close-file", function () {
+    if (navigationService.currentlyOpenedFile.fileId) {
+      window.franchiseAPI.closeFile(navigationService.currentlyOpenedFile.fileId);
+    }
     navigationService.currentlyOpenedFile.path = null;
     navigationService.currentlyOpenedFile.fileId = null;
     navigationService.currentlyOpenedFile.metadata = null;
@@ -686,10 +692,13 @@ function addIpcListeners() {
 function setupEvents() {
   welcomeService.eventEmitter.on("open-file", async function (file) {
     navigationService.currentlyOpenedFile.path = file;
+    let homeInteractive = false;
 
     try {
+      perfService.mark("open:meta-prepass-start");
       const initialMetadata =
         await window.franchiseAPI.getMetadataFromFilePath(file);
+      perfService.mark("open:meta-prepass-end");
 
       const openOptions = {
         schemaDirectory: savedSchemaService.getSchemaPath(),
@@ -703,7 +712,16 @@ function setupEvents() {
         }
       }
 
+      // Release the previously open file so two parsed files never coexist in main
+      const previousFileId = navigationService.currentlyOpenedFile.fileId;
+      if (previousFileId) {
+        navigationService.currentlyOpenedFile.fileId = null;
+        await window.franchiseAPI.closeFile(previousFileId);
+      }
+
+      perfService.mark("open:openfile-ipc-start");
       const result = await window.franchiseAPI.openFile(file, openOptions);
+      perfService.mark("open:openfile-ipc-end");
 
       if (result.error) {
         // Schema not found, prompt user to pick one
@@ -738,12 +756,14 @@ function setupEvents() {
         tableEditorWrapper.initialTableToSelect = null;
       }
       navigationService.generateMainNavigationTabs();
+      perfService.mark("open:tabs-generated");
 
       window.electronAPI.send("file-loaded", {
         path: navigationService.currentlyOpenedFile.path,
         type: navigationService.currentlyOpenedFile.type,
         fileId: fileId,
       });
+      perfService.mark("open:file-loaded-sent");
 
       window.electronAPI.send("is-currently-searching");
 
@@ -758,15 +778,22 @@ function setupEvents() {
       });
 
       const editorToOpen = preferencesService.getValue("general.defaultEditor");
+      perfService.mark("open:editor-start", { editor: editorToOpen });
       if (editorToOpen && editorToOpen !== "open-home") {
         welcomeService.eventEmitter.emit(editorToOpen);
-      } else if (navigationService.currentlyOpenService) {
-        navigationService.refreshCurrentPage();
+      } else {
+        if (navigationService.currentlyOpenService) {
+          navigationService.refreshCurrentPage();
+        }
+        // the home page is already showing; it is interactive once the loader is gone
+        homeInteractive = true;
       }
     } catch (err) {
       console.error("Error opening file:", err);
     } finally {
       utilService.hide(document.querySelector(".loader-wrapper"));
+      perfService.mark("open:loader-hidden");
+      if (homeInteractive) perfService.openInteractive();
     }
   });
 

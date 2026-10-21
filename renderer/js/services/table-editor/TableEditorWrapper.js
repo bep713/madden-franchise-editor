@@ -2,6 +2,8 @@ const EventEmitter = require("events");
 const { ipcRenderer } = require("electron");
 
 const utilService = require("../utilService");
+const perfService = require("../perfService");
+const { getFileMetadata } = require("../metadataCache");
 const TableEditorView = require("./TableEditorView");
 const pinnedTableService = require("../pinnedTableService");
 const ExternalDataHandler = require("./ExternalDataHandler");
@@ -45,13 +47,16 @@ class TableEditorWrapper {
     this.pinListElement = null;
     this.selectedTableEditor = null;
     this.loader = document.querySelector(".loader-wrapper");
+    perfService.mark("open:te-start");
 
     this._addIpcListeners();
     this._addEventListeners();
+    pinnedTableService.prefetch();
 
     // Get file metadata via IPC
-    const metadata = await window.franchiseAPI.getMetadata(fileId);
+    const metadata = await getFileMetadata(fileId);
     this.fileMetadata = metadata;
+    perfService.mark("open:te-metadata");
 
     // Closed or restarted while waiting on metadata
     if (startId !== this._startId) return;
@@ -84,6 +89,12 @@ class TableEditorWrapper {
     this._selectionListener();
 
     this.initialTableToSelect = null;
+    if (perfService.enabled) {
+      // measure until the table list and table picker exist too
+      await this.selectedTableEditor.initialLoadPromise?.catch(() => {});
+    }
+    perfService.mark("open:te-ready");
+    perfService.openInteractive();
   }
 
   _setFilePrefs(prefs) {

@@ -9,6 +9,14 @@ const LAST_MADDEN_ONLY_YEAR = 27;
 // (legacy pins, or tables whose uniqueId is 0) and as a last-known id hint.
 let pinnedTableService = {};
 
+// Starts reading pins.json so it overlaps with the table list fetch.
+// initialize() consumes the result.
+pinnedTableService.prefetch = () => {
+  pinnedTableService._prefetched = window.electronAPI.fs.readJson(PINS_FILENAME);
+  // A failed read must still reach initialize(), not become an unhandled rejection here
+  pinnedTableService._prefetched.catch(() => {});
+};
+
 pinnedTableService.initialize = async (
   gameYear,
   tableList = [],
@@ -19,7 +27,9 @@ pinnedTableService.initialize = async (
   pinnedTableService.gameType = gameType;
   pinnedTableService.tableList = tableList;
 
-  const allPins = await window.electronAPI.fs.readJson(PINS_FILENAME);
+  const allPins = await (pinnedTableService._prefetched ||
+    window.electronAPI.fs.readJson(PINS_FILENAME));
+  pinnedTableService._prefetched = null;
 
   pinnedTableService.allPins = allPins || getInitialPins();
   let changed = !allPins;

@@ -2,6 +2,7 @@ const moment = require("moment");
 const FranchiseGame = require("./FranchiseGame");
 const EventEmitter = require("events").EventEmitter;
 const utilService = require("../services/utilService");
+const { getFileMetadata } = require("../services/metadataCache");
 const preferencesService = require("../services/preferencesService");
 const dayOfWeekData = require("../../../data/dayOfWeekData.json");
 const seasonWeekData = require("../../../data/seasonWeekData.json");
@@ -32,7 +33,7 @@ class FranchiseSchedule extends EventEmitter {
       appointmentTables,
       gameEventTables,
     ] = await Promise.all([
-      window.franchiseAPI.getMetadata(fileId),
+      getFileMetadata(fileId),
       window.franchiseAPI.findTablesByName(fileId, "SeasonGame"),
       window.franchiseAPI.findTablesByName(fileId, "Team"),
       window.franchiseAPI.findTablesByName(fileId, "Scheduler"),

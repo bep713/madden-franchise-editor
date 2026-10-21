@@ -187,6 +187,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   perf: {
     enabled: process.env.MFE_PERF === "1",
     report: (payload) => ipcRenderer.invoke("perf:report", payload),
+    reportOpen: (payload) => ipcRenderer.invoke("perf:report-open", payload),
+    openPath: process.env.MFE_PERF_OPEN || null,
+    openWarm: process.env.MFE_PERF_OPEN_WARM === "1",
   },
 
   // Dialog operations
