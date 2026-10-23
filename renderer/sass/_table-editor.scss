@@ -49,6 +49,14 @@ td.active-row {
     justify-content: inherit;
   }
 
+  // Selectr only applies its width in a 50ms debounced update, so set it here
+  // to avoid the selector resizing while the first table loads. The bare
+  // <select> gets the same width before Selectr wraps it.
+  > .table-selector,
+  .selectr-container {
+    width: 100%;
+  }
+
   .selectr-container {
     order: 2;
 

@@ -93,16 +93,7 @@ function getTableEditorWrapper() {
     });
 
     tableEditorWrapper.eventEmitter.on("table-editor:new-tab", () => {
-      const previouslyActiveTab = navigationService.getActiveTab();
-
-      if (previouslyActiveTab instanceof TableEditorTab) {
-        previouslyActiveTab.tableColumn =
-          tableEditorWrapper.lastSelectedCell.column;
-        previouslyActiveTab.tableRow = tableEditorWrapper.lastSelectedCell.row;
-        previouslyActiveTab.tabHistory =
-          tableEditorWrapper.selectedTableEditor.navSteps;
-      }
-
+      saveTableEditorTabState(navigationService.getActiveTab());
       navigationService.onNewTabButtonClicked();
     });
   }
@@ -318,13 +309,7 @@ navigationService.generateNavigation = function () {
 
         if (previouslyActiveTab) {
           previouslyActiveTab.isActive = false;
-
-          if (previouslyActiveTab instanceof TableEditorTab) {
-            const editor = getTableEditorWrapper();
-            previouslyActiveTab.tableRow = editor.lastSelectedCell.row;
-            previouslyActiveTab.tableColumn = editor.lastSelectedCell.column;
-            previouslyActiveTab.tabHistory = editor.selectedTableEditor.navSteps;
-          }
+          saveTableEditorTabState(previouslyActiveTab);
         }
 
         tab.isActive = true;
@@ -372,6 +357,8 @@ navigationService.onNewTabButtonClicked = function () {
 
 navigationService.onNewTabClicked = function () {
   const activeTab = navigationService.getActiveTab();
+
+  if (switchTableEditorTab(activeTab)) return;
 
   if (activeTab.tableId >= 0) {
     getTableEditorWrapper().initialTableToSelect = {
@@ -546,6 +533,53 @@ function onNavigate(service) {
 }
 
 function postGenerateNavigation() {}
+
+function saveTableEditorTabState(tab) {
+  const view = tableEditorWrapper?.selectedTableEditor;
+  if (!(tab instanceof TableEditorTab) || !view) return;
+
+  tab.tableRow = tableEditorWrapper.lastSelectedCell.row;
+  tab.tableColumn = tableEditorWrapper.lastSelectedCell.column;
+  tab.tabHistory = view.navSteps;
+  tab.scrollPosition = view.getScrollPosition();
+}
+
+// Switching between table editor tabs only changes the table, so when the
+// editor is already showing this file, reuse it instead of reloading the page.
+// The table itself is still re-read. Returns false if a full load is needed.
+function switchTableEditorTab(tab) {
+  if (
+    !(tab instanceof TableEditorTab) ||
+    !tableEditorWrapper ||
+    navigationService.currentlyOpenService !== tableEditorWrapper ||
+    !tableEditorWrapper.isShowingFile(
+      navigationService.currentlyOpenedFile.fileId,
+    )
+  ) {
+    return false;
+  }
+
+  let target = null;
+  if (tab.tableId >= 0) {
+    target = {
+      tableId: tab.tableId,
+      recordIndex: tab.tableRow,
+      columnIndex: tab.tableColumn,
+    };
+  } else if (tableEditorWrapper.initialTableToSelect) {
+    // A table opened in a new tab
+    target = tableEditorWrapper.initialTableToSelect;
+  }
+  tableEditorWrapper.initialTableToSelect = null;
+
+  // Same as the full load: loading the tab's table pushes its last step again
+  const tabHistory = tab.tabHistory;
+  tabHistory?.pop();
+
+  appendNavigation();
+  tableEditorWrapper.activateTab(target, tabHistory, tab.scrollPosition);
+  return true;
+}
 
 function addIpcListeners() {
   window.electronAPI.on("show-check-for-update-notification", function () {

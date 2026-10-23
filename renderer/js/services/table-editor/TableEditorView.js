@@ -35,6 +35,8 @@ class TableEditorView {
 
     this.isDestroyed = false;
     this.columnSelector = null;
+    this._loadId = 0;
+    this.scrollPositionToRestore = null;
 
     this.hot = new Handsontable(this.baseContainer, {
       // filters: true,
@@ -406,10 +408,16 @@ class TableEditorView {
    * @returns {Promise<Object>} The loaded table data.
    */
   async loadTableById(tableId) {
+    const loadId = ++this._loadId;
     const tableData = await window.franchiseAPI.readTableData(
       this.fileId,
       tableId,
     );
+
+    // A newer load started (e.g. quick tab switches) or the view was destroyed
+    if (loadId !== this._loadId || this.isDestroyed) {
+      return null;
+    }
 
     if (tableData?.error) {
       throw new Error(tableData.error);
@@ -474,46 +482,11 @@ class TableEditorView {
       });
       perfService.mark("open:te-selectr");
 
-      const backLink = document.querySelector(".back-link");
-
-      this.tableSelector.on("selectr.change", async (option) => {
-        if (isDev()) console.time("change");
-        utilService.show(this.loader);
-
-        try {
-          const tableId = parseInt(this.tableSelector.getValue(true).value);
-          if (isDev()) console.time("read records");
-          const tableData = await this.loadTableById(tableId);
-          if (isDev()) console.timeEnd("read records");
-
-          this.hot.selectCell(this.rowIndexToSelect, this.columnIndexToSelect);
-
-          this.rowIndexToSelect = 0;
-          this.columnIndexToSelect = 0;
-
-          const selectedCell = this.hot.getSelectedLast();
-          if (selectedCell) {
-            this.navSteps.push({
-              tableId: tableData.tableId,
-              recordIndex: selectedCell[0],
-              column: selectedCell[1],
-            });
-          }
-
-          if (this.navSteps.length >= 2) {
-            backLink.classList.remove("disabled");
-          }
-
-          utilService.hide(this.loader);
-
-          this.parent._toggleAddPinButton(tableData);
-          this.parent._onTableChanged(tableData.tableId, tableData.name);
-
-          if (isDev()) console.timeEnd("change");
-        } catch (err) {
-          console.error("Failed to load table:", err);
-          utilService.hide(this.loader);
-        }
+      this.tableSelector.on("selectr.change", () => {
+        const selected = this.tableSelector.getValue(true);
+        // Selectr emits a change with nothing selected when it deselects
+        if (!selected) return;
+        this._showTable(parseInt(selected.value));
       });
 
       if (this.initialTableToSelect) {
@@ -523,17 +496,103 @@ class TableEditorView {
         this.tableSelector.setValue(this.initialTableToSelect.tableId);
         this.initialTableToSelect = null;
       } else {
+        // setValue emits selectr.change, which loads the table
         this.tableSelector.setValue(tableChoices[1].value);
-
-        // Load the default table via IPC
-        const defaultTableId = tableChoices[1].value;
-        this.loadTableById(defaultTableId).catch((err) => {
-          console.error("Failed to load default table:", err);
-        });
       }
     } catch (err) {
       console.error("Failed to load table list:", err);
     }
+  }
+
+  async _showTable(tableId) {
+    if (isDev()) console.time("change");
+    utilService.show(this.loader);
+
+    try {
+      if (isDev()) console.time("read records");
+      const tableData = await this.loadTableById(tableId);
+      if (isDev()) console.timeEnd("read records");
+
+      // Superseded by a newer load, which takes over the loader
+      if (!tableData) return;
+
+      this.hot.selectCell(this.rowIndexToSelect, this.columnIndexToSelect);
+
+      this.rowIndexToSelect = 0;
+      this.columnIndexToSelect = 0;
+
+      if (this.scrollPositionToRestore) {
+        this._setScrollPosition(this.scrollPositionToRestore);
+        this.scrollPositionToRestore = null;
+      }
+
+      const selectedCell = this.hot.getSelectedLast();
+      if (selectedCell) {
+        this.navSteps.push({
+          tableId: tableData.tableId,
+          recordIndex: selectedCell[0],
+          column: selectedCell[1],
+        });
+      }
+
+      if (this.navSteps.length >= 2) {
+        document.querySelector(".back-link").classList.remove("disabled");
+      }
+
+      utilService.hide(this.loader);
+
+      this.parent._toggleAddPinButton(tableData);
+      this.parent._onTableChanged(tableData.tableId, tableData.name);
+
+      if (isDev()) console.timeEnd("change");
+    } catch (err) {
+      console.error("Failed to load table:", err);
+      utilService.hide(this.loader);
+    }
+  }
+
+  /**
+   * Show another tab's table in this view, keeping the grid and table picker.
+   * The table is always re-read, so edits made from other tabs show up.
+   * @param {{tableId: number, recordIndex: number, columnIndex: number}|null} target - null loads the default table.
+   * @param {Array} navSteps - The tab's back-button history.
+   * @param {{top: number, left: number}|null} scrollPosition
+   */
+  activate(target, navSteps, scrollPosition) {
+    const tableId = target ? target.tableId : this.tableList[1]?.id;
+    if (tableId === undefined) return;
+
+    this.navSteps = navSteps || [];
+    this.rowIndexToSelect = target?.recordIndex ?? 0;
+    this.columnIndexToSelect = target?.columnIndex ?? 0;
+    this.scrollPositionToRestore = scrollPosition || null;
+
+    // Loading the table re-enables it if the history allows going back
+    document.querySelector(".back-link").classList.add("disabled");
+
+    const selected = this.tableSelector.getValue(true);
+    if (selected && parseInt(selected.value) === tableId) {
+      // setValue on the selected option would deselect it instead
+      this._showTable(tableId);
+    } else {
+      this.tableSelector.setValue(tableId);
+    }
+  }
+
+  _getScrollHolder() {
+    return this.hot?.rootElement?.querySelector(".ht_master .wtHolder");
+  }
+
+  getScrollPosition() {
+    const holder = this._getScrollHolder();
+    return holder ? { top: holder.scrollTop, left: holder.scrollLeft } : null;
+  }
+
+  _setScrollPosition({ top, left }) {
+    const holder = this._getScrollHolder();
+    if (!holder) return;
+    holder.scrollTop = top;
+    holder.scrollLeft = left;
   }
 
   loadTable(table) {

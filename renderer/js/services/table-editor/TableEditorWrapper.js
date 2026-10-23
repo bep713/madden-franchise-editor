@@ -97,6 +97,21 @@ class TableEditorWrapper {
     perfService.openInteractive();
   }
 
+  // True once the view for this file has its table picker, so tabs can be
+  // switched with activateTab() instead of a full start()
+  isShowingFile(fileId) {
+    const view = this.selectedTableEditor;
+    return (
+      this.fileId === fileId &&
+      !!view?.tableSelector &&
+      !view.isDestroyed
+    );
+  }
+
+  activateTab(target, navSteps, scrollPosition) {
+    this.selectedTableEditor.activate(target, navSteps, scrollPosition);
+  }
+
   _setFilePrefs(prefs) {
     // File preferences are now managed in the main process
     // This method is kept for compatibility
