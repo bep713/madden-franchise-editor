@@ -46,7 +46,7 @@
     "chokidar": "^3.5.3",
     "electron-log": "^5.4.3",
     "electron-updater": "^4.6.1",
-    "madden-franchise": "^4.3.6",
+    "madden-franchise": "^4.4.1",
     "moment": "^2.29.4",
     "stream-parser": "^0.3.1",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
