@@ -1,5 +1,5 @@
 :root {
-    --font-name: "Roboto Variable";
+    --font-name: 'Roboto Variable';
     --font-small: 0.75em/1 var(--font-name), sans-serif;
     --font-body: 1em/1.2 var(--font-name), sans-serif;
     --font-large: 1.2em/1.2 var(--font-name), sans-serif;

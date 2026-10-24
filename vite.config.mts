@@ -1,6 +1,6 @@
 /// <reference types="vitest/config" />
 import { resolve } from 'node:path';
-import { defineConfig, type UserConfig } from 'vite';
+import { defineConfig, type Plugin, type UserConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import svgr from 'vite-plugin-svgr';
 
@@ -26,8 +26,18 @@ export const rendererConfig: UserConfig = {
     plugins: [react(), svgr()]
 };
 
+// @vitejs/plugin-react injects its fast-refresh preamble as an inline script,
+// which `script-src 'self'` blocks. Relax the CSP for the dev server only.
+const devCspPlugin: Plugin = {
+    name: 'mfe:dev-csp',
+    apply: 'serve',
+    transformIndexHtml: (html) =>
+        html.replace("script-src 'self'", "script-src 'self' 'unsafe-inline'")
+};
+
 export default defineConfig({
     ...rendererConfig,
+    plugins: [...(rendererConfig.plugins ?? []), devCspPlugin],
     root: resolve(dirname, 'src/renderer'),
     // Relative asset URLs so main.js can loadFile() the build output.
     base: './',

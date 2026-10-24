@@ -1,3 +1,4 @@
+@use 'sass:color';
 @use '@assets/vars' as v;
 
 /*
@@ -8,12 +9,14 @@
 *::after {
     box-sizing: border-box;
 }
+
 /*
   2. Remove default margin
 */
 * {
     margin: 0;
 }
+
 /*
   Typographic tweaks!
   3. Add accessible line-height
@@ -23,6 +26,7 @@ body {
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
 }
+
 /*
   5. Improve media defaults
 */
@@ -34,6 +38,7 @@ svg {
     display: block;
     max-width: 100%;
 }
+
 /*
   6. Remove built-in form typography styles
 */
@@ -43,6 +48,7 @@ textarea,
 select {
     font: inherit;
 }
+
 /*
   7. Avoid text overflows
 */
@@ -55,25 +61,25 @@ h5,
 h6 {
     overflow-wrap: break-word;
 }
+
 /*
   8. Create a root stacking context
 */
-#root,
-#__next {
+#root {
     isolation: isolate;
 }
 
 body {
-    font-family: v.$font-base-family;
-    font-size: v.$font-base-size;
     margin: 0;
     overflow: hidden;
+    font-family: v.$font-base-family;
+    font-size: v.$font-base-size;
 }
 
 #root {
-    overflow: auto;
     height: 100vh;
     padding: 0;
+    overflow: auto;
 }
 
 h1 {
@@ -95,15 +101,15 @@ h1 {
 }
 
 .btn {
-    border: 1px solid v.$brand-black;
-    background-color: v.$brand-primary;
-    cursor: pointer;
     padding: 10px;
+    cursor: pointer;
+    background-color: v.$brand-primary;
+    border: 1px solid v.$brand-black;
     border-radius: 3px;
 
     &:hover,
     &:focus,
     &:active {
-        background-color: darken(v.$brand-primary, 5%);
+        background-color: color.adjust(v.$brand-primary, $lightness: -5%);
     }
 }

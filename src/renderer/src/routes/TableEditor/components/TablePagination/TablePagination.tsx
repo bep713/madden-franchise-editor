@@ -46,7 +46,7 @@ const TablePagination = ({ initialPage = 0, onChange, table }: Props) => {
             setText((clampedValue + 1).toString());
             currentPageRef.current = clampedValue;
         },
-        [maxPageValue]
+        [maxPageValue, onChange]
     );
 
     return (

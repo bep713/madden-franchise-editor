@@ -1,3 +1,4 @@
+@use 'sass:color';
 @use '@assets/vars' as v;
 
 %tab-border {
@@ -6,34 +7,39 @@
 
 %tab-hover {
     &:hover {
-        background-color: #fbfbfb;
         cursor: pointer;
+        background-color: #fbfbfb;
     }
 }
 
 .tabWrapper {
     display: flex;
-    background-color: v.$background-color;
-    padding-left: 5px;
     flex-wrap: nowrap;
-    overflow-x: overlay;
-    overflow-y: hidden;
+    padding-left: 5px;
+    overflow: auto hidden;
     list-style-type: none;
+    background-color: v.$background-color;
 
     &::-webkit-scrollbar {
-        height: 5px;
         display: none;
+        height: 5px;
     }
 
     &::-webkit-scrollbar-thumb {
-        background-color: darken(v.$background-color, 20%);
+        background-color: color.adjust(v.$background-color, $lightness: -20%);
 
         &:hover {
-            background-color: darken(v.$background-color, 30%);
+            background-color: color.adjust(
+                v.$background-color,
+                $lightness: -30%
+            );
         }
 
         &:active {
-            background-color: darken(v.$background-color, 40%);
+            background-color: color.adjust(
+                v.$background-color,
+                $lightness: -40%
+            );
         }
     }
 
@@ -46,16 +52,16 @@
 }
 
 .tab {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7.5px 10px;
+    text-overflow: ellipsis;
+    font-size: v.$font-size-small;
+    white-space: pre;
     outline: none;
     border: none;
-    display: flex;
-    align-items: center;
-    padding: 7.5px 10px;
-    font-size: v.$font-size-small;
-    justify-content: space-between;
-    gap: 5px;
-    text-overflow: ellipsis;
-    white-space: pre;
     border-right: 1px solid #d1d1d1;
 
     @extend %tab-hover;

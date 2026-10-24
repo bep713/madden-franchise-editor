@@ -74,12 +74,18 @@ const TableEditor: React.FC = () => {
         });
     };
 
+    const firstTable = activeFranchiseFile?.tables?.[0];
+
     useEffect(() => {
-        // Load initial table data
-        if (activeFranchiseFile?.tables?.[0]) {
-            onSelectTable(activeFranchiseFile.tables[0]);
+        // Load the first table once the file model is available. This starts an
+        // async read and shows the loader, so the synchronous setState is intended.
+        if (firstTable) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            void onSelectTable(firstTable);
         }
-    }, []);
+        // onSelectTable is recreated every render; only rerun when the file changes
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [firstTable]);
 
     if (!activeFranchiseFile) {
         return null;

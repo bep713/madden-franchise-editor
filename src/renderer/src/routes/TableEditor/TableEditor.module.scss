@@ -5,25 +5,26 @@
 }
 
 .tableListWrapper {
-    padding: 10px;
     display: flex;
     flex-direction: column;
     gap: 10px;
+    padding: 10px;
 }
 
 .tableContentWrapper {
-    // padding: 0 10px;
-    height: 100%;
-    width: 100%;
-    overflow: hidden;
     // font-family: 'Roboto Mono', 'monospace';
     display: flex;
     flex-direction: column;
+    width: 100%;
+
+    // padding: 0 10px;
+    height: 100%;
+    overflow: hidden;
 }
 
 .tableEditorComponentWrapper {
-    padding: 10px;
     height: 100%;
+    padding: 10px;
     overflow: auto;
 }
 
@@ -72,8 +73,8 @@ td.active-row {
 }
 
 .jumpRow {
-    margin-right: 10px;
     padding-left: 10px;
+    margin-right: 10px;
 }
 
 .backLink {
@@ -127,11 +128,11 @@ td.active-row {
 }
 
 .edit-button {
-    background-image: url(../img/table-cell-edit.svg);
-    background-size: 15px 15px;
-    background-position: center center;
     width: 25px;
     cursor: pointer;
+    background-image: url('../img/table-cell-edit.svg');
+    background-position: center center;
+    background-size: 15px 15px;
 
     &:focus {
         outline-color: v.$welcome-link-color;
@@ -157,9 +158,9 @@ td.active-row {
 
 .pinsList {
     display: flex;
+    margin-left: 10px;
     overflow-x: auto;
     white-space: nowrap;
-    margin-left: 10px;
 
     > * {
         padding-right: 15px;
@@ -176,13 +177,13 @@ td.active-row {
 
 .deletePin {
     display: none;
-    background-image: url(../img/trash.svg);
-    background-size: 15px 15px;
-    background-position: center;
-    background-repeat: no-repeat;
-    height: 15px;
     width: 15px;
+    height: 15px;
     padding: 0 10px 0 17px;
+    background-image: url('../img/trash.svg');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 15px 15px;
 }
 
 .pinWrapper {
@@ -196,12 +197,12 @@ td.active-row {
 }
 
 .pinIcon {
-    background-image: url(../img/pushpin.svg);
+    width: 15px;
+    height: 15px;
+    background-image: url('../img/pushpin.svg');
     background-repeat: no-repeat;
     background-position: center;
     background-size: 15px 15px;
-    height: 15px;
-    width: 15px;
 }
 
 .leftPane {
@@ -213,8 +214,8 @@ td.active-row {
 }
 
 .output {
-    cursor: default;
-    height: 100%;
-    resize: none;
     width: 100%;
+    height: 100%;
+    cursor: default;
+    resize: none;
 }

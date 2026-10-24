@@ -1,4 +1,4 @@
-@import url('@assets/typography.css');
+@import '@assets/typography.css';
 
 .body {
     font: var(--font-body);

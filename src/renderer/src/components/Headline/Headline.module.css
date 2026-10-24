@@ -1,7 +1,6 @@
-
-@import url('@assets/colors.css');
-@import url('@assets/spacing.css');
-@import url('@assets/typography.css');
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+@import '@assets/typography.css';
 
 .headline {
     display: flex;

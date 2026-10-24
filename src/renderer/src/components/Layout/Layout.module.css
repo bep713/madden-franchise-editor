@@ -1,4 +1,4 @@
-@import url('@assets/spacing.css');
+@import '@assets/spacing.css';
 
 .base {
     display: flex;

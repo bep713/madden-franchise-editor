@@ -52,8 +52,8 @@ const List: React.FC<Props> = ({
             })}
         >
             {items.map((item, index) => (
-                <>
-                    <li key={index} className={styles.item}>
+                <React.Fragment key={index}>
+                    <li className={styles.item}>
                         {item}
                     </li>
                     {showDivider &&
@@ -68,7 +68,7 @@ const List: React.FC<Props> = ({
                                 />
                             </li>
                         )}
-                </>
+                </React.Fragment>
             ))}
         </ListComponent>
     );

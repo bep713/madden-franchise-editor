@@ -46,7 +46,7 @@ const ExpressionEditorView = ({
 
             setTimeout(() => setTableLoaderOptions({ show: false }), 100);
         },
-        []
+        [setTableLoaderOptions]
     );
 
     const handleActionClick = async (action: number) => {
