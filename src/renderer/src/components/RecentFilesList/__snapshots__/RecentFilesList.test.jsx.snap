@@ -25,19 +25,19 @@ exports[`RecentFilesList > renders up to 7 recent files sorted by lastAccessedTi
     data-testid="List"
   >
     <div
-      class="_card_733919 _silverBorder_733919 _elevation_733919 _hover_733919 _clickable_733919"
+      class="card silverBorder elevation hover clickable"
     >
       <div
-        class="_header_733919"
+        class="header"
       >
         <div
-          class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifySpaceBetween_1de05d _rowGap2_1de05d"
+          class="base alignCenter columnGap2 flexRow justifySpaceBetween rowGap2"
         >
           <div
-            class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+            class="base alignCenter columnGap2 flexRow justifyStart rowGap2"
           >
             <div
-              class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+              class="base alignCenter columnGap2 flexRow justifyStart rowGap2"
             >
               <span
                 data-testid="Text"
@@ -60,19 +60,19 @@ exports[`RecentFilesList > renders up to 7 recent files sorted by lastAccessedTi
       </span>
     </div>
     <div
-      class="_card_733919 _silverBorder_733919 _elevation_733919 _hover_733919 _clickable_733919"
+      class="card silverBorder elevation hover clickable"
     >
       <div
-        class="_header_733919"
+        class="header"
       >
         <div
-          class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifySpaceBetween_1de05d _rowGap2_1de05d"
+          class="base alignCenter columnGap2 flexRow justifySpaceBetween rowGap2"
         >
           <div
-            class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+            class="base alignCenter columnGap2 flexRow justifyStart rowGap2"
           >
             <div
-              class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+              class="base alignCenter columnGap2 flexRow justifyStart rowGap2"
             >
               <span
                 data-testid="Text"
@@ -100,19 +100,19 @@ exports[`RecentFilesList > renders up to 7 recent files sorted by lastAccessedTi
       </span>
     </div>
     <div
-      class="_card_733919 _silverBorder_733919 _elevation_733919 _hover_733919 _clickable_733919"
+      class="card silverBorder elevation hover clickable"
     >
       <div
-        class="_header_733919"
+        class="header"
       >
         <div
-          class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifySpaceBetween_1de05d _rowGap2_1de05d"
+          class="base alignCenter columnGap2 flexRow justifySpaceBetween rowGap2"
         >
           <div
-            class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+            class="base alignCenter columnGap2 flexRow justifyStart rowGap2"
           >
             <div
-              class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+              class="base alignCenter columnGap2 flexRow justifyStart rowGap2"
             >
               <span
                 data-testid="Text"
@@ -135,19 +135,19 @@ exports[`RecentFilesList > renders up to 7 recent files sorted by lastAccessedTi
       </span>
     </div>
     <div
-      class="_card_733919 _silverBorder_733919 _elevation_733919 _hover_733919 _clickable_733919"
+      class="card silverBorder elevation hover clickable"
     >
       <div
-        class="_header_733919"
+        class="header"
       >
         <div
-          class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifySpaceBetween_1de05d _rowGap2_1de05d"
+          class="base alignCenter columnGap2 flexRow justifySpaceBetween rowGap2"
         >
           <div
-            class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+            class="base alignCenter columnGap2 flexRow justifyStart rowGap2"
           >
             <div
-              class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+              class="base alignCenter columnGap2 flexRow justifyStart rowGap2"
             >
               <span
                 data-testid="Text"
@@ -170,19 +170,19 @@ exports[`RecentFilesList > renders up to 7 recent files sorted by lastAccessedTi
       </span>
     </div>
     <div
-      class="_card_733919 _silverBorder_733919 _elevation_733919 _hover_733919 _clickable_733919"
+      class="card silverBorder elevation hover clickable"
     >
       <div
-        class="_header_733919"
+        class="header"
       >
         <div
-          class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifySpaceBetween_1de05d _rowGap2_1de05d"
+          class="base alignCenter columnGap2 flexRow justifySpaceBetween rowGap2"
         >
           <div
-            class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+            class="base alignCenter columnGap2 flexRow justifyStart rowGap2"
           >
             <div
-              class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+              class="base alignCenter columnGap2 flexRow justifyStart rowGap2"
             >
               <span
                 data-testid="Text"
@@ -205,19 +205,19 @@ exports[`RecentFilesList > renders up to 7 recent files sorted by lastAccessedTi
       </span>
     </div>
     <div
-      class="_card_733919 _silverBorder_733919 _elevation_733919 _hover_733919 _clickable_733919"
+      class="card silverBorder elevation hover clickable"
     >
       <div
-        class="_header_733919"
+        class="header"
       >
         <div
-          class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifySpaceBetween_1de05d _rowGap2_1de05d"
+          class="base alignCenter columnGap2 flexRow justifySpaceBetween rowGap2"
         >
           <div
-            class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+            class="base alignCenter columnGap2 flexRow justifyStart rowGap2"
           >
             <div
-              class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+              class="base alignCenter columnGap2 flexRow justifyStart rowGap2"
             >
               <span
                 data-testid="Text"
@@ -240,19 +240,19 @@ exports[`RecentFilesList > renders up to 7 recent files sorted by lastAccessedTi
       </span>
     </div>
     <div
-      class="_card_733919 _silverBorder_733919 _elevation_733919 _hover_733919 _clickable_733919"
+      class="card silverBorder elevation hover clickable"
     >
       <div
-        class="_header_733919"
+        class="header"
       >
         <div
-          class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifySpaceBetween_1de05d _rowGap2_1de05d"
+          class="base alignCenter columnGap2 flexRow justifySpaceBetween rowGap2"
         >
           <div
-            class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+            class="base alignCenter columnGap2 flexRow justifyStart rowGap2"
           >
             <div
-              class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+              class="base alignCenter columnGap2 flexRow justifyStart rowGap2"
             >
               <span
                 data-testid="Text"

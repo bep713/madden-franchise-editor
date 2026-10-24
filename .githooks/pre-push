@@ -1,3 +1,5 @@
 #!/bin/sh
 # Installed by `npm install` (package.json "prepare"). E2E runs in CI.
 npm run test:unit || exit 1
+npm run lint || exit 1
+npm run test:react || exit 1

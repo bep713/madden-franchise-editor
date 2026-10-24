@@ -1,9 +1,12 @@
 import { loader } from '@monaco-editor/react';
+// Core editor only; no language contributions are needed yet.
+import * as monaco from 'monaco-editor/editor/editor.api';
+import EditorWorker from 'monaco-editor/editor/editor.worker?worker';
 
+// Bundle monaco with the renderer instead of loading it from a CDN.
 export const loadMonaco = () => {
-    loader.config({
-        paths: {
-            vs: 'app-asset://madden-franchise-editor/node_modules/monaco-editor/min/vs'
-        }
-    });
+    self.MonacoEnvironment = {
+        getWorker: () => new EditorWorker()
+    };
+    loader.config({ monaco });
 };

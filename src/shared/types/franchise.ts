@@ -1,5 +1,5 @@
 import { GameVersion } from '@shared/types';
-import { DisassembledInstructionsResult } from 'frtk';
+import { DisassembledInstructionsResult } from './frtk';
 
 export enum FileType {
     FRANCHISE,

@@ -165,7 +165,7 @@ const FONT_FILES = ["roboto", "roboto-mono"].flatMap((font) =>
 
 const VENDOR_FILES = [
   {
-    from: "../node_modules/handsontable/dist/handsontable.full.min.css",
+    from: "../node_modules/handsontable-v11/dist/handsontable.full.min.css",
     to: "../renderer/css/vendor/handsontable.full.min.css",
   },
   ...FONT_FILES,

@@ -1,0 +1,9 @@
+# Prettier only formats the v5 code; v4 keeps its own style.
+*
+!src/
+!src/**
+!*.mts
+!*.mjs
+!.storybook/
+!.storybook/**
+**/__snapshots__/

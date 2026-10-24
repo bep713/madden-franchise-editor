@@ -43,6 +43,7 @@ const {
 } = require("./main/services/updateChannelService");
 const autoUpdaterService = require("./main/services/autoUpdaterService");
 const { registerWelcomeHandlers } = require("./main/handlers/welcomeHandler");
+const { registerFilesHandlers } = require("./main/handlers/filesHandler");
 const {
   createLoggedIpcMain,
   createLoggedWebContents,
@@ -110,6 +111,7 @@ preferencesHandler.registerPreferencesHandlers(
   },
 );
 registerRecentFilesHandlers(loggedIpc);
+registerFilesHandlers(loggedIpc);
 registerWelcomeHandlers(loggedIpc, franchiseFileManager);
 registerReloadFileHandlers(loggedIpc, {
   loggedMain: () => loggedMain,
@@ -337,6 +339,10 @@ function createApplicationMenu() {
 }
 
 const homePage = "renderer/index.html";
+// v5 React UI (src/renderer). MFE_RENDERER_URL points at the Vite dev server;
+// MFE_UI=react loads the `vite build` output. Otherwise the v4 UI loads.
+const reactRendererUrl = process.env.MFE_RENDERER_URL;
+const reactHomePage = "out/renderer/index.html";
 const creditsPage = "renderer/credits.html";
 const schemaPage = "renderer/schema-manager.html";
 const settingsPage = "renderer/settings-manager.html";
@@ -378,7 +384,13 @@ function createWindow() {
   loggedMain = createLoggedWebContents(mainWindow.webContents);
 
   // and load the index.html of the app.
-  mainWindow.loadFile(homePage);
+  if (reactRendererUrl) {
+    mainWindow.loadURL(reactRendererUrl);
+  } else if (process.env.MFE_UI === "react") {
+    mainWindow.loadFile(reactHomePage);
+  } else {
+    mainWindow.loadFile(homePage);
+  }
 
   if (isDev) {
     // Open the DevTools.

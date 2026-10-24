@@ -6,27 +6,11 @@ const RECENT_FILES_FILENAME = "recentFiles.json";
 const MAX_RECENT_FILES = 10;
 
 let recentFiles = [];
+let loaded = false;
 
 function registerRecentFilesHandlers(loggedIpc) {
   loggedIpc.handle("recent-files:initialize", async () => {
-    try {
-      const filePath = path.join(
-        app.getPath("userData"),
-        RECENT_FILES_FILENAME,
-      );
-
-      if (!fs.existsSync(filePath)) {
-        recentFiles = [];
-        return recentFiles;
-      }
-
-      const data = JSON.parse(fs.readFileSync(filePath, "utf-8"));
-      recentFiles = Array.isArray(data) ? data : [];
-      return recentFiles;
-    } catch (error) {
-      recentFiles = [];
-      throw new Error(`Failed to initialize recent files: ${error.message}`);
-    }
+    return loadRecentFiles();
   });
 
   loggedIpc.handle("recent-files:add", async (event, filePath) => {
@@ -81,6 +65,36 @@ function registerRecentFilesHandlers(loggedIpc) {
   });
 }
 
+/**
+ * Reads recent files from disk into memory. The v4 renderer calls this through
+ * "recent-files:initialize"; other main-process code uses ensureRecentFilesLoaded.
+ */
+function loadRecentFiles() {
+  try {
+    const filePath = path.join(app.getPath("userData"), RECENT_FILES_FILENAME);
+
+    if (!fs.existsSync(filePath)) {
+      recentFiles = [];
+    } else {
+      const data = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+      recentFiles = Array.isArray(data) ? data : [];
+    }
+
+    loaded = true;
+    return recentFiles;
+  } catch (error) {
+    recentFiles = [];
+    throw new Error(`Failed to initialize recent files: ${error.message}`);
+  }
+}
+
+function ensureRecentFilesLoaded() {
+  if (!loaded) {
+    loadRecentFiles();
+  }
+  return getSortedRecentFiles();
+}
+
 function getSortedRecentFiles() {
   return recentFiles.sort((a, b) => b.time - a.time);
 }
@@ -90,4 +104,4 @@ function writeToRecentFilesStore() {
   fs.writeFileSync(filePath, JSON.stringify(recentFiles));
 }
 
-module.exports = { registerRecentFilesHandlers };
+module.exports = { registerRecentFilesHandlers, ensureRecentFilesLoaded };

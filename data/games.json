@@ -1,0 +1,119 @@
+[
+  {
+    "abbreviation": "M19",
+    "directories": {
+      "gameFilesRelativePath": "Madden NFL 19",
+      "savesRelativePath": "Madden NFL 19/settings"
+    },
+    "gameYear": 19,
+    "isSupported": true,
+    "iconPath": "assets/game-icons/M19.PNG",
+    "shortTitle": "Madden 19",
+    "title": "Madden NFL 19",
+    "year": "19"
+  },
+  {
+    "abbreviation": "M20",
+    "directories": {
+      "gameFilesRelativePath": "Madden NFL 20",
+      "savesRelativePath": "Madden NFL 20/settings"
+    },
+    "gameYear": 20,
+    "isSupported": true,
+    "iconPath": "assets/game-icons/M20.PNG",
+    "shortTitle": "Madden 20",
+    "title": "Madden NFL 20",
+    "year": "20"
+  },
+  {
+    "abbreviation": "M21",
+    "directories": {
+      "gameFilesRelativePath": "Madden NFL 21",
+      "savesRelativePath": "Madden NFL 21/saves"
+    },
+    "gameYear": 21,
+    "isSupported": true,
+    "iconPath": "assets/game-icons/M21.PNG",
+    "shortTitle": "Madden 21",
+    "title": "Madden NFL 21",
+    "year": "21"
+  },
+  {
+    "abbreviation": "M22",
+    "directories": {
+      "gameFilesRelativePath": "Madden NFL 22",
+      "savesRelativePath": "Madden NFL 22/saves"
+    },
+    "gameYear": 22,
+    "isSupported": true,
+    "iconPath": "assets/game-icons/M22.PNG",
+    "shortTitle": "Madden 22",
+    "title": "Madden NFL 22",
+    "year": "22"
+  },
+  {
+    "abbreviation": "M23",
+    "directories": {
+      "gameFilesRelativePath": "Madden NFL 23",
+      "savesRelativePath": "Madden NFL 23/saves"
+    },
+    "gameYear": 23,
+    "isSupported": true,
+    "iconPath": "assets/game-icons/M23.PNG",
+    "shortTitle": "Madden 23",
+    "title": "Madden NFL 23",
+    "year": "23"
+  },
+  {
+    "abbreviation": "M24",
+    "directories": {
+      "gameFilesRelativePath": "Madden NFL 24",
+      "savesRelativePath": "Madden NFL 24/saves"
+    },
+    "gameYear": 24,
+    "isSupported": true,
+    "iconPath": "assets/game-icons/M24.PNG",
+    "shortTitle": "Madden 24",
+    "title": "Madden NFL 24",
+    "year": "24"
+  },
+  {
+    "abbreviation": "M25",
+    "directories": {
+      "gameFilesRelativePath": "Madden NFL 25",
+      "savesRelativePath": "Madden NFL 25/saves"
+    },
+    "gameYear": 25,
+    "isSupported": true,
+    "iconPath": "assets/game-icons/M25.PNG",
+    "shortTitle": "Madden 25",
+    "title": "Madden NFL 25",
+    "year": "25"
+  },
+  {
+    "abbreviation": "M26",
+    "directories": {
+      "gameFilesRelativePath": "Madden NFL 26",
+      "savesRelativePath": "Madden NFL 26/saves"
+    },
+    "gameYear": 26,
+    "isSupported": true,
+    "iconPath": "assets/game-icons/M26.PNG",
+    "shortTitle": "Madden 26",
+    "title": "Madden NFL 26",
+    "year": "26"
+  },
+  {
+    "abbreviation": "M27",
+    "directories": {
+      "gameFilesRelativePath": "Madden NFL 27",
+      "savesRelativePath": "Madden NFL 27/settings"
+    },
+    "gameYear": 27,
+    "isSupported": true,
+    "iconPath": "assets/game-icons/M27.PNG",
+    "shortTitle": "Madden 27",
+    "title": "Madden NFL 27",
+    "year": "27"
+  }
+]

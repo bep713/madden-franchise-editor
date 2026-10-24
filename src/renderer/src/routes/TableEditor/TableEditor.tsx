@@ -29,17 +29,13 @@ const TableEditor: React.FC = () => {
     const { loader: tableLoader, setOptions: setTableLoaderOptions } =
         useLoader();
 
-    if (!activeFranchiseFile) {
-        return null;
-    }
-
-    const selectedTable = activeFranchiseFile.tables?.find(
+    const selectedTable = activeFranchiseFile?.tables?.find(
         (table) => table.id === selectedTableId
     );
 
     const isExpressionTable = selectedTable?.type === TableType.SPEX;
 
-    const fuse = new Fuse(activeFranchiseFile.tables || [], {
+    const fuse = new Fuse(activeFranchiseFile?.tables || [], {
         keys: ['index', 'name', 'id'],
         includeScore: true
     });
@@ -49,14 +45,17 @@ const TableEditor: React.FC = () => {
         setFilteredTables(
             filterText.length > 0
                 ? rawResult.map((result) => result.item)
-                : activeFranchiseFile.tables?.sort((a, b) => a.index - b.index)
+                : activeFranchiseFile?.tables?.sort((a, b) => a.index - b.index)
         );
     };
 
     const onSelectTable = async (
         table: FranchiseBaseTableModel
     ): Promise<void> => {
-        if (table.uniqueId === selectedTable?.uniqueId) {
+        if (
+            !activeFranchiseFile ||
+            table.uniqueId === selectedTable?.uniqueId
+        ) {
             return;
         }
 
@@ -81,6 +80,10 @@ const TableEditor: React.FC = () => {
             onSelectTable(activeFranchiseFile.tables[0]);
         }
     }, []);
+
+    if (!activeFranchiseFile) {
+        return null;
+    }
 
     return (
         <div className={styles.tableEditorWrapper}>

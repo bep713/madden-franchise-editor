@@ -368,3 +368,47 @@ contextBridge.exposeInMainWorld("electronAPI", {
     removeListener("reload-file", callback);
   },
 });
+
+// v5 React UI API (src/renderer). Types: src/renderer/src/api.d.ts.
+// Maps onto the same main-process channels as the APIs above.
+const notImplemented = (name) => () =>
+  Promise.reject(new Error(`window.api.${name} is not implemented yet`));
+
+contextBridge.exposeInMainWorld("api", {
+  general: {
+    openDialog: async (options) => {
+      const result = await ipcRenderer.invoke("dialog:show-open", options);
+      return result.canceled ? null : result.filePaths[0] || null;
+    },
+    saveDialog: async (options) => {
+      const result = await ipcRenderer.invoke("dialog:show-save", options);
+      return result.canceled ? null : result.filePath || null;
+    },
+    getVersion: async () => ({
+      version: await ipcRenderer.invoke("app:get-version"),
+    }),
+  },
+
+  files: {
+    getRecentFiles: () => ipcRenderer.invoke("files:get-recent-files"),
+    getSaves: () => ipcRenderer.invoke("files:get-saves"),
+    openFolder: (folderPath) =>
+      ipcRenderer.invoke("files:open-folder", folderPath),
+    removeRecentFile: async (file) => {
+      await ipcRenderer.invoke("recent-files:remove", file.fullPath);
+    },
+    showItemInFolder: async (filePath) => {
+      await ipcRenderer.invoke("welcome:reveal-in-explorer", filePath);
+    },
+  },
+
+  // TODO: wire to FranchiseFileManager (the renderer's FranchiseModel shape
+  // differs from franchise:get-metadata).
+  franchise: {
+    getActiveFranchiseFiles: async () => [],
+    closeFranchiseFile: async () => false,
+    initializeFranchiseFile: notImplemented("franchise.initializeFranchiseFile"),
+    readTableData: notImplemented("franchise.readTableData"),
+    exportTableData: notImplemented("franchise.exportTableData"),
+  },
+});

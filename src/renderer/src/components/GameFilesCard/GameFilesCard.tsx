@@ -4,6 +4,7 @@ import List from '../List/List';
 import Link from '../Link/Link';
 import styles from './GameFilesCard.module.css';
 import GameIcon from '../GameIcon/GameIcon';
+import folderIconUrl from '@assets/icons/folder.svg';
 
 interface GameFileCardProps {
     files: GameFileList;
@@ -32,7 +33,7 @@ const GameFileCard: React.FC<GameFileCardProps> = ({
                         height={16}
                         loading='lazy'
                         onClick={onDirectoryClick}
-                        src={`src/assets/icons/folder.svg`}
+                        src={folderIconUrl}
                         width={16}
                     />
                 ),

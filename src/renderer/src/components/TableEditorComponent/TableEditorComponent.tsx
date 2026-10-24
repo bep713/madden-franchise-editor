@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import cx from 'classnames';
 
-import { HotTable, HotTableClass } from '@handsontable/react';
+import { HotTable, HotTableRef } from '@handsontable/react-wrapper';
 import 'handsontable/styles/handsontable.min.css';
 import 'handsontable/styles/ht-theme-main.min.css';
 import { registerAllModules } from 'handsontable/registry';
@@ -20,7 +20,7 @@ const TableEditorComponent: React.FC<Props> = ({
     isInverted,
     table
 }: Props) => {
-    const hotRef = useRef<HotTableClass>(null);
+    const hotRef = useRef<HotTableRef>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -40,6 +40,8 @@ const TableEditorComponent: React.FC<Props> = ({
         if (wrapperRef.current) {
             observer.observe(wrapperRef.current);
         }
+
+        return () => observer.disconnect();
     }, []);
 
     const headers = Object.keys(table.records?.[0]?.fields || {}).map(

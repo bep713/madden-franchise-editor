@@ -8,6 +8,8 @@ Electron desktop app for editing Madden NFL (19–27) and College Football 27 fr
 
 The app was recently upgraded from an older Electron that ran renderers with `nodeIntegration` and no preload. Expect a mix of legacy and new code. New work belongs on the IPC/preload side of that split.
 
+This branch (`v5-react-conversion`) is also building a v5 React/TypeScript UI in `src/` next to the v4 UI (see "v5 React UI" below). Both run against the same main process. v4 stays the default until the React UI reaches parity.
+
 ## Commands
 
 ```bash
@@ -19,18 +21,29 @@ npm run build:app           # electron-builder Windows build (publishes to GitHu
 npm run e2eTest             # all Playwright e2e tests (npx playwright test)
 npm run test:unit           # node:test unit tests in tests/unit (no build needed)
 
+# v5 React UI (src/)
+npm run dev:react           # Vite dev server (127.0.0.1:5173, HMR) + electron with MFE_RENDERER_URL
+npm run build:react         # vite build -> out/renderer
+npm run start:react         # electron with MFE_UI=react (loads out/renderer/index.html)
+npm run typecheck           # tsc -b (tsconfig.web.json + tsconfig.node.json)
+npm run test:react          # vitest (jsdom) for src/**/*.test.*
+npm run lint                # eslint src
+npm run stylelint           # stylelint src/**/*.{css,scss}
+npm run format              # prettier --write src
+npm run storybook           # Storybook on :6006 (stories are src/**/doc/*.stories.jsx)
+
 npx playwright test tests/e2e/scripts/tabs.spec.js   # single spec file
 npx playwright test -g "basic test"                  # single test by title
 ```
 
-- There is no linter and no gulp. `.github/copilot-instructions.md` mentions `gulp sass:watch`, but that is outdated. Use the npm sass scripts.
+- ESLint/Prettier/Stylelint only cover `src/` (v5). The v4 code (`main/`, `preload/`, `renderer/`) has no linter, and there is no gulp. `.github/copilot-instructions.md` mentions `gulp sass:watch`, but that is outdated. Use the npm sass scripts.
 - `renderer/js/bundle.js`, `renderer/js/*.bundle.js` and `renderer/css/app-manifest.css(.map)` are gitignored build outputs. Run `npm run sass:build` and `npm run build:renderer` (or `npm run dev`) before launching the app. `npm run e2eTest` and `npm run build:app` run both for you; if you call `npx playwright test` directly, build first.
 - In dev, `electron-reload` watches `main.js`, `main/`, `preload/`, the bundles, the CSS and `renderer/*.html`, so the app relaunches or reloads on its own.
 
 ### Tests
 
-- CI: the composite action `.github/actions/build-and-test` runs `npm ci`, the unit suite, the renderer build and the e2e suite. `test.yml` runs it for PRs; `nightly.yml` and `release.yml` run it in the same job as electron-builder, so dependencies and the renderer are built once and the installer is only built if tests pass. When a run fails, the Playwright report and `test/playwright-test-results/` are uploaded as the `playwright-report` artifact.
-- `npm install` sets `core.hooksPath` to `.githooks` (the `prepare` script). The `pre-push` hook there runs `npm run test:unit`, and `git push --no-verify` skips it. E2E isn't in the hook because CI runs it.
+- CI: the composite action `.github/actions/build-and-test` runs `npm ci`, the unit suite, the v5 typecheck/lint/vitest/`build:react`, the v4 renderer build and the e2e suite. `test.yml` runs it for PRs; `nightly.yml` and `release.yml` run it in the same job as electron-builder, so dependencies and the renderer are built once and the installer is only built if tests pass. When a run fails, the Playwright report and `test/playwright-test-results/` are uploaded as the `playwright-report` artifact.
+- `npm install` sets `core.hooksPath` to `.githooks` (the `prepare` script). The `pre-push` hook there runs `npm run test:unit`, `npm run lint` and `npm run test:react`, and `git push --no-verify` skips it. E2E isn't in the hook because CI runs it.
 - Playwright's `testDir` is `tests/e2e`. Specs live in `tests/e2e/scripts/*.spec.js`. Page-object models are in `tests/e2e/models/` (`App`, `WelcomePage`, `TableEditorPage`, `HotComponent`, `SelectrComponent`, etc.) and helpers in `tests/e2e/util/`. Tests run with one worker.
 - Specs import `test` from `tests/e2e/util/test.js`, not `@playwright/test`. Its auto fixture saves `trace.zip` and `failure.png` for a failed test into `test/playwright-test-results/<test>/`. Playwright's own `trace` option does nothing for `_electron.launch()`, so `Electron.js` starts tracing itself. The trace is written by `playwright` 1.59 while `@playwright/test` is 1.25, so open it at trace.playwright.dev rather than with `npx playwright show-trace`.
 - The CI runner's display is 1024x768 at 100% scale, so windows there are much smaller than on a dev machine. To reproduce CI layout issues locally, run with `E2E_SCALE=1 E2E_WINDOW_SIZE=1024x728` (handled in `Electron.js` and `models/App.js`).
@@ -81,6 +94,18 @@ New code should call `window.franchiseAPI` / `window.electronAPI` directly.
 - **Schema viewer** (`schemaViewerService.js`, `schemaViewerHandler.js`), **schema manager window** (`schema-manager.html`, `schemaManager.js`), schema search over game CAS files (`schemaSearchHandler.js`, `main/libs/CASBlockParser.js`), and schema mismatch prompts (`schemaMismatchHandler.js`). The schema search doesn't work for some game versions.
 - **Settings manager window** (`settings-manager.html`, `services/settings-manager/`). Preferences are stored by `main/services/preferencesStore.js` (a small JSON store that kept `electron-preferences`' file format and merge rules) with `data/preferencesSchema.json`. The renderer caches them in `preferencesService`, and changes are synced between windows over IPC.
 - Recent files, external-modification reload prompts, and GitHub-release auto-updates are handled by `recentFilesHandler`, `reloadFileHandler` + the chokidar watcher in `main.js`, and `updateHandler` + `electron-updater`.
+
+### v5 React UI
+
+- Code: `src/renderer/` (Vite root; `index.html` → `src/main.tsx`), shared TS types in `src/shared/`, and nav/game data in `data/navigation.ts` and `data/games.json` (`games.json` is also `require`d by main). Aliases: `@renderer`, `@shared`, `@assets`, `@data` (in `vite.config.mts` and `tsconfig.web.json`). CSS modules use camelCase class names; `*.svg?react` imports go through svgr.
+- Only `index.html` is built. `schema.html` and `settings.html` still point at v4 scripts.
+- `main.js` loads the React UI when `MFE_RENDERER_URL` (dev server) or `MFE_UI=react` (built output) is set, and v4 otherwise.
+- The renderer talks to main only through `window.api.{general,files,franchise}`, defined at the bottom of `preload/franchisePreload.js` and typed in `src/renderer/src/api.d.ts`. It maps onto the same `domain:action` channels as v4. `files:*` lives in `main/handlers/filesHandler.js`. `window.api.franchise.*` is still a stub, because the React `FranchiseModel` shape (`src/shared/types/franchise.ts`) doesn't match `franchise:get-metadata` yet.
+- Handsontable: React uses `handsontable@16` + `@handsontable/react-wrapper`. v4 needs 11.1.0, installed under the alias `handsontable-v11` (`require("handsontable-v11")`). Don't collapse them.
+- Monaco is bundled locally (`utils/monacoLoader.ts`, editor core + worker only), and the CSP allows `worker-src blob:`.
+- `frtk` (expression tables) isn't published. Its types the renderer needs are copied into `src/shared/types/frtk.ts`.
+- Renderer-only packages (react, handsontable 16, monaco, …) are devDependencies, because Vite bundles them and electron-builder would otherwise pack them. `out/renderer` isn't in `build.files` yet, so installers still ship only v4.
+- Vitest uses non-scoped CSS-module class names, so snapshots don't depend on file paths.
 
 ## Domain notes
 

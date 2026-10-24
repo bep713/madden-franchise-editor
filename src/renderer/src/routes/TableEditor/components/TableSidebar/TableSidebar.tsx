@@ -5,6 +5,7 @@ import { FranchiseBaseTableModel } from '@shared/types';
 import styles from './TableSidebar.module.scss';
 import Textbox from '@renderer/components/Textbox/Textbox';
 import TableListItem from '@renderer/components/TableListItem/TableListItem';
+import searchIconUrl from '@assets/icons/search.svg';
 
 const ROW_HEIGHT = 63;
 const GUTTER_SIZE = 4;
@@ -22,12 +23,12 @@ const TableSidebar: React.FC<TableSidebarProps> = ({
     selectedTableId,
     tables
 }: TableSidebarProps) => {
+    const [filterText, setFilterText] = useState<string>('');
+    const listRef = useRef<List>();
+
     if (!tables) {
         return null;
     }
-
-    const [filterText, setFilterText] = useState<string>('');
-    const listRef = useRef<List>();
 
     const handleFilterChange = (
         e: React.ChangeEvent<HTMLInputElement>
@@ -68,7 +69,7 @@ const TableSidebar: React.FC<TableSidebarProps> = ({
                         alt={'Search icon'}
                         height={16}
                         loading='lazy'
-                        src={`src/assets/icons/search.svg`}
+                        src={searchIconUrl}
                         width={16}
                     />
                 }
