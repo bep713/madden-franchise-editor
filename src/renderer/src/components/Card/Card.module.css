@@ -1,0 +1,36 @@
+@import url('@assets/colors.css');
+@import url('@assets/spacing.css');
+
+.card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+    padding: var(--spacing-4);
+    background-color: var(--white);
+    border-radius: 3px;
+}
+
+.clickable {
+    cursor: pointer;
+}
+
+.elevation {
+    box-shadow: 0 7px 50px -5px rgb(0 0 0 / calc(5%));
+}
+
+.hover {
+    margin: var(--spacing-1);
+    transition: transform 0.15s ease-in-out;
+}
+
+.hover:hover {
+    transform: scale(1.02);
+}
+
+.blackBorder {
+    border: 1px solid var(--black);
+}
+
+.silverBorder {
+    border: 1px solid var(--silver);
+}

@@ -1,0 +1,21 @@
+@use '@assets/vars' as v;
+
+.tab {
+    color: #000;
+    text-decoration: none;
+}
+
+.closeTabButton {
+    visibility: hidden;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 5px;
+    background-image: url('../img/close.png');
+    background-size: 8px;
+    background-position: center;
+    background-repeat: no-repeat;
+
+    &:hover {
+        background-color: v.$background-color;
+    }
+}

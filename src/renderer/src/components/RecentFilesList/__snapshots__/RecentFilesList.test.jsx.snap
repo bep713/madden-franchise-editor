@@ -1,0 +1,284 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`RecentFilesList > renders empty state when files is empty 1`] = `
+<DocumentFragment>
+  <div
+    data-testid="empty-list-message"
+    id="no-recent-files"
+  >
+    No recent files. When you open a file, it will appear here so you can access it later.
+  </div>
+</DocumentFragment>
+`;
+
+exports[`RecentFilesList > renders nothing if all files have no lastAccessedTime 1`] = `
+<DocumentFragment>
+  <div
+    data-testid="List"
+  />
+</DocumentFragment>
+`;
+
+exports[`RecentFilesList > renders up to 7 recent files sorted by lastAccessedTime 1`] = `
+<DocumentFragment>
+  <div
+    data-testid="List"
+  >
+    <div
+      class="_card_733919 _silverBorder_733919 _elevation_733919 _hover_733919 _clickable_733919"
+    >
+      <div
+        class="_header_733919"
+      >
+        <div
+          class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifySpaceBetween_1de05d _rowGap2_1de05d"
+        >
+          <div
+            class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+          >
+            <div
+              class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+            >
+              <span
+                data-testid="Text"
+              >
+                File6
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <span
+        data-testid="Text"
+      >
+        /path/six
+      </span>
+      <span
+        data-testid="Text"
+      >
+        Last Accessed: 08/16/25, 10:42 AM
+      </span>
+    </div>
+    <div
+      class="_card_733919 _silverBorder_733919 _elevation_733919 _hover_733919 _clickable_733919"
+    >
+      <div
+        class="_header_733919"
+      >
+        <div
+          class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifySpaceBetween_1de05d _rowGap2_1de05d"
+        >
+          <div
+            class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+          >
+            <div
+              class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+            >
+              <span
+                data-testid="Text"
+              >
+                File1
+              </span>
+              <span
+                data-testid="Text"
+              >
+                M25
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <span
+        data-testid="Text"
+      >
+        /path/one
+      </span>
+      <span
+        data-testid="Text"
+      >
+        Last Accessed: 06/19/25, 01:49 PM
+      </span>
+    </div>
+    <div
+      class="_card_733919 _silverBorder_733919 _elevation_733919 _hover_733919 _clickable_733919"
+    >
+      <div
+        class="_header_733919"
+      >
+        <div
+          class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifySpaceBetween_1de05d _rowGap2_1de05d"
+        >
+          <div
+            class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+          >
+            <div
+              class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+            >
+              <span
+                data-testid="Text"
+              >
+                File2
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <span
+        data-testid="Text"
+      >
+        /path/two
+      </span>
+      <span
+        data-testid="Text"
+      >
+        Last Accessed: 06/19/25, 01:49 PM
+      </span>
+    </div>
+    <div
+      class="_card_733919 _silverBorder_733919 _elevation_733919 _hover_733919 _clickable_733919"
+    >
+      <div
+        class="_header_733919"
+      >
+        <div
+          class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifySpaceBetween_1de05d _rowGap2_1de05d"
+        >
+          <div
+            class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+          >
+            <div
+              class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+            >
+              <span
+                data-testid="Text"
+              >
+                File8
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <span
+        data-testid="Text"
+      >
+        /path/eight
+      </span>
+      <span
+        data-testid="Text"
+      >
+        Last Accessed: 06/19/25, 01:49 PM
+      </span>
+    </div>
+    <div
+      class="_card_733919 _silverBorder_733919 _elevation_733919 _hover_733919 _clickable_733919"
+    >
+      <div
+        class="_header_733919"
+      >
+        <div
+          class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifySpaceBetween_1de05d _rowGap2_1de05d"
+        >
+          <div
+            class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+          >
+            <div
+              class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+            >
+              <span
+                data-testid="Text"
+              >
+                File5
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <span
+        data-testid="Text"
+      >
+        /path/five
+      </span>
+      <span
+        data-testid="Text"
+      >
+        Last Accessed: 06/19/25, 02:42 AM
+      </span>
+    </div>
+    <div
+      class="_card_733919 _silverBorder_733919 _elevation_733919 _hover_733919 _clickable_733919"
+    >
+      <div
+        class="_header_733919"
+      >
+        <div
+          class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifySpaceBetween_1de05d _rowGap2_1de05d"
+        >
+          <div
+            class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+          >
+            <div
+              class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+            >
+              <span
+                data-testid="Text"
+              >
+                File7
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <span
+        data-testid="Text"
+      >
+        /path/seven
+      </span>
+      <span
+        data-testid="Text"
+      >
+        Last Accessed: 06/19/25, 02:42 AM
+      </span>
+    </div>
+    <div
+      class="_card_733919 _silverBorder_733919 _elevation_733919 _hover_733919 _clickable_733919"
+    >
+      <div
+        class="_header_733919"
+      >
+        <div
+          class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifySpaceBetween_1de05d _rowGap2_1de05d"
+        >
+          <div
+            class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+          >
+            <div
+              class="_base_1de05d _alignCenter_1de05d _columnGap2_1de05d _flexRow_1de05d _justifyStart_1de05d _rowGap2_1de05d"
+            >
+              <span
+                data-testid="Text"
+              >
+                File3
+              </span>
+              <span
+                data-testid="Text"
+              >
+                M26
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <span
+        data-testid="Text"
+      >
+        /path/three
+      </span>
+      <span
+        data-testid="Text"
+      >
+        Last Accessed: 04/19/22, 04:02 AM
+      </span>
+    </div>
+  </div>
+</DocumentFragment>
+`;

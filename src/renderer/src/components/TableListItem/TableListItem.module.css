@@ -1,0 +1,35 @@
+@import url('@assets/colors.css');
+@import url('@assets/spacing.css');
+
+.table {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-05);
+    padding: var(--spacing-3);
+    text-align: left;
+    cursor: pointer;
+    background-color: var(--white-smoke);
+    border: 1px solid var(--timberwolf);
+}
+
+.table:hover {
+    background-color: var(--platinum);
+}
+
+.selected,
+.selected:hover {
+    cursor: default;
+    background-color: var(--antique-white);
+    border: 1px solid var(--silver);
+}
+
+.tableName {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 1em;
+}
+
+.selected .tableName {
+    font-weight: 500;
+}

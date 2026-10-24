@@ -1,0 +1,10 @@
+.card {
+    padding-top: 20px;
+    padding-bottom: 20px;
+    margin-bottom: -20px;
+    background-color: var(--white-smoke);
+}
+
+.verticalList {
+    display: none;
+}

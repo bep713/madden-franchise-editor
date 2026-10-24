@@ -1,0 +1,41 @@
+@import url("@assets/colors.css");
+@import url("@assets/spacing.css");
+
+
+.main {
+    container-name: main;
+    container-type: inline-size;
+    flex-grow: 1;
+    height: 100%;
+    padding: 0 var(--spacing-8) var(--spacing-8);
+    overflow: auto;
+    background-color: var(--white-smoke);
+}
+
+.sideNav {
+    align-items: stretch;
+}
+
+.filesByGame {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: var(--spacing-4);
+}
+
+@container main (width >= 1450px) {
+    .filesByGame {
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+    }
+}
+
+@container main (width <= 950px) {
+    .filesByGame {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@container main (width <= 650px) {
+    .filesByGame {
+        grid-template-columns: 1fr;
+    }
+}

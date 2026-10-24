@@ -1,0 +1,61 @@
+@import url('@assets/colors.css');
+@import url('@assets/spacing.css');
+
+.button {
+    padding: var(--spacing-3);
+    color: var(--text-primary);
+    cursor: pointer;
+    border: none;
+    border-radius: 2px;
+}
+
+.primary {
+    background-color: var(--antique-white);
+    border: 1px solid var(--fawn);
+}
+
+.primary:hover {
+    background-color: var(--fawn);
+}
+
+.secondary {
+    background-color: var(--white);
+    border: 1px solid var(--vista-blue);
+}
+
+.secondary:hover {
+    background-color: var(--info);
+}
+
+.ghost {
+    background-color: inherit;
+    border: none;
+}
+
+.ghost:hover {
+    background-color: var(--timberwolf);
+}
+
+.stretch {
+    width: 100%;
+}
+
+.disabled,
+.disabled:hover {
+    color: var(--timberwolf);
+    cursor: not-allowed;
+    background-color: var(--disabled);
+    border: 1px solid var(--disabled);
+}
+
+.center {
+    text-align: center;
+}
+
+.left {
+    text-align: left;
+}
+
+.right {
+    text-align: right;
+}

@@ -1,0 +1,62 @@
+@import url('@assets/colors.css');
+@import url('@assets/spacing.css');
+
+.input {
+    background-color: var(--white);
+    border: 1px solid var(--timberwolf);
+    border-radius: 2px;
+}
+
+.input:focus-within {
+    outline: 1px solid var(--black);
+}
+
+.input.error {
+    border: 1px solid var(--cherry-blossom);
+    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.inputElement {
+    width: 100%;
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: 1em;
+    border: none;
+}
+
+.inputElement:focus-visible {
+    outline: none;
+}
+
+.inputElement::placeholder {
+    font-style: italic;
+}
+
+.input.leftAsset {
+    padding-left: var(--spacing-3);
+}
+
+.leftAsset .inputElement {
+    padding-left: 0;
+}
+
+.errorMessage {
+    --textbox-error-border: 1px solid var(--cherry-blossom);
+
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: 0.875em;
+    background-color: var(--error);
+    border-right: var(--textbox-error-border);
+    border-bottom: var(--textbox-error-border);
+    border-left: var(--textbox-error-border);
+    border-bottom-right-radius: 2px;
+    border-bottom-left-radius: 2px;
+}
+
+.horizontal .label {
+    padding-top: calc(var(--spacing-3) + 1px);
+}
+
+.horizontal .inputWrapper {
+    flex-grow: 1;
+}

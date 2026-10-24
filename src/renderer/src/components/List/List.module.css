@@ -1,0 +1,103 @@
+@import url('@assets/spacing.css');
+
+.list {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin: 0;
+    list-style-position: inside;
+    list-style-type: none;
+    counter-set: list-counter 0;
+}
+
+.bullet,
+.numbered {
+    list-style-position: outside;
+}
+
+.bullet ::marker {
+    content: '•';
+}
+
+.divider::marker {
+    content: '' !important;
+}
+
+.numbered ::marker {
+    content: counter(list-counter, decimal) ".";
+}
+
+.numbered {
+    list-style-type: decimal;
+}
+
+.item {
+    counter-increment: list-counter 1;
+}
+
+.scrollable {
+    overflow: auto;
+}
+
+.scrollable .item {
+    flex-shrink: 0;
+}
+
+.bullet .item {
+    padding-left: var(--spacing-2);
+    margin-left: var(--spacing-2);
+}
+
+.numbered .item {
+    padding-left: var(--spacing-3);
+    margin-left: var(--spacing-3);
+}
+
+.horizontal {
+    flex-direction: row;
+}
+
+.gapNone {
+    gap: var(--spacing-none);
+}
+
+.gap05 {
+    gap: var(--spacing-05);
+}
+
+.gap1 {
+    gap: var(--spacing-1);
+}
+
+.gap2 {
+    gap: var(--spacing-2);
+}
+
+.gap3 {
+    gap: var(--spacing-3);
+}
+
+.gap4 {
+    gap: var(--spacing-4);
+}
+
+.gap5 {
+    gap: var(--spacing-5);
+}
+
+.gap6 {
+    gap: var(--spacing-6);
+}
+
+.gap8 {
+    gap: var(--spacing-8);
+}
+
+.gap12 {
+    gap: var(--spacing-12);
+}
+
+.gap16 {
+    gap: var(--spacing-16);
+}
+

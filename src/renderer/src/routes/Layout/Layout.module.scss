@@ -1,0 +1,14 @@
+@use '@assets/vars' as v;
+
+.addTabButton {
+    display: flex;
+    align-items: center;
+    justify-content: center !important;
+    flex-basis: 40px;
+    flex-shrink: 0;
+}
+
+.appWrapper {
+    display: grid;
+    grid-template-rows: v.$navbar-height minmax(calc(100vh - v.$navbar-height), 1fr);
+}

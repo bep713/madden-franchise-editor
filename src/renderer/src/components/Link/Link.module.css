@@ -1,0 +1,10 @@
+@import url('@assets/colors.css');
+
+.link {
+    color: var(--link);
+    cursor: pointer;
+}
+
+.black {
+    color: var(--black);
+}

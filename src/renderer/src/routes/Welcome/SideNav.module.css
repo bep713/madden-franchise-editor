@@ -1,0 +1,8 @@
+@import url('@assets/colors.css');
+
+.sideNav {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: var(--antique-white);
+}

@@ -1,0 +1,135 @@
+@import url('@assets/spacing.css');
+
+.base {
+    display: grid;
+    gap: var(--row-gap) var(--column-gap);
+    place-items: var(--grid-align) var(--grid-justify);
+}
+
+.inline {
+    display: inline-flex;
+}
+
+.alignEnd {
+    --grid-align: end;
+}
+
+.alignCenter {
+    --grid-align: center;
+}
+
+.alignStart {
+    --grid-align: start;
+}
+
+.alignStretch {
+    --grid-align: stretch;
+}
+
+.justifyEnd {
+    --grid-justify: end;
+}
+
+.justifyCenter {
+    --grid-justify: center;
+}
+
+.justifyStart {
+    --grid-justify: start;
+}
+
+.justifyStretch {
+    --grid-justify: stretch;
+}
+
+.justifyNormal {
+    --grid-justify: normal;
+}
+
+.columnGapNone {
+    --column-gap: 0;
+}
+
+.columnGap05 {
+    --column-gap: var(--spacing-05);
+}
+
+.columnGap1 {
+    --column-gap: var(--spacing-1);
+}
+
+.columnGap2 {
+    --column-gap: var(--spacing-2);
+}
+
+.columnGap3 {
+    --column-gap: var(--spacing-3);
+}
+
+.columnGap4 {
+    --column-gap: var(--spacing-4);
+}
+
+.columnGap5 {
+    --column-gap: var(--spacing-5);
+}
+
+.columnGap6 {
+    --column-gap: var(--spacing-6);
+}
+
+.columnGap8 {
+    --column-gap: var(--spacing-8);
+}
+
+.columnGap12 {
+    --column-gap: var(--spacing-12);
+}
+
+.columnGap16 {
+    --column-gap: var(--spacing-16);
+}
+
+.rowGapNone {
+    --row-gap: 0;
+}
+
+.rowGap05 {
+    --row-gap: var(--spacing-05);
+}
+
+.rowGap1 {
+    --row-gap: var(--spacing-1);
+}
+
+.rowGap2 {
+    --row-gap: var(--spacing-2);
+}
+
+.rowGap3 {
+    --row-gap: var(--spacing-3);
+}
+
+.rowGap4 {
+    --row-gap: var(--spacing-4);
+}
+
+.rowGap5 {
+    --row-gap: var(--spacing-5);
+}
+
+.rowGap6 {
+    --row-gap: var(--spacing-6);
+}
+
+.rowGap8 {
+    --row-gap: var(--spacing-8);
+}
+
+.rowGap12 {
+    --row-gap: var(--spacing-12);
+}
+
+.rowGap16 {
+    --row-gap: var(--spacing-16);
+}

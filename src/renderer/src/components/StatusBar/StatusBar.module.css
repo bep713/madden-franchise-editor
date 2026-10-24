@@ -1,0 +1,11 @@
+@import url('@assets/colors.css');
+@import url('@assets/spacing.css');
+
+.statusBar {
+    padding: var(--spacing-3);
+    background-color: var(--info);
+}
+
+.error {
+    background-color: var(--error);
+}

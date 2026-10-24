@@ -1,0 +1,13 @@
+@import url('@assets/spacing.css');
+
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: 100%;
+    padding: var(--spacing-05);
+}
+
+.autoSizerWrapper {
+    flex-grow: 1;
+}

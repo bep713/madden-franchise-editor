@@ -1,0 +1,80 @@
+@use '@assets/vars' as v;
+
+%tab-border {
+    border-right: 1px solid #d1d1d1;
+}
+
+%tab-hover {
+    &:hover {
+        background-color: #fbfbfb;
+        cursor: pointer;
+    }
+}
+
+.tabWrapper {
+    display: flex;
+    background-color: v.$background-color;
+    padding-left: 5px;
+    flex-wrap: nowrap;
+    overflow-x: overlay;
+    overflow-y: hidden;
+    list-style-type: none;
+
+    &::-webkit-scrollbar {
+        height: 5px;
+        display: none;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background-color: darken(v.$background-color, 20%);
+
+        &:hover {
+            background-color: darken(v.$background-color, 30%);
+        }
+
+        &:active {
+            background-color: darken(v.$background-color, 40%);
+        }
+    }
+
+    &:hover,
+    &.show-scrollbar {
+        &::-webkit-scrollbar {
+            display: inherit;
+        }
+    }
+}
+
+.tab {
+    outline: none;
+    border: none;
+    display: flex;
+    align-items: center;
+    padding: 7.5px 10px;
+    font-size: v.$font-size-small;
+    justify-content: space-between;
+    gap: 5px;
+    text-overflow: ellipsis;
+    white-space: pre;
+    border-right: 1px solid #d1d1d1;
+
+    @extend %tab-hover;
+
+    &.active {
+        background-color: #fff;
+
+        &:hover {
+            cursor: default;
+        }
+
+        .closeTabButton {
+            visibility: visible;
+        }
+    }
+
+    &:hover {
+        .closeTabButton {
+            visibility: visible;
+        }
+    }
+}

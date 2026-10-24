@@ -1,0 +1,12 @@
+@import url('@assets/colors.css');
+@import url('@assets/spacing.css');
+
+.sideNav {
+    padding: var(--spacing-4);
+    background-color: var(--antique-white);
+}
+
+.item {
+    display: inline-flex;
+    padding: var(--spacing-3);
+}

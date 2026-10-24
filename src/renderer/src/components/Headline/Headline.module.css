@@ -1,0 +1,30 @@
+
+@import url('@assets/colors.css');
+@import url('@assets/spacing.css');
+@import url('@assets/typography.css');
+
+.headline {
+    display: flex;
+    column-gap: var(--spacing-1);
+    align-items: baseline;
+    padding: var(--spacing-6) var(--spacing-4);
+    color: var(--white);
+    background-color: var(--primary);
+}
+
+.small {
+    padding: var(--spacing-4);
+}
+
+.header {
+    margin: 0;
+    font: var(--font-2xlarge);
+}
+
+.small .header {
+    font: var(--font-xlarge);
+}
+
+.subtext {
+    font-style: italic;
+}

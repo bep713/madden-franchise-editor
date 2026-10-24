@@ -1,0 +1,37 @@
+@import url('@assets/typography.css');
+
+.body {
+    font: var(--font-body);
+}
+
+.labelLarge {
+    font: var(--font-large);
+}
+
+.labelXLarge {
+    font: var(--font-xlarge);
+}
+
+.label2XLarge {
+    font: var(--font-2xlarge);
+}
+
+.labelSmall {
+    font: var(--font-small);
+}
+
+.bold {
+    font-weight: 700;
+}
+
+.light {
+    font-weight: 300;
+}
+
+.medium {
+    font-weight: 500;
+}
+
+.emphasis {
+    font-style: italic;
+}
