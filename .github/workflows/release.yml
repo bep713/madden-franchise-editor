@@ -30,9 +30,34 @@ jobs:
       # Tests and the installer share one job so npm ci and the renderer build run once.
       - uses: ./.github/actions/build-and-test
 
+      # electron-builder's own publishing can race and split the assets across two
+      # draft releases, so build only and upload with gh, as nightly.yml does.
+      - name: Build installer
+        shell: bash
+        run: npx electron-builder -w --publish never
+
+      - name: Verify latest.yml
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          test -f dist/latest.yml || { echo "dist/latest.yml is missing"; exit 1; }
+          cat dist/latest.yml
+          grep -q "^version: $VERSION$" dist/latest.yml || { echo "latest.yml version does not match $VERSION"; exit 1; }
+          for f in $(grep -E '^\s*(-\s*url|path):' dist/latest.yml | awk '{print $NF}' | sort -u); do
+            test -f "dist/$f" || { echo "latest.yml references $f but dist/$f does not exist"; ls dist; exit 1; }
+            test -f "dist/$f.blockmap" || { echo "Missing dist/$f.blockmap"; ls dist; exit 1; }
+          done
+
       # Creates a draft release for v<version>; review and publish it by hand.
-      - name: Build and publish draft release
+      - name: Create draft release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: npx electron-builder -w --publish always
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          gh release create "v$VERSION" \
+            --draft \
+            --target "$GITHUB_SHA" \
+            --title "$VERSION" \
+            --generate-notes \
+            dist/*.exe dist/*.exe.blockmap dist/latest.yml
