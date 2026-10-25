@@ -8,6 +8,7 @@ import styles from './Card.module.css';
 interface Props {
     border?: 'black' | 'silver' | 'none';
     children: React.ReactNode;
+    'data-testid'?: string;
     elevation?: 'none' | 'default';
     header?: {
         title?: string;
@@ -28,6 +29,7 @@ const BORDER_CLASSES = {
 const Card: React.FC<Props> = ({
     border = 'none',
     children,
+    'data-testid': testId,
     elevation = 'default',
     header: { leftAsset, title, titleContent, rightAsset } = {},
     hover,
@@ -39,6 +41,7 @@ const Card: React.FC<Props> = ({
             [styles.hover]: hover,
             [styles.clickable]: !!onClick
         })}
+        data-testid={testId}
         onClick={onClick}
     >
         {(title || titleContent) && (

@@ -70,6 +70,7 @@ const GetStartedCard: React.FC<GetStartedCardProps> = ({
             <div className={styles.card}>
                 <Card
                     border='black'
+                    data-testid='get-started-card'
                     header={{
                         leftAsset: openFile?.game ? (
                             <GameIcon game={openFile.game} />

@@ -19,6 +19,7 @@ const ExpressionEditorActionBar = ({ onActionClick }: Props) => {
     const items: LinkProps[] = [
         {
             color: 'black',
+            'data-action': TableActions[TableActions.EXPORT],
             key: TableActions.EXPORT,
             leftAsset: <Export />,
             onClick: () => onActionClick(TableActions.EXPORT),
@@ -26,6 +27,7 @@ const ExpressionEditorActionBar = ({ onActionClick }: Props) => {
         },
         {
             color: 'black',
+            'data-action': TableActions[TableActions.IMPORT],
             key: TableActions.IMPORT,
             leftAsset: <Import />,
             onClick: () => onActionClick(TableActions.IMPORT),
@@ -33,6 +35,7 @@ const ExpressionEditorActionBar = ({ onActionClick }: Props) => {
         },
         {
             color: 'black',
+            'data-action': TableActions[TableActions.TOGGLE_HEX],
             key: TableActions.TOGGLE_HEX,
             leftAsset: <Switch />,
             onClick: () => onActionClick(TableActions.TOGGLE_HEX),

@@ -1,0 +1,53 @@
+const Grid = require("./Grid");
+const { stubSaveDialog } = require("../../util/dialogStubs");
+const { poll } = require("../../util/poll");
+
+class TableEditorPage {
+  constructor(window) {
+    this.window = window;
+    this.grid = new Grid(window);
+    this.locators = {
+      // Handsontable has its own role="status" announcer
+      loader: this.window.locator('[role="status"][aria-busy="true"]'),
+      search: this.window.getByPlaceholder("Search tables..."),
+      header: this.window.getByText(/^\d+ - \S+$/).first(),
+      selectedSidebarTable: this.window.locator(
+        'button[data-table-id][aria-current="true"]',
+      ),
+    };
+  }
+
+  async waitForTableToLoad() {
+    await this.locators.loader.waitFor({ state: "hidden" });
+    await this.locators.header.waitFor();
+    await this.grid.locators.firstCell.waitFor();
+  }
+
+  // "<id> - <name>", same format as v4's getSelectedTableName
+  async getSelectedTableName() {
+    return this.locators.header.innerText();
+  }
+
+  selectedSidebarTable() {
+    return this.locators.selectedSidebarTable;
+  }
+
+  // The sidebar is virtualized, so search first instead of scrolling
+  async openTableById(id) {
+    await this.locators.search.fill(String(id));
+    await this.window.locator(`button[data-table-id="${id}"]`).click();
+    await poll(
+      () => this.getSelectedTableName(),
+      (name) => name.startsWith(`${id} - `),
+      { message: `Table ${id} never loaded` },
+    );
+    await this.waitForTableToLoad();
+  }
+
+  async exportTable(electronApp, filePath) {
+    await stubSaveDialog(electronApp, filePath);
+    await this.window.locator('[data-action="EXPORT"]').click();
+  }
+}
+
+module.exports = TableEditorPage;

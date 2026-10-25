@@ -23,6 +23,7 @@ const FieldEditorActionBar = ({ onActionClick }: Props) => {
     const items: LinkProps[] = [
         {
             color: 'black',
+            'data-action': TableActions[TableActions.EXPORT],
             key: TableActions.EXPORT,
             leftAsset: <Export />,
             onClick: () => onActionClick(TableActions.EXPORT),
@@ -30,6 +31,7 @@ const FieldEditorActionBar = ({ onActionClick }: Props) => {
         },
         {
             color: 'black',
+            'data-action': TableActions[TableActions.IMPORT],
             key: TableActions.IMPORT,
             leftAsset: <Import />,
             onClick: () => onActionClick(TableActions.IMPORT),
@@ -37,6 +39,7 @@ const FieldEditorActionBar = ({ onActionClick }: Props) => {
         },
         {
             color: 'black',
+            'data-action': TableActions[TableActions.PIN],
             key: TableActions.PIN,
             leftAsset: <Pushpin />,
             onClick: () => onActionClick(TableActions.PIN),
@@ -44,6 +47,7 @@ const FieldEditorActionBar = ({ onActionClick }: Props) => {
         },
         {
             color: 'black',
+            'data-action': TableActions[TableActions.JUMP_TO_COLUMN],
             key: TableActions.JUMP_TO_COLUMN,
             leftAsset: <Jump />,
             onClick: () => onActionClick(TableActions.JUMP_TO_COLUMN),
@@ -51,6 +55,7 @@ const FieldEditorActionBar = ({ onActionClick }: Props) => {
         },
         {
             color: 'black',
+            'data-action': TableActions[TableActions.SWITCH_ORIENTATION],
             key: TableActions.SWITCH_ORIENTATION,
             leftAsset: <Switch />,
             onClick: () => onActionClick(TableActions.SWITCH_ORIENTATION),

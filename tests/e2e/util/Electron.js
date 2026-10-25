@@ -35,6 +35,21 @@ const buildTestPreferences = () => {
     return preferences;
 };
 
+const REACT_INDEX = path.join(__dirname, '../../../out/renderer/index.html');
+
+// The UI is picked by env vars (see main.js). Drop the ones a dev shell may
+// have set, so they can't switch the UI under test.
+const buildLaunchEnv = (ui) => {
+    const env = { ...process.env, 'NODE_ENV': 'testing' };
+    delete env.MFE_RENDERER_URL;
+    if (ui === 'react') {
+        env.MFE_UI = 'react';
+    } else {
+        delete env.MFE_UI;
+    }
+    return env;
+};
+
 class Electron {
     constructor() {
         this.electron = null;
@@ -42,7 +57,12 @@ class Electron {
     };
 
     // options.pins: contents to seed pins.json with
+    // options.ui: "react" loads the built React UI (out/renderer) instead of v4
     async launchWithDefaultOptions(options = {}) {
+        if (options.ui === 'react' && !fs.existsSync(REACT_INDEX)) {
+            throw new Error('out/renderer/index.html missing, run npm run build:react');
+        }
+
         // Each instance gets its own userData so tests never touch the real
         // preferences, pins, recent files or schemas.
         this.userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mfe-e2e-'));
@@ -64,10 +84,7 @@ class Electron {
                 // E2E_SCALE=1 mimics the CI display (with E2E_WINDOW_SIZE, see App.js)
                 ...(process.env.E2E_SCALE ? [`--force-device-scale-factor=${process.env.E2E_SCALE}`] : [])
             ],
-            env: {
-                ...process.env,
-                'NODE_ENV': 'testing'
-            }
+            env: buildLaunchEnv(options.ui)
         });
 
         // Saved on failure by the fixture in util/test.js.

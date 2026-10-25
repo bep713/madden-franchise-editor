@@ -150,7 +150,10 @@ const Welcome: React.FC = () => {
                                     }
                                 }}
                             />
-                            <Card header={{ title: 'Recent Files' }}>
+                            <Card
+                                data-testid='recent-files'
+                                header={{ title: 'Recent Files' }}
+                            >
                                 <RecentFilesList
                                     onClick={(r: RecentFile) =>
                                         initializeFile(r.fullPath)

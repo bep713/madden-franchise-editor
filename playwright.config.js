@@ -47,6 +47,13 @@ const config = {
        traces and failure screenshots come from tests/e2e/util/test.js. */
   },
 
+  /* `npx playwright test` runs both; `--project=react` runs only the React UI
+     specs (needs `npm run build:react` first). */
+  projects: [
+    { name: "v4", testIgnore: "**/react/**" },
+    { name: "react", testMatch: "**/react/**/*.spec.js" },
+  ],
+
   /* Configure projects for major browsers */
   // projects: [
   // {

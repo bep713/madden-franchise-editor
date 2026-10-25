@@ -45,9 +45,11 @@ const TableListItem: React.FC<Props> = ({
 
     return (
         <Component
+            aria-current={table.selected ? 'true' : undefined}
             className={cx(styles.table, {
                 [styles.selected]: table.selected
             })}
+            data-table-id={table.id}
             key={table.id}
             {...componentProps}
         >

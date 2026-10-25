@@ -18,7 +18,8 @@ npm run dev                 # sass watch + browserify watch + electron (NODE_ENV
 npm run build:renderer      # one-off browserify build of the 3 renderer bundles
 npm run sass:build          # compile renderer/sass/app-manifest.scss -> renderer/css/app-manifest.css
 npm run build:app           # electron-builder Windows build (publishes to GitHub releases)
-npm run e2eTest             # all Playwright e2e tests (npx playwright test)
+npm run e2eTest             # all Playwright e2e tests, v4 + React (builds both UIs first)
+npm run e2eTest:react       # build:react + only the React specs (--project=react)
 npm run test:unit           # node:test unit tests in tests/unit (no build needed)
 
 # v5 React UI (src/)
@@ -37,7 +38,7 @@ npx playwright test -g "basic test"                  # single test by title
 ```
 
 - ESLint/Prettier/Stylelint only cover `src/` (v5). The v4 code (`main/`, `preload/`, `renderer/`) has no linter, and there is no gulp. `.github/copilot-instructions.md` mentions `gulp sass:watch`, but that is outdated. Use the npm sass scripts.
-- `renderer/js/bundle.js`, `renderer/js/*.bundle.js` and `renderer/css/app-manifest.css(.map)` are gitignored build outputs. Run `npm run sass:build` and `npm run build:renderer` (or `npm run dev`) before launching the app. `npm run e2eTest` and `npm run build:app` run both for you; if you call `npx playwright test` directly, build first.
+- `renderer/js/bundle.js`, `renderer/js/*.bundle.js` and `renderer/css/app-manifest.css(.map)` are gitignored build outputs. Run `npm run sass:build` and `npm run build:renderer` (or `npm run dev`) before launching the app. `npm run e2eTest` and `npm run build:app` run both for you; if you call `npx playwright test` directly, build first (and `npm run build:react` for the React specs).
 - In dev, `electron-reload` watches `main.js`, `main/`, `preload/`, the bundles, the CSS and `renderer/*.html`, so the app relaunches or reloads on its own.
 
 ### Tests
@@ -106,6 +107,17 @@ New code should call `window.franchiseAPI` / `window.electronAPI` directly.
 - `frtk` (expression tables) isn't published. Its types the renderer needs are copied into `src/shared/types/frtk.ts`.
 - Renderer-only packages (react, handsontable 16, monaco, …) are devDependencies, because Vite bundles them and electron-builder would otherwise pack them. `out/renderer` isn't in `build.files` yet, so installers still ship only v4.
 - Vitest uses non-scoped CSS-module class names, so snapshots don't depend on file paths.
+- **Every React feature ships with tests.** A change that adds or changes user-visible React behaviour must add a spec in `tests/e2e/scripts/react/`, or extend one, so the flow runs through the real main process: the happy path, plus any persisted result (the saved file, `pins.json`, preferences). The harness (from `.claude/plans/react-conversion/02-react-e2e.md`):
+    - Playwright has two projects: `v4` (everything outside `react/`) and `react` (`tests/e2e/scripts/react/**`). React specs launch with `electron.launchWithDefaultOptions({ ui: "react" })`, which loads the built `out/renderer`, so run `npm run build:react` after changing `src/`.
+    - Page models are in `tests/e2e/models/react/`; `models/App.js` is shared. Native dialogs are stubbed in main with `util/dialogStubs.js` (no `TestUtility` in React).
+    - Wait with `locator.waitFor()` or `util/poll.js`, not Playwright's `expect(locator)`: `expect` comes from `@playwright/test` 1.25, which can't drive locators of the `playwright` 1.59 Electron instance.
+  - Branching logic goes in vitest next to the code, with `window.franchiseAPI` / `electronAPI` mocked: pure utils, hooks, and components with several states.
+  - Each step plan lists the specs it adds or extends in its Verification section.
+  - When a feature reaches v4 parity, port the matching v4 spec and leave the v4 spec unchanged.
+  - Don't select on CSS-module class names in e2e (they are hashed in the build). Use one of these instead:
+    - Roles or text.
+    - A `data-*` attribute named after the data it carries (`data-name`, `data-table-id`, `data-action`).
+    - `data-testid`, when there is nothing natural to expose.
 
 ## Domain notes
 

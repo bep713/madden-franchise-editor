@@ -8,7 +8,13 @@ interface Props {
 
 const Loader: React.FC<Props> = ({ message }: Props) => {
     return (
-        <div className={styles.loaderWrapper}>
+        <div
+            aria-busy='true'
+            aria-label={message ? undefined : 'Loading'}
+            aria-live='polite'
+            className={styles.loaderWrapper}
+            role='status'
+        >
             <div className={styles.loaderBlock}>
                 <Layout alignItems='center' direction='column' rowGap='6'>
                     <div className={styles.loader}></div>
