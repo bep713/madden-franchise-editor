@@ -15,8 +15,7 @@ const navigation: Navigation = {
             availableVersions: [19, 20, 21, 22, 23, 24, 25, 26],
             availableFormats: [
                 FileType.FRANCHISE,
-                FileType.OTHER_COMPRESSED,
-                FileType.OTHER_UNCOMPRESSED
+                FileType.COMMON
             ],
             menu: {
                 disable: [
@@ -110,8 +109,7 @@ const navigation: Navigation = {
             clickListener: 'onTableEditorClicked',
             availableFormats: [
                 FileType.FRANCHISE,
-                FileType.OTHER_COMPRESSED,
-                FileType.OTHER_UNCOMPRESSED
+                FileType.COMMON
             ],
             availableVersions: [19, 20, 21, 22, 23, 24, 25, 26],
             menu: {

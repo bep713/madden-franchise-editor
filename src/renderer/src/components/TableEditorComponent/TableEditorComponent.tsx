@@ -5,7 +5,7 @@ import { HotTable, HotTableRef } from '@handsontable/react-wrapper';
 import 'handsontable/styles/handsontable.min.css';
 import 'handsontable/styles/ht-theme-main.min.css';
 import { registerAllModules } from 'handsontable/registry';
-import { FranchiseTableModel, TableField } from '@shared/types';
+import { TableColumn, TableData } from '@shared/types';
 
 import styles from './TableEditorComponent.module.css';
 
@@ -13,7 +13,10 @@ registerAllModules();
 
 interface Props {
     isInverted?: boolean;
-    table: Pick<FranchiseTableModel, 'records'>;
+    table: Pick<TableData, 'records'> & {
+        // The column type and enum stay on `headers` for later cell editors
+        headers: Pick<TableColumn, 'name'>[];
+    };
 }
 
 const TableEditorComponent: React.FC<Props> = ({
@@ -44,30 +47,13 @@ const TableEditorComponent: React.FC<Props> = ({
         return () => observer.disconnect();
     }, []);
 
-    const headers = Object.keys(table.records?.[0]?.fields || {}).map(
-        (key: string) => key
-    );
+    const headers = table.headers.map((header) => header.name);
     const data = isInverted
-        ? (table?.records || []).reduce(
-              (
-                  accum: string[][],
-                  cur: { fields?: { [key: string]: TableField } }
-              ) => {
-                  Object.values(cur.fields || {}).forEach(
-                      (field: TableField, index: number) => {
-                          if (!accum[index]) {
-                              accum[index] = [field.name];
-                          }
-
-                          accum[index].push(field.value);
-                      }
-                  );
-
-                  return accum;
-              },
-              []
-          )
-        : (table?.records || []).map((r) => r.fields || []);
+        ? headers.map((name) => [
+              name,
+              ...table.records.map((record) => record[name])
+          ])
+        : table.records;
 
     return (
         <div className={styles.wrapper} ref={wrapperRef}>
@@ -82,18 +68,14 @@ const TableEditorComponent: React.FC<Props> = ({
                         ? headers
                         : [
                               'Field Name',
-                              ...(table?.records || []).map(
+                              ...table.records.map(
                                   (_val, index) => `Record ${index + 1}`
                               )
                           ]
                 }
                 columns={
                     !isInverted
-                        ? Object.keys(table?.records?.[0]?.fields || {}).map(
-                              (key: string) => ({
-                                  data: `${key}.value` // Maps data value from record object to table cell
-                              })
-                          )
+                        ? headers.map((name) => ({ data: name }))
                         : undefined
                 }
                 data={data}

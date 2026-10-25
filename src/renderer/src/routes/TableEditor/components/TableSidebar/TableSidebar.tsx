@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { FixedSizeList as List } from 'react-window';
-import { FranchiseBaseTableModel } from '@shared/types';
+import { TableListItem as TableListEntry } from '@shared/types';
 import styles from './TableSidebar.module.scss';
 import Textbox from '@renderer/components/Textbox/Textbox';
 import TableListItem from '@renderer/components/TableListItem/TableListItem';
@@ -12,9 +12,9 @@ const GUTTER_SIZE = 4;
 
 interface TableSidebarProps {
     onFilter?: (filterText: string) => void;
-    onTableSelect?: (table: FranchiseBaseTableModel) => void;
+    onTableSelect?: (table: TableListEntry) => void;
     selectedTableId: number;
-    tables?: FranchiseBaseTableModel[];
+    tables?: TableListEntry[];
 }
 
 const TableSidebar: React.FC<TableSidebarProps> = ({

@@ -1,6 +1,5 @@
 import { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FranchiseModel, Version } from '@shared/types';
 import { File, GameFileList, RecentFile } from '@shared/types/files';
 
 import styles from './Welcome.module.css';
@@ -10,59 +9,62 @@ import Headline from '@renderer/components/Headline/Headline';
 import Layout from '@renderer/components/Layout/Layout';
 
 import { FranchiseFileContext } from '@renderer/context/FranchiseFileContext';
+import { buildOpenFranchiseFile } from '@renderer/hooks/useActiveFranchiseFile';
+import type { RecentFileEntry } from '@renderer/preload';
+import { basename, dirname } from '@renderer/utils/path';
 import SideNav from './SideNav';
 import Card from '@renderer/components/Card/Card';
 import RecentFilesList from '@renderer/components/RecentFilesList/RecentFilesList';
 import GameFileCard from '@renderer/components/GameFilesCard/GameFilesCard';
 import GetStartedCard, { GetStartedActions } from './Cards/GetStartedCard';
 
+function toRecentFiles(entries: RecentFileEntry[]): RecentFile[] {
+    return entries.map((entry) => ({
+        basePath: dirname(entry.path),
+        fullPath: entry.path,
+        lastAccessedTime: entry.time,
+        name: basename(entry.path)
+    }));
+}
+
 const Welcome: React.FC = () => {
     const navigate = useNavigate();
-    const [version, setVersion] = useState<Version>();
+    const [version, setVersion] = useState<string>();
     const [filesByGame, setFilesByGame] = useState<
         Record<string, GameFileList>
     >({});
     const [recentFiles, setRecentFiles] = useState<RecentFile[]>([]);
-    const [loadedFranchiseModel, setLoadedFranchiseModel] =
-        useContext(FranchiseFileContext);
+    const [openFile, setOpenFile] = useContext(FranchiseFileContext);
 
     useEffect((): void => {
-        // Get app version
         (async (): Promise<void> => {
-            const version = await window.api.general.getVersion();
-            setVersion(version);
+            setVersion(await window.electronAPI.getVersion());
         })();
     }, []);
 
     useEffect((): void => {
-        // Get game saves and recent files
         (async (): Promise<void> => {
-            const gameSavesResponse = await window.api.files.getSaves();
+            const gameSavesResponse = await window.electronAPI.files.getSaves();
             if (gameSavesResponse.success) {
                 setFilesByGame(gameSavesResponse.filesByGame);
-                setRecentFiles(gameSavesResponse.recentFiles);
             }
         })();
     }, []);
 
     useEffect((): void => {
-        // Get recent files after loading a new franchise file
+        // Loads recentFiles.json in main, as v4's recentFileService does
         (async (): Promise<void> => {
-            const recentFiles = await window.api.files.getRecentFiles();
-            if (recentFiles && recentFiles.length > 0) {
-                setRecentFiles(recentFiles);
-            }
+            await window.electronAPI.recentFiles.initialize();
+            setRecentFiles(
+                toRecentFiles(
+                    await window.electronAPI.recentFiles.getRecentFiles()
+                )
+            );
         })();
-    }, [loadedFranchiseModel]);
+    }, []);
 
     async function handleOpenFile(): Promise<void> {
-        if (loadedFranchiseModel) {
-            await window.api.franchise.closeFranchiseFile(
-                loadedFranchiseModel.franchiseId
-            );
-        }
-
-        const path = await window.api.general.openDialog({
+        const result = await window.electronAPI.showOpenDialog({
             title: 'Select franchise file to open',
             properties: ['openFile'],
             filters: [
@@ -73,22 +75,44 @@ const Welcome: React.FC = () => {
             ]
         });
 
-        if (path) {
-            await initializeFile(path);
+        if (!result.canceled && result.filePaths[0]) {
+            await initializeFile(result.filePaths[0]);
         }
     }
 
+    // Follows v4's navigationService "open-file" flow. TODO: FTC year/type
+    // overrides and the schema picker (see react-conversion/plan.md).
     async function initializeFile(path: string): Promise<void> {
-        const model: FranchiseModel =
-            await window.api.franchise.initializeFranchiseFile(path);
-        setLoadedFranchiseModel?.(model);
+        // Release the previous file so two parsed files never coexist in main
+        if (openFile) {
+            setOpenFile?.(undefined);
+            await window.franchiseAPI.closeFile(openFile.fileId);
+        }
+
+        const result = await window.franchiseAPI.openFile(path);
+        if ('error' in result) {
+            await window.electronAPI.showMessageBox({
+                type: 'error',
+                message: `Could not open ${basename(path)}.`,
+                detail: result.error
+            });
+            return;
+        }
+
+        const tables = await window.franchiseAPI.getTableList(result.fileId);
+        setRecentFiles(
+            toRecentFiles(await window.electronAPI.recentFiles.addFile(path))
+        );
+        setOpenFile?.(
+            buildOpenFranchiseFile(result.fileId, result.metadata, tables, path)
+        );
     }
 
     return (
         <Layout alignItems='stretch' rowGap='none' direction='column'>
             <Headline
                 size='default'
-                subtext={version && `v${version.version}`}
+                subtext={version && `v${version}`}
                 text='Madden Franchise Editor'
             />
             <Allotment defaultSizes={[1, 4]}>
@@ -104,19 +128,16 @@ const Welcome: React.FC = () => {
                             rowGap='4'
                         >
                             <GetStartedCard
-                                franchiseModel={loadedFranchiseModel}
+                                openFile={openFile}
                                 onActionClick={async (action) => {
                                     switch (action) {
                                         case GetStartedActions.OPEN_FILE:
                                             await handleOpenFile();
                                             break;
                                         case GetStartedActions.OPEN_FILE_LOCATION:
-                                            if (
-                                                loadedFranchiseModel &&
-                                                loadedFranchiseModel.filePath
-                                            ) {
-                                                window.api.files.showItemInFolder(
-                                                    loadedFranchiseModel?.filePath
+                                            if (openFile?.path) {
+                                                window.electronAPI.welcome.revealInExplorer(
+                                                    openFile.path
                                                 );
                                             }
                                             break;
@@ -158,7 +179,7 @@ const Welcome: React.FC = () => {
                                                 key={game}
                                                 files={gameFiles}
                                                 onDirectoryClick={() =>
-                                                    window.api.files.openFolder(
+                                                    window.electronAPI.files.openFolder(
                                                         gameFiles.game
                                                             .directories
                                                             .savesFullPath

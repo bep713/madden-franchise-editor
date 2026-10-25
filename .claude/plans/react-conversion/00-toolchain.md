@@ -1,4 +1,4 @@
-# Plan: bring the react-conversion toolchain to v5-react-conversion
+# 00 — Toolchain: bring the react-conversion toolchain to v5-react-conversion
 
 ## Context
 Commit `d3b17fa` copied the React renderer (`src/renderer/**`, `src/shared/**`) from `react-conversion`. It came without the toolchain: no TS config, no bundler, no React deps, and no main/preload that exposes the `window.api` it calls. The goal is to get `src/renderer/index.html` compiling and showing the Welcome page inside Electron, using the **current** main process (main.js + FranchiseFileManager + handlers). The v4 vanilla renderer has to keep working next to it.
@@ -82,38 +82,9 @@ Decisions already made: reuse the current main process, keep v4 running, stub th
 ## Status (2026-10-24)
 Steps 1–7 are done (`0f5951c`, `d8e3f51`). Checked: lint 0 errors / 4 warnings, vitest 3/3, typecheck clean.
 Deferred on purpose: `out/renderer/**` is not in `build.files` yet (until cutover).
-Not yet run by hand: `dev:react` / `start:react` Welcome page, `build-storybook`, `stylelint`, `e2eTest` regression.
+The remaining Verification items were run in the close-out below.
 
-## Next steps
+## Close-out — DONE (2026-10-24, committed in `56d2e8f`)
+Result: stylelint clean (auto-fix + `darken` → `color.adjust`, `%link-item`, dropped `#__next`), lint 0 warnings, `build-storybook` OK, `start:react` and `dev:react` show the Welcome page (version, recent files, saves) with no CSP errors, HMR works. Dev-only `mfe:dev-csp` plugin in `vite.config.mts` adds `'unsafe-inline'` to `script-src` for plugin-react's inline preamble. Fixed the `List` key warning and the 4 `react-hooks/exhaustive-deps` warnings. e2e 24/24 (`bulk-edit` 2,500-cell paste had one flaky worker crash 0xC0000005, then passed on rerun). Left as is: Prettier drift in 6 pre-existing TSX/HTML files, React Router v7 future-flag warnings.
 
-### Phase 0: close out the toolchain — DONE (2026-10-24, uncommitted)
-Result: stylelint clean (auto-fix + `darken` → `color.adjust`, `%link-item`, dropped `#__next`), lint 0 warnings, `build-storybook` OK, `start:react` and `dev:react` show the Welcome page (version, recent files, saves) with no CSP errors, HMR works. Dev-only `mfe:dev-csp` plugin in `vite.config.mts` adds `'unsafe-inline'` to `script-src` for plugin-react's inline preamble. Fixed the `List` key warning. e2e 24/24 (`bulk-edit` 2,500-cell paste had one flaky worker crash 0xC0000005, then passed on rerun). Left as is: Prettier drift in 6 pre-existing TSX/HTML files, React Router v7 future-flag warnings.
-
-1. Run the unchecked items in Verification (`dev:react` with HMR and no CSP errors, `build:react && start:react`, `stylelint`, `build-storybook`, `e2eTest`). Fix whatever breaks.
-2. Fix the 4 `react-hooks/exhaustive-deps` warnings (e.g. `ExpressionEditorView.tsx:49`), or disable the rule with a reason.
-
-### Phase 1: wire `window.api.franchise.*` to FranchiseFileManager
-Goal: Welcome → open file → the table editor shows real table data in the React UI. The template is the commented-out madden-franchise path in `react-conversion:src/main/ipc/franchise.ts` (`getFranchiseTableModel` plus the per-field `{name, type, value}` reducer).
-
-1. **Main adapter**: new `main/handlers/franchiseModelHandler.js` exporting `registerFranchiseModelHandlers(loggedIpc, franchiseFileManager)`, registered in `main.js` next to `filesHandler`. Channels:
-   - `franchise-model:initialize (filePath)`: `franchiseFileManager.openFile(filePath)`, then add to recent files (reuse the logic behind `recent-files:add` in `main/handlers/recentFilesHandler.js`), then return a `FranchiseModel`.
-   - `franchise-model:get-active`: map every active file in FranchiseFileManager to a `FranchiseModel`.
-   - `franchise-model:close (id)`: `franchiseFileManager.closeFile(id)`.
-   - `franchise-model:read-table-data ({franchiseId, tables})`: resolve each `TableInput` with `getTableByUniqueId` → `getTableById` → `getAllTablesByName()[0]`, `await table.readRecords(fields)`, then map each record to `{ fields: { [name]: { name, type, value } } }`. `type` is `reference` if `offset.isReference`, `enum` if `offset.enum`, else `offset.type`. Wrap each field read in try/catch with `_getUnreadableCellPlaceholder()`, as `_serializeRecord` does.
-   - `franchise-model:export-table-data`: headers from `offsetTable`, rows from `fieldsArray` values. Pull the xlsx write out of `external-data:export` (`main/handlers/externalDataHandler.js:93`) into a shared helper, then `shell.openPath` when `openWhenDone`. Return `{ status, filePath }`. Expression (SPEX) export returns `{ status: false }` until frtk exists.
-   - Model builder: `franchiseId` = fileId, `filePath`, `directory`/`name` from `path`, `gameYear` = `file._gameYear`, `format` from `file.type.format` (`franchise` → `FileType.FRANCHISE`, otherwise `OTHER_UNCOMPRESSED`), `game` from `data/games.json` by `gameYear`, `tables` = `file.tables.map((t, index) => ({ id: t.header.tableId, index, name: t.name, type: 'ASTO', uniqueId: t.header.uniqueId }))`. Without frtk every table is `ASTO`, so the expression editor stays unreachable. That's acceptable.
-   - Add a small public `getActiveFileIds()` (or an iterator) to FranchiseFileManager instead of reaching into `activeFiles`.
-2. **Preload**: replace the `franchise` stubs in `preload/franchisePreload.js` with `ipcRenderer.invoke` calls to these channels, and remove `notImplemented` if nothing else uses it. `api.d.ts` stays as it is.
-3. **Renderer**: check the Welcome → `/table-editor` flow (`Welcome.tsx:83` sets context; `Layout.tsx:31` nav). `TableEditor.tsx:80` loads the first table in an effect with `[]` deps, so it may need `activeFranchiseFile` as a dependency now that the model arrives asynchronously.
-4. **Tests**: `tests/unit/franchiseModelHandler.test.js` (node:test plus `electronStub`), opening `tests/data/m22/career/CAREER-M22TEST`. Assert the model shape, the `read-table-data` field shape for one known table, and export to a temp xlsx.
-5. **Verify**: `npm run test:unit`, `typecheck`, `test:react`, then `dev:react`: open the M22 fixture, select tables, export one to xlsx. Then `npm run e2eTest` to confirm v4 still works.
-
-### Phase 2: React table editor toward v4 parity (each item is its own plan)
-- Cell editing through `franchise:write-bulk-table-cells` and save / save-as (`franchise:save-file*`), plus a dirty indicator from the `franchise:table-changed` / `saved` events (add `on*` subscriptions to `window.api`).
-- Schema handling on open: port the `schema-mismatch:check` prompt and the missing-schema flow.
-- Reference cells (jump to the referenced record, `franchise:get-references-to-record`), enums as dropdowns, empty records.
-- App-menu integration (v4's `menuService` toggles menu items per nav item; React needs an equivalent over IPC).
-- A React e2e harness: Playwright launching with `MFE_UI=react` after `build:react`, with page objects under `tests/e2e/models/react/`.
-
-## Out of scope (later phases)
-Schema/settings windows in React; React 19; main/preload to TS under electron-vite; electron-builder cutover (add `out/renderer/**` to `build.files`, flip the default UI); a real frtk dependency (SPEX tables + expression editor).
+Next: [01-franchise-model.md](01-franchise-model.md). Roadmap: [plan.md](plan.md).

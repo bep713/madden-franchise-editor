@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 
 import { Allotment } from 'allotment';
 import 'allotment/dist/style.css';
@@ -7,11 +7,7 @@ import Fuse from 'fuse.js';
 
 import styles from './TableEditor.module.scss';
 import { FranchiseFileContext } from '@renderer/context/FranchiseFileContext';
-import {
-    FranchiseBaseTableModel,
-    FranchiseTableModel,
-    TableType
-} from '@shared/types';
+import { TableData, TableListItem, TableType } from '@shared/types';
 import TableSidebar from './components/TableSidebar/TableSidebar';
 import useLoader from '@renderer/hooks/useLoader';
 import ExpressionEditorView from './views/ExpressionEditorView';
@@ -21,41 +17,39 @@ const TableEditor: React.FC = () => {
     const [activeFranchiseFile] = useContext(FranchiseFileContext);
     const [selectedTableId, setSelectedTableId] = useState<number>(-1);
     const [selectedTableData, setSelectedTableData] =
-        useState<FranchiseTableModel | null>(null);
-    const [filteredTables, setFilteredTables] = useState<
-        FranchiseBaseTableModel[] | undefined
-    >(activeFranchiseFile?.tables);
+        useState<TableData | null>(null);
+    const [filterText, setFilterText] = useState('');
 
     const { loader: tableLoader, setOptions: setTableLoaderOptions } =
         useLoader();
 
-    const selectedTable = activeFranchiseFile?.tables?.find(
+    const selectedTable = activeFranchiseFile?.tables.find(
         (table) => table.id === selectedTableId
     );
 
     const isExpressionTable = selectedTable?.type === TableType.SPEX;
 
-    const fuse = new Fuse(activeFranchiseFile?.tables || [], {
-        keys: ['index', 'name', 'id'],
-        includeScore: true
-    });
+    const allTables = activeFranchiseFile?.tables;
 
-    const onFilterTable = (filterText: string): void => {
-        const rawResult = fuse.search(filterText);
-        setFilteredTables(
-            filterText.length > 0
-                ? rawResult.map((result) => result.item)
-                : activeFranchiseFile?.tables?.sort((a, b) => a.index - b.index)
-        );
-    };
+    // Derived, not seeded into state, so it updates when the model arrives async.
+    const filteredTables = useMemo(() => {
+        if (!allTables) {
+            return undefined;
+        }
 
-    const onSelectTable = async (
-        table: FranchiseBaseTableModel
-    ): Promise<void> => {
-        if (
-            !activeFranchiseFile ||
-            table.uniqueId === selectedTable?.uniqueId
-        ) {
+        if (filterText.length === 0) {
+            return [...allTables].sort((a, b) => a.index - b.index);
+        }
+
+        const fuse = new Fuse(allTables, {
+            keys: ['index', 'name', 'id'],
+            includeScore: true
+        });
+        return fuse.search(filterText).map((result) => result.item);
+    }, [allTables, filterText]);
+
+    const onSelectTable = async (table: TableListItem): Promise<void> => {
+        if (!activeFranchiseFile || table.id === selectedTable?.id) {
             return;
         }
 
@@ -64,17 +58,26 @@ const TableEditor: React.FC = () => {
             show: true
         });
         setSelectedTableId(table.id);
-        const tableResult = await window.api.franchise.readTableData({
-            franchiseId: activeFranchiseFile.franchiseId,
-            tables: [{ tableUniqueId: table.uniqueId }]
-        });
-        setSelectedTableData(tableResult?.tables?.[0]);
+        // A tableId is stable within one open file
+        const tableResult = await window.franchiseAPI.readTableData(
+            activeFranchiseFile.fileId,
+            table.id
+        );
+        if ('error' in tableResult) {
+            console.error(
+                `Failed to read table ${table.id}: ${tableResult.error}`
+            );
+            setSelectedTableId(-1);
+            setSelectedTableData(null);
+        } else {
+            setSelectedTableData(tableResult);
+        }
         setTableLoaderOptions({
             show: false
         });
     };
 
-    const firstTable = activeFranchiseFile?.tables?.[0];
+    const firstTable = activeFranchiseFile?.tables[0];
 
     useEffect(() => {
         // Load the first table once the file model is available. This starts an
@@ -104,7 +107,7 @@ const TableEditor: React.FC = () => {
                         snap
                     >
                         <TableSidebar
-                            onFilter={onFilterTable}
+                            onFilter={setFilterText}
                             onTableSelect={onSelectTable}
                             selectedTableId={selectedTableId}
                             tables={filteredTables}
@@ -117,10 +120,7 @@ const TableEditor: React.FC = () => {
                                 selectedTableData &&
                                 (isExpressionTable ? (
                                     <ExpressionEditorView
-                                        franchiseId={
-                                            activeFranchiseFile.franchiseId
-                                        }
-                                        key={selectedTable.uniqueId}
+                                        key={selectedTable.id}
                                         setTableLoaderOptions={
                                             setTableLoaderOptions
                                         }
@@ -128,9 +128,6 @@ const TableEditor: React.FC = () => {
                                     />
                                 ) : (
                                     <FieldEditorView
-                                        franchiseId={
-                                            activeFranchiseFile.franchiseId
-                                        }
                                         setTableLoaderOptions={
                                             setTableLoaderOptions
                                         }

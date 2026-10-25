@@ -1,13 +1,13 @@
 import Layout from '@renderer/components/Layout/Layout';
 import Textbox from '@renderer/components/Textbox/Textbox';
-import { FranchiseTableModel } from '@shared/types';
+import { TableData } from '@shared/types';
 import { ChangeEvent, useCallback, useRef, useState } from 'react';
 import styles from './TablePagination.module.scss';
 
 interface Props {
     initialPage?: number;
     onChange: OnChangeFunc;
-    table: FranchiseTableModel;
+    table: Pick<TableData, 'records'>;
 }
 
 export type OnChangeFunc = ({

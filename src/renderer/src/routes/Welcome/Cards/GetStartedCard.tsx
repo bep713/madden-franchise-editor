@@ -3,7 +3,8 @@ import GameIcon from '@renderer/components/GameIcon/GameIcon';
 import Link from '@renderer/components/Link/Link';
 import List from '@renderer/components/List/List';
 import Sticky from '@renderer/components/Sticky/Sticky';
-import { FranchiseModel } from '@shared/types/franchise';
+import { OpenFranchiseFile } from '@renderer/context/FranchiseFileContext';
+import { basename } from '@renderer/utils/path';
 
 import styles from './GetStartedCard.module.css';
 
@@ -16,15 +17,15 @@ export enum GetStartedActions {
 }
 
 interface GetStartedCardProps {
-    franchiseModel?: FranchiseModel | null;
+    openFile?: OpenFranchiseFile | null;
     onActionClick: (action: GetStartedActions) => void;
 }
 
 const GetStartedCard: React.FC<GetStartedCardProps> = ({
-    franchiseModel = null,
+    openFile = null,
     onActionClick
 }: GetStartedCardProps) => {
-    const fileLoaded = !!franchiseModel;
+    const fileLoaded = !!openFile;
 
     const items = [
         <Link
@@ -47,17 +48,22 @@ const GetStartedCard: React.FC<GetStartedCardProps> = ({
             }
             text='Open schema management'
         />,
-        <Link
-            key={GetStartedActions.OPEN_FILE_LOCATION}
-            onClick={() => onActionClick(GetStartedActions.OPEN_FILE_LOCATION)}
-            text='Open file location'
-        />,
+        // The path is unknown after a renderer reload
+        openFile?.path && (
+            <Link
+                key={GetStartedActions.OPEN_FILE_LOCATION}
+                onClick={() =>
+                    onActionClick(GetStartedActions.OPEN_FILE_LOCATION)
+                }
+                text='Open file location'
+            />
+        ),
         <Link
             key={GetStartedActions.MAKE_BACKUP_FILE}
             onClick={() => onActionClick(GetStartedActions.MAKE_BACKUP_FILE)}
             text='Make backup file'
         />
-    ];
+    ].filter((item) => !!item);
 
     return (
         <Sticky placement='top'>
@@ -65,11 +71,14 @@ const GetStartedCard: React.FC<GetStartedCardProps> = ({
                 <Card
                     border='black'
                     header={{
-                        leftAsset:
-                            fileLoaded && franchiseModel.game ? (
-                                <GameIcon game={franchiseModel?.game} />
-                            ) : undefined,
-                        title: fileLoaded ? franchiseModel.name : 'Get Started'
+                        leftAsset: openFile?.game ? (
+                            <GameIcon game={openFile.game} />
+                        ) : undefined,
+                        title: openFile
+                            ? openFile.path
+                                ? basename(openFile.path)
+                                : `M${openFile.metadata.gameYear} file`
+                            : 'Get Started'
                     }}
                 >
                     <div className={styles.horizontalList}>

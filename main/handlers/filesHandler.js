@@ -7,7 +7,7 @@ const { ensureRecentFilesLoaded } = require("./recentFilesHandler");
 const CAREER_FILE_PATTERN = /^CAREER-\w+$/;
 
 /**
- * Main process handlers for the React welcome page (window.api.files).
+ * Main process handlers for the React welcome page (window.electronAPI.files).
  * Recent files are shared with recentFilesHandler but returned in the
  * renderer's RecentFile shape (src/shared/types/files.ts).
  */
@@ -28,8 +28,6 @@ function registerFilesHandlers(loggedIpc) {
       };
     }
   });
-
-  loggedIpc.handle("files:get-recent-files", async () => getRecentFiles());
 
   loggedIpc.handle("files:open-folder", async (event, folderPath) => {
     if (!folderPath || typeof folderPath !== "string") {

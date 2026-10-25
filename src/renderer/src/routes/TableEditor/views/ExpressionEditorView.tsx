@@ -1,4 +1,5 @@
-import { FranchiseTableModel } from '@shared/types';
+import { TableData } from '@shared/types';
+import { DisassembledInstructionsResult } from '@shared/types/frtk';
 import TablePagination, {
     OnChangeFunc as OnPaginationChangeFunc
 } from '../components/TablePagination/TablePagination';
@@ -15,10 +16,18 @@ import ExpressionEditorActionBar, {
 } from '../components/TableActionBar/ExpressionEditorActionBar';
 
 interface Props {
-    franchiseId: string;
     setTableLoaderOptions: LoaderOptionsSetter;
-    table: FranchiseTableModel;
+    table: TableData;
 }
+
+const INSTRUCTION_HEADERS = [
+    'paramTypeId',
+    'param',
+    'opCode',
+    'opCodeName',
+    'index',
+    'output'
+].map((name) => ({ name }));
 
 function getDisplayValue(
     input?: number,
@@ -29,11 +38,7 @@ function getDisplayValue(
     return format === 'hex' ? value.toUpperCase() : value;
 }
 
-const ExpressionEditorView = ({
-    franchiseId,
-    setTableLoaderOptions,
-    table
-}: Props) => {
+const ExpressionEditorView = ({ setTableLoaderOptions, table }: Props) => {
     const [displayType, setDisplayType] = useState<'decimal' | 'hex'>(
         'decimal'
     );
@@ -51,51 +56,15 @@ const ExpressionEditorView = ({
 
     const handleActionClick = async (action: number) => {
         if (action === TableActions.EXPORT) {
-            const path = await window.api.general.saveDialog({
-                defaultPath: table.name,
-                title: 'Select destination file for table export',
-                filters: [
-                    { name: 'Excel workbook', extensions: ['xlsx'] },
-                    { name: 'CSV (comma-delimited)', extensions: ['csv'] },
-                    {
-                        name: 'Excel Macro-Enabled Workbook',
-                        extensions: ['xlsm']
-                    },
-                    { name: 'Excel Binary Workbook', extensions: ['xlsb'] },
-                    { name: 'Excel 97-2003 Workbook', extensions: ['xls'] },
-                    { name: 'OpenDocument Spreadsheet', extensions: ['ods'] },
-                    { name: 'UTF-16 Unicode Text', extensions: ['txt'] }
-                ]
-            });
-
-            if (path) {
-                setTableLoaderOptions({
-                    message: 'Exporting...',
-                    show: true
-                });
-                await window.api.franchise.exportTableData({
-                    expressionOptions: {
-                        outputType: displayType,
-                        recordIndex: selectedRecordIndex
-                    },
-                    franchiseId: franchiseId,
-                    openWhenDone: true,
-                    outputFilePath: path,
-                    tableInput: {
-                        tableUniqueId: table?.uniqueId
-                    }
-                });
-                setTableLoaderOptions({
-                    show: false
-                });
-            }
+            // TODO(frtk): expression export needs frtk in main; SPEX tables
+            // are never produced until then.
         } else if (action === TableActions.TOGGLE_HEX) {
             setDisplayType(displayType === 'hex' ? 'decimal' : 'hex');
         }
     };
 
-    const disassembledResult =
-        table.records?.[selectedRecordIndex]?.disassembledResult;
+    const disassembledResult = table.records[selectedRecordIndex]
+        ?.disassembledResult as DisassembledInstructionsResult | undefined;
 
     return (
         <>
@@ -113,65 +82,32 @@ const ExpressionEditorView = ({
                             <Text emphasis>Instructions</Text>
                             <TableEditorComponent
                                 table={{
+                                    headers: INSTRUCTION_HEADERS,
                                     records: (
                                         disassembledResult?.disassembledInstructions ||
                                         []
-                                    ).map((disassembledInstruction) => ({
-                                        fields: {
-                                            paramTypeId: {
-                                                name: 'paramTypeId',
-                                                type: 'int',
-                                                value: getDisplayValue(
-                                                    disassembledInstruction
-                                                        .parsedInstruction
-                                                        .instruction
-                                                        .paramTypeId,
-                                                    displayType
-                                                )
-                                            },
-                                            param: {
-                                                name: 'param',
-                                                type: 'int',
-                                                value: getDisplayValue(
-                                                    disassembledInstruction
-                                                        .parsedInstruction
-                                                        .instruction.param,
-                                                    displayType
-                                                )
-                                            },
-                                            opCode: {
-                                                name: 'opCode',
-                                                type: 'int',
-                                                value: getDisplayValue(
-                                                    disassembledInstruction
-                                                        .parsedInstruction
-                                                        .instruction.opCode,
-                                                    displayType
-                                                )
-                                            },
-                                            opCodeName: {
-                                                name: 'opCodeName',
-                                                type: 'string',
-                                                value: disassembledInstruction
-                                                    .parsedInstruction
-                                                    .displayText
-                                            },
-                                            index: {
-                                                name: 'index',
-                                                type: 'int',
-                                                value: getDisplayValue(
-                                                    disassembledInstruction
-                                                        .parsedInstruction
-                                                        .instruction.index,
-                                                    displayType
-                                                )
-                                            },
-                                            output: {
-                                                name: 'output',
-                                                type: 'string',
-                                                value: disassembledInstruction.output
-                                            }
-                                        }
+                                    ).map(({ output, parsedInstruction }) => ({
+                                        paramTypeId: getDisplayValue(
+                                            parsedInstruction.instruction
+                                                .paramTypeId,
+                                            displayType
+                                        ),
+                                        param: getDisplayValue(
+                                            parsedInstruction.instruction.param,
+                                            displayType
+                                        ),
+                                        opCode: getDisplayValue(
+                                            parsedInstruction.instruction
+                                                .opCode,
+                                            displayType
+                                        ),
+                                        opCodeName:
+                                            parsedInstruction.displayText,
+                                        index: getDisplayValue(
+                                            parsedInstruction.instruction.index,
+                                            displayType
+                                        ),
+                                        output
                                     }))
                                 }}
                             />

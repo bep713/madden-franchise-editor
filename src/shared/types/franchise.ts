@@ -1,10 +1,10 @@
-import { GameVersion } from '@shared/types';
-import { DisassembledInstructionsResult } from './frtk';
+// Response shapes of the v4 franchise IPC channels
+// (main/services/FranchiseFileManager.js), as the React renderer sees them.
 
+// Matches v4's metadata.format and data/navigation.json availableFormats.
 export enum FileType {
-    FRANCHISE,
-    OTHER_COMPRESSED,
-    OTHER_UNCOMPRESSED
+    FRANCHISE = 'franchise',
+    COMMON = 'franchise-common'
 }
 
 export enum FranchiseCapability {
@@ -20,81 +20,85 @@ export enum TableType {
     SPEX = 'SPEX'
 }
 
-export interface FranchiseBaseTableModel {
-    id: number;
-    index: number;
-    name: string;
-    type: TableType;
-    uniqueId: number;
+export interface ErrorResult {
+    error: string;
 }
 
-export interface TableField {
-    name: string;
-    type: 'bool' | 'enum' | 'float' | 'int' | 'reference' | 'string' | 's_int';
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    value: any;
+// madden-franchise's FileType (FranchiseFile.type)
+export interface FranchiseFileType {
+    format: FileType;
+    year: number;
+    compressed: boolean;
+    gameType: string;
 }
 
-export interface Instruction {
-    paramTypeId: number;
-    param?: number;
-    opCode: number;
-    index: number;
+export interface SchemaMeta {
+    gameYear: string | number | null;
+    major: number | null;
+    minor: number | null;
 }
 
-export interface FranchiseTableModel extends FranchiseBaseTableModel {
-    records: {
-        disassembledResult?: DisassembledInstructionsResult;
-        instructions?: Instruction[];
-        fields?: {
-            [key: string]: TableField;
-        };
+// _buildMetadataUntimed
+export interface FileMetadata {
+    gameYear: number;
+    type: FranchiseFileType;
+    format: FileType;
+    isLoaded: boolean;
+    expectedSchemaVersion: SchemaMeta | null;
+    schemaList: { meta: SchemaMeta; path: string } | null;
+    tableCount: number;
+    tables: {
+        id: number;
+        name: string;
+        recordCount: number;
+        isArray: boolean;
     }[];
 }
 
-export interface FranchiseTableDataResult {
-    franchiseId: string;
-    tables: FranchiseTableModel[];
-}
+// franchise:open-file
+export type OpenFileResult =
+    { fileId: string; metadata: FileMetadata } | ErrorResult;
 
-export interface BaseFranchiseModel {
-    directory: string;
-    filePath: string;
-    format: FileType;
-    gameYear: number;
-    game?: GameVersion;
+// getTableList
+export interface TableListItem {
+    id: number;
+    uniqueId: number;
     name: string;
-    tables: FranchiseBaseTableModel[];
+    recordCount: number;
+    isArray: boolean;
+    type?: TableType; // TODO(frtk): never set; SPEX tables are not produced yet
 }
 
-export interface FranchiseModel extends Partial<BaseFranchiseModel> {
-    franchiseId: string;
+export interface TableEnum {
+    name: string;
+    members: { name: string; value: number | string }[];
 }
 
-export interface TableInput {
-    tableId?: number;
-    tableUniqueId?: number;
-    tableName?: string;
-    fields?: string[];
+// readTableData headers[]
+export interface TableColumn {
+    name: string;
+    type: string;
+    offset: number;
+    isReference: boolean;
+    valueInThirdTable: boolean;
+    maxLength: number | null;
+    length: number;
+    enum: TableEnum | null;
 }
 
-export interface ReadTableDataInput {
-    franchiseId: string;
-    tables: TableInput[];
+// readTableData
+export interface TableData {
+    tableId: number;
+    uniqueId: number;
+    header: Record<string, unknown>;
+    name: string;
+    recordCount: number;
+    records: Record<string, unknown>[];
+    recordMeta: { index: number; isEmpty: boolean }[];
+    emptyRecordIndices: number[];
+    cellErrors: Record<number, Record<string, string>>;
+    headers: TableColumn[];
+    usingGenericSchema: boolean;
 }
 
-export interface ExportTableDataInput {
-    expressionOptions?: {
-        outputType: 'decimal' | 'hex';
-        recordIndex: number;
-    };
-    franchiseId: string;
-    openWhenDone: boolean;
-    outputFilePath: string;
-    tableInput: TableInput;
-}
-
-export interface ExportTableDataResult {
-    filePath?: string;
-    status: boolean;
-}
+export type ReadTableDataResult = TableData | ErrorResult;

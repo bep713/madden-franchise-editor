@@ -1,6 +1,6 @@
 import TableEditorComponent from '@renderer/components/TableEditorComponent/TableEditorComponent';
 import TableHeader from '@renderer/components/TableHeader/TableHeader';
-import { FranchiseTableModel } from '@shared/types';
+import { TableData } from '@shared/types';
 import { useState } from 'react';
 import { LoaderOptionsSetter } from '@renderer/hooks/useLoader';
 import baseStyles from '../TableEditor.module.scss';
@@ -9,9 +9,8 @@ import FieldEditorActionBar, {
 } from '../components/TableActionBar/FieldEditorActionBar';
 
 interface Props {
-    franchiseId: string;
     setTableLoaderOptions: LoaderOptionsSetter;
-    table: FranchiseTableModel;
+    table: TableData;
 }
 
 enum TableOrientation {
@@ -19,18 +18,15 @@ enum TableOrientation {
     INVERTED
 }
 
-const FieldEditorView = ({
-    franchiseId,
-    setTableLoaderOptions,
-    table
-}: Props) => {
+const FieldEditorView = ({ setTableLoaderOptions, table }: Props) => {
     const [tableOrientation, setTableOrientation] = useState<TableOrientation>(
         TableOrientation.NORMAL
     );
 
     const handleActionClick = async (action: number) => {
         if (action === TableActions.EXPORT) {
-            const path = await window.api.general.saveDialog({
+            const result = await window.electronAPI.showSaveDialog({
+                defaultPath: table.name,
                 title: 'Select destination file for table export',
                 filters: [
                     { name: 'Excel workbook', extensions: ['xlsx'] },
@@ -46,22 +42,34 @@ const FieldEditorView = ({
                 ]
             });
 
-            if (path) {
+            if (!result.canceled && result.filePath) {
                 setTableLoaderOptions({
                     message: 'Exporting...',
                     show: true
                 });
-                await window.api.franchise.exportTableData({
-                    franchiseId: franchiseId,
-                    openWhenDone: true,
-                    outputFilePath: path,
-                    tableInput: {
-                        tableUniqueId: table?.uniqueId
-                    }
-                });
-                setTableLoaderOptions({
-                    show: false
-                });
+                // Same rows as v4's externalDataService.exportTableData
+                const headers = table.headers.map((header) => header.name);
+                const rows = table.records.map((record) =>
+                    headers.map((name) => record[name] ?? '')
+                );
+                try {
+                    await window.electronAPI.externalData.export(
+                        result.filePath,
+                        headers,
+                        rows
+                    );
+                } catch (error) {
+                    console.error(error);
+                    await window.electronAPI.showMessageBox({
+                        type: 'error',
+                        message: 'Could not export the table.',
+                        detail: (error as Error).message
+                    });
+                } finally {
+                    setTableLoaderOptions({
+                        show: false
+                    });
+                }
             }
         } else if (action === TableActions.SWITCH_ORIENTATION) {
             setTableOrientation(

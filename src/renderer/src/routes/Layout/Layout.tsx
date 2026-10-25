@@ -9,20 +9,14 @@ import { FranchiseFileContext } from '@renderer/context/FranchiseFileContext';
 import { SimpleNavigationItem } from '@shared/types';
 
 const Layout: React.FC = () => {
-    const [loadedFranchiseModel] = useContext(FranchiseFileContext);
+    const [openFile] = useContext(FranchiseFileContext);
 
     const baseNavigationItems = navigation.items.filter(
         (item) =>
             item.alwaysShow ||
-            (loadedFranchiseModel &&
-                item.availableVersions.includes(
-                    loadedFranchiseModel?.gameYear || 0
-                ) &&
-                (loadedFranchiseModel.format
-                    ? item.availableFormats.includes(
-                          loadedFranchiseModel.format
-                      )
-                    : true))
+            (openFile &&
+                item.availableVersions.includes(openFile.metadata.gameYear) &&
+                item.availableFormats.includes(openFile.metadata.format))
     );
 
     const addTabButton: SimpleNavigationItem = {
@@ -32,7 +26,7 @@ const Layout: React.FC = () => {
         containerClassList: [styles.addTabButton]
     };
 
-    const tabs = loadedFranchiseModel
+    const tabs = openFile
         ? [...baseNavigationItems, addTabButton]
         : [...baseNavigationItems];
 
