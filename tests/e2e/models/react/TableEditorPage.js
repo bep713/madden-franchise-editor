@@ -10,7 +10,7 @@ class TableEditorPage {
       // Handsontable has its own role="status" announcer
       loader: this.window.locator('[role="status"][aria-busy="true"]'),
       search: this.window.getByPlaceholder("Search tables..."),
-      header: this.window.getByText(/^\d+ - \S+$/).first(),
+      header: this.window.getByTestId("table-header-title"),
       selectedSidebarTable: this.window.locator(
         'button[data-table-id][aria-current="true"]',
       ),
@@ -23,7 +23,8 @@ class TableEditorPage {
     await this.grid.locators.firstCell.waitFor();
   }
 
-  // "<id> - <name>", same format as v4's getSelectedTableName
+  // "<id> - <name>", same format as v4's getSelectedTableName. Unnamed
+  // tables show just "<id>".
   async getSelectedTableName() {
     return this.locators.header.innerText();
   }

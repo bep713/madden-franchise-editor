@@ -34,6 +34,7 @@ test("export table e2e test (react)", async () => {
   // can export a table
   const tableEditor = new TableEditorPage(window);
   await tableEditor.waitForTableToLoad();
+  await tableEditor.openTableById(4097);
   await fs.rm(FilePaths.m22.exports.test, { force: true });
   await tableEditor.exportTable(electronApp, FilePaths.m22.exports.test);
   await waitForFile(FilePaths.m22.exports.test);

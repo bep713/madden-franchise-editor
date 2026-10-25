@@ -33,23 +33,22 @@ test("basic test (react)", async () => {
   expect(tabs).to.include("Home");
   expect(tabs).to.include("Open Table...");
 
-  // can open the table editor, which loads the first table
+  // can open the table editor, which loads the first table. Unlike v4, that
+  // is 4096, not 4097. 4096 is unnamed, so the header shows only its id.
   await welcome.openTableEditor();
   await tableEditor.waitForTableToLoad();
-  expect(await tableEditor.getSelectedTableName()).to.equal(
-    "4097 - OverallPercentage",
-  );
+  expect(await tableEditor.getSelectedTableName()).to.equal("4096");
   expect(
     await tableEditor.selectedSidebarTable().getAttribute("data-table-id"),
-  ).to.equal("4097");
+  ).to.equal("4096");
 
   // the grid shows the file's data. Compared with IPC data, not a fixed
   // string, so it holds when reference cells get a display format (03d).
-  const overallPercentage = await app.readTable(4097);
-  const firstHeader = overallPercentage.headers[0].name;
+  const firstTable = await app.readTable(4096);
+  const firstHeader = firstTable.headers[0].name;
   await tableEditor.grid.selectCellAt(0, 0);
   expect(await tableEditor.grid.getTextAtSelectedCell()).to.equal(
-    String(overallPercentage.records[0][firstHeader]),
+    String(firstTable.records[0][firstHeader]),
   );
 
   // can open a different table
@@ -90,9 +89,7 @@ test("basic test (react)", async () => {
 
   await welcome.openTableEditor();
   await tableEditor.waitForTableToLoad();
-  expect(await tableEditor.getSelectedTableName()).to.equal(
-    "4097 - OverallPercentage",
-  );
+  expect(await tableEditor.getSelectedTableName()).to.equal("4096");
 
   await electronApp.close();
 });

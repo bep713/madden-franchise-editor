@@ -77,10 +77,9 @@ const TableEditor: React.FC = () => {
         });
     };
 
-    // Same as v4 (TableEditorView), which starts on the second table: the
-    // first one is usually unnamed (4096 in M22).
-    const firstTable =
-        activeFranchiseFile?.tables[1] ?? activeFranchiseFile?.tables[0];
+    // Unlike v4 (TableEditorView), which skips the first table because it is
+    // usually unnamed (4096 in M22), this starts on the first table.
+    const firstTable = activeFranchiseFile?.tables[0];
 
     useEffect(() => {
         // Load the first table once the file model is available. This starts an
