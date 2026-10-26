@@ -1,4 +1,12 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+import {
+    useCallback,
+    useContext,
+    useEffect,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useState
+} from 'react';
 
 import { Allotment } from 'allotment';
 import 'allotment/dist/style.css';
@@ -12,6 +20,7 @@ import TableSidebar from './components/TableSidebar/TableSidebar';
 import useLoader from '@renderer/hooks/useLoader';
 import ExpressionEditorView from './views/ExpressionEditorView';
 import FieldEditorView from './views/FieldEditorView';
+import { CellPosition } from '@renderer/components/TableEditorComponent/TableEditorComponent';
 
 const TableEditor: React.FC = () => {
     const [activeFranchiseFile] = useContext(FranchiseFileContext);
@@ -19,6 +28,9 @@ const TableEditor: React.FC = () => {
     const [selectedTableData, setSelectedTableData] =
         useState<TableData | null>(null);
     const [filterText, setFilterText] = useState('');
+    // Set together with selectedTableData, so the grid only renders once
+    const [pendingSelection, setPendingSelection] =
+        useState<CellPosition | null>(null);
 
     const { loader: tableLoader, setOptions: setTableLoaderOptions } =
         useLoader();
@@ -48,7 +60,15 @@ const TableEditor: React.FC = () => {
         return fuse.search(filterText).map((result) => result.item);
     }, [allTables, filterText]);
 
-    const onSelectTable = async (table: TableListItem): Promise<void> => {
+    const tableNames = useMemo(
+        () => new Map((allTables ?? []).map((table) => [table.id, table.name])),
+        [allTables]
+    );
+
+    const onSelectTable = async (
+        table: TableListItem,
+        selection: CellPosition | null = null
+    ): Promise<void> => {
         if (!activeFranchiseFile || table.id === selectedTable?.id) {
             return;
         }
@@ -71,11 +91,30 @@ const TableEditor: React.FC = () => {
             setSelectedTableData(null);
         } else {
             setSelectedTableData(tableResult);
+            setPendingSelection(selection);
         }
         setTableLoaderOptions({
             show: false
         });
     };
+
+    // A followed reference link. Stable, so the grid doesn't re-render.
+    const onSelectTableRef = useRef(onSelectTable);
+    useLayoutEffect(() => {
+        onSelectTableRef.current = onSelectTable;
+    });
+    const onFollowReference = useCallback(
+        (tableId: number, recordIndex: number) => {
+            const table = allTables?.find((t) => t.id === tableId);
+            if (table) {
+                void onSelectTableRef.current(table, {
+                    row: recordIndex,
+                    col: 0
+                });
+            }
+        },
+        [allTables]
+    );
 
     // Unlike v4 (TableEditorView), which skips the first table because it is
     // usually unnamed (4096 in M22), this starts on the first table.
@@ -130,10 +169,15 @@ const TableEditor: React.FC = () => {
                                     />
                                 ) : (
                                     <FieldEditorView
+                                        fileId={activeFranchiseFile.fileId}
+                                        initialSelection={pendingSelection}
+                                        onFollowReference={onFollowReference}
                                         setTableLoaderOptions={
                                             setTableLoaderOptions
                                         }
                                         table={selectedTableData}
+                                        tableNames={tableNames}
+                                        tables={allTables ?? []}
                                     />
                                 ))}
                         </div>
@@ -172,41 +216,6 @@ const TableEditor: React.FC = () => {
       </div>
       <div className="spline-editor-wrapper">
         <div id="spline-editor-area"></div>
-      </div>
-      <div id="blob-editor-modal" className="blob-editor-modal modal hidden">
-        <div className="modal-header">
-          <h2 className="title">Edit Blob Data</h2>
-          <div className="close-modal">Apply Changes</div>
-        </div>
-        <div className="modal-content">
-          <div id="blob-editor"></div>
-        </div>
-      </div>
-      <div className="blob-editor-underlay underlay-editor hidden"></div>
-      <div id="reference-editor-wrapper" className="reference-editor-wrapper hidden">
-        <div className="reference-editor-underlay underlay-editor"></div>
-        <div id="reference-editor-highlight" className="reference-editor-highlight"></div>
-        <div id="reference-editor-content" className="reference-editor-content">
-          <div className="reference-title-wrapper">
-            Edit cell reference
-            <button className="close">X</button>
-          </div>
-          <div className="reference-values-wrapper">
-            <div className="table-reference filter">
-              <label htmlFor="reference-editor-table">Table</label>
-              <select id="reference-editor-table" className="filter-input"></select>
-            </div>
-            <div className="row-reference filter">
-              <label htmlFor="reference-editor-row">Row Index</label>
-              <input type="number" min="0" id="reference-editor-row" className="filter-input" />
-            </div>
-            <div className="row-reference filter">
-              <label htmlFor="reference-editor-row">Binary</label>
-              <input type="text" id="reference-editor-binary" maxLength={32} className="filter-input" />
-            </div>
-            <button id="btn-change-reference" className="form-button form-button--no-bg-color">Change</button>
-          </div>
-        </div>
       </div>
       <div className="underlay hidden"></div>
       <div className="loader-wrapper hidden">

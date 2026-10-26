@@ -1,0 +1,44 @@
+@import '@assets/spacing.css';
+
+.underlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+}
+
+.highlight {
+    position: fixed;
+    z-index: 1001;
+    pointer-events: none;
+    outline: 2px solid var(--primary);
+}
+
+.popover {
+    position: fixed;
+    z-index: 1002;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+    width: 360px;
+    max-width: 95vw;
+    padding: var(--spacing-4);
+    background-color: var(--white);
+    border: 1px solid var(--timberwolf);
+    border-radius: var(--spacing-1);
+    box-shadow: 0 4px 16px rgb(0 0 0 / 25%);
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.title {
+    font-weight: bold;
+}
+
+.optionList {
+    max-height: 200px;
+    overflow-y: auto;
+}

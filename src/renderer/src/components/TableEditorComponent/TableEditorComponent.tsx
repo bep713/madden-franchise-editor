@@ -1,94 +1,374 @@
-import React, { useEffect, useRef } from 'react';
+import React, {
+    forwardRef,
+    useCallback,
+    useEffect,
+    useImperativeHandle,
+    useLayoutEffect,
+    useMemo,
+    useRef
+} from 'react';
 import cx from 'classnames';
 
+import type Handsontable from 'handsontable';
 import { HotTable, HotTableRef } from '@handsontable/react-wrapper';
 import 'handsontable/styles/handsontable.min.css';
 import 'handsontable/styles/ht-theme-main.min.css';
 import { registerAllModules } from 'handsontable/registry';
 import { TableColumn, TableData } from '@shared/types';
+import { LoaderOptionsSetter } from '@renderer/hooks/useLoader';
+import { resolveReference } from '@renderer/utils/references';
+import { WriteState } from '@renderer/utils/cellWrites';
 
+import { buildColumns, calculateColumnWidths } from './columns';
+import { createReferenceRenderer } from './renderers/referenceRenderer';
+import { blobRenderer } from './renderers/blobRenderer';
+import { errorRenderer } from './renderers/errorRenderer';
+import useCellWrites, { createWriteState } from './useCellWrites';
 import styles from './TableEditorComponent.module.css';
 
 registerAllModules();
 
-interface Props {
-    isInverted?: boolean;
-    table: Pick<TableData, 'records'> & {
-        // The column type and enum stay on `headers` for later cell editors
-        headers: Pick<TableColumn, 'name'>[];
-    };
+// A table that is only displayed (e.g. the expression editor's output)
+interface ReadOnlyTable {
+    headers: Pick<TableColumn, 'name'>[];
+    records: TableData['records'];
 }
 
-const TableEditorComponent: React.FC<Props> = ({
-    isInverted,
-    table
-}: Props) => {
-    const hotRef = useRef<HotTableRef>(null);
-    const wrapperRef = useRef<HTMLDivElement>(null);
+export interface CellPosition {
+    row: number;
+    col: number;
+}
 
-    useEffect(() => {
-        // Handle window resizing so that the table always takes up the entire remaining space.
-        const observer = new ResizeObserver((entries) => {
-            for (const entry of entries) {
-                if (entry.contentBoxSize) {
-                    const size = entry.contentBoxSize[0];
-                    hotRef?.current?.hotInstance?.updateSettings({
-                        height: size.blockSize,
-                        width: size.inlineSize
-                    });
-                }
-            }
+export interface ReferenceEditRequest extends CellPosition {
+    value: string;
+    anchorRect: DOMRect;
+}
+
+export interface BlobEditRequest extends CellPosition {
+    value: unknown;
+}
+
+// What the reference and blob editors use to write back. Writes go through
+// setDataAtCell, so they take the normal write path and can be undone.
+export interface GridHandle {
+    setDataAtCell: (row: number, col: number, value: unknown) => void;
+    selectCell: (row: number, col: number) => void;
+}
+
+interface Props {
+    isInverted?: boolean;
+    table: TableData | ReadOnlyTable;
+    // Editing is enabled when fileId is set and table is a TableData
+    fileId?: string;
+    tableNames?: ReadonlyMap<number, string>;
+    setLoaderOptions?: LoaderOptionsSetter;
+    // Selected after each table load, (0, 0) when unset
+    initialSelection?: CellPosition | null;
+    onFollowReference?: (tableId: number, recordIndex: number) => void;
+    onEditReference?: (request: ReferenceEditRequest) => void;
+    onEditBlob?: (request: BlobEditRequest) => void;
+}
+
+const NO_TABLE_NAMES: ReadonlyMap<number, string> = new Map();
+
+function isEditableTable(table: Props['table']): table is TableData {
+    return 'tableId' in table;
+}
+
+// React.memo matters here: the react-wrapper passes every prop to
+// updateSettings on each render, and Handsontable reloads `data` whenever it
+// is passed, which clears the undo stack and the selection. So every prop has
+// to be stable, and the hooks read the latest props from propsRef.
+const TableEditorComponent = forwardRef<GridHandle, Props>(
+    function TableEditorComponent(props, ref) {
+        const { isInverted, table } = props;
+        const hotRef = useRef<HotTableRef>(null);
+        const wrapperRef = useRef<HTMLDivElement>(null);
+        const propsRef = useRef(props);
+        const writeStateRef = useRef<WriteState>(
+            isEditableTable(table)
+                ? createWriteState(table)
+                : createWriteState({
+                      cellErrors: {},
+                      emptyRecordIndices: []
+                  } as unknown as TableData)
+        );
+
+        useLayoutEffect(() => {
+            propsRef.current = props;
         });
 
-        if (wrapperRef.current) {
-            observer.observe(wrapperRef.current);
-        }
+        const editable =
+            !isInverted && !!props.fileId && isEditableTable(table);
 
-        return () => observer.disconnect();
-    }, []);
+        useLayoutEffect(() => {
+            if (isEditableTable(table)) {
+                writeStateRef.current = createWriteState(table);
+            }
+        }, [table]);
 
-    const headers = table.headers.map((header) => header.name);
-    const data = isInverted
-        ? headers.map((name) => [
-              name,
-              ...table.records.map((record) => record[name])
-          ])
-        : table.records;
-
-    return (
-        <div className={styles.wrapper} ref={wrapperRef}>
-            <HotTable
-                autoWrapCol={true}
-                autoWrapRow={true}
-                className={cx(styles.table, {
-                    [styles.inverted]: isInverted
-                })}
-                colHeaders={
-                    !isInverted
-                        ? headers
-                        : [
-                              'Field Name',
-                              ...table.records.map(
-                                  (_val, index) => `Record ${index + 1}`
-                              )
-                          ]
+        useEffect(() => {
+            // Handle window resizing so that the table always takes up the entire remaining space.
+            const observer = new ResizeObserver((entries) => {
+                for (const entry of entries) {
+                    if (entry.contentBoxSize) {
+                        const size = entry.contentBoxSize[0];
+                        hotRef?.current?.hotInstance?.updateSettings({
+                            height: size.blockSize,
+                            width: size.inlineSize
+                        });
+                    }
                 }
-                columns={
-                    !isInverted
-                        ? headers.map((name) => ({ data: name }))
-                        : undefined
-                }
-                data={data}
-                height='100%'
-                licenseKey='non-commercial-and-evaluation' // for non-commercial use only
-                manualColumnResize={true}
-                ref={hotRef}
-                rowHeaders={!isInverted}
-                themeName='ht-theme-main'
-                width='100%'
-            />
-        </div>
-    );
-};
+            });
 
-export default TableEditorComponent;
+            if (wrapperRef.current) {
+                observer.observe(wrapperRef.current);
+            }
+
+            return () => observer.disconnect();
+        }, []);
+
+        useImperativeHandle(
+            ref,
+            () => ({
+                setDataAtCell: (row, col, value) =>
+                    hotRef.current?.hotInstance?.setDataAtCell(row, col, value),
+                selectCell: (row, col) =>
+                    hotRef.current?.hotInstance?.selectCell(row, col)
+            }),
+            []
+        );
+
+        const { beforeChange, afterChange } = useCellWrites(
+            hotRef,
+            () => {
+                const { fileId, setLoaderOptions } = propsRef.current;
+                const current = propsRef.current.table;
+                if (
+                    !fileId ||
+                    !setLoaderOptions ||
+                    !isEditableTable(current) ||
+                    propsRef.current.isInverted
+                ) {
+                    return null;
+                }
+                return { fileId, table: current, setLoaderOptions };
+            },
+            writeStateRef
+        );
+
+        const referenceRenderer = useMemo(
+            () =>
+                createReferenceRenderer(
+                    () => propsRef.current.tableNames ?? NO_TABLE_NAMES
+                ),
+            []
+        );
+
+        const headerNames = useMemo(
+            () => table.headers.map((header) => header.name),
+            [table]
+        );
+
+        const columns = useMemo(
+            () =>
+                editable
+                    ? buildColumns((table as TableData).headers, {
+                          reference: referenceRenderer,
+                          blob: blobRenderer
+                      })
+                    : isInverted
+                      ? undefined
+                      : headerNames.map((name) => ({ data: name })),
+            [editable, headerNames, isInverted, referenceRenderer, table]
+        );
+
+        const colWidths = useMemo(
+            () =>
+                editable
+                    ? calculateColumnWidths((table as TableData).headers)
+                    : undefined,
+            [editable, table]
+        );
+
+        const data = useMemo(
+            () =>
+                isInverted
+                    ? headerNames.map((name) => [
+                          name,
+                          ...table.records.map((record) => record[name])
+                      ])
+                    : table.records,
+            [headerNames, isInverted, table]
+        );
+
+        const colHeaders = useMemo(
+            () =>
+                !isInverted
+                    ? headerNames
+                    : [
+                          'Field Name',
+                          ...table.records.map(
+                              (_val, index) => `Record ${index + 1}`
+                          )
+                      ],
+            [headerNames, isInverted, table]
+        );
+
+        // v4's _getCellProperties. Every property is returned on every call,
+        // because Handsontable keeps what an earlier call set (for example the
+        // empty class after a row is un-emptied).
+        const cells = useCallback(
+            (
+                physicalRow: number,
+                physicalCol: number
+            ): Handsontable.CellMeta => {
+                const { table: current, isInverted: inverted } =
+                    propsRef.current;
+                if (inverted || !isEditableTable(current)) {
+                    return {};
+                }
+
+                const header = current.headers[physicalCol];
+                const column = columns?.[physicalCol] as
+                    Handsontable.ColumnSettings | undefined;
+                if (!header || !column) {
+                    return {};
+                }
+
+                const { cellErrors, emptyRecordIndices } =
+                    writeStateRef.current;
+                const errorMessage = cellErrors[physicalRow]?.[header.name];
+                if (errorMessage) {
+                    return {
+                        className: 'table-cell--error',
+                        readOnly: true,
+                        editor: false,
+                        renderer: errorRenderer,
+                        errorMessage
+                    };
+                }
+
+                let editor = column.editor;
+                if (
+                    header.isReference &&
+                    resolveReference(
+                        current.records[physicalRow]?.[header.name],
+                        propsRef.current.tableNames ?? NO_TABLE_NAMES
+                    )
+                ) {
+                    // A link to another table can't be typed into
+                    editor = false;
+                }
+
+                return {
+                    className: emptyRecordIndices.has(physicalRow)
+                        ? 'table-cell--empty'
+                        : '',
+                    readOnly: false,
+                    editor,
+                    renderer: column.renderer,
+                    errorMessage: undefined
+                };
+            },
+            [columns]
+        );
+
+        // Reference links and edit buttons: one listener for every cell
+        const handleClick = useCallback((event: React.MouseEvent) => {
+            const target = (event.target as HTMLElement).closest<HTMLElement>(
+                '[data-action]'
+            );
+            const td = target?.closest('td');
+            const hot = hotRef.current?.hotInstance;
+            if (!target || !td || !hot) {
+                return;
+            }
+
+            const { row, col } = hot.getCoords(td) ?? {};
+            if (row === undefined || col === undefined || row < 0 || col < 0) {
+                return;
+            }
+
+            const { onEditBlob, onEditReference, onFollowReference } =
+                propsRef.current;
+            switch (target.dataset.action) {
+                case 'follow-reference':
+                    onFollowReference?.(
+                        Number(target.dataset.tableId),
+                        Number(target.dataset.recordIndex)
+                    );
+                    break;
+                case 'edit-reference':
+                    onEditReference?.({
+                        row,
+                        col,
+                        value: String(hot.getDataAtCell(row, col) ?? ''),
+                        anchorRect: td.getBoundingClientRect()
+                    });
+                    break;
+                case 'edit-blob':
+                    onEditBlob?.({
+                        row,
+                        col,
+                        value: hot.getDataAtCell(row, col)
+                    });
+                    break;
+            }
+        }, []);
+
+        const beforeRenderer = useCallback((td: HTMLTableCellElement) => {
+            // Cells are reused while scrolling; only error cells have a title
+            td.removeAttribute('title');
+        }, []);
+
+        // Select after each table load. HotTable applies the new data in its
+        // own effect, which runs before this one.
+        useEffect(() => {
+            const { initialSelection } = propsRef.current;
+            hotRef.current?.hotInstance?.selectCell(
+                initialSelection?.row ?? 0,
+                initialSelection?.col ?? 0
+            );
+        }, [table, isInverted]);
+
+        return (
+            <div
+                className={styles.wrapper}
+                onClick={handleClick}
+                ref={wrapperRef}
+            >
+                <HotTable
+                    afterChange={afterChange}
+                    autoWrapCol={true}
+                    autoWrapRow={true}
+                    beforeChange={beforeChange}
+                    beforeRenderer={beforeRenderer}
+                    cells={cells}
+                    className={cx(styles.table, {
+                        [styles.inverted]: isInverted
+                    })}
+                    colHeaders={colHeaders}
+                    colWidths={colWidths}
+                    columns={columns}
+                    currentRowClassName='active-row'
+                    data={data}
+                    height='100%'
+                    licenseKey='non-commercial-and-evaluation' // for non-commercial use only
+                    manualColumnResize={true}
+                    manualRowResize={true}
+                    readOnly={!editable}
+                    ref={hotRef}
+                    // 0-based, like v4
+                    rowHeaders={
+                        isInverted ? false : (index: number) => String(index)
+                    }
+                    themeName='ht-theme-main'
+                    width='100%'
+                />
+            </div>
+        );
+    }
+);
+
+export default React.memo(TableEditorComponent);

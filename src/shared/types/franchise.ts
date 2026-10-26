@@ -94,7 +94,7 @@ export interface TableData {
     name: string;
     recordCount: number;
     records: Record<string, unknown>[];
-    recordMeta: { index: number; isEmpty: boolean }[];
+    recordMeta: RecordMeta[];
     emptyRecordIndices: number[];
     cellErrors: Record<number, Record<string, string>>;
     headers: TableColumn[];
@@ -102,3 +102,47 @@ export interface TableData {
 }
 
 export type ReadTableDataResult = TableData | ErrorResult;
+
+// writeBulkTableCells input entry
+export interface CellWrite {
+    tableId: number;
+    recordIndex: number;
+    fieldName: string;
+    value: unknown;
+}
+
+export interface RecordMeta {
+    index: number;
+    isEmpty: boolean;
+}
+
+// writeBulkTableCells records[]: one per written row
+export interface WrittenRecord {
+    tableId: number;
+    recordIndex: number;
+    record: Record<string, unknown>;
+    recordMeta: RecordMeta;
+    previousRecordMeta: RecordMeta;
+    cellErrors: Record<string, string> | null;
+}
+
+// writeBulkTableCells emptyStates[]: only for tables that had a row un-emptied
+export interface EmptyState {
+    tableId: number;
+    emptyRecordIndices: number[];
+    emptyRecords: { index: number; record: Record<string, unknown> }[];
+}
+
+// franchise:write-bulk-table-cells
+export type WriteBulkTableCellsResult =
+    | {
+          success: true;
+          // index is the position in the CellWrite[] that was sent
+          results: { success: boolean; index: number; error?: string }[];
+          records: WrittenRecord[];
+          emptyStates: EmptyState[];
+      }
+    | { success: false; error: string };
+
+// franchise:save-file / franchise:save-file-as
+export type SaveFileResult = { path: string } | ErrorResult;

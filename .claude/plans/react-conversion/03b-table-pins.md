@@ -1,4 +1,4 @@
-# 03a — Table pinning
+# 03b — Table pinning
 
 Index: [03-table-editor-parity.md](03-table-editor-parity.md). Roadmap: [plan.md](plan.md).
 

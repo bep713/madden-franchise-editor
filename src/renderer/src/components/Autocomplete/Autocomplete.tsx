@@ -21,6 +21,7 @@ interface Props extends BaseFormInputProps {
     onBlur?: () => void;
     onFocus?: () => void;
     onOptionSelect?: (option: Option) => void;
+    onTextChange?: (text: string) => void;
     options: Option[];
     placeholder?: string;
     showOptions?: boolean;
@@ -38,6 +39,7 @@ const Autocomplete: React.FC<Props> = ({
     onBlur,
     onFocus,
     onOptionSelect,
+    onTextChange,
     options,
     placeholder,
     showOptions = false,
@@ -75,6 +77,7 @@ const Autocomplete: React.FC<Props> = ({
                             id={id}
                             placeholder={placeholder}
                             value={text}
+                            onChange={(e) => onTextChange?.(e.target.value)}
                         />
                         <button className={styles.caret} />
                     </div>

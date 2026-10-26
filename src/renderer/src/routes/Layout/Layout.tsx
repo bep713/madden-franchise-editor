@@ -7,9 +7,13 @@ import navigation from '@data/navigation';
 import Navigation from '../../components/Navigation/Navigation';
 import { FranchiseFileContext } from '@renderer/context/FranchiseFileContext';
 import { SimpleNavigationItem } from '@shared/types';
+import useFileMenuCommands from '@renderer/hooks/useFileMenuCommands';
+import useMenuState from '@renderer/hooks/useMenuState';
 
 const Layout: React.FC = () => {
     const [openFile] = useContext(FranchiseFileContext);
+    useFileMenuCommands();
+    useMenuState();
 
     const baseNavigationItems = navigation.items.filter(
         (item) =>

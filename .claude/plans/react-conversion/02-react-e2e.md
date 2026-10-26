@@ -19,13 +19,13 @@ The v4 specs in `tests/e2e/scripts/*.spec.js` stay **unchanged**. Shared helpers
 
 | v4 spec | Port | What is ported / why not |
 |---|---|---|
-| `smoke.spec.js` | **Partial** → `react/smoke.spec.js` | Open file, open table editor, first table loads, grid shows the file's data, open another table (7482), `LongName` row 52 = "New York", reopen the file from Recent Files. Not ported: jump-to-column modal (03c), edit + save (cell-editing step), close from menu (menu integration step), follow reference (reference navigation step), reference editor (03d). |
+| `smoke.spec.js` | **Partial** → `react/smoke.spec.js` | Open file, open table editor, first table loads, grid shows the file's data, open another table (7482), `LongName` row 52 = "New York", reopen the file from Recent Files. Not ported: jump-to-column modal (03d), edit + save, close from menu, follow reference and the reference editor (all 03a). |
 | `tabs.spec.js` | **Partial** → folded into `react/smoke.spec.js` | Only "Home tab goes to the welcome page" and "the table editor tab opens the table editor again". The rest needs a tab model, which React doesn't have. "Remembers the last table" is not asserted, because React resets to the first table today and that isn't parity. |
-| `export.spec.js` | **Partial** → `react/export.spec.js` | xlsx export of 4097 and 4220, compared with the same fixtures. Raw table and FRT export have no React UI (03b). |
-| `pins.spec.js` | No | Ported by 03a (added to its plan). |
+| `export.spec.js` | **Partial** → `react/export.spec.js` | xlsx export of 4097 and 4220, compared with the same fixtures. Raw table and FRT export have no React UI (03c). |
+| `pins.spec.js` | No | Ported by 03b (added to its plan). |
 | `back-button.spec.js` | No | No back button / history yet. |
-| `bulk-edit.spec.js`, `empty-records.spec.js` | No | Needs cell editing. |
-| `import.spec.js`, `import-roundtrip.spec.js` | No | Needs import (03b) and cell editing. |
+| `bulk-edit.spec.js`, `empty-records.spec.js` | No | Needs cell editing (03a). The "set as empty" context menu is a 04+ item. |
+| `import.spec.js`, `import-roundtrip.spec.js` | No | Needs import (03c) and cell editing (03a). |
 | `releaseNotes.spec.js`, `updateChannel.spec.js` | No | They test the v4 settings window, which React also opens unchanged. Running them again under React adds nothing. |
 
 If a ported assertion fails because React really differs from v4 (for example the xlsx export of reference columns), keep the v4 fixture, mark that assertion `test.fixme` with a comment naming the step that fixes it, and note it in that step's plan. Don't change fixtures to match React.
@@ -98,7 +98,7 @@ Each spec starts like the v4 ones: `test` from `../../util/test`, `beforeAll` / 
 `smoke.spec.js`, test "basic test (react)":
 1. The welcome page loads. Open `FilePaths.m22.career.test`. The card title is `CAREER-E2ETEST`. The tabs include "Home" and "Open Table...".
 2. Open the table editor. `getSelectedTableName()` is `"4097 - OverallPercentage"`, and the selected sidebar entry is 4097.
-3. The grid shows the file's data. The text at (0, 0) equals `App.readTable(4097)`'s first record, first column, read through IPC. Comparing against IPC data instead of a hard-coded string keeps the test valid when 03d changes how references are displayed.
+3. The grid shows the file's data. The text at (0, 0) equals `App.readTable(4097)`'s first record, first column, read through IPC. Comparing against IPC data instead of a hard-coded string keeps the test valid when 03a changes how references are displayed.
 4. `openTableById(7482)` → `"7482 - Team"`. `grid.selectCell(52, "LongName")` → `"New York"`.
 5. Home tab → the welcome page loads, and Recent Files lists `CAREER-E2ETEST`. The "Open Table..." tab → the table editor loads (header visible).
 6. Home tab → click the recent file → the card title is `CAREER-E2ETEST` again, and `franchiseAPI.getActiveFileId()` is a new id. Open the table editor → 4097 loads.
@@ -113,12 +113,12 @@ Each spec starts like the v4 ones: `test` from `../../util/test`, `beforeAll` / 
 ## Testing rule (CLAUDE.md)
 **Decision: e2e for each user-visible flow, vitest for logic, not component tests only.**
 - React reuses v4's preload and IPC shapes, so the biggest risk is a mismatch between what React expects and what main returns. Component tests with a mocked `window.franchiseAPI` can't catch that. One e2e flow per feature does, and it also checks persisted results (the saved file, `pins.json`, preferences).
-- e2e is slow (an app launch per test), so it covers the happy path, not every branch. Branching logic goes in vitest: pure utils, hooks, and components with several states. 03a already follows this split.
+- e2e is slow (an app launch per test), so it covers the happy path, not every branch. Branching logic goes in vitest: pure utils, hooks, and components with several states. 03a and 03b already follow this split.
 - Rule text: added to `CLAUDE.md` under "v5 React UI". Each step plan's Verification lists the specs it adds or extends.
 
 ## Roadmap updates
 - `plan.md`: insert step 02 (this plan). Table editor parity becomes 03 (`03-table-editor-parity.md`, items 03a–03e), and the remaining items become 04+. Remove the "React e2e harness" bullet from that list.
-- `03a-table-pins.md`: Phase 7 gains `react/pins.spec.js`, a port of v4's `pins.spec.js` adapted to the sidebar UI and seeded through `launchWithDefaultOptions({ ui: "react", pins })`. It checks the default pins, pin/unpin from the action bar, the result in `pins.json`, and uniqueId migration from a seeded legacy file.
+- `03b-table-pins.md` (then 03a): Phase 7 gains `react/pins.spec.js`, a port of v4's `pins.spec.js` adapted to the sidebar UI and seeded through `launchWithDefaultOptions({ ui: "react", pins })`. It checks the default pins, pin/unpin from the action bar, the result in `pins.json`, and uniqueId migration from a seeded legacy file.
 
 ## Verification
 - `npm run build:react && npx playwright test --project=react`: green locally. Run it again with `E2E_SCALE=1 E2E_WINDOW_SIZE=1024x728` (CI's window size). The sidebar is virtualized, so `openTableById` must search first and never scroll.

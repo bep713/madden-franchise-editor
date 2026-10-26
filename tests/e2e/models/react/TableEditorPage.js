@@ -45,6 +45,31 @@ class TableEditorPage {
     await this.waitForTableToLoad();
   }
 
+  // Call before a paste/undo/redo that writes more than one cell, then
+  // waitForLoaderToShowAndHide. Remembers if the loader shows even briefly.
+  async watchForLoader() {
+    await this.window.evaluate(() => {
+      window.loaderWasShown = false;
+      const isShown = () =>
+        !!document.querySelector('[role="status"][aria-busy="true"]');
+      const observer = new MutationObserver(() => {
+        if (isShown()) {
+          window.loaderWasShown = true;
+          observer.disconnect();
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    });
+  }
+
+  // Fails if the loader never appears
+  async waitForLoaderToShowAndHide() {
+    await this.window.waitForFunction(() => window.loaderWasShown, null, {
+      timeout: 30000,
+    });
+    await this.locators.loader.waitFor({ state: "hidden", timeout: 30000 });
+  }
+
   async exportTable(electronApp, filePath) {
     await stubSaveDialog(electronApp, filePath);
     await this.window.locator('[data-action="EXPORT"]').click();

@@ -9,18 +9,17 @@ From step 02 on, every step adds or extends a React e2e spec (`tests/e2e/scripts
 | # | Plan | Status |
 |---|---|---|
 | 00 | [Toolchain](00-toolchain.md): Vite, TS, lint, Storybook, `window.api` preload, `MFE_UI` switch | Done (`0f5951c`, `d8e3f51`, `56d2e8f`) |
-| 01 | [Preload APIs](01-franchise-model.md): React uses v4's `window.franchiseAPI` / `window.electronAPI`; `window.api` removed | Done (uncommitted) |
-| 02 | [React e2e tests](02-react-e2e.md): Playwright `react` project (`MFE_UI=react`), port the v4 specs React can already pass (smoke, tabs, export, in part), test-per-feature rule | Done (uncommitted) |
-| 03 | [Table editor parity](03-table-editor-parity.md): pinning (03a), export/import (03b), jump to column (03c), reference editor (03d), blob editor (03e) | 03a planned; 03b–03e not planned |
+| 01 | [Preload APIs](01-franchise-model.md): React uses v4's `window.franchiseAPI` / `window.electronAPI`; `window.api` removed | Done (`62ce438`) |
+| 02 | [React e2e tests](02-react-e2e.md): Playwright `react` project (`MFE_UI=react`), port the v4 specs React can already pass (smoke, tabs, export, in part), test-per-feature rule | Done (`cbd80c9`, `c257f8a`) |
+| 03 | [Table editor parity](03-table-editor-parity.md): cell editing, reference/blob editors and saving (03a), pinning (03b), export/import (03c), jump to column (03d), inverted-view editing (03e) | 03a implemented (uncommitted, awaiting review); 03b planned (reviewed); 03c–03e not planned (03e outlined) |
 | 04+ | Remaining items toward v4 parity (below) | Not planned |
 
 ## 04+: Remaining items toward v4 parity
-Each item becomes its own numbered plan. Cell editing is a prerequisite for 03b import, 03d and 03e (see [03-table-editor-parity.md](03-table-editor-parity.md)).
-- Cell editing through `franchise:write-bulk-table-cells` and save / save-as (`franchise:save-file*`), plus a dirty indicator from the `franchise:table-changed` / `saved` events (declare the existing `on*` subscriptions in `preload.d.ts`).
+Each item becomes its own numbered plan. Cell editing and saving moved to 03a (see [03-table-editor-parity.md](03-table-editor-parity.md)). v4 has no dirty indicator, so 03a doesn't add one either. Add one here later if wanted (from `franchise:table-changed` / `saved`).
 - Schema handling on open: port the `schema-mismatch:check` prompt and the missing-schema flow (v4 opens the schema manager when `franchise:open-file` returns `{ error }`; React only shows a message box).
 - Franchise-common files: v4's FTC year/type override prompt before `openFile` (`ftcModalService`, `gameYearOverride` / `gameTypeOverride`). React opens common files without it.
-- Reference navigation (jump to the referenced record, `franchise:get-references-to-record`), enums as dropdowns, empty records. Editing reference cells is 03d.
-- App-menu integration (v4's `menuService` toggles menu items per nav item; React needs an equivalent over IPC).
+- Reference navigation beyond 03a's link click: back button / nav history, middle-click to open in a new tab, "Find references to this record" (`franchise:get-references-to-record`). Empty records: the "Set selected record(s) as empty" and "Set as next empty record to use" context menu (03a shows empty rows and updates them after edits).
+- App-menu integration for the remaining items: Import/Export, Log Table, Copy Unique ID, raw/FRT export and import, the external-change reload prompt (`file-changed`, `save-new-file`). 03a adds `useMenuState` (`REACT_MENU_IDS`) and handles Save, Save As and Close File; each later item adds its ids there.
 
 ## Out of scope (later)
 Schema/settings windows in React; React 19; main/preload to TS under electron-vite; electron-builder cutover (add `out/renderer/**` to `build.files`, flip the default UI); a real frtk dependency (SPEX tables + expression editor).

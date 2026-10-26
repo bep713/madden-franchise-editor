@@ -58,6 +58,8 @@ class Electron {
 
     // options.pins: contents to seed pins.json with
     // options.ui: "react" loads the built React UI (out/renderer) instead of v4
+    // options.preferences: { <section>: { <key>: value } } merged over the
+    // test defaults (e.g. { general: { autoUnempty: [true] } })
     async launchWithDefaultOptions(options = {}) {
         if (options.ui === 'react' && !fs.existsSync(REACT_INDEX)) {
             throw new Error('out/renderer/index.html missing, run npm run build:react');
@@ -66,9 +68,13 @@ class Electron {
         // Each instance gets its own userData so tests never touch the real
         // preferences, pins, recent files or schemas.
         this.userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mfe-e2e-'));
+        const preferences = buildTestPreferences();
+        for (const [section, values] of Object.entries(options.preferences || {})) {
+            preferences[section] = { ...preferences[section], ...values };
+        }
         fs.writeFileSync(
             path.join(this.userDataDir, 'preferences.json'),
-            JSON.stringify(buildTestPreferences(), null, 2)
+            JSON.stringify(preferences, null, 2)
         );
         if (options.pins) {
             fs.writeFileSync(

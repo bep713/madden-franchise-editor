@@ -1,7 +1,14 @@
-import TableEditorComponent from '@renderer/components/TableEditorComponent/TableEditorComponent';
+import TableEditorComponent, {
+    BlobEditRequest,
+    CellPosition,
+    GridHandle,
+    ReferenceEditRequest
+} from '@renderer/components/TableEditorComponent/TableEditorComponent';
+import ReferenceEditor from '@renderer/components/ReferenceEditor/ReferenceEditor';
+import BlobEditorModal from '@renderer/components/BlobEditor/BlobEditorModal';
 import TableHeader from '@renderer/components/TableHeader/TableHeader';
 import { TableData } from '@shared/types';
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { LoaderOptionsSetter } from '@renderer/hooks/useLoader';
 import baseStyles from '../TableEditor.module.scss';
 import FieldEditorActionBar, {
@@ -9,8 +16,16 @@ import FieldEditorActionBar, {
 } from '../components/TableActionBar/FieldEditorActionBar';
 
 interface Props {
+    fileId: string;
+    // Selected when the table loads (a followed reference)
+    initialSelection?: CellPosition | null;
+    // Follow a reference to another table. Must be stable (see TableEditorComponent).
+    onFollowReference: (tableId: number, recordIndex: number) => void;
     setTableLoaderOptions: LoaderOptionsSetter;
     table: TableData;
+    tableNames: ReadonlyMap<number, string>;
+    // For the reference editor's table list
+    tables: { id: number; name: string }[];
 }
 
 enum TableOrientation {
@@ -18,10 +33,48 @@ enum TableOrientation {
     INVERTED
 }
 
-const FieldEditorView = ({ setTableLoaderOptions, table }: Props) => {
+const FieldEditorView = ({
+    fileId,
+    initialSelection,
+    onFollowReference,
+    setTableLoaderOptions,
+    table,
+    tableNames,
+    tables
+}: Props) => {
     const [tableOrientation, setTableOrientation] = useState<TableOrientation>(
         TableOrientation.NORMAL
     );
+    const gridRef = useRef<GridHandle>(null);
+    const [referenceEdit, setReferenceEdit] =
+        useState<ReferenceEditRequest | null>(null);
+    const [blobEdit, setBlobEdit] = useState<BlobEditRequest | null>(null);
+
+    const { tableId } = table;
+    const handleFollowReference = useCallback(
+        (targetTableId: number, recordIndex: number) => {
+            if (targetTableId === tableId) {
+                gridRef.current?.selectCell(recordIndex, 0);
+            } else {
+                onFollowReference(targetTableId, recordIndex);
+            }
+        },
+        [onFollowReference, tableId]
+    );
+
+    const closeReferenceEditor = (): void => {
+        if (referenceEdit) {
+            gridRef.current?.selectCell(referenceEdit.row, referenceEdit.col);
+        }
+        setReferenceEdit(null);
+    };
+
+    const closeBlobEditor = (): void => {
+        if (blobEdit) {
+            gridRef.current?.selectCell(blobEdit.row, blobEdit.col);
+        }
+        setBlobEdit(null);
+    };
 
     const handleActionClick = async (action: number) => {
         if (action === TableActions.EXPORT) {
@@ -87,10 +140,47 @@ const FieldEditorView = ({ setTableLoaderOptions, table }: Props) => {
             </TableHeader>
             <div className={baseStyles.tableEditorComponentWrapper}>
                 <TableEditorComponent
+                    fileId={fileId}
+                    initialSelection={initialSelection}
                     isInverted={tableOrientation === TableOrientation.INVERTED}
+                    onEditBlob={setBlobEdit}
+                    onEditReference={setReferenceEdit}
+                    onFollowReference={handleFollowReference}
+                    ref={gridRef}
+                    setLoaderOptions={setTableLoaderOptions}
                     table={table}
+                    tableNames={tableNames}
                 />
             </div>
+            {referenceEdit && (
+                <ReferenceEditor
+                    anchorRect={referenceEdit.anchorRect}
+                    onChange={(binary) =>
+                        gridRef.current?.setDataAtCell(
+                            referenceEdit.row,
+                            referenceEdit.col,
+                            binary
+                        )
+                    }
+                    onClose={closeReferenceEditor}
+                    tables={tables}
+                    value={referenceEdit.value}
+                />
+            )}
+            {blobEdit && (
+                <BlobEditorModal
+                    onApply={(json) => {
+                        gridRef.current?.setDataAtCell(
+                            blobEdit.row,
+                            blobEdit.col,
+                            json
+                        );
+                        closeBlobEditor();
+                    }}
+                    onClose={closeBlobEditor}
+                    value={blobEdit.value}
+                />
+            )}
         </>
     );
 };

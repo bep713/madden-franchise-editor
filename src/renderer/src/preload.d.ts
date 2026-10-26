@@ -10,9 +10,12 @@ import type {
 } from 'electron';
 import type {
     FileMetadata,
+    CellWrite,
     OpenFileResult,
     ReadTableDataResult,
-    TableListItem
+    SaveFileResult,
+    TableListItem,
+    WriteBulkTableCellsResult
 } from '@shared/types';
 import type { GameSaveResponse } from '@shared/types/files';
 
@@ -38,6 +41,18 @@ declare global {
                 tableId: number,
                 fields?: string[]
             ) => Promise<ReadTableDataResult>;
+            writeBulkTableCells: (
+                fileId: string,
+                changes: CellWrite[]
+            ) => Promise<WriteBulkTableCellsResult>;
+            saveFile: (
+                fileId: string,
+                options?: { sync?: boolean }
+            ) => Promise<SaveFileResult>;
+            saveFileAs: (
+                fileId: string,
+                filePath: string
+            ) => Promise<SaveFileResult>;
         };
         electronAPI: {
             showOpenDialog: (
@@ -50,6 +65,17 @@ declare global {
                 options: MessageBoxOptions
             ) => Promise<MessageBoxReturnValue>;
             getVersion: () => Promise<string>;
+            // ipcRenderer.send / on / removeAllListeners on any channel. The
+            // preload has no per-callback removal.
+            send: (channel: string, data?: unknown) => void;
+            on: (
+                channel: string,
+                callback: (...args: unknown[]) => void
+            ) => void;
+            removeAllListeners: (channel: string) => void;
+            preferences: {
+                getValue: (keyPath: string) => Promise<unknown>;
+            };
             recentFiles: {
                 initialize: () => Promise<RecentFileEntry[]>;
                 addFile: (filePath: string) => Promise<RecentFileEntry[]>;

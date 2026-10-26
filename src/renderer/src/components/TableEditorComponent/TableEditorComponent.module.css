@@ -18,3 +18,53 @@
     pointer-events: none;
     background-color: var(--ht-header-background-color);
 }
+
+/* Handsontable td classes, set by cells() (also checked by e2e). Same look as
+   v4's _table-editor.scss. */
+.wrapper :global(td.table-cell--empty),
+.wrapper :global(td.table-cell--error) {
+    font-style: italic;
+    color: #666;
+    background-color: var(--platinum);
+}
+
+.wrapper :global(td.active-row) {
+    background-color: var(--white-smoke);
+}
+
+.wrapper :global(.table-cell--with-button) {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.wrapper :global(.table-cell--with-button) > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.wrapper :global(.table-cell--with-button) a:hover {
+    color: var(--text-link);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.wrapper :global(.table-cell-edit-button) {
+    display: none;
+    flex-shrink: 0;
+    width: 25px;
+    height: 15px;
+    cursor: pointer;
+    background-color: transparent;
+    background-image: url('@assets/icons/edit.svg');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 15px 15px;
+    border: none;
+}
+
+.wrapper :global(td:hover .table-cell-edit-button),
+.wrapper :global(.table-cell-edit-button:focus-visible) {
+    display: block;
+}

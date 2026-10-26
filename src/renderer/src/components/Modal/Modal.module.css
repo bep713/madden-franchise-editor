@@ -1,0 +1,42 @@
+@import '@assets/spacing.css';
+
+.underlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background-color: rgb(0 0 0 / 40%);
+}
+
+.dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+    max-width: 95vw;
+    max-height: 95vh;
+    background-color: var(--white);
+    border-radius: var(--spacing-1);
+    box-shadow: 0 8px 32px rgb(0 0 0 / 30%);
+    transform: translate(-50%, -50%);
+}
+
+.header {
+    display: flex;
+    gap: var(--spacing-4);
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-3) var(--spacing-4);
+    border-bottom: 1px solid var(--divider-color);
+}
+
+.title {
+    margin: 0;
+    font-size: 1.125rem;
+}
+
+.content {
+    padding: var(--spacing-4);
+    overflow: auto;
+}

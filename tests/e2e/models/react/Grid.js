@@ -1,12 +1,15 @@
+const util = require("../../util/UiTestUtil");
+
 // Handsontable 16 version of models/HotComponent.js
 class Grid {
   constructor(window) {
     this.window = window;
     this.locators = {
       master: this.window.locator(".ht_master"),
-      selectedCell: this.window.locator(".ht_master td.current"),
+      // :not(.listbox) skips the dropdown editor's own nested grid
+      selectedCell: this.window.locator(".ht_master td.current:not(.listbox)"),
       firstCell: this.window.locator(
-        ".ht_master tbody tr:nth-of-type(1) td:nth-of-type(1)",
+        ".ht_master tbody tr:nth-of-type(1) td:nth-of-type(1):not(.listbox)",
       ),
       headers: this.window.locator(
         ".ht_clone_top thead tr:last-child th .colHeader",
@@ -15,15 +18,23 @@ class Grid {
   }
 
   async selectCellAt(row, col) {
-    await this.locators.firstCell.click();
+    // The corner of the cell, so a reference link in it isn't followed. The
+    // first rendered row isn't row 0 once the grid has scrolled, so go to the
+    // first cell with Ctrl+Home.
+    await this.locators.firstCell.click({ position: { x: 2, y: 2 } });
+    await this.window.keyboard.press("Control+Home");
 
-    // Handsontable scrolls virtualized rows and columns into view
+    // Handsontable scrolls virtualized rows and columns into view. Sent
+    // without waiting for each key, like v4's HotComponent, since far rows
+    // take hundreds of presses.
+    const presses = [];
     for (let i = 0; i < col; i++) {
-      await this.window.keyboard.press("ArrowRight");
+      presses.push(this.window.keyboard.press("ArrowRight"));
     }
     for (let i = 0; i < row; i++) {
-      await this.window.keyboard.press("ArrowDown");
+      presses.push(this.window.keyboard.press("ArrowDown"));
     }
+    await Promise.all(presses);
   }
 
   // columnNames: the table's headers in order (from App.readTable). The
@@ -36,8 +47,62 @@ class Grid {
     await this.selectCellAt(row, col);
   }
 
+  // Reference links show "<table> - <row>"; the hover edit button has no text
   async getTextAtSelectedCell() {
-    return this.locators.selectedCell.innerText();
+    // Dropdown cells also show an arrow, as in v4
+    return (await this.locators.selectedCell.innerText())
+      .replace("▼", "")
+      .trim();
+  }
+
+  // Same steps as v4's HotComponent: type, commit, back to the edited cell
+  async setTextAtSelectedCell(text) {
+    await this.window.keyboard.type(text);
+    await this.window.keyboard.press("Enter");
+    await this.window.keyboard.press("ArrowUp");
+  }
+
+  // Opens the dropdown editor (Enter) and clicks an option in its list
+  async chooseDropdownOptionAtSelectedCell(option) {
+    await this.window.keyboard.press("Enter");
+    await this.window
+      .locator(".handsontableEditor td", { hasText: new RegExp(`^${option}$`) })
+      .first()
+      .click();
+  }
+
+  async paste() {
+    await util.sendPasteKeyboardShortcut(this.window);
+  }
+
+  async undo() {
+    await util.sendUndoKeyboardShortcut(this.window);
+  }
+
+  async redo() {
+    await util.sendRedoKeyboardShortcut(this.window);
+  }
+
+  async isSelectedCellEmpty() {
+    const cellClass = await this.locators.selectedCell.getAttribute("class");
+    return cellClass.includes("table-cell--empty");
+  }
+
+  async _clickInSelectedCell(selector) {
+    await this.locators.selectedCell.hover();
+    await this.locators.selectedCell.locator(selector).click();
+  }
+
+  async editReferenceAtSelectedCell() {
+    await this._clickInSelectedCell('[data-action="edit-reference"]');
+  }
+
+  async editBlobAtSelectedCell() {
+    await this._clickInSelectedCell('[data-action="edit-blob"]');
+  }
+
+  async followReferenceAtSelectedCell() {
+    await this._clickInSelectedCell('[data-action="follow-reference"]');
   }
 }
 

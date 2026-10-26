@@ -106,6 +106,14 @@ const Welcome: React.FC = () => {
         setOpenFile?.(
             buildOpenFranchiseFile(result.fileId, result.metadata, tables, path)
         );
+        // Main sets the title, enables the file menu items and starts
+        // watching the file. A restore after a renderer reload skips this,
+        // since main still has that state (same as v4).
+        window.electronAPI.send('file-loaded', {
+            path,
+            type: result.metadata.type,
+            fileId: result.fileId
+        });
     }
 
     return (
