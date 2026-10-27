@@ -19,8 +19,10 @@ interface Props {
     fileId: string;
     // Selected when the table loads (a followed reference)
     initialSelection?: CellPosition | null;
+    isPinned: boolean;
     // Follow a reference to another table. Must be stable (see TableEditorComponent).
     onFollowReference: (tableId: number, recordIndex: number) => void;
+    onTogglePin: () => void;
     setTableLoaderOptions: LoaderOptionsSetter;
     table: TableData;
     tableNames: ReadonlyMap<number, string>;
@@ -36,7 +38,9 @@ enum TableOrientation {
 const FieldEditorView = ({
     fileId,
     initialSelection,
+    isPinned,
     onFollowReference,
+    onTogglePin,
     setTableLoaderOptions,
     table,
     tableNames,
@@ -124,6 +128,8 @@ const FieldEditorView = ({
                     });
                 }
             }
+        } else if (action === TableActions.PIN) {
+            onTogglePin();
         } else if (action === TableActions.SWITCH_ORIENTATION) {
             setTableOrientation(
                 tableOrientation === TableOrientation.NORMAL
@@ -136,7 +142,10 @@ const FieldEditorView = ({
     return (
         <>
             <TableHeader table={table}>
-                <FieldEditorActionBar onActionClick={handleActionClick} />
+                <FieldEditorActionBar
+                    isPinned={isPinned}
+                    onActionClick={handleActionClick}
+                />
             </TableHeader>
             <div className={baseStyles.tableEditorComponentWrapper}>
                 <TableEditorComponent

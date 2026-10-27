@@ -183,6 +183,9 @@
       ]
     }
   ],
+  "tableEditor": {
+    "showPinnedTables": true
+  },
   "settingsManager": {
     "general": {
       "defaultDirectorySet": false,

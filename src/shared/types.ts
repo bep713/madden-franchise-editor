@@ -1,5 +1,6 @@
 export * from './types/franchise';
 export * from './types/navigation';
+export * from './types/pins';
 
 export interface Response {
     success: boolean;

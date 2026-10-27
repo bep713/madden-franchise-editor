@@ -227,8 +227,9 @@ function getPreferenceDefaults() {
       defaults[section.id][field.key] = value;
     }
   }
-  // Include settingsManager section (not part of the settings form)
+  // Include the sections that are not part of the settings form
   defaults.settingsManager = preferencesSchema.settingsManager;
+  defaults.tableEditor = preferencesSchema.tableEditor;
   return defaults;
 }
 

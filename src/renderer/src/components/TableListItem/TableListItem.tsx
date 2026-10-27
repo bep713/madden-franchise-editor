@@ -4,6 +4,7 @@ import styles from './TableListItem.module.css';
 
 import Layout from '../Layout/Layout';
 import Text from '../Text/Text';
+import Pushpin from '@assets/icons/pushpin.svg?react';
 
 interface Props {
     component: React.ElementType;
@@ -13,6 +14,7 @@ interface Props {
     table: {
         id: number;
         name: string;
+        pinned?: boolean;
         selected?: boolean;
     };
 }
@@ -47,6 +49,7 @@ const TableListItem: React.FC<Props> = ({
         <Component
             aria-current={table.selected ? 'true' : undefined}
             className={cx(styles.table, {
+                [styles.pinned]: table.pinned,
                 [styles.selected]: table.selected
             })}
             data-table-id={table.id}
@@ -54,9 +57,18 @@ const TableListItem: React.FC<Props> = ({
             {...componentProps}
         >
             <Layout direction='column' rowGap='05'>
-                <Text typography='labelSmall' emphasis>
-                    {table.id}
-                </Text>
+                <div className={styles.idLabel}>
+                    <Text typography='labelSmall' emphasis>
+                        {table.id}
+                    </Text>
+                    {table.pinned && (
+                        <Pushpin
+                            aria-label='Pinned'
+                            className={styles.pinIcon}
+                            role='img'
+                        />
+                    )}
+                </div>
                 <div className={styles.tableName} title={table.name}>
                     {name}
                 </div>

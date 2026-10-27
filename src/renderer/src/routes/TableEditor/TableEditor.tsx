@@ -17,6 +17,9 @@ import styles from './TableEditor.module.scss';
 import { FranchiseFileContext } from '@renderer/context/FranchiseFileContext';
 import { TableData, TableListItem, TableType } from '@shared/types';
 import TableSidebar from './components/TableSidebar/TableSidebar';
+import { buildSidebarRows } from './components/TableSidebar/sidebarRows';
+import usePinnedTables from '@renderer/hooks/usePinnedTables';
+import usePreference from '@renderer/hooks/usePreference';
 import useLoader from '@renderer/hooks/useLoader';
 import ExpressionEditorView from './views/ExpressionEditorView';
 import FieldEditorView from './views/FieldEditorView';
@@ -34,6 +37,13 @@ const TableEditor: React.FC = () => {
 
     const { loader: tableLoader, setOptions: setTableLoaderOptions } =
         useLoader();
+
+    const { pinnedTables, isPinned, togglePin } =
+        usePinnedTables(activeFranchiseFile);
+    const [showPinnedTables, setShowPinnedTables] = usePreference(
+        'tableEditor.showPinnedTables',
+        true
+    );
 
     const selectedTable = activeFranchiseFile?.tables.find(
         (table) => table.id === selectedTableId
@@ -59,6 +69,18 @@ const TableEditor: React.FC = () => {
         });
         return fuse.search(filterText).map((result) => result.item);
     }, [allTables, filterText]);
+
+    const sidebarRows = useMemo(
+        () =>
+            filteredTables &&
+            buildSidebarRows(
+                filteredTables,
+                pinnedTables,
+                isPinned,
+                showPinnedTables
+            ),
+        [filteredTables, pinnedTables, isPinned, showPinnedTables]
+    );
 
     const tableNames = useMemo(
         () => new Map((allTables ?? []).map((table) => [table.id, table.name])),
@@ -150,8 +172,13 @@ const TableEditor: React.FC = () => {
                         <TableSidebar
                             onFilter={setFilterText}
                             onTableSelect={onSelectTable}
+                            onTogglePinnedVisible={() =>
+                                setShowPinnedTables(!showPinnedTables)
+                            }
+                            onTogglePin={togglePin}
+                            rows={sidebarRows}
                             selectedTableId={selectedTableId}
-                            tables={filteredTables}
+                            showPinnedTables={showPinnedTables}
                         />
                     </Allotment.Pane>
                     <Allotment.Pane>
@@ -171,7 +198,11 @@ const TableEditor: React.FC = () => {
                                     <FieldEditorView
                                         fileId={activeFranchiseFile.fileId}
                                         initialSelection={pendingSelection}
+                                        isPinned={isPinned(selectedTable)}
                                         onFollowReference={onFollowReference}
+                                        onTogglePin={() =>
+                                            togglePin(selectedTable)
+                                        }
                                         setTableLoaderOptions={
                                             setTableLoaderOptions
                                         }

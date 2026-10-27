@@ -18,3 +18,14 @@ export const Base = {
         emphasisText: 'Perc'
     }
 };
+
+export const Pinned = {
+    args: {
+        table: {
+            id: 4220,
+            name: 'Player',
+            pinned: true,
+            selected: false
+        }
+    }
+};

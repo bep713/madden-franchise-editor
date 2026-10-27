@@ -121,6 +121,7 @@ preferencesService.getPreferenceKeys = function () {
     }
   }
   defaults.settingsManager = preferencesSchema.settingsManager;
+  defaults.tableEditor = preferencesSchema.tableEditor;
   return defaults;
 };
 

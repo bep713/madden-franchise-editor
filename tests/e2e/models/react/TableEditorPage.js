@@ -11,9 +11,15 @@ class TableEditorPage {
       loader: this.window.locator('[role="status"][aria-busy="true"]'),
       search: this.window.getByPlaceholder("Search tables..."),
       header: this.window.getByTestId("table-header-title"),
+      // In either sidebar section
       selectedSidebarTable: this.window.locator(
         'button[data-table-id][aria-current="true"]',
       ),
+      pinnedCards: this.window.locator(
+        '[data-section="pinned"] button[data-table-id]',
+      ),
+      pinAction: this.window.locator('[data-action="PIN"]'),
+      pinnedToggle: this.window.locator('button[title$="pinned tables"]'),
     };
   }
 
@@ -33,16 +39,91 @@ class TableEditorPage {
     return this.locators.selectedSidebarTable;
   }
 
-  // The sidebar is virtualized, so search first instead of scrolling
+  // The sidebar is virtualized, so search first instead of scrolling.
+  // Pinned tables are only in the Pinned section, so click in either.
   async openTableById(id) {
     await this.locators.search.fill(String(id));
-    await this.window.locator(`button[data-table-id="${id}"]`).click();
+    await this.window
+      .locator(`[data-section] button[data-table-id="${id}"]`)
+      .click();
     await poll(
       () => this.getSelectedTableName(),
       (name) => name.startsWith(`${id} - `),
       { message: `Table ${id} never loaded` },
     );
     await this.waitForTableToLoad();
+  }
+
+  // section: "all" (the full list) or "pinned"
+  sidebarCard(id, section = "all") {
+    return this.window.locator(
+      `[data-section="${section}"] button[data-table-id="${id}"]`,
+    );
+  }
+
+  async searchTables(text) {
+    await this.locators.search.fill(text);
+  }
+
+  // Ids in the Pinned section, top to bottom
+  async getPinnedTableIds() {
+    const ids = await this.locators.pinnedCards.evaluateAll((cards) =>
+      cards.map((card) => Number(card.dataset.tableId)),
+    );
+    return ids;
+  }
+
+  async waitForPinnedTableIds(expected) {
+    return poll(
+      () => this.getPinnedTableIds(),
+      (ids) => JSON.stringify(ids) === JSON.stringify(expected),
+      { message: `Pinned section never showed ${JSON.stringify(expected)}` },
+    );
+  }
+
+  async isCardPinned(id, section = "all") {
+    return (
+      (await this.sidebarCard(id, section)
+        .getByRole("img", { name: "Pinned" })
+        .count()) > 0
+    );
+  }
+
+  async getPinActionText() {
+    return (await this.locators.pinAction.innerText()).trim();
+  }
+
+  // Pins or unpins the selected table from the action bar
+  async togglePinSelectedTable() {
+    await this.locators.pinAction.click();
+  }
+
+  // The pin/unpin button only shows on hover
+  async pinFromSidebar(id, section = "all") {
+    await this.clickSidebarPinButton(id, section, /^Pin /);
+  }
+
+  async unpinFromSidebar(id, section = "all") {
+    await this.clickSidebarPinButton(id, section, /^Unpin /);
+  }
+
+  async clickSidebarPinButton(id, section, name) {
+    const row = this.window.locator(`[data-section="${section}"]`, {
+      has: this.window.locator(`button[data-table-id="${id}"]`),
+    });
+    await row.hover();
+    await row.getByRole("button", { name }).click();
+  }
+
+  async togglePinnedSection() {
+    await this.locators.pinnedToggle.click();
+  }
+
+  async isPinnedSectionToggleOn() {
+    return (
+      (await this.locators.pinnedToggle.getAttribute("aria-pressed")) ===
+      "true"
+    );
   }
 
   // Call before a paste/undo/redo that writes more than one cell, then

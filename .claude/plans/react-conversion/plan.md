@@ -11,7 +11,7 @@ From step 02 on, every step adds or extends a React e2e spec (`tests/e2e/scripts
 | 00 | [Toolchain](00-toolchain.md): Vite, TS, lint, Storybook, `window.api` preload, `MFE_UI` switch | Done (`0f5951c`, `d8e3f51`, `56d2e8f`) |
 | 01 | [Preload APIs](01-franchise-model.md): React uses v4's `window.franchiseAPI` / `window.electronAPI`; `window.api` removed | Done (`62ce438`) |
 | 02 | [React e2e tests](02-react-e2e.md): Playwright `react` project (`MFE_UI=react`), port the v4 specs React can already pass (smoke, tabs, export, in part), test-per-feature rule | Done (`cbd80c9`, `c257f8a`) |
-| 03 | [Table editor parity](03-table-editor-parity.md): cell editing, reference/blob editors and saving (03a), pinning (03b), export/import (03c), jump to column (03d), inverted-view editing (03e) | 03a implemented (uncommitted, awaiting review); 03b planned (reviewed); 03c–03e not planned (03e outlined) |
+| 03 | [Table editor parity](03-table-editor-parity.md): cell editing, reference/blob editors and saving (03a), pinning (03b), export/import (03c), jump to column (03d), inverted-view editing (03e) | 03a committed; 03b implemented (uncommitted, awaiting review); 03c–03e not planned (03e outlined) |
 | 04+ | Remaining items toward v4 parity (below) | Not planned |
 
 ## 04+: Remaining items toward v4 parity

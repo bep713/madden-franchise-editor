@@ -51,14 +51,26 @@ function boot(inputText = null) {
   return { handler, ipc, loggedMain, updateChannel: require(UPDATE_CHANNEL) };
 }
 
-test("a real user's file loads and is rewritten unchanged", async () => {
+test("a real user's file loads and is rewritten with only the missing sections added", async () => {
   const input = fs.readFileSync(
     path.join(__dirname, "fixtures/preferences/real-user.json"),
     "utf8",
   );
+  // The fixture predates the tableEditor section, which is appended on load
+  const expected = {
+    ...JSON.parse(input),
+    tableEditor: { showPinnedTables: true },
+  };
   const { ipc } = boot(input);
-  assert.deepStrictEqual(await ipc.invoke("preferences:get"), JSON.parse(input));
-  assert.equal(fs.readFileSync(prefsFile(), "utf8"), input);
+  assert.deepStrictEqual(await ipc.invoke("preferences:get"), expected);
+  assert.equal(fs.readFileSync(prefsFile(), "utf8"), json(expected));
+});
+
+test("defaults include the tableEditor section", () => {
+  const { handler } = boot();
+  assert.deepStrictEqual(handler.getPreferenceDefaults().tableEditor, {
+    showPinnedTables: true,
+  });
 });
 
 test("no file: defaults are returned and written with 4-space indent", async () => {

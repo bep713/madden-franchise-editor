@@ -75,6 +75,15 @@ declare global {
             removeAllListeners: (channel: string) => void;
             preferences: {
                 getValue: (keyPath: string) => Promise<unknown>;
+                // Writes only the given keys of each section
+                set: (
+                    prefs: Record<string, Record<string, unknown>>
+                ) => Promise<void>;
+            };
+            // JSON files in userData (fs:read-json / fs:write-json)
+            fs: {
+                readJson: (filename: string) => Promise<unknown | null>;
+                writeJson: (filename: string, data: unknown) => Promise<void>;
             };
             recentFiles: {
                 initialize: () => Promise<RecentFileEntry[]>;

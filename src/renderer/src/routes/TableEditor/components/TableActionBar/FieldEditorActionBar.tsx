@@ -16,10 +16,11 @@ export enum TableActions {
 }
 
 interface Props {
+    isPinned: boolean;
     onActionClick: (action: number) => void;
 }
 
-const FieldEditorActionBar = ({ onActionClick }: Props) => {
+const FieldEditorActionBar = ({ isPinned, onActionClick }: Props) => {
     const items: LinkProps[] = [
         {
             color: 'black',
@@ -43,7 +44,7 @@ const FieldEditorActionBar = ({ onActionClick }: Props) => {
             key: TableActions.PIN,
             leftAsset: <Pushpin />,
             onClick: () => onActionClick(TableActions.PIN),
-            text: 'Pin'
+            text: isPinned ? 'Unpin' : 'Pin'
         },
         {
             color: 'black',

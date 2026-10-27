@@ -1,32 +1,59 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import cx from 'classnames';
 import AutoSizer from 'react-virtualized-auto-sizer';
-import { FixedSizeList as List } from 'react-window';
+import { VariableSizeList as List } from 'react-window';
 import { TableListItem as TableListEntry } from '@shared/types';
 import styles from './TableSidebar.module.scss';
 import Textbox from '@renderer/components/Textbox/Textbox';
 import TableListItem from '@renderer/components/TableListItem/TableListItem';
+import Text from '@renderer/components/Text/Text';
 import searchIconUrl from '@assets/icons/search.svg';
+import Pushpin from '@assets/icons/pushpin.svg?react';
+import Unpin from '@assets/icons/unpin.svg?react';
+import { SidebarRow } from './sidebarRows';
 
-const ROW_HEIGHT = 63;
+const TABLE_ROW_HEIGHT = 63;
+const PINNED_LABEL_HEIGHT = 24;
+const DIVIDER_HEIGHT = 13;
 const GUTTER_SIZE = 4;
+
+const ROW_HEIGHTS: Record<SidebarRow['kind'], number> = {
+    pinnedLabel: PINNED_LABEL_HEIGHT,
+    table: TABLE_ROW_HEIGHT,
+    divider: DIVIDER_HEIGHT
+};
+
+const rowKey = (row: SidebarRow): string =>
+    row.kind === 'table' ? `${row.section}-${row.table.id}` : row.kind;
 
 interface TableSidebarProps {
     onFilter?: (filterText: string) => void;
     onTableSelect?: (table: TableListEntry) => void;
+    onTogglePin?: (table: TableListEntry) => void;
+    onTogglePinnedVisible?: () => void;
+    rows?: SidebarRow[];
     selectedTableId: number;
-    tables?: TableListEntry[];
+    showPinnedTables: boolean;
 }
 
 const TableSidebar: React.FC<TableSidebarProps> = ({
     onFilter,
     onTableSelect,
+    onTogglePin,
+    onTogglePinnedVisible,
+    rows,
     selectedTableId,
-    tables
+    showPinnedTables
 }: TableSidebarProps) => {
     const [filterText, setFilterText] = useState<string>('');
     const listRef = useRef<List>();
 
-    if (!tables) {
+    // Row heights are cached by index, and rows move when pins change
+    useEffect(() => {
+        listRef.current?.resetAfterIndex(0);
+    }, [rows]);
+
+    if (!rows) {
         return null;
     }
 
@@ -38,57 +65,113 @@ const TableSidebar: React.FC<TableSidebarProps> = ({
         onFilter?.(e.target.value);
     };
 
-    const renderListItem = ({ index, style }): React.ReactNode => {
-        const item = tables[index];
+    const renderRow = ({ index, style }): React.ReactNode => {
+        const row = rows[index];
+
+        if (row.kind === 'pinnedLabel') {
+            return (
+                <div className={styles.pinnedLabel} style={style}>
+                    <Text typography='labelSmall'>Pinned</Text>
+                </div>
+            );
+        }
+
+        if (row.kind === 'divider') {
+            return (
+                <div className={styles.divider} style={style}>
+                    <hr />
+                </div>
+            );
+        }
+
+        const { table, pinned, section } = row;
 
         return (
-            <TableListItem
-                component='button'
-                componentProps={{
-                    onClick: () => onTableSelect?.(item),
-                    style: {
-                        ...style,
-                        top: style.top + GUTTER_SIZE,
-                        height: style.height - GUTTER_SIZE
-                    }
+            <div
+                className={styles.tableRow}
+                data-section={section}
+                style={{
+                    ...style,
+                    top: style.top + GUTTER_SIZE,
+                    height: style.height - GUTTER_SIZE
                 }}
-                emphasisText={filterText}
-                table={{
-                    ...item,
-                    selected: item.id === selectedTableId
-                }}
-            />
+            >
+                <TableListItem
+                    component='button'
+                    componentProps={{
+                        onClick: () => onTableSelect?.(table),
+                        style: { width: '100%', height: '100%' }
+                    }}
+                    emphasisText={filterText}
+                    table={{
+                        ...table,
+                        pinned,
+                        selected: table.id === selectedTableId
+                    }}
+                />
+                <button
+                    aria-label={`${pinned ? 'Unpin' : 'Pin'} ${table.name}`}
+                    className={styles.pinButton}
+                    onClick={() => onTogglePin?.(table)}
+                    title={pinned ? 'Unpin' : 'Pin'}
+                    type='button'
+                >
+                    {pinned ? <Unpin /> : <Pushpin />}
+                </button>
+            </div>
         );
     };
 
     return (
         <div className={styles.wrapper}>
-            <Textbox
-                leftAsset={
-                    <img
-                        alt={'Search icon'}
-                        height={16}
-                        loading='lazy'
-                        src={searchIconUrl}
-                        width={16}
+            <div className={styles.header}>
+                <div className={styles.search}>
+                    <Textbox
+                        leftAsset={
+                            <img
+                                alt={'Search icon'}
+                                height={16}
+                                loading='lazy'
+                                src={searchIconUrl}
+                                width={16}
+                            />
+                        }
+                        onChange={handleFilterChange}
+                        placeholder='Search tables...'
+                        text={filterText}
                     />
-                }
-                onChange={handleFilterChange}
-                placeholder='Search tables...'
-                text={filterText}
-            />
+                </div>
+                <button
+                    aria-pressed={showPinnedTables}
+                    className={cx(styles.pinToggle, {
+                        [styles.pinToggleOff]: !showPinnedTables
+                    })}
+                    onClick={onTogglePinnedVisible}
+                    title={
+                        showPinnedTables
+                            ? 'Hide pinned tables'
+                            : 'Show pinned tables'
+                    }
+                    type='button'
+                >
+                    <Pushpin />
+                </button>
+            </div>
             <div className={styles.autoSizerWrapper}>
                 <AutoSizer>
                     {({ height, width }) => (
                         <List
                             height={height}
-                            itemCount={tables.length}
-                            itemSize={ROW_HEIGHT}
+                            itemCount={rows.length}
+                            itemKey={(index: number) => rowKey(rows[index])}
+                            itemSize={(index: number) =>
+                                ROW_HEIGHTS[rows[index].kind]
+                            }
                             overscanCount={8}
                             ref={listRef}
                             width={width}
                         >
-                            {renderListItem}
+                            {renderRow}
                         </List>
                     )}
                 </AutoSizer>

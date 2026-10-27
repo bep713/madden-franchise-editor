@@ -1,3 +1,4 @@
+@import '@assets/colors.css';
 @import '@assets/spacing.css';
 
 .wrapper {
@@ -10,4 +11,92 @@
 
 .autoSizerWrapper {
     flex-grow: 1;
+}
+
+.header {
+    display: flex;
+    gap: var(--spacing-1);
+    align-items: center;
+}
+
+.search {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.pinToggle {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    cursor: pointer;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 4px;
+
+    svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    &:hover {
+        background-color: var(--platinum);
+    }
+}
+
+.pinToggleOff svg {
+    opacity: 0.35;
+}
+
+.pinnedLabel {
+    display: flex;
+    align-items: flex-end;
+    padding-bottom: var(--spacing-05);
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+
+    hr {
+        width: 100%;
+        margin: 0;
+        border: none;
+        border-top: 1px solid var(--timberwolf);
+    }
+}
+
+.tableRow {
+    .pinButton {
+        position: absolute;
+        top: 50%;
+        right: var(--spacing-2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: var(--spacing-1);
+        cursor: pointer;
+        background: none;
+        border: none;
+        border-radius: 4px;
+        opacity: 0;
+        transform: translateY(-50%);
+
+        svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        &:hover {
+            background-color: var(--timberwolf);
+        }
+    }
+
+    &:hover .pinButton,
+    &:focus-within .pinButton {
+        opacity: 1;
+    }
 }

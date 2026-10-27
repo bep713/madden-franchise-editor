@@ -9,7 +9,7 @@ React has no pin logic. The action bar shows a "Pin" link (`FieldEditorActionBar
 
 Outcome:
 - The sidebar opens with a **Pinned** section: a "Pinned" label, the pinned tables sorted by table id, then a divider. The full table list follows.
-- Pinned tables also stay in their normal place in the full list. Wherever a pinned table's card appears, it has the pushpin icon and a trash button on hover that unpins it.
+- While the Pinned section is shown, pinned tables move out of the full list into it. When the section is hidden they stay in their normal place in the full list. Wherever a pinned table's card appears, it has the pushpin icon and an unpin button (crossed-out pushpin) on hover that unpins it. An unpinned table's card has a pushpin button in the same spot that pins it.
 - A pushpin toggle button next to the search box shows or hides the Pinned section. Its state is a global preference, so it is the same after closing and reopening the editor, in any file.
 - The action bar toggles Pin/Unpin for the selected table, and the sidebar updates immediately.
 - Pins are read from and written to the same `pins.json` as v4, so both UIs see the same pins.
@@ -78,16 +78,16 @@ type SidebarRow =
 ```
 - `TableEditor.tsx` builds the rows from `usePinnedTables` and `showPinnedTables`:
   - Pinned section: shown only if `showPinnedTables` is on and at least one pinned table matches the filter. It holds `pinnedLabel`, the pinned tables (sorted by id; while filtering, only the pinned tables in the Fuse results), then `divider`.
-  - Full list: every table, unchanged (index order, or Fuse order while filtering), each with `pinned` set from `isPinned`. Pinned tables stay in their normal place.
+  - Full list: every table, unchanged (index order, or Fuse order while filtering), each with `pinned` set from `isPinned`. Pinned tables that are in the Pinned section are left out; with the section hidden they stay in their normal place.
   - The selected highlight shows in both places, because it is based on `table.id`.
 - `TableSidebar.tsx`:
   - Switch `FixedSizeList` to `VariableSizeList` (react-window 1.8.11). Row heights: table rows 63 as now, the label about 24, the divider about 13; put the exact sizes in constants. Call `listRef.current.resetAfterIndex(0)` when the rows change. Use `itemKey` = `pinned-<id>` / `all-<id>` / `label` / `divider`, so the same table in both sections has two keys.
   - The Pinned section scrolls with the list. It is not sticky, so a long pin list doesn't take up the sidebar.
   - Header: put a pushpin toggle `<button>` to the right of the search `Textbox`, with `aria-pressed={showPinnedTables}` and the title "Hide pinned tables" / "Show pinned tables". The icon is dimmed when the section is off. New prop `onTogglePinnedVisible`.
-  - Table rows: a wrapper `div` (the absolutely positioned react-window `style` goes on it). Inside it go the existing select button (`TableListItem`) and, for pinned tables, a sibling trash `<button aria-label="Unpin {name}">`. A trash button can't go inside the select button, because nested `<button>`s are invalid HTML. The trash button shows on `:hover` and `:focus-within`. Its click calls the new `onUnpin(table)` prop and must not select the table. This works the same in both sections. Unpinning from the full list removes the row from the Pinned section too.
+  - Table rows: a wrapper `div` (the absolutely positioned react-window `style` goes on it). Inside it go the existing select button (`TableListItem`) and a sibling pin `<button>`: "Unpin {name}" with the crossed-out pushpin for pinned tables, "Pin {name}" with the plain pushpin otherwise. It can't go inside the select button, because nested `<button>`s are invalid HTML. It shows on `:hover` and `:focus-within`. Its click calls the new `onTogglePin(table)` prop and must not select the table. This works the same in both sections. Unpinning from the full list removes the row from the Pinned section too.
   - `pinnedLabel` row: a small "Pinned" label with the `Text` component's label style. `divider` row: a 1px rule in `--timberwolf` with vertical padding.
 - `TableListItem.tsx`: new optional `table.pinned`. When set, show the pushpin icon (`@assets/icons/pushpin.svg?react`, about 10px) next to the id label, plus a modifier class (`styles.pinned`) for the pinned decoration. The decoration is the same in both sections.
-- Icons: copy `renderer/img/trash.svg` to `src/renderer/src/assets/icons/trash.svg`. Size it in CSS, because the file is 512pt. Pushpin already exists in `src/renderer/src/assets/icons/` and is used for the cards and the toggle button.
+- Icons: `src/renderer/src/assets/icons/unpin.svg` is the pushpin with a slash through it (a trash can read as deleting the table). Pushpin already exists in `src/renderer/src/assets/icons/` and is used for the cards and the toggle button.
 - Styles in `TableSidebar.module.scss` / `TableListItem.module.css`. Use the existing color tokens and camelCase class names.
 
 ## Phase 6: Action bar
@@ -107,29 +107,29 @@ type SidebarRow =
   - Sorting is numeric (`999` before `4220`). `addPin` dedupes and drops a uniqueId of 0. `removePin` removes only the matching pin.
   - A `pins.json` written by v4 (fixture) round-trips with the same shape.
 - Put the row building in a pure `buildSidebarRows(tables, pinnedTables, isPinned, showPinned, filtered)` helper so it can be tested without rendering. Cases:
-  - With pins and the section shown: label, pins, divider, then the full list, which still contains the pinned tables.
+  - With pins and the section shown: label, pins, divider, then the full list without the pinned tables.
   - Section hidden: only the full list, with pinned flags set.
   - Filter matching no pins: no label or divider.
   - No pins: no label or divider.
 - `TableSidebar.test.tsx`:
   - Mock `react-virtualized-auto-sizer`, because it measures 0×0 in jsdom.
-  - A pinned table renders in both sections with the pin icon.
-  - The trash button in either section calls `onUnpin` but not `onTableSelect`.
+  - A pinned table renders only in the Pinned section, with the pin icon.
+  - The pin button in either section calls `onTogglePin` but not `onTableSelect`, for pinned and unpinned tables.
   - The toggle button calls `onTogglePinnedVisible` and reflects `aria-pressed`.
 - `usePreference` test: mock `window.electronAPI.preferences`. It starts at the fallback, takes the read value, and `setValue` sends the partial `{ section: { key } }` object.
 - `tests/e2e/scripts/react/pins.spec.js`: port of v4's `pins.spec.js`, adapted to the sidebar. Launch with `launchWithDefaultOptions({ ui: "react", pins })`, using the React page models from [02-react-e2e.md](02-react-e2e.md).
   - Default pins show in the Pinned section.
   - Pin and unpin from the action bar, and the change is in `pins.json`.
-  - Unpin with the trash button.
+  - Pin and unpin with the hover button.
   - A seeded legacy `pins.json` (same seed as v4's second test) gets its uniqueIds filled in.
 - Storybook: add a `Pinned` story to `TableListItem.stories.jsx`.
 
 ## Verification
 - `npm run test:unit` (the preferences defaults), `npm run typecheck`, `npm run lint`, `npm run stylelint`, `npm run test:react`.
 - `npm run dev:react` with a temp copy of `tests/data/m22/career/CAREER-M22TEST`. Back up `%APPDATA%/<app>/pins.json` and `preferences.json` first.
-  - With no `pins.json`, the Pinned section shows the label, then Player 4220, League 4269, Franchise 4688, Team 7388, then the divider. The same four tables are also decorated in the full list. `pins.json` gets written with uniqueIds filled in.
-  - Pin a table from the action bar. It appears in the Pinned section at once, in id order, and its card in the full list is decorated. The link reads "Unpin". Unpin it from the action bar, pin it again, remove it with the trash button in the full list, pin it again, and remove it from the Pinned section.
-  - Filter: only matching pins show in the section, and the section disappears when none match. The trash button never selects the row.
+  - With no `pins.json`, the Pinned section shows the label, then Player 4220, League 4272, Franchise 4712, Team 7388, then the divider. (The defaults say 4269/4688; those ids are stale for this fixture, so the pins are matched by name.) The same four tables are also decorated in the full list. `pins.json` gets written with uniqueIds filled in.
+  - Pin a table from the action bar. It appears in the Pinned section at once, in id order, and its card in the full list is decorated. The link reads "Unpin". Unpin it from the action bar, pin and unpin it with the hover button in the full list, pin it again, and remove it from the Pinned section.
+  - Filter: only matching pins show in the section, and the section disappears when none match. The pin button never selects the row.
   - Toggle the Pinned section off. Close the file, reopen it (and another file), and restart the app: it stays hidden, and `preferences.json` has `tableEditor.showPinnedTables: false`. Cards stay decorated while it's hidden. Toggle it back on.
   - Run `npm run dev` (v4) on the same file: the bookmark bar shows the same pins, and the settings window still opens and saves without dropping `tableEditor`. Pin something in v4 and check that React shows it.
 - `npm run e2eTest:react` (the new pins spec), then `npm run e2eTest` (v4 regression). The only shared changes are the new preferences section and the two default builders.

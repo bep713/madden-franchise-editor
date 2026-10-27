@@ -33,3 +33,23 @@
 .selected .tableName {
     font-weight: 500;
 }
+
+.idLabel {
+    display: flex;
+    gap: var(--spacing-05);
+    align-items: center;
+}
+
+.pinIcon {
+    flex-shrink: 0;
+    width: 10px;
+    height: 10px;
+}
+
+.pinned {
+    border-left: 3px solid var(--fawn);
+}
+
+.selected.pinned {
+    border-left: 3px solid var(--fulvous);
+}
