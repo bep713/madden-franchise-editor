@@ -42,6 +42,12 @@ export interface EditorTabsValue {
     newTab: () => void;
     selectTab: (key: string) => void;
     closeTab: (key: string) => void;
+    // A table in a new tab, active unless `background`
+    openTableTab: (
+        tableId: number,
+        name: string,
+        options?: { selection?: CellPosition; background?: boolean }
+    ) => void;
     tableChanged: (key: string, tableId: number, name: string) => void;
     getViewState: (key: string) => TabViewState | undefined;
     setViewState: (key: string, patch: TabViewState) => void;
@@ -89,7 +95,7 @@ export function useEditorTabsController(): EditorTabsValue {
         const target = file ?? latest.current.openFile;
         const next = reduceTabs(stateRef.current, action, target);
         if (next === stateRef.current) {
-            return;
+            return next;
         }
         stateRef.current = next;
         setState(next);
@@ -106,6 +112,7 @@ export function useEditorTabsController(): EditorTabsValue {
                 latest.current.navigate(path);
             }
         }
+        return next;
     }, []);
 
     const view = useMemo(() => syncFile(state, openFile), [state, openFile]);
@@ -117,6 +124,26 @@ export function useEditorTabsController(): EditorTabsValue {
             newTab: () => apply({ type: 'newTab' }),
             selectTab: (key: string) => apply({ type: 'selectTab', key }),
             closeTab: (key: string) => apply({ type: 'closeTab', key }),
+            openTableTab: (
+                tableId: number,
+                name: string,
+                {
+                    selection,
+                    background = false
+                }: { selection?: CellPosition; background?: boolean } = {}
+            ) => {
+                const key = `table-${stateRef.current.nextId}`;
+                const next = apply({
+                    type: 'openTableTab',
+                    tableId,
+                    name,
+                    background
+                });
+                // After apply, which drops view states of unknown keys
+                if (selection && next.tabs.some((tab) => tab.key === key)) {
+                    viewStates.current.set(key, { selection });
+                }
+            },
             tableChanged: (key: string, tableId: number, name: string) =>
                 apply({ type: 'tableChanged', key, tableId, name }),
             getViewState: (key: string) => viewStates.current.get(key),

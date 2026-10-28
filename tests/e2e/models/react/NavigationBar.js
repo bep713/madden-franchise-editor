@@ -19,6 +19,11 @@ class NavigationBar {
     await this.tab(name).click();
   }
 
+  // Tabs can share a name, so tables opened in new tabs are found by place
+  async openLastTab() {
+    await this.tabs.last().click();
+  }
+
   async tabNames() {
     return this.tabs.evaluateAll((tabs) =>
       tabs.map((tab) => tab.getAttribute("data-name")),

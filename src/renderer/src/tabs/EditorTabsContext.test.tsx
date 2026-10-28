@@ -128,4 +128,40 @@ describe('useEditorTabsController', () => {
         expect(result.current.tabs.getViewState(key)).toBeUndefined();
         expect(result.current.pathname).toBe('/');
     });
+
+    it('seeds a new table tab with the selection, leaving the current tab alone', () => {
+        const { result } = setup({ file: makeFile('file-1') });
+        act(() => {
+            result.current.tabs.openTableEditor();
+        });
+        const current = result.current.tabs.activeTab.key;
+        result.current.tabs.setViewState(current, {
+            selection: { row: 3, col: 2 }
+        });
+
+        act(() => {
+            result.current.tabs.openTableTab(4104, 'Stadium', {
+                selection: { row: 12, col: 0 },
+                background: true
+            });
+        });
+        expect(result.current.tabs.activeTab.key).toBe(current);
+        const added = result.current.tabs.tabs.at(-1)!;
+        expect(tabName(added)).toBe('4104 - Stadium');
+        expect(result.current.tabs.getViewState(added.key)).toEqual({
+            selection: { row: 12, col: 0 }
+        });
+        expect(result.current.tabs.getViewState(current)).toEqual({
+            selection: { row: 3, col: 2 }
+        });
+
+        act(() => {
+            result.current.tabs.openTableTab(7482, 'Team');
+        });
+        expect(tabName(result.current.tabs.activeTab)).toBe('7482 - Team');
+        expect(
+            result.current.tabs.getViewState(result.current.tabs.activeTab.key)
+        ).toBeUndefined();
+        expect(result.current.pathname).toBe('/table-editor');
+    });
 });

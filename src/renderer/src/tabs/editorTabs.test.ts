@@ -50,6 +50,8 @@ const open = { type: 'openTableEditor' } as const;
 const newTab = { type: 'newTab' } as const;
 const select = (key: string) => ({ type: 'selectTab', key }) as const;
 const close = (key: string) => ({ type: 'closeTab', key }) as const;
+const openTable = (tableId: number, name: string, background = false) =>
+    ({ type: 'openTableTab', tableId, name, background }) as const;
 const changed = (key: string, tableId: number, name: string) =>
     ({ type: 'tableChanged', key, tableId, name }) as const;
 
@@ -230,6 +232,64 @@ describe('editorTabs', () => {
             const first = state.activeKey;
             state = run([close(first), newTab], FILE, state);
             expect(state.activeKey).not.toBe(first);
+        });
+    });
+
+    describe('open table in a new tab', () => {
+        it('appends an active tab for the table', () => {
+            let state = run([open]);
+            state = run(
+                [changed(state.activeKey, 4096, ''), openTable(7482, 'Team')],
+                FILE,
+                state
+            );
+            expect(names(state)).toEqual([
+                'Home',
+                'Schedule',
+                'Schemas',
+                '4096',
+                '7482 - Team'
+            ]);
+            expect(activeName(state)).toBe('7482 - Team');
+            const tab = getActiveTab(state);
+            expect(tab.kind === 'table' && tab.tableId).toBe(7482);
+        });
+
+        it('keeps the active tab for a background open', () => {
+            let state = run([open]);
+            const active = state.activeKey;
+            state = run([openTable(4104, 'Stadium', true)], FILE, state);
+            expect(state.activeKey).toBe(active);
+            expect(names(state)).toContain('4104 - Stadium');
+        });
+
+        it('does nothing without a file', () => {
+            const state = run([], null);
+            expect(run([openTable(7482, 'Team')], null, state)).toBe(state);
+        });
+
+        it('drops the placeholder', () => {
+            const state = run([openTable(7482, 'Team', true)]);
+            expect(names(state)).toEqual([
+                'Home',
+                'Schedule',
+                'Schemas',
+                '7482 - Team'
+            ]);
+            expect(activeName(state)).toBe('Home');
+        });
+
+        it('never reuses a key', () => {
+            let state = run([open]);
+            const first = state.activeKey;
+            state = run(
+                [openTable(7482, 'Team'), openTable(4104, 'Stadium')],
+                FILE,
+                state
+            );
+            const keys = state.tabs.map((tab) => tab.key);
+            expect(new Set(keys).size).toBe(keys.length);
+            expect(keys).toContain(first);
         });
     });
 

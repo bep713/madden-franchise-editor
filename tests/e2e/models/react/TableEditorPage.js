@@ -54,6 +54,18 @@ class TableEditorPage {
     await this.waitForTableToLoad();
   }
 
+  // Opens the table in a new active tab
+  async ctrlClickSidebarTable(id) {
+    await this.locators.search.fill(String(id));
+    await this.sidebarCard(id).click({ modifiers: ["Control"] });
+  }
+
+  // Opens the table in a new background tab
+  async middleClickSidebarTable(id) {
+    await this.locators.search.fill(String(id));
+    await this.sidebarCard(id).click({ button: "middle" });
+  }
+
   // section: "all" (the full list) or "pinned"
   sidebarCard(id, section = "all") {
     return this.window.locator(

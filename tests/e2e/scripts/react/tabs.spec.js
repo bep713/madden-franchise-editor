@@ -177,6 +177,93 @@ test("tabs test (react)", async () => {
   await electronApp.close();
 });
 
+// The highlighted row header of the selected cell
+async function waitForSelectedRow(window, row) {
+  const header = window.locator(".ht_clone_inline_start tbody th.ht__highlight");
+  await poll(
+    () => header.first().innerText(),
+    (text) => text.trim() === String(row),
+    { message: `Row ${row} was not selected` },
+  );
+}
+
+test("open tables in new tabs (react)", async () => {
+  test.setTimeout(120 * 1000);
+  const electronApp = await electron.launchWithDefaultOptions({ ui: "react" });
+  const app = new App(electronApp);
+  const window = await app.getMainWindow();
+
+  const welcome = new WelcomePage(window);
+  const nav = new NavigationBar(window);
+  const tableEditor = new TableEditorPage(window);
+
+  await welcome.waitForPageLoad();
+  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  await welcome.openTableEditor();
+  await waitForTable(tableEditor, "4096");
+
+  // ctrl+click in the sidebar opens a new active tab
+  await tableEditor.ctrlClickSidebarTable(7482);
+  await nav.waitForActiveTab("7482 - Team");
+  await waitForTable(tableEditor, "7482 - Team");
+  expect(await nav.tabNames()).to.deep.equal([
+    ...MAIN_TABS,
+    "4096",
+    "7482 - Team",
+  ]);
+
+  // middle-click opens a background tab
+  await tableEditor.middleClickSidebarTable(4104);
+  await poll(
+    () => nav.hasTab("4104 - Stadium"),
+    (has) => has,
+    { message: "4104 was not opened in a new tab" },
+  );
+  expect(await nav.activeTabName()).to.equal("7482 - Team");
+  expect(await tableEditor.getSelectedTableName()).to.equal("7482 - Team");
+
+  // ctrl+click a reference opens it in a new active tab at its row
+  const team = await app.readTable(7482);
+  const teamHeaders = team.headers.map((header) => header.name);
+  await tableEditor.grid.selectCell(43, "Stadium", teamHeaders);
+  expect(await tableEditor.grid.getTextAtSelectedCell()).to.equal(
+    "Stadium - 12",
+  );
+  await tableEditor.grid.followReferenceAtSelectedCell({
+    modifiers: ["Control"],
+  });
+  await nav.waitForActiveTab("4104 - Stadium");
+  await waitForTable(tableEditor, "4104 - Stadium");
+  await waitForSelectedRow(window, 12);
+  expect(await nav.tabCount()).to.equal(7);
+
+  // the tab it came from still shows Team
+  await nav.openTab("7482 - Team");
+  await waitForTable(tableEditor, "7482 - Team");
+  await poll(
+    () => tableEditor.grid.getTextAtSelectedCell(),
+    (text) => text === "Stadium - 12",
+    { message: "The Team tab lost its selected cell" },
+  );
+
+  // middle-click the reference opens a background tab, loaded when opened
+  await tableEditor.grid.followReferenceAtSelectedCell({ button: "middle" });
+  await poll(
+    () => nav.tabCount(),
+    (count) => count === 8,
+    { message: "The reference was not opened in a new tab" },
+  );
+  expect(await nav.activeTabName()).to.equal("7482 - Team");
+  expect(await tableEditor.getSelectedTableName()).to.equal("7482 - Team");
+
+  await nav.openLastTab();
+  await nav.waitForActiveTab("4104 - Stadium");
+  await waitForTable(tableEditor, "4104 - Stadium");
+  await waitForSelectedRow(window, 12);
+
+  await electronApp.close();
+});
+
 test("default editor opens the table editor (react)", async () => {
   const electronApp = await electron.launchWithDefaultOptions({
     ui: "react",

@@ -11,6 +11,7 @@ import TableHeader from '@renderer/components/TableHeader/TableHeader';
 import { TableData } from '@shared/types';
 import { useCallback, useRef, useState } from 'react';
 import { LoaderOptionsSetter } from '@renderer/hooks/useLoader';
+import { OpenMode } from '@renderer/utils/openMode';
 import baseStyles from '../TableEditor.module.scss';
 import FieldEditorActionBar, {
     TableActions
@@ -25,7 +26,11 @@ interface Props {
     isPinned: boolean;
     // Follow a reference to another table. Must be stable (see TableEditorComponent),
     // as must the two change callbacks.
-    onFollowReference: (tableId: number, recordIndex: number) => void;
+    onFollowReference: (
+        tableId: number,
+        recordIndex: number,
+        mode: OpenMode
+    ) => void;
     onSelectionChange?: (selection: CellPosition) => void;
     onScroll?: (scroll: GridScroll) => void;
     onTogglePin: () => void;
@@ -65,11 +70,12 @@ const FieldEditorView = ({
 
     const { tableId } = table;
     const handleFollowReference = useCallback(
-        (targetTableId: number, recordIndex: number) => {
-            if (targetTableId === tableId) {
+        (targetTableId: number, recordIndex: number, mode: OpenMode) => {
+            // A self-reference opened in a new tab still gets its own tab
+            if (targetTableId === tableId && mode === 'current') {
                 gridRef.current?.selectCell(recordIndex, 0);
             } else {
-                onFollowReference(targetTableId, recordIndex);
+                onFollowReference(targetTableId, recordIndex, mode);
             }
         },
         [onFollowReference, tableId]

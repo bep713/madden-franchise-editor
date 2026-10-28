@@ -8,7 +8,8 @@ Bring the React table editor (`src/renderer/src/routes/TableEditor/`) to parity 
 |---|---|---|---|
 | 03a | Cell editing and saving: writes through `franchise:write-bulk-table-cells` (paste, fill, undo/redo, reverts), enum/bool dropdowns, empty-row and error-cell display, reference renderer, link navigation and editor, blob editor, Save / Save As / Close File menu and shortcuts | [03a-cell-editing.md](03a-cell-editing.md) | Done (`bedefcf`, `d28514e`) |
 | 03b | Table pinning: labelled Pinned section at the top of the sidebar (toggle remembered in preferences), pinned cards decorated in place with unpin on hover, pin/unpin from the action bar, shared `pins.json` with v4 | [03b-table-pins.md](03b-table-pins.md) | Done (`b1e1d7f`) |
-| 03t | Navigation tabs: Home-only bar before a file opens, "Open Table..." replaced by per-table tabs (`<id> - <name>`, +, close, per-tab selection/scroll), Schedule/Schemas stubs, `general.defaultEditor` on file open | [03t-navigation-tabs.md](03t-navigation-tabs.md) | Implemented (uncommitted) |
+| 03t | Navigation tabs: Home-only bar before a file opens, "Open Table..." replaced by per-table tabs (`<id> - <name>`, +, close, per-tab selection/scroll), Schedule/Schemas stubs, `general.defaultEditor` on file open | [03t-navigation-tabs.md](03t-navigation-tabs.md) | Done (`4249569`) |
+| 03u | Open a table in a new tab: ctrl+click (active) / middle-click (background) in the sidebar and on reference links | [03u-open-in-new-tab.md](03u-open-in-new-tab.md) | Implemented (uncommitted) |
 | 03c | Export/import parity (v4 `ExternalDataHandler` / `externalDataService`) | not written | Not planned |
 | 03d | Jump to column modal (v4 `TableEditorView` row/column jump) | not written | Not planned |
 | 03e | Editing in the inverted (Switch Orientation) view, which 03a leaves read-only | [03e-inverted-editing.md](03e-inverted-editing.md) (outline) | Not planned |

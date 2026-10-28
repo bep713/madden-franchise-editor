@@ -88,9 +88,10 @@ class Grid {
     return cellClass.includes("table-cell--empty");
   }
 
-  async _clickInSelectedCell(selector) {
+  // options: Playwright click options ({ modifiers }, { button })
+  async _clickInSelectedCell(selector, options) {
     await this.locators.selectedCell.hover();
-    await this.locators.selectedCell.locator(selector).click();
+    await this.locators.selectedCell.locator(selector).click(options);
   }
 
   async editReferenceAtSelectedCell() {
@@ -101,8 +102,12 @@ class Grid {
     await this._clickInSelectedCell('[data-action="edit-blob"]');
   }
 
-  async followReferenceAtSelectedCell() {
-    await this._clickInSelectedCell('[data-action="follow-reference"]');
+  // Ctrl or middle-click options open it in a new tab
+  async followReferenceAtSelectedCell(options) {
+    await this._clickInSelectedCell(
+      '[data-action="follow-reference"]',
+      options,
+    );
   }
 }
 

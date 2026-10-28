@@ -45,6 +45,12 @@ export type TabAction =
     | { type: 'newTab' }
     | { type: 'selectTab'; key: string }
     | { type: 'closeTab'; key: string }
+    | {
+          type: 'openTableTab';
+          tableId: number;
+          name: string;
+          background: boolean;
+      }
     | { type: 'tableChanged'; key: string; tableId: number; name: string };
 
 export const initialTabsState: EditorTabsState = syncFile(
@@ -94,6 +100,26 @@ function addNewTab(state: EditorTabsState): EditorTabsState {
         ...state,
         tabs: [...state.tabs, { kind: 'table', key, name: NEW_TAB_NAME }],
         activeKey: key,
+        nextId: state.nextId + 1
+    };
+}
+
+// A ctrl/middle-clicked table. Appended at the end like "+" (and v4's
+// addTab), not next to the current tab as in Chrome.
+function openTableTab(
+    state: EditorTabsState,
+    tableId: number,
+    name: string,
+    background: boolean
+): EditorTabsState {
+    const key = `table-${state.nextId}`;
+    return {
+        ...state,
+        tabs: [
+            ...state.tabs,
+            { kind: 'table', key, name: tableTitle(tableId, name), tableId }
+        ],
+        activeKey: background ? state.activeKey : key,
         nextId: state.nextId + 1
     };
 }
@@ -174,6 +200,15 @@ export function reduceTabs(
         }
         case 'closeTab':
             return closeTab(state, action.key);
+        case 'openTableTab':
+            return file
+                ? openTableTab(
+                      withoutPlaceholder(state),
+                      action.tableId,
+                      action.name,
+                      action.background
+                  )
+                : state;
         case 'tableChanged': {
             const name = tableTitle(action.tableId, action.name);
             const tab = state.tabs.find((t) => t.key === action.key);

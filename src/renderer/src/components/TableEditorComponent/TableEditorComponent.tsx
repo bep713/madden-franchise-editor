@@ -18,6 +18,7 @@ import { TableColumn, TableData } from '@shared/types';
 import { LoaderOptionsSetter } from '@renderer/hooks/useLoader';
 import { resolveReference } from '@renderer/utils/references';
 import { WriteState } from '@renderer/utils/cellWrites';
+import { OpenMode, getOpenMode } from '@renderer/utils/openMode';
 
 import { buildColumns, calculateColumnWidths } from './columns';
 import { createReferenceRenderer } from './renderers/referenceRenderer';
@@ -75,7 +76,11 @@ interface Props {
     // stable, like every other prop.
     onSelectionChange?: (selection: CellPosition) => void;
     onScroll?: (scroll: GridScroll) => void;
-    onFollowReference?: (tableId: number, recordIndex: number) => void;
+    onFollowReference?: (
+        tableId: number,
+        recordIndex: number,
+        mode: OpenMode
+    ) => void;
     onEditReference?: (request: ReferenceEditRequest) => void;
     onEditBlob?: (request: BlobEditRequest) => void;
 }
@@ -85,6 +90,38 @@ function getScrollHolder(hotRef: React.RefObject<HotTableRef>) {
     return hotRef.current?.hotInstance?.rootElement.querySelector<HTMLElement>(
         '.ht_master .wtHolder'
     );
+}
+
+// The clicked link or button, and its cell
+function getActionTarget(
+    event: React.MouseEvent,
+    hot: Handsontable | null | undefined
+) {
+    const target = (event.target as HTMLElement).closest<HTMLElement>(
+        '[data-action]'
+    );
+    const td = target?.closest('td');
+    if (!target || !td || !hot) {
+        return null;
+    }
+
+    const { row, col } = hot.getCoords(td) ?? {};
+    if (row === undefined || col === undefined || row < 0 || col < 0) {
+        return null;
+    }
+    return { target, td, hot, row, col };
+}
+
+// The reference link under a click that opens a new tab
+function getNewTabReference(
+    event: React.MouseEvent,
+    hot: Handsontable | null | undefined
+): HTMLElement | null {
+    if (getOpenMode(event) === 'current') {
+        return null;
+    }
+    const target = getActionTarget(event, hot)?.target;
+    return target?.dataset.action === 'follow-reference' ? target : null;
 }
 
 const NO_TABLE_NAMES: ReadonlyMap<number, string> = new Map();
@@ -294,19 +331,11 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
 
         // Reference links and edit buttons: one listener for every cell
         const handleClick = useCallback((event: React.MouseEvent) => {
-            const target = (event.target as HTMLElement).closest<HTMLElement>(
-                '[data-action]'
-            );
-            const td = target?.closest('td');
-            const hot = hotRef.current?.hotInstance;
-            if (!target || !td || !hot) {
+            const clicked = getActionTarget(event, hotRef.current?.hotInstance);
+            if (!clicked) {
                 return;
             }
-
-            const { row, col } = hot.getCoords(td) ?? {};
-            if (row === undefined || col === undefined || row < 0 || col < 0) {
-                return;
-            }
+            const { target, td, hot, row, col } = clicked;
 
             const { onEditBlob, onEditReference, onFollowReference } =
                 propsRef.current;
@@ -314,7 +343,8 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
                 case 'follow-reference':
                     onFollowReference?.(
                         Number(target.dataset.tableId),
-                        Number(target.dataset.recordIndex)
+                        Number(target.dataset.recordIndex),
+                        getOpenMode(event)
                     );
                     break;
                 case 'edit-reference':
@@ -334,6 +364,37 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
                     break;
             }
         }, []);
+
+        // A middle-clicked reference opens in a background tab
+        const handleAuxClick = useCallback((event: React.MouseEvent) => {
+            const target = getNewTabReference(
+                event,
+                hotRef.current?.hotInstance
+            );
+            if (event.button === 1 && target) {
+                propsRef.current.onFollowReference?.(
+                    Number(target.dataset.tableId),
+                    Number(target.dataset.recordIndex),
+                    'background'
+                );
+            }
+        }, []);
+
+        // A ctrl/middle press on a reference never reaches Handsontable: a
+        // ctrl+click there adds to the selection and re-renders the cell,
+        // which replaces the link before the click lands on it. Also no
+        // autoscroll on a middle press.
+        const handleMouseDownCapture = useCallback(
+            (event: React.MouseEvent) => {
+                if (getNewTabReference(event, hotRef.current?.hotInstance)) {
+                    event.stopPropagation();
+                    if (event.button === 1) {
+                        event.preventDefault();
+                    }
+                }
+            },
+            []
+        );
 
         const beforeRenderer = useCallback((td: HTMLTableCellElement) => {
             // Cells are reused while scrolling; only error cells have a title
@@ -378,7 +439,9 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
         return (
             <div
                 className={styles.wrapper}
+                onAuxClick={handleAuxClick}
                 onClick={handleClick}
+                onMouseDownCapture={handleMouseDownCapture}
                 ref={wrapperRef}
             >
                 <HotTable

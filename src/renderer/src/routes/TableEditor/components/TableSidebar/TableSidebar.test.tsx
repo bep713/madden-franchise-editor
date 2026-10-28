@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { TableListItem } from '@shared/types';
@@ -109,7 +109,29 @@ describe('TableSidebar', () => {
         await user.click(
             section('pinned').querySelector('[data-table-id]') as HTMLElement
         );
-        expect(onTableSelect).toHaveBeenCalledWith(PLAYER);
+        expect(onTableSelect).toHaveBeenCalledWith(PLAYER, 'current');
+    });
+
+    it('opens a ctrl-clicked table in a new tab', async () => {
+        const { onTableSelect, user } = setup();
+        const card = screen.getByText('A').closest('button') as HTMLElement;
+        await user.keyboard('{Control>}');
+        await user.click(card);
+        await user.keyboard('{/Control}');
+        expect(onTableSelect).toHaveBeenCalledWith(A, 'newTab');
+    });
+
+    it('opens a middle-clicked table in a background tab', () => {
+        const { onTableSelect } = setup();
+        const card = screen.getByText('A').closest('button') as HTMLElement;
+        // No autoscroll
+        expect(fireEvent.mouseDown(card, { button: 1 })).toBe(false);
+        fireEvent(
+            card,
+            new MouseEvent('auxclick', { bubbles: true, button: 1 })
+        );
+        expect(onTableSelect).toHaveBeenCalledTimes(1);
+        expect(onTableSelect).toHaveBeenCalledWith(A, 'background');
     });
 
     it.each([

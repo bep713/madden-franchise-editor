@@ -28,6 +28,7 @@ import {
     GridScroll
 } from '@renderer/components/TableEditorComponent/TableEditorComponent';
 import { useEditorTabs } from '@renderer/tabs/EditorTabsContext';
+import { OpenMode } from '@renderer/utils/openMode';
 
 interface LoadOptions {
     // Reload even if the table is already shown (a tab switch)
@@ -50,6 +51,7 @@ const TableEditor: React.FC = () => {
         activeTab,
         getViewState,
         openTableEditor,
+        openTableTab,
         setViewState,
         tableChanged
     } = useEditorTabs();
@@ -162,22 +164,45 @@ const TableEditor: React.FC = () => {
         });
     };
 
-    // A followed reference link. Stable, so the grid doesn't re-render.
+    // Stable, so the grid and sidebar don't re-render
     const onSelectTableRef = useRef(onSelectTable);
     useLayoutEffect(() => {
         onSelectTableRef.current = onSelectTable;
     });
-    const onFollowReference = useCallback(
-        (tableId: number, recordIndex: number) => {
-            const table = allTables?.find((t) => t.id === tableId);
-            if (table) {
-                void onSelectTableRef.current(table, {
-                    row: recordIndex,
-                    col: 0
+
+    // A ctrl/middle-clicked table opens in a new tab, which loads it when
+    // activated (the activeTab.key effect below)
+    const onSidebarSelect = useCallback(
+        (table: TableListItem, mode: OpenMode) => {
+            if (mode === 'current') {
+                void onSelectTableRef.current(table);
+            } else {
+                openTableTab(table.id, table.name, {
+                    background: mode === 'background'
                 });
             }
         },
-        [allTables]
+        [openTableTab]
+    );
+
+    // A followed reference link
+    const onFollowReference = useCallback(
+        (tableId: number, recordIndex: number, mode: OpenMode) => {
+            const table = allTables?.find((t) => t.id === tableId);
+            if (!table) {
+                return;
+            }
+            const selection = { row: recordIndex, col: 0 };
+            if (mode === 'current') {
+                void onSelectTableRef.current(table, selection);
+            } else {
+                openTableTab(table.id, table.name, {
+                    selection,
+                    background: mode === 'background'
+                });
+            }
+        },
+        [allTables, openTableTab]
     );
 
     // Where the grid is, saved to the active tab. Stable, so the grid
@@ -249,7 +274,7 @@ const TableEditor: React.FC = () => {
                     >
                         <TableSidebar
                             onFilter={setFilterText}
-                            onTableSelect={onSelectTable}
+                            onTableSelect={onSidebarSelect}
                             onTogglePinnedVisible={() =>
                                 setShowPinnedTables(!showPinnedTables)
                             }

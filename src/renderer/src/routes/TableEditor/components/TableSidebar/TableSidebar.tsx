@@ -11,6 +11,7 @@ import searchIconUrl from '@assets/icons/search.svg';
 import Pushpin from '@assets/icons/pushpin.svg?react';
 import Unpin from '@assets/icons/unpin.svg?react';
 import { SidebarRow } from './sidebarRows';
+import { OpenMode, getOpenMode } from '@renderer/utils/openMode';
 
 const TABLE_ROW_HEIGHT = 63;
 const PINNED_LABEL_HEIGHT = 24;
@@ -28,7 +29,7 @@ const rowKey = (row: SidebarRow): string =>
 
 interface TableSidebarProps {
     onFilter?: (filterText: string) => void;
-    onTableSelect?: (table: TableListEntry) => void;
+    onTableSelect?: (table: TableListEntry, mode: OpenMode) => void;
     onTogglePin?: (table: TableListEntry) => void;
     onTogglePinnedVisible?: () => void;
     rows?: SidebarRow[];
@@ -99,7 +100,19 @@ const TableSidebar: React.FC<TableSidebarProps> = ({
                 <TableListItem
                     component='button'
                     componentProps={{
-                        onClick: () => onTableSelect?.(table),
+                        onClick: (e: React.MouseEvent) =>
+                            onTableSelect?.(table, getOpenMode(e)),
+                        onAuxClick: (e: React.MouseEvent) => {
+                            if (e.button === 1) {
+                                onTableSelect?.(table, 'background');
+                            }
+                        },
+                        // No autoscroll on a middle-click
+                        onMouseDown: (e: React.MouseEvent) => {
+                            if (e.button === 1) {
+                                e.preventDefault();
+                            }
+                        },
                         style: { width: '100%', height: '100%' }
                     }}
                     emphasisText={filterText}
