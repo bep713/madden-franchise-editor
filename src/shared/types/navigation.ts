@@ -15,8 +15,12 @@ export interface NavigationItem extends SimpleNavigationItem {
     clickListener: string;
     service: string;
     alwaysShow?: boolean;
+    // Clicking a tab whose page React doesn't have yet does nothing
+    implemented?: boolean;
     availableVersions: number[];
     availableFormats: FileType[];
+    // metadata.type.gameType values ("madden", ...). Unset means every type.
+    availableTypes?: string[];
     menu: {
         enable?: string[];
         disable?: string[];

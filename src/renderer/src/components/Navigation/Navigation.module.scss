@@ -1,17 +1,6 @@
 @use 'sass:color';
 @use '@assets/vars' as v;
 
-%tab-border {
-    border-right: 1px solid #d1d1d1;
-}
-
-%tab-hover {
-    &:hover {
-        cursor: pointer;
-        background-color: #fbfbfb;
-    }
-}
-
 .tabWrapper {
     display: flex;
     flex-wrap: nowrap;
@@ -44,43 +33,33 @@
     }
 
     &:hover,
-    &.show-scrollbar {
+    &.showScrollbar {
         &::-webkit-scrollbar {
             display: inherit;
         }
     }
 }
 
-.tab {
+.tabContainer {
     display: flex;
-    gap: 5px;
-    align-items: center;
-    justify-content: space-between;
-    padding: 7.5px 10px;
-    text-overflow: ellipsis;
-    font-size: v.$font-size-small;
-    white-space: pre;
-    outline: none;
-    border: none;
+    flex-shrink: 0;
     border-right: 1px solid #d1d1d1;
+}
 
-    @extend %tab-hover;
-
-    &.active {
-        background-color: #fff;
-
-        &:hover {
-            cursor: default;
-        }
-
-        .closeTabButton {
-            visibility: visible;
-        }
-    }
+.addTabButton {
+    display: flex;
+    flex-shrink: 0;
+    flex-basis: 40px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-size: v.$font-size-small;
+    cursor: pointer;
+    outline: none;
+    background: none;
+    border: none;
 
     &:hover {
-        .closeTabButton {
-            visibility: visible;
-        }
+        background-color: #fbfbfb;
     }
 }

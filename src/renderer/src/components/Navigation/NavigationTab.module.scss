@@ -1,18 +1,51 @@
 @use '@assets/vars' as v;
 
 .tab {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7.5px 10px;
+    text-overflow: ellipsis;
+    font-size: v.$font-size-small;
     color: #000;
-    text-decoration: none;
+    white-space: pre;
+    outline: none;
+
+    &:hover {
+        cursor: pointer;
+        background-color: #fbfbfb;
+
+        .closeTabButton {
+            visibility: visible;
+        }
+    }
+
+    &:global(.active) {
+        background-color: #fff;
+
+        &:hover {
+            cursor: default;
+        }
+
+        .closeTabButton {
+            visibility: visible;
+        }
+    }
 }
 
 .closeTabButton {
+    display: flex;
     visibility: hidden;
-    padding: 10px;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    color: #333;
     cursor: pointer;
-    background-image: url('../img/close.png');
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: 8px;
+    background: none;
+    border: none;
     border-radius: 5px;
 
     &:hover {

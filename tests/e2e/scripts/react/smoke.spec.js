@@ -29,9 +29,12 @@ test("basic test (react)", async () => {
   // can open a file
   await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
   expect(await welcome.getStartedTitle()).to.equal("CAREER-E2ETEST");
-  const tabs = await nav.tabNames();
-  expect(tabs).to.include("Home");
-  expect(tabs).to.include("Open Table...");
+  expect(await nav.tabNames()).to.deep.equal([
+    "Home",
+    "Schedule",
+    "Schemas",
+    "Open Table...",
+  ]);
 
   // can open the table editor, which loads the first table. Unlike v4, that
   // is 4096, not 4097. 4096 is unnamed, so the header shows only its id.
@@ -69,9 +72,10 @@ test("basic test (react)", async () => {
   await welcome.waitForPageLoad();
   await welcome.recentFile("CAREER-E2ETEST").waitFor();
 
-  // the table editor tab opens the table editor again
-  await nav.openTab("Open Table...");
+  // the table tab opens the table editor again, on the table it was left on
+  await nav.openTab("7482 - Team");
   await tableEditor.waitForTableToLoad();
+  expect(await tableEditor.getSelectedTableName()).to.equal("7482 - Team");
 
   // can reopen the file from Recent Files
   await nav.openTab("Home");

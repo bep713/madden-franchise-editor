@@ -72,9 +72,8 @@ test("edit, save, close and reopen (react)", async () => {
     (enabled) => enabled === false,
     { message: "Save stayed enabled on Home" },
   );
-  await nav.openTab("Open Table...");
+  await nav.openTab("7482 - Team");
   await tableEditor.waitForTableToLoad();
-  await tableEditor.openTableById(TEAM_TABLE_ID);
   await poll(
     () => isMenuItemEnabled(electronApp, "Save"),
     (enabled) => enabled === true,

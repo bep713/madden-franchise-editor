@@ -23,7 +23,17 @@ import usePreference from '@renderer/hooks/usePreference';
 import useLoader from '@renderer/hooks/useLoader';
 import ExpressionEditorView from './views/ExpressionEditorView';
 import FieldEditorView from './views/FieldEditorView';
-import { CellPosition } from '@renderer/components/TableEditorComponent/TableEditorComponent';
+import {
+    CellPosition,
+    GridScroll
+} from '@renderer/components/TableEditorComponent/TableEditorComponent';
+import { useEditorTabs } from '@renderer/tabs/EditorTabsContext';
+
+interface LoadOptions {
+    // Reload even if the table is already shown (a tab switch)
+    force?: boolean;
+    scroll?: GridScroll;
+}
 
 const TableEditor: React.FC = () => {
     const [activeFranchiseFile] = useContext(FranchiseFileContext);
@@ -34,6 +44,22 @@ const TableEditor: React.FC = () => {
     // Set together with selectedTableData, so the grid only renders once
     const [pendingSelection, setPendingSelection] =
         useState<CellPosition | null>(null);
+    const [pendingScroll, setPendingScroll] = useState<GridScroll | null>(null);
+
+    const {
+        activeTab,
+        getViewState,
+        openTableEditor,
+        setViewState,
+        tableChanged
+    } = useEditorTabs();
+    // The tab a load or a grid event belongs to, read at event time
+    const activeKeyRef = useRef(activeTab.key);
+    useLayoutEffect(() => {
+        activeKeyRef.current = activeTab.key;
+    });
+    // Only the latest load is shown, when tabs are switched quickly
+    const loadIdRef = useRef(0);
 
     const { loader: tableLoader, setOptions: setTableLoaderOptions } =
         useLoader();
@@ -89,11 +115,17 @@ const TableEditor: React.FC = () => {
 
     const onSelectTable = async (
         table: TableListItem,
-        selection: CellPosition | null = null
+        selection: CellPosition | null = null,
+        options: LoadOptions = {}
     ): Promise<void> => {
-        if (!activeFranchiseFile || table.id === selectedTable?.id) {
+        if (
+            !activeFranchiseFile ||
+            (!options.force && table.id === selectedTable?.id)
+        ) {
             return;
         }
+        const tabKey = activeKeyRef.current;
+        const loadId = ++loadIdRef.current;
 
         setTableLoaderOptions({
             message: 'Loading table...',
@@ -105,6 +137,10 @@ const TableEditor: React.FC = () => {
             activeFranchiseFile.fileId,
             table.id
         );
+        if (loadId !== loadIdRef.current) {
+            // A later load replaced this one, and hides the loader
+            return;
+        }
         if ('error' in tableResult) {
             console.error(
                 `Failed to read table ${table.id}: ${tableResult.error}`
@@ -114,6 +150,12 @@ const TableEditor: React.FC = () => {
         } else {
             setSelectedTableData(tableResult);
             setPendingSelection(selection);
+            setPendingScroll(options.scroll ?? null);
+            setViewState(tabKey, {
+                selection: selection ?? { row: 0, col: 0 },
+                scroll: options.scroll
+            });
+            tableChanged(tabKey, table.id, table.name);
         }
         setTableLoaderOptions({
             show: false
@@ -138,20 +180,56 @@ const TableEditor: React.FC = () => {
         [allTables]
     );
 
-    // Unlike v4 (TableEditorView), which skips the first table because it is
-    // usually unnamed (4096 in M22), this starts on the first table.
-    const firstTable = activeFranchiseFile?.tables[0];
+    // Where the grid is, saved to the active tab. Stable, so the grid
+    // doesn't re-render.
+    const onSelectionChange = useCallback(
+        (selection: CellPosition) =>
+            setViewState(activeKeyRef.current, { selection }),
+        [setViewState]
+    );
+    const onScroll = useCallback(
+        (scroll: GridScroll) => setViewState(activeKeyRef.current, { scroll }),
+        [setViewState]
+    );
+
+    const fileId = activeFranchiseFile?.fileId;
+    const activeTableId =
+        activeTab.kind === 'table' ? activeTab.tableId : undefined;
 
     useEffect(() => {
-        // Load the first table once the file model is available. This starts an
-        // async read and shows the loader, so the synchronous setState is intended.
-        if (firstTable) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            void onSelectTable(firstTable);
+        if (!activeFranchiseFile) {
+            return;
         }
-        // onSelectTable is recreated every render; only rerun when the file changes
+        // Reached without a table tab (a renderer reload on this page)
+        if (activeTab.kind !== 'table') {
+            openTableEditor();
+            return;
+        }
+
+        // A tab shows the table it was left on, where it was left. A new tab
+        // opens the first table. Unlike v4 (TableEditorView), which skips the
+        // first table because it is usually unnamed (4096 in M22), this
+        // starts on the first table.
+        const tabTable = activeFranchiseFile.tables.find(
+            (table) => table.id === activeTableId
+        );
+        const firstTable = activeFranchiseFile.tables[0];
+        // This starts an async read and shows the loader, so the synchronous
+        // setState is intended.
+        if (tabTable) {
+            const saved = getViewState(activeTab.key);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            void onSelectTable(tabTable, saved?.selection ?? null, {
+                force: true,
+                scroll: saved?.scroll
+            });
+        } else if (firstTable) {
+            void onSelectTable(firstTable, null, { force: true });
+        }
+        // Only on a tab switch or a new file. The tab's tableId changes on
+        // every load in it, which must not reload.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [firstTable]);
+    }, [activeTab.key, fileId]);
 
     if (!activeFranchiseFile) {
         return null;
@@ -197,9 +275,12 @@ const TableEditor: React.FC = () => {
                                 ) : (
                                     <FieldEditorView
                                         fileId={activeFranchiseFile.fileId}
+                                        initialScroll={pendingScroll}
                                         initialSelection={pendingSelection}
                                         isPinned={isPinned(selectedTable)}
                                         onFollowReference={onFollowReference}
+                                        onScroll={onScroll}
+                                        onSelectionChange={onSelectionChange}
                                         onTogglePin={() =>
                                             togglePin(selectedTable)
                                         }

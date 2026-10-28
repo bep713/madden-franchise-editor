@@ -1,0 +1,216 @@
+const { expect } = require("chai");
+const { test } = require("../../util/test");
+
+const electron = require("../../util/Electron");
+const FilePaths = require("../../util/FilePaths");
+const TestUtil = require("../../util/TestUtil");
+const { stubOpenDialog } = require("../../util/dialogStubs");
+const { poll } = require("../../util/poll");
+
+const App = require("../../models/App");
+const WelcomePage = require("../../models/react/WelcomePage");
+const NavigationBar = require("../../models/react/NavigationBar");
+const TableEditorPage = require("../../models/react/TableEditorPage");
+
+const MAIN_TABS = ["Home", "Schedule", "Schemas"];
+
+test.beforeAll(TestUtil.overwriteTestCareer);
+test.afterAll(TestUtil.overwriteTestCareer);
+
+// The grid's vertical scroll position
+async function gridScrollTop(window) {
+  return window
+    .locator(".ht_master .wtHolder")
+    .evaluate((holder) => holder.scrollTop);
+}
+
+async function waitForTable(tableEditor, name) {
+  await poll(
+    () => tableEditor.getSelectedTableName(),
+    (selected) => selected === name,
+    { message: `${name} never loaded` },
+  );
+  await tableEditor.waitForTableToLoad();
+}
+
+// Port of the v4 tabs.spec.js. React opens the first table (4096, shown as
+// "4096") where v4 opens 4097.
+test("tabs test (react)", async () => {
+  test.setTimeout(120 * 1000);
+  const electronApp = await electron.launchWithDefaultOptions({ ui: "react" });
+  const app = new App(electronApp);
+  const window = await app.getMainWindow();
+
+  const welcome = new WelcomePage(window);
+  const nav = new NavigationBar(window);
+  const tableEditor = new TableEditorPage(window);
+
+  // only Home before a file is open
+  await welcome.waitForPageLoad();
+  expect(await nav.tabNames()).to.deep.equal(["Home"]);
+  expect(await nav.hasNewTabButton()).to.equal(false);
+
+  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  expect(await nav.tabNames()).to.deep.equal([...MAIN_TABS, "Open Table..."]);
+  expect(await nav.hasNewTabButton()).to.equal(true);
+
+  // Schedule is shown but does nothing yet
+  await nav.openTab("Schedule");
+  await welcome.waitForPageLoad();
+  expect(await nav.activeTabName()).to.equal("Home");
+  expect(await nav.tabNames()).to.deep.equal([...MAIN_TABS, "Open Table..."]);
+
+  // can click on the default tab to load the first table
+  await nav.openTab("Open Table...");
+  await tableEditor.waitForTableToLoad();
+  await nav.waitForActiveTab("4096");
+  expect(await nav.hasTab("Open Table...")).to.equal(false);
+  expect(await nav.tabCount()).to.equal(4);
+
+  // a new file gets a fresh tab set, and the Welcome link does the same
+  await app.closeFile();
+  await welcome.waitForPageLoad();
+  await poll(
+    () => nav.tabNames(),
+    (names) => names.length === 1 && names[0] === "Home",
+    { message: "Closing the file did not reset the tabs" },
+  );
+  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  expect(await nav.hasTab("Open Table...")).to.equal(true);
+
+  await welcome.openTableEditor();
+  await tableEditor.waitForTableToLoad();
+  await nav.waitForActiveTab("4096");
+  expect(await nav.hasTab("Open Table...")).to.equal(false);
+  expect(await nav.tabCount()).to.equal(4);
+
+  // tab name changes to match the table name
+  await tableEditor.openTableById(7482);
+  await nav.waitForActiveTab("7482 - Team");
+
+  // can open a new tab, which switches to it and loads the first table
+  await nav.openNewTab();
+  await nav.waitForActiveTab("4096");
+  await waitForTable(tableEditor, "4096");
+  expect(await nav.tabCount()).to.equal(5);
+
+  // can close the active tab, which opens the tab to the left
+  await nav.closeActiveTab();
+  await nav.waitForActiveTab("7482 - Team");
+  await waitForTable(tableEditor, "7482 - Team");
+  expect(await nav.tabCount()).to.equal(4);
+
+  await nav.openNewTab();
+  await waitForTable(tableEditor, "4096");
+  await tableEditor.openTableById(4098);
+  await nav.waitForActiveTab("4098 - CutDayStartEvent");
+
+  await nav.openNewTab();
+  await nav.waitForActiveTab("4096");
+  await waitForTable(tableEditor, "4096");
+  expect(await nav.tabCount()).to.equal(6);
+
+  // can switch between tabs, and each remembers its table, selected cell
+  // and scroll position
+  await nav.openTab("7482 - Team");
+  await waitForTable(tableEditor, "7482 - Team");
+  const team = await app.readTable(7482);
+  await tableEditor.grid.selectCell(
+    52,
+    "LongName",
+    team.headers.map((header) => header.name),
+  );
+  expect(await tableEditor.grid.getTextAtSelectedCell()).to.equal("New York");
+  const scrollTop = await gridScrollTop(window);
+  expect(scrollTop).to.be.greaterThan(0);
+
+  await nav.openTab("4098 - CutDayStartEvent");
+  await waitForTable(tableEditor, "4098 - CutDayStartEvent");
+
+  await nav.openTab("7482 - Team");
+  await waitForTable(tableEditor, "7482 - Team");
+  await poll(
+    () => tableEditor.grid.getTextAtSelectedCell(),
+    (text) => text === "New York",
+    { message: "The selected cell was not restored" },
+  );
+  await poll(
+    () => gridScrollTop(window),
+    (top) => top === scrollTop,
+    { message: `The scroll position was not restored to ${scrollTop}` },
+  );
+
+  // can close a tab that isn't active. The active tab doesn't change.
+  await nav.closeTab("4098 - CutDayStartEvent");
+  expect(await nav.tabCount()).to.equal(5);
+  expect(await nav.activeTabName()).to.equal("7482 - Team");
+  expect(await tableEditor.getSelectedTableName()).to.equal("7482 - Team");
+
+  // TODO(04+ back button): each tab has its own history, as in v4
+
+  // can click the Home tab to go to the Welcome page
+  await nav.openTab("Home");
+  await welcome.waitForPageLoad();
+  expect(await nav.activeTabName()).to.equal("Home");
+
+  // the Welcome link goes back to the first table tab
+  await welcome.openTableEditor();
+  await nav.waitForActiveTab("7482 - Team");
+  await waitForTable(tableEditor, "7482 - Team");
+  expect(await nav.tabCount()).to.equal(5);
+
+  // can close every table tab. Closing the active one skips the stub tabs
+  // back to Home.
+  await nav.closeActiveTab();
+  await welcome.waitForPageLoad();
+  expect(await nav.activeTabName()).to.equal("Home");
+  await nav.closeTab("4096");
+  expect(await nav.tabNames()).to.deep.equal(MAIN_TABS);
+
+  // the Welcome link then opens a new tab on the first table
+  await welcome.openTableEditor();
+  await nav.waitForActiveTab("4096");
+  await waitForTable(tableEditor, "4096");
+  expect(await nav.tabCount()).to.equal(4);
+  expect(await nav.hasTab("Open Table...")).to.equal(false);
+
+  await electronApp.close();
+});
+
+test("default editor opens the table editor (react)", async () => {
+  const electronApp = await electron.launchWithDefaultOptions({
+    ui: "react",
+    preferences: { general: { defaultEditor: "open-table-editor" } },
+  });
+  const app = new App(electronApp);
+  const window = await app.getMainWindow();
+
+  const welcome = new WelcomePage(window);
+  const nav = new NavigationBar(window);
+  const tableEditor = new TableEditorPage(window);
+
+  await welcome.waitForPageLoad();
+
+  // "Open Table..." must never be drawn on the way to the table editor
+  await window.evaluate(() => {
+    window.__sawPlaceholderTab = false;
+    new MutationObserver(() => {
+      if (document.querySelector('[role="tab"][data-name="Open Table..."]')) {
+        window.__sawPlaceholderTab = true;
+      }
+    }).observe(document.body, { childList: true, subtree: true });
+  });
+
+  // Not welcome.openFranchiseFile, which waits on the Welcome page
+  await stubOpenDialog(electronApp, FilePaths.m22.career.test);
+  await welcome.locators.openFileLink.click();
+
+  await nav.waitForActiveTab("4096");
+  await waitForTable(tableEditor, "4096");
+  expect(await nav.tabNames()).to.deep.equal([...MAIN_TABS, "4096"]);
+  expect(await window.evaluate(() => window.__sawPlaceholderTab)).to.equal(
+    false,
+  );
+
+  await electronApp.close();
+});

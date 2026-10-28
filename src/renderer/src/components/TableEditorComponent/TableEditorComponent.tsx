@@ -39,6 +39,11 @@ export interface CellPosition {
     col: number;
 }
 
+export interface GridScroll {
+    top: number;
+    left: number;
+}
+
 export interface ReferenceEditRequest extends CellPosition {
     value: string;
     anchorRect: DOMRect;
@@ -64,9 +69,22 @@ interface Props {
     setLoaderOptions?: LoaderOptionsSetter;
     // Selected after each table load, (0, 0) when unset
     initialSelection?: CellPosition | null;
+    // Scrolled to after each table load, after initialSelection
+    initialScroll?: GridScroll | null;
+    // The last selected cell and the viewport's scroll position. Must be
+    // stable, like every other prop.
+    onSelectionChange?: (selection: CellPosition) => void;
+    onScroll?: (scroll: GridScroll) => void;
     onFollowReference?: (tableId: number, recordIndex: number) => void;
     onEditReference?: (request: ReferenceEditRequest) => void;
     onEditBlob?: (request: BlobEditRequest) => void;
+}
+
+// The element that scrolls the grid's viewport
+function getScrollHolder(hotRef: React.RefObject<HotTableRef>) {
+    return hotRef.current?.hotInstance?.rootElement.querySelector<HTMLElement>(
+        '.ht_master .wtHolder'
+    );
 }
 
 const NO_TABLE_NAMES: ReadonlyMap<number, string> = new Map();
@@ -322,14 +340,39 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
             td.removeAttribute('title');
         }, []);
 
+        const afterSelectionEnd = useCallback((row: number, col: number) => {
+            // Header clicks select from -1
+            if (row >= 0 && col >= 0) {
+                propsRef.current.onSelectionChange?.({ row, col });
+            }
+        }, []);
+
+        const afterScroll = useCallback(() => {
+            const holder = getScrollHolder(hotRef);
+            if (holder) {
+                propsRef.current.onScroll?.({
+                    top: holder.scrollTop,
+                    left: holder.scrollLeft
+                });
+            }
+        }, []);
+
         // Select after each table load. HotTable applies the new data in its
-        // own effect, which runs before this one.
+        // own effect, which runs before this one. The scroll is restored only
+        // for a new table, not when the orientation changes.
+        const scrolledTableRef = useRef<Props['table'] | null>(null);
         useEffect(() => {
-            const { initialSelection } = propsRef.current;
+            const { initialSelection, initialScroll } = propsRef.current;
             hotRef.current?.hotInstance?.selectCell(
                 initialSelection?.row ?? 0,
                 initialSelection?.col ?? 0
             );
+            const holder = getScrollHolder(hotRef);
+            if (initialScroll && holder && scrolledTableRef.current !== table) {
+                holder.scrollTop = initialScroll.top;
+                holder.scrollLeft = initialScroll.left;
+            }
+            scrolledTableRef.current = table;
         }, [table, isInverted]);
 
         return (
@@ -340,6 +383,9 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
             >
                 <HotTable
                     afterChange={afterChange}
+                    afterScrollHorizontally={afterScroll}
+                    afterScrollVertically={afterScroll}
+                    afterSelectionEnd={afterSelectionEnd}
                     autoWrapCol={true}
                     autoWrapRow={true}
                     beforeChange={beforeChange}

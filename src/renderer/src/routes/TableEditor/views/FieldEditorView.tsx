@@ -2,6 +2,7 @@ import TableEditorComponent, {
     BlobEditRequest,
     CellPosition,
     GridHandle,
+    GridScroll,
     ReferenceEditRequest
 } from '@renderer/components/TableEditorComponent/TableEditorComponent';
 import ReferenceEditor from '@renderer/components/ReferenceEditor/ReferenceEditor';
@@ -19,9 +20,14 @@ interface Props {
     fileId: string;
     // Selected when the table loads (a followed reference)
     initialSelection?: CellPosition | null;
+    // Restored when the table loads (switching back to a tab)
+    initialScroll?: GridScroll | null;
     isPinned: boolean;
-    // Follow a reference to another table. Must be stable (see TableEditorComponent).
+    // Follow a reference to another table. Must be stable (see TableEditorComponent),
+    // as must the two change callbacks.
     onFollowReference: (tableId: number, recordIndex: number) => void;
+    onSelectionChange?: (selection: CellPosition) => void;
+    onScroll?: (scroll: GridScroll) => void;
     onTogglePin: () => void;
     setTableLoaderOptions: LoaderOptionsSetter;
     table: TableData;
@@ -38,8 +44,11 @@ enum TableOrientation {
 const FieldEditorView = ({
     fileId,
     initialSelection,
+    initialScroll,
     isPinned,
     onFollowReference,
+    onSelectionChange,
+    onScroll,
     onTogglePin,
     setTableLoaderOptions,
     table,
@@ -150,11 +159,14 @@ const FieldEditorView = ({
             <div className={baseStyles.tableEditorComponentWrapper}>
                 <TableEditorComponent
                     fileId={fileId}
+                    initialScroll={initialScroll}
                     initialSelection={initialSelection}
                     isInverted={tableOrientation === TableOrientation.INVERTED}
                     onEditBlob={setBlobEdit}
                     onEditReference={setReferenceEdit}
                     onFollowReference={handleFollowReference}
+                    onScroll={onScroll}
+                    onSelectionChange={onSelectionChange}
                     ref={gridRef}
                     setLoaderOptions={setTableLoaderOptions}
                     table={table}

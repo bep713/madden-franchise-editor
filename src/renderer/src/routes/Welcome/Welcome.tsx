@@ -1,5 +1,4 @@
 import { useEffect, useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { File, GameFileList, RecentFile } from '@shared/types/files';
 
 import styles from './Welcome.module.css';
@@ -12,6 +11,7 @@ import { FranchiseFileContext } from '@renderer/context/FranchiseFileContext';
 import { buildOpenFranchiseFile } from '@renderer/hooks/useActiveFranchiseFile';
 import type { RecentFileEntry } from '@renderer/preload';
 import { basename, dirname } from '@renderer/utils/path';
+import { useEditorTabs } from '@renderer/tabs/EditorTabsContext';
 import SideNav from './SideNav';
 import Card from '@renderer/components/Card/Card';
 import RecentFilesList from '@renderer/components/RecentFilesList/RecentFilesList';
@@ -27,8 +27,21 @@ function toRecentFiles(entries: RecentFileEntry[]): RecentFile[] {
     }));
 }
 
+// general.defaultEditor: the editor to open after a file loads. A failed
+// read counts as Home.
+async function readDefaultEditor(): Promise<unknown> {
+    try {
+        return await window.electronAPI.preferences.getValue(
+            'general.defaultEditor'
+        );
+    } catch (error) {
+        console.error('Failed to read general.defaultEditor', error);
+        return 'open-home';
+    }
+}
+
 const Welcome: React.FC = () => {
-    const navigate = useNavigate();
+    const editorTabs = useEditorTabs();
     const [version, setVersion] = useState<string>();
     const [filesByGame, setFilesByGame] = useState<
         Record<string, GameFileList>
@@ -99,13 +112,27 @@ const Welcome: React.FC = () => {
             return;
         }
 
-        const tables = await window.franchiseAPI.getTableList(result.fileId);
+        const [tables, defaultEditor] = await Promise.all([
+            window.franchiseAPI.getTableList(result.fileId),
+            readDefaultEditor()
+        ]);
         setRecentFiles(
             toRecentFiles(await window.electronAPI.recentFiles.addFile(path))
         );
-        setOpenFile?.(
-            buildOpenFranchiseFile(result.fileId, result.metadata, tables, path)
+        const file = buildOpenFranchiseFile(
+            result.fileId,
+            result.metadata,
+            tables,
+            path
         );
+        // In the same tick, so the tab bar renders once, already showing the
+        // default editor (v4's navigationService open-file handler)
+        setOpenFile?.(file);
+        if (defaultEditor === 'open-table-editor') {
+            editorTabs.openTableEditor(file);
+        }
+        // TODO(04+): open-schedule and open-schema-viewer, once React has
+        // those pages. Until then they stay on Home.
         // Main sets the title, enables the file menu items and starts
         // watching the file. A restore after a renderer reload skips this,
         // since main still has that state (same as v4).
@@ -150,11 +177,9 @@ const Welcome: React.FC = () => {
                                             }
                                             break;
                                         case GetStartedActions.OPEN_TABLE_EDITOR:
-                                            navigate('/table-editor');
+                                            editorTabs.openTableEditor();
                                             break;
-                                        case GetStartedActions.OPEN_SCHEMA_MANAGEMENT:
-                                            navigate('/schema-management');
-                                            break;
+                                        // OPEN_SCHEMA_MANAGEMENT: no page yet
                                     }
                                 }}
                             />

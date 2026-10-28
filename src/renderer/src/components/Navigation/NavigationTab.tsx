@@ -1,66 +1,77 @@
 import React from 'react';
 import { default as cx } from 'classnames';
-import { Link } from 'react-router-dom';
 
 import styles from './NavigationTab.module.scss';
-import { SimpleNavigationItem } from '@shared/types';
+import Close from '@assets/icons/close.svg?react';
+
+export interface NavigationTabItem {
+    key: string;
+    name: string;
+    isClosable?: boolean;
+}
 
 interface NavigationTabProps {
     isActive?: boolean;
-    item: SimpleNavigationItem;
-    onClick?: (n: SimpleNavigationItem) => void;
-    onClose?: (n: SimpleNavigationItem) => void;
+    tab: NavigationTabItem;
+    onSelect?: (key: string) => void;
+    onClose?: (key: string) => void;
 }
 
 const NavigationTab: React.FC<NavigationTabProps> = ({
-    item,
-    onClick,
+    tab,
+    onSelect,
     onClose,
     isActive = false
 }: NavigationTabProps) => {
     function handleAuxClick(e: React.MouseEvent): void {
-        if (item.isClosable && e.button === 1) {
+        if (tab.isClosable && e.button === 1) {
             handleCloseTab(e);
         }
     }
 
     function handleCloseTab(e: React.MouseEvent): void {
         e.stopPropagation();
-        onClose?.(item);
+        onClose?.(tab.key);
     }
 
     function handleClick(): void {
         if (!isActive) {
-            onClick?.(item);
+            onSelect?.(tab.key);
         }
     }
 
+    // No autoscroll on a middle-click close
     function handleMouseDown(e: React.MouseEvent): void {
-        if (item.isClosable && e.button === 1) {
+        if (tab.isClosable && e.button === 1) {
             e.preventDefault();
         }
     }
 
     return (
-        <Link
-            className={cx(styles.tab, item.classList, {
-                closable: item.isClosable,
+        <div
+            aria-selected={isActive}
+            className={cx(styles.tab, {
+                closable: tab.isClosable,
                 active: isActive
             })}
-            data-name={item.text}
+            data-name={tab.name}
             onAuxClick={handleAuxClick}
-            onMouseDown={handleMouseDown}
             onClick={handleClick}
-            to={item.href}
+            onMouseDown={handleMouseDown}
+            role='tab'
         >
-            {item.text}
-            {item.isClosable && (
+            {tab.name}
+            {tab.isClosable && (
                 <button
+                    aria-label='Close tab'
                     className={styles.closeTabButton}
                     onClick={handleCloseTab}
-                ></button>
+                    type='button'
+                >
+                    <Close aria-hidden='true' />
+                </button>
             )}
-        </Link>
+        </div>
     );
 };
 
