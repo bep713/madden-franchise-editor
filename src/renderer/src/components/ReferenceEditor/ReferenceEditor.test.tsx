@@ -73,4 +73,53 @@ describe('ReferenceEditor', () => {
         await user.keyboard('{Escape}');
         expect(onClose).toHaveBeenCalledTimes(3);
     });
+
+    it('toggles the table options with the caret and closes them on an outside click', async () => {
+        const { user, onClose } = setup();
+        const option = () =>
+            screen.queryByRole('button', { name: '4146 - SeasonGame' });
+        const caret = screen.getByRole('button', { name: 'Toggle options' });
+
+        await user.click(caret);
+        expect(option()).toBeInTheDocument();
+        expect(screen.getByLabelText('Table')).toHaveFocus();
+        await user.click(caret);
+        expect(option()).not.toBeInTheDocument();
+
+        await user.click(screen.getByLabelText('Table'));
+        expect(option()).toBeInTheDocument();
+        await user.click(screen.getByText('Edit cell reference'));
+        expect(option()).not.toBeInTheDocument();
+        expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('toggles the table options with the label', async () => {
+        const { user } = setup();
+        const option = () =>
+            screen.queryByRole('button', { name: '4146 - SeasonGame' });
+        await user.click(screen.getByText('Table'));
+        expect(option()).toBeInTheDocument();
+        expect(screen.getByLabelText('Table')).toHaveFocus();
+        await user.click(screen.getByText('Table'));
+        expect(option()).not.toBeInTheDocument();
+    });
+
+    it.each([
+        ['the input', () => screen.getByLabelText('Table')],
+        [
+            'the caret',
+            () => screen.getByRole('button', { name: 'Toggle options' })
+        ],
+        ['the label', () => screen.getByText('Table')]
+    ])('selects the table text when opened by %s', async (_, target) => {
+        const { user } = setup();
+        await user.click(target());
+        const input = screen.getByLabelText<HTMLInputElement>('Table');
+        expect(input.selectionStart).toBe(0);
+        expect(input.selectionEnd).toBe('4141 - StadiumPartInfo'.length);
+
+        // typing replaces the selected text
+        await user.keyboard('4146');
+        expect(input).toHaveValue('4146');
+    });
 });

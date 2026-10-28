@@ -70,6 +70,26 @@ test("follow and edit references (react)", async () => {
     "00100000010110100000000000010010",
   );
 
+  // the caret toggles the table options, which scroll and overlay the editor
+  // without growing it; an outside click closes them
+  const closedHeight = await referenceEditor.getHeight();
+  await referenceEditor.toggleTableOptions();
+  expect(await referenceEditor.areTableOptionsOpen()).to.equal(true);
+  expect(await referenceEditor.isTableOptionListScrollable()).to.equal(true);
+  expect(await referenceEditor.getHeight()).to.equal(closedHeight);
+  await referenceEditor.toggleTableOptions();
+  expect(await referenceEditor.areTableOptionsOpen()).to.equal(false);
+  await referenceEditor.toggleTableOptions();
+  await referenceEditor.clickTitle();
+  expect(await referenceEditor.areTableOptionsOpen()).to.equal(false);
+
+  // the label toggles them too, and opening selects the table text
+  await referenceEditor.clickTableLabel();
+  expect(await referenceEditor.areTableOptionsOpen()).to.equal(true);
+  expect(await referenceEditor.isTableTextSelected()).to.equal(true);
+  await referenceEditor.clickTableLabel();
+  expect(await referenceEditor.areTableOptionsOpen()).to.equal(false);
+
   // changing the table and row updates the binary
   await referenceEditor.setTableById(4146);
   await referenceEditor.setRowIndex(25);

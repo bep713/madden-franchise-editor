@@ -1,3 +1,4 @@
+@import '@assets/colors.css';
 @import '@assets/spacing.css';
 
 .dropdown {
@@ -18,7 +19,20 @@
     border: none;
 }
 
+.autocomplete {
+    position: relative;
+}
+
+/* overlays the content below instead of pushing it down */
 .optionList {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    z-index: 10;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: var(--white);
     border: 1px solid var(--timberwolf);
     border-top: none;
 }

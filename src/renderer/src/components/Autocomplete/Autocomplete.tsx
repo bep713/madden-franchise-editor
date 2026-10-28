@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import cx from 'classnames';
 import baseStyles from '../BaseFormInput/BaseFormInput.module.css';
 import styles from './Autocomplete.module.css';
@@ -21,6 +21,7 @@ interface Props extends BaseFormInputProps {
     onBlur?: () => void;
     onFocus?: () => void;
     onOptionSelect?: (option: Option) => void;
+    onShowOptionsChange?: (show: boolean) => void;
     onTextChange?: (text: string) => void;
     options: Option[];
     placeholder?: string;
@@ -39,6 +40,7 @@ const Autocomplete: React.FC<Props> = ({
     onBlur,
     onFocus,
     onOptionSelect,
+    onShowOptionsChange,
     onTextChange,
     options,
     placeholder,
@@ -46,6 +48,48 @@ const Autocomplete: React.FC<Props> = ({
     state = 'default',
     text = ''
 }) => {
+    const rootRef = useRef<HTMLDivElement>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const optionListRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+    // set on mousedown when a click on the input will open the options
+    const openOnInputClickRef = useRef(false);
+    const onShowOptionsChangeRef = useRef(onShowOptionsChange);
+    useEffect(() => {
+        onShowOptionsChangeRef.current = onShowOptionsChange;
+    });
+
+    const isInsideControl = (target: EventTarget | null): boolean =>
+        !!dropdownRef.current?.contains(target as Node) ||
+        !!optionListRef.current?.contains(target as Node);
+
+    // Opens with the text selected, so a click and a keystroke replace it
+    const openOptions = (): void => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+        onShowOptionsChange?.(true);
+    };
+
+    const toggleOptions = (): void => {
+        if (showOptions) {
+            onShowOptionsChange?.(false);
+        } else {
+            openOptions();
+        }
+    };
+
+    // Close the options on a click outside the autocomplete
+    useEffect(() => {
+        if (!showOptions) return;
+        const onMouseDown = (e: MouseEvent): void => {
+            if (!rootRef.current?.contains(e.target as Node)) {
+                onShowOptionsChangeRef.current?.(false);
+            }
+        };
+        document.addEventListener('mousedown', onMouseDown);
+        return () => document.removeEventListener('mousedown', onMouseDown);
+    }, [showOptions]);
+
     const optionItems = options.map((option) => (
         <Button
             align='left'
@@ -59,13 +103,24 @@ const Autocomplete: React.FC<Props> = ({
     ));
 
     return (
-        <div id={id} className={styles.autocomplete}>
+        <div
+            id={id}
+            className={styles.autocomplete}
+            ref={rootRef}
+            // the label toggles the options like the caret; cancel its default focus
+            onClick={(e) => {
+                if (isInsideControl(e.target)) return;
+                e.preventDefault();
+                toggleOptions();
+            }}
+        >
             <BaseFormInput
                 direction={direction}
                 errorMessage={showOptions ? undefined : errorMessage}
                 input={
                     <div
                         className={styles.dropdown}
+                        ref={dropdownRef}
                         onBlur={onBlur}
                         onFocus={onFocus}
                     >
@@ -76,10 +131,28 @@ const Autocomplete: React.FC<Props> = ({
                             )}
                             id={id}
                             placeholder={placeholder}
+                            ref={inputRef}
                             value={text}
                             onChange={(e) => onTextChange?.(e.target.value)}
+                            // read before the focus, which may open the options
+                            onMouseDown={() => {
+                                openOnInputClickRef.current = !showOptions;
+                            }}
+                            onClick={() => {
+                                if (!openOnInputClickRef.current) return;
+                                openOnInputClickRef.current = false;
+                                openOptions();
+                            }}
                         />
-                        <button className={styles.caret} />
+                        <button
+                            aria-expanded={showOptions}
+                            aria-label='Toggle options'
+                            className={styles.caret}
+                            // keep focus where it is, so onFocus doesn't reopen the options
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={toggleOptions}
+                            type='button'
+                        />
                     </div>
                 }
                 label={label}
@@ -87,7 +160,7 @@ const Autocomplete: React.FC<Props> = ({
                 state={state}
             />
             {showOptions && (
-                <div className={styles.optionList}>
+                <div className={styles.optionList} ref={optionListRef}>
                     <List
                         direction='vertical'
                         items={optionItems}

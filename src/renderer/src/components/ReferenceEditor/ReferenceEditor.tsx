@@ -164,6 +164,7 @@ const ReferenceEditor: React.FC<Props> = ({
                         setTableText(null);
                         setShowOptions(false);
                     }}
+                    onShowOptionsChange={setShowOptions}
                     onTextChange={(t) => {
                         setTableText(t);
                         setShowOptions(true);

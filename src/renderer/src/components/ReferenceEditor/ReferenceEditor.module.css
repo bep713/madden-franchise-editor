@@ -35,10 +35,6 @@
 }
 
 .title {
-    font-weight: bold;
-}
-
-.optionList {
-    max-height: 200px;
-    overflow-y: auto;
+    font-size: 1.125em;
+    font-weight: 600;
 }
