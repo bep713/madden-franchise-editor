@@ -1,5 +1,6 @@
 const Grid = require("./Grid");
-const { stubSaveDialog } = require("../../util/dialogStubs");
+const App = require("../App");
+const { stubOpenDialog, stubSaveDialog } = require("../../util/dialogStubs");
 const { poll } = require("../../util/poll");
 
 class TableEditorPage {
@@ -163,9 +164,50 @@ class TableEditorPage {
     await this.locators.loader.waitFor({ state: "hidden", timeout: 30000 });
   }
 
-  async exportTable(electronApp, filePath) {
+  // via: "button" (the action bar) or "menu" (File > Export). The file is
+  // written after this returns, so wait for it.
+  async exportTable(electronApp, filePath, { via = "button" } = {}) {
     await stubSaveDialog(electronApp, filePath);
-    await this.window.locator('[data-action="EXPORT"]').click();
+    if (via === "menu") {
+      await new App(electronApp)._clickMenuItem("Export");
+    } else {
+      await this.window.locator('[data-action="EXPORT"]').click();
+    }
+  }
+
+  // via: "button" (the action bar) or "menu" (File > Import). Returns once
+  // the table has reloaded.
+  async importTable(electronApp, filePath, { via = "button" } = {}) {
+    await stubOpenDialog(electronApp, filePath);
+    await this.watchForLoader();
+    if (via === "menu") {
+      await new App(electronApp)._clickMenuItem("Import");
+    } else {
+      await this.window.locator('[data-action="IMPORT"]').click();
+    }
+    await this.waitForLoaderToShowAndHide();
+    await this.waitForTableToLoad();
+  }
+
+  // Tools > Export Raw Table
+  async exportRawTable(electronApp, filePath) {
+    await stubSaveDialog(electronApp, filePath);
+    await new App(electronApp)._clickMenuItem("ExportRawTable");
+  }
+
+  // Tools > Export FRT File
+  async exportFrt(electronApp, filePath) {
+    await stubSaveDialog(electronApp, filePath);
+    await new App(electronApp)._clickMenuItem("ExportFRT");
+  }
+
+  // Tools > Import Raw Table. Returns once the table has reloaded.
+  async importRawTable(electronApp, filePath) {
+    await stubOpenDialog(electronApp, filePath);
+    await this.watchForLoader();
+    await new App(electronApp)._clickMenuItem("ImportRawTable");
+    await this.waitForLoaderToShowAndHide();
+    await this.waitForTableToLoad();
   }
 }
 

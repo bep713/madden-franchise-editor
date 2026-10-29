@@ -97,6 +97,27 @@ declare global {
                     headers: string[],
                     rows: unknown[][]
                 ) => Promise<void>;
+                // Rows keyed by column name
+                import: (
+                    filePath: string
+                ) => Promise<Record<string, unknown>[]>;
+                // Saves when saveOnChange is on
+                importBulk: (
+                    fileId: string,
+                    tableId: number,
+                    rows: Record<string, unknown>[]
+                ) => Promise<{ success: boolean }>;
+                rawExport: (
+                    fileId: string,
+                    tableId: number,
+                    filePath: string
+                ) => Promise<void>;
+                frtExport: (fileId: string, filePath: string) => Promise<void>;
+                rawImport: (
+                    fileId: string,
+                    tableId: number,
+                    filePath: string
+                ) => Promise<void>;
             };
             welcome: {
                 revealInExplorer: (

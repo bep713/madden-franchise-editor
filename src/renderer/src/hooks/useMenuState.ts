@@ -4,8 +4,17 @@ import navigation from '@data/navigation';
 import { FranchiseFileContext } from '@renderer/context/FranchiseFileContext';
 
 // App menu items the React UI can act on. Others stay disabled, even where a
-// navigation item would enable them. Later steps add Export, Import, ...
-export const REACT_MENU_IDS = ['Save'];
+// navigation item would enable them.
+export const REACT_MENU_IDS = [
+    'Save',
+    'Export',
+    'Import',
+    'ExportRawTable',
+    'ExportFRT',
+    'ImportRawTable',
+    'LogTable',
+    'CopyUniqueId'
+];
 
 // Enables/disables app menu items per page, as v4's menuService does with
 // navigation.json's menu.enable/disable.

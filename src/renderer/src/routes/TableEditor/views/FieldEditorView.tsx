@@ -33,6 +33,9 @@ interface Props {
     ) => void;
     onSelectionChange?: (selection: CellPosition) => void;
     onScroll?: (scroll: GridScroll) => void;
+    // The action bar's Export and Import (useTableDataCommands)
+    onExport: () => void;
+    onImport: () => void;
     onTogglePin: () => void;
     setTableLoaderOptions: LoaderOptionsSetter;
     table: TableData;
@@ -54,6 +57,8 @@ const FieldEditorView = ({
     onFollowReference,
     onSelectionChange,
     onScroll,
+    onExport,
+    onImport,
     onTogglePin,
     setTableLoaderOptions,
     table,
@@ -95,54 +100,11 @@ const FieldEditorView = ({
         setBlobEdit(null);
     };
 
-    const handleActionClick = async (action: number) => {
+    const handleActionClick = (action: number) => {
         if (action === TableActions.EXPORT) {
-            const result = await window.electronAPI.showSaveDialog({
-                defaultPath: table.name,
-                title: 'Select destination file for table export',
-                filters: [
-                    { name: 'Excel workbook', extensions: ['xlsx'] },
-                    { name: 'CSV (comma-delimited)', extensions: ['csv'] },
-                    {
-                        name: 'Excel Macro-Enabled Workbook',
-                        extensions: ['xlsm']
-                    },
-                    { name: 'Excel Binary Workbook', extensions: ['xlsb'] },
-                    { name: 'Excel 97-2003 Workbook', extensions: ['xls'] },
-                    { name: 'OpenDocument Spreadsheet', extensions: ['ods'] },
-                    { name: 'UTF-16 Unicode Text', extensions: ['txt'] }
-                ]
-            });
-
-            if (!result.canceled && result.filePath) {
-                setTableLoaderOptions({
-                    message: 'Exporting...',
-                    show: true
-                });
-                // Same rows as v4's externalDataService.exportTableData
-                const headers = table.headers.map((header) => header.name);
-                const rows = table.records.map((record) =>
-                    headers.map((name) => record[name] ?? '')
-                );
-                try {
-                    await window.electronAPI.externalData.export(
-                        result.filePath,
-                        headers,
-                        rows
-                    );
-                } catch (error) {
-                    console.error(error);
-                    await window.electronAPI.showMessageBox({
-                        type: 'error',
-                        message: 'Could not export the table.',
-                        detail: (error as Error).message
-                    });
-                } finally {
-                    setTableLoaderOptions({
-                        show: false
-                    });
-                }
-            }
+            onExport();
+        } else if (action === TableActions.IMPORT) {
+            onImport();
         } else if (action === TableActions.PIN) {
             onTogglePin();
         } else if (action === TableActions.SWITCH_ORIENTATION) {

@@ -107,6 +107,13 @@ class App {
     }, tableName);
   }
 
+  async isMenuItemEnabled(id) {
+    return this.app.evaluate(
+      ({ Menu }, id) => Menu.getApplicationMenu().getMenuItemById(id).enabled,
+      id,
+    );
+  }
+
   async _clickMenuItem(menuItemId) {
     const mainWindow = await this.getMainWindow();
     await mainWindow.evaluate(

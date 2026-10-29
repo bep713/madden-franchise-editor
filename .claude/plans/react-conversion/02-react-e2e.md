@@ -21,11 +21,12 @@ The v4 specs in `tests/e2e/scripts/*.spec.js` stay **unchanged**. Shared helpers
 |---|---|---|
 | `smoke.spec.js` | **Partial** → `react/smoke.spec.js` | Open file, open table editor, first table loads, grid shows the file's data, open another table (7482), `LongName` row 52 = "New York", reopen the file from Recent Files. Not ported: jump-to-column modal (03d), edit + save, close from menu, follow reference and the reference editor (all 03a). |
 | `tabs.spec.js` | **Partial** → folded into `react/smoke.spec.js` | Only "Home tab goes to the welcome page" and "the table editor tab opens the table editor again". The rest needs a tab model, which React doesn't have. "Remembers the last table" is not asserted, because React resets to the first table today and that isn't parity. |
-| `export.spec.js` | **Partial** → `react/export.spec.js` | xlsx export of 4097 and 4220, compared with the same fixtures. Raw table and FRT export have no React UI (03c). |
+| `export.spec.js` | **Yes** → `react/export.spec.js` | xlsx export of 4097 (button) and 4220 (menu), raw table and FRT export, compared with the same fixtures (03c). |
 | `pins.spec.js` | No | Ported by 03b (added to its plan). |
 | `back-button.spec.js` | No | No back button / history yet. |
 | `bulk-edit.spec.js`, `empty-records.spec.js` | No | Needs cell editing (03a). The "set as empty" context menu is a 04+ item. |
-| `import.spec.js`, `import-roundtrip.spec.js` | No | Needs import (03c) and cell editing (03a). |
+| `import.spec.js` | **Yes** → `react/import.spec.js` | Both tests, same fixtures and expected values; button and menu triggers (03c). |
+| `import-roundtrip.spec.js` | No | Not ported yet. |
 | `releaseNotes.spec.js`, `updateChannel.spec.js` | No | They test the v4 settings window, which React also opens unchanged. Running them again under React adds nothing. |
 
 If a ported assertion fails because React really differs from v4 (for example the xlsx export of reference columns), keep the v4 fixture, mark that assertion `test.fixme` with a comment naming the step that fixes it, and note it in that step's plan. Don't change fixtures to match React.
@@ -108,7 +109,7 @@ Each spec starts like the v4 ones: `test` from `../../util/test`, `beforeAll` / 
 - Same `beforeAll` as v4 (create the export output dir, then reset the career file).
 - Export 4097 to `FilePaths.m22.exports.test`, `waitForFile`, then `xlsxCompare` with `exports.overallPercentage`.
 - `openTableById(4220)`, export, then `xlsxCompare` with `exports.player`.
-- No auto-open-Excel setting is needed: React's export never opens Excel.
+- 03c: turn off open-after-export first (`TestUtil.setAutoOpenExcel(app, false)`), since React now honours `general.openExcelAfterImport`. Then raw table and FRT export, and 4220 is exported from the menu.
 
 ## Testing rule (CLAUDE.md)
 **Decision: e2e for each user-visible flow, vitest for logic, not component tests only.**

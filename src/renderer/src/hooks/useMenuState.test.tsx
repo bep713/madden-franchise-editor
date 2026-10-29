@@ -6,7 +6,7 @@ import {
     FranchiseFileContext,
     OpenFranchiseFile
 } from '@renderer/context/FranchiseFileContext';
-import useMenuState from './useMenuState';
+import useMenuState, { REACT_MENU_IDS } from './useMenuState';
 
 const send = vi.fn();
 
@@ -45,20 +45,21 @@ beforeEach(() => {
 });
 
 describe('useMenuState', () => {
-    it('enables only Save in the table editor with a file', () => {
+    it('enables the table editor items with a file', () => {
         setup('/table-editor', file);
-        expect(sent('menu:enable')).toEqual([['Save']]);
-        const enabled = sent('menu:enable').flat();
-        for (const id of ['Export', 'Import', 'LogTable', 'ExportFRT']) {
-            expect(enabled).not.toContain(id);
-        }
+        expect(sent('menu:enable').flat().sort()).toEqual(
+            [...REACT_MENU_IDS].sort()
+        );
         expect(sent('menu:disable')).toEqual([]);
     });
 
-    it('disables Save in the table editor without a file', () => {
+    it('disables the table editor items without a file', () => {
         setup('/table-editor', undefined);
         expect(sent('menu:enable')).toEqual([]);
-        expect(sent('menu:disable').flat()).toContain('Save');
+        const disabled = sent('menu:disable').flat();
+        for (const id of REACT_MENU_IDS) {
+            expect(disabled).toContain(id);
+        }
     });
 
     it('disables Save on Home', () => {
@@ -76,6 +77,8 @@ describe('useMenuState', () => {
         const { result } = setup('/', file);
         expect(sent('menu:enable')).toEqual([]);
         act(() => result.current('/table-editor'));
-        expect(sent('menu:enable')).toEqual([['Save']]);
+        expect(sent('menu:enable').flat().sort()).toEqual(
+            [...REACT_MENU_IDS].sort()
+        );
     });
 });

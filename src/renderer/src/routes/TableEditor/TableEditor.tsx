@@ -29,6 +29,7 @@ import {
 } from '@renderer/components/TableEditorComponent/TableEditorComponent';
 import { useEditorTabs } from '@renderer/tabs/EditorTabsContext';
 import { OpenMode } from '@renderer/utils/openMode';
+import useTableDataCommands from './useTableDataCommands';
 
 interface LoadOptions {
     // Reload even if the table is already shown (a tab switch)
@@ -218,6 +219,43 @@ const TableEditor: React.FC = () => {
     );
 
     const fileId = activeFranchiseFile?.fileId;
+
+    // Built when a command starts. The reload after an import is skipped if
+    // the user has switched tabs since; that tab reloads when activated.
+    const runTableCommand = useTableDataCommands(() => {
+        if (!fileId || !selectedTable || !selectedTableData) {
+            return null;
+        }
+        const tabKey = activeKeyRef.current;
+        const table = selectedTable;
+        return {
+            fileId,
+            table: selectedTableData,
+            isExpressionTable,
+            setLoaderOptions: setTableLoaderOptions,
+            reloadTable: async () => {
+                if (activeKeyRef.current !== tabKey) {
+                    return;
+                }
+                // Back on the same cell and scroll position
+                const saved = getViewState(tabKey);
+                await onSelectTableRef.current(
+                    table,
+                    saved?.selection ?? null,
+                    { force: true, scroll: saved?.scroll }
+                );
+            }
+        };
+    });
+    const onExport = useCallback(
+        () => void runTableCommand('export'),
+        [runTableCommand]
+    );
+    const onImport = useCallback(
+        () => void runTableCommand('import'),
+        [runTableCommand]
+    );
+
     const activeTableId =
         activeTab.kind === 'table' ? activeTab.tableId : undefined;
 
@@ -304,6 +342,8 @@ const TableEditor: React.FC = () => {
                                         initialSelection={pendingSelection}
                                         isPinned={isPinned(selectedTable)}
                                         onFollowReference={onFollowReference}
+                                        onExport={onExport}
+                                        onImport={onImport}
                                         onScroll={onScroll}
                                         onSelectionChange={onSelectionChange}
                                         onTogglePin={() =>
