@@ -49,3 +49,8 @@
 .option:hover {
     background-color: var(--timberwolf);
 }
+
+/* the option Enter picks; beats the ghost button's background */
+.optionList .highlighted {
+    background-color: var(--timberwolf);
+}

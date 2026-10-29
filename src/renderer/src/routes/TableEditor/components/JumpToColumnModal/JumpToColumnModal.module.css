@@ -1,0 +1,20 @@
+@import '@assets/spacing.css';
+
+.dialog {
+    width: min(420px, 90vw);
+}
+
+/* Modal's content box scrolls, which would clip the column list */
+.dialog > :last-child {
+    overflow: visible;
+}
+
+.body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.body p {
+    margin: 0;
+}

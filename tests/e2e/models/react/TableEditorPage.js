@@ -1,4 +1,5 @@
 const Grid = require("./Grid");
+const JumpToColumnModal = require("./JumpToColumnModal");
 const App = require("../App");
 const { stubOpenDialog, stubSaveDialog } = require("../../util/dialogStubs");
 const { poll } = require("../../util/poll");
@@ -7,6 +8,7 @@ class TableEditorPage {
   constructor(window) {
     this.window = window;
     this.grid = new Grid(window);
+    this.jumpToColumnModal = new JumpToColumnModal(window);
     this.locators = {
       // Handsontable has its own role="status" announcer
       loader: this.window.locator('[role="status"][aria-busy="true"]'),
@@ -20,6 +22,12 @@ class TableEditorPage {
         '[data-section="pinned"] button[data-table-id]',
       ),
       pinAction: this.window.locator('[data-action="PIN"]'),
+      jumpToColumnAction: this.window.locator(
+        '[data-action="JUMP_TO_COLUMN"]',
+      ),
+      switchOrientationAction: this.window.locator(
+        '[data-action="SWITCH_ORIENTATION"]',
+      ),
       pinnedToggle: this.window.locator('button[title$="pinned tables"]'),
     };
   }
@@ -137,6 +145,23 @@ class TableEditorPage {
       (await this.locators.pinnedToggle.getAttribute("aria-pressed")) ===
       "true"
     );
+  }
+
+  async openColumnJumpModal() {
+    await this.locators.jumpToColumnAction.click();
+    await this.jumpToColumnModal.waitForOpen();
+  }
+
+  // Same steps as v4's jumpToColumn. row is a record index.
+  async jumpToColumn(column, row) {
+    await this.openColumnJumpModal();
+    await this.jumpToColumnModal.setColumn(column);
+    await this.jumpToColumnModal.setRowIndex(row);
+    await this.jumpToColumnModal.go();
+  }
+
+  async switchOrientation() {
+    await this.locators.switchOrientationAction.click();
   }
 
   // Call before a paste/undo/redo that writes more than one cell, then

@@ -21,7 +21,6 @@ const AUTO_UNEMPTY = { general: { autoUnempty: [true] } };
 
 let app;
 let electronApp;
-let headerNames;
 
 test.beforeEach(TestUtil.overwriteTestCareer);
 test.afterEach(async () => {
@@ -46,8 +45,6 @@ async function openPlayerTable(preferences) {
   const tableEditor = new TableEditorPage(window);
   await tableEditor.waitForTableToLoad();
   await tableEditor.openTableById(PLAYER_TABLE_ID);
-  const player = await app.readTable(PLAYER_TABLE_ID, ["LastName"]);
-  headerNames = player.headers.map((header) => header.name);
   return tableEditor;
 }
 
@@ -59,7 +56,7 @@ async function saveAndReopenPlayerTable() {
 }
 
 async function goToCell(tableEditor, row, fieldName) {
-  await tableEditor.grid.selectCell(row, fieldName, headerNames);
+  await tableEditor.jumpToColumn(fieldName, row);
 }
 
 async function readPlayerColumn(fieldName) {
@@ -105,8 +102,9 @@ test("pasting 2,500 cells stays responsive and shows the loader (react)", async 
   await tableEditor.waitForLoaderToShowAndHide();
   expect(Date.now() - start).to.be.below(MAX_BULK_PASTE_MS);
 
-  // the app still responds to input after the paste. Row 2499 is too far to
-  // reach with the arrow keys (no jump to column yet, 03d).
+  // the app still responds to input after the paste
+  await goToCell(tableEditor, 2499, "LastName");
+  expect(await tableEditor.grid.getTextAtSelectedCell()).to.equal("Bulk2499");
   const firstEmptyRow = FIRST_EMPTY_PLAYER_ROWS[0];
   await goToCell(tableEditor, firstEmptyRow, "LastName");
   expect(await tableEditor.grid.getTextAtSelectedCell()).to.equal(
@@ -120,8 +118,6 @@ test("pasting 2,500 cells stays responsive and shows the loader (react)", async 
 });
 
 test("pasting into empty rows un-empties them and removes the empty styling (react)", async () => {
-  // Reaching rows 373-427 takes a few thousand arrow key presses
-  test.setTimeout(120 * 1000);
   const tableEditor = await openPlayerTable(AUTO_UNEMPTY);
 
   await goToCell(tableEditor, FIRST_EMPTY_PLAYER_ROWS[0], "LastName");

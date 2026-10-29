@@ -362,21 +362,7 @@ const TableEditor: React.FC = () => {
                 </Allotment>
             </div>
 
-            {/* <div className='modal hidden'>
-        <div className="modal-header">
-          <h2 className="title">Jump to column</h2>
-          <div className="close-modal">X</div>
-        </div>
-        <div className="modal-content">
-          <p>Jump to the following column at the following row</p>
-          <div className="year-select-wrapper">
-            <select name="available-columns" id="available-columns"></select>
-            <input type="text" name="row-index" className="jump-row" value="1" />
-            <button className="btn btn-go-jump-to-column">Go</button>
-          </div>
-        </div>
-      </div>
-      <div id="reference-modal" className="reference-modal modal hidden">
+            {/* <div id="reference-modal" className="reference-modal modal hidden">
         <div className="modal-header">
           <h2 className="title">References</h2>
           <div className="close-modal">X</div>

@@ -12,15 +12,8 @@ const TableEditorPage = require("../../models/react/TableEditorPage");
 test.beforeAll(TestUtil.overwriteTestCareer);
 test.afterAll(TestUtil.overwriteTestCareer);
 
-// v4's jumpToColumn(column, row). 03d (jump to column) isn't done, so the
-// column index comes from the table's headers.
-async function textAt(app, tableEditor, tableId, column, row) {
-  const table = await app.readTable(tableId);
-  await tableEditor.grid.selectCell(
-    row,
-    column,
-    table.headers.map((header) => header.name),
-  );
+async function textAt(tableEditor, column, row) {
+  await tableEditor.jumpToColumn(column, row);
   return tableEditor.grid.getTextAtSelectedCell();
 }
 
@@ -85,7 +78,7 @@ test("import table e2e test (react)", async () => {
     via: "menu",
   });
   expect(
-    await textAt(app, tableEditor, 4712, "HasFantasyRoster", 0),
+    await textAt(tableEditor, "HasFantasyRoster", 0),
   ).to.equal("true");
   await TestUtil.wait(250);
 
@@ -93,7 +86,7 @@ test("import table e2e test (react)", async () => {
   await openTableEditor(electronApp, welcome, tableEditor);
   await tableEditor.openTableById(4712);
   expect(
-    await textAt(app, tableEditor, 4712, "HasFantasyRoster", 0),
+    await textAt(tableEditor, "HasFantasyRoster", 0),
   ).to.equal("true");
 
   // can import a raw table
@@ -120,27 +113,27 @@ test("import table e2e test (react)", async () => {
 
     // updates strings
     await tableEditor.openTableById(7482);
-    expect(await textAt(app, tableEditor, 7482, "LongName", 5)).to.equal(
+    expect(await textAt(tableEditor, "LongName", 5)).to.equal(
       "TEST",
     );
 
     // updates numbers
     expect(
-      await textAt(app, tableEditor, 7482, "SalCapNextYearSalaryReserve", 6),
+      await textAt(tableEditor, "SalCapNextYearSalaryReserve", 6),
     ).to.equal("500");
 
     // updates booleans
     expect(
-      await textAt(app, tableEditor, 7482, "TeamRegressionOccurred", 43),
+      await textAt(tableEditor, "TeamRegressionOccurred", 43),
     ).to.equal("true");
 
     // updates table which imported single column correctly
     await tableEditor.openTableById(4104);
-    expect(await textAt(app, tableEditor, 4104, "Name", 1)).to.equal(
+    expect(await textAt(tableEditor, "Name", 1)).to.equal(
       "Test Stadium Name",
     );
     expect(
-      await textAt(app, tableEditor, 4104, "STADIUM_AIRPORTCODE", 2),
+      await textAt(tableEditor, "STADIUM_AIRPORTCODE", 2),
     ).to.equal("LAS");
   }
 });
@@ -166,7 +159,7 @@ test("import table with auto un-empty enabled (react)", async () => {
     // The first column of this fixture holds empty-record pointers
     await tableEditor.openTableById(7482);
     await tableEditor.importTable(electronApp, FilePaths.m22.imports.team);
-    expect(await textAt(app, tableEditor, 7482, "LongName", 5)).to.equal(
+    expect(await textAt(tableEditor, "LongName", 5)).to.equal(
       "TEST",
     );
 
@@ -175,7 +168,7 @@ test("import table with auto un-empty enabled (react)", async () => {
     await app.closeFile();
     await openTableEditor(electronApp, welcome, tableEditor);
     await tableEditor.openTableById(7482);
-    expect(await textAt(app, tableEditor, 7482, "LongName", 5)).to.equal(
+    expect(await textAt(tableEditor, "LongName", 5)).to.equal(
       "TEST",
     );
   } finally {

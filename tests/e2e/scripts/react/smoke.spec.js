@@ -58,13 +58,8 @@ test("basic test (react)", async () => {
   await tableEditor.openTableById(7482);
   expect(await tableEditor.getSelectedTableName()).to.equal("7482 - Team");
 
-  // other table data displays properly
-  const team = await app.readTable(7482);
-  await tableEditor.grid.selectCell(
-    52,
-    "LongName",
-    team.headers.map((header) => header.name),
-  );
+  // can jump to a column, and other table data displays properly
+  await tableEditor.jumpToColumn("LongName", 52);
   expect(await tableEditor.grid.getTextAtSelectedCell()).to.equal("New York");
 
   // Home tab goes to the welcome page, which lists the file as recent

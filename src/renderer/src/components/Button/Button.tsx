@@ -6,6 +6,7 @@ interface Props {
     align?: 'left' | 'center' | 'right';
     as?: React.ElementType;
     children: React.ReactNode;
+    className?: string;
     state?: 'default' | 'disabled';
     stretch?: boolean;
     type?: 'primary' | 'secondary' | 'ghost';
@@ -17,16 +18,23 @@ const Button: React.FC<Props> = ({
     align = 'center',
     as: Component = 'button',
     children,
+    className,
     state = 'default',
     stretch = false,
     type = 'secondary',
     ...props
 }) => (
     <Component
-        className={cx(styles.button, styles[align], styles[type], {
-            [styles.disabled]: state === 'disabled',
-            [styles.stretch]: stretch
-        })}
+        className={cx(
+            styles.button,
+            styles[align],
+            styles[type],
+            {
+                [styles.disabled]: state === 'disabled',
+                [styles.stretch]: stretch
+            },
+            className
+        )}
         {...props}
     >
         {children}

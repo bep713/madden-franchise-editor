@@ -9,13 +9,14 @@ import ReferenceEditor from '@renderer/components/ReferenceEditor/ReferenceEdito
 import BlobEditorModal from '@renderer/components/BlobEditor/BlobEditorModal';
 import TableHeader from '@renderer/components/TableHeader/TableHeader';
 import { TableData } from '@shared/types';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LoaderOptionsSetter } from '@renderer/hooks/useLoader';
 import { OpenMode } from '@renderer/utils/openMode';
 import baseStyles from '../TableEditor.module.scss';
 import FieldEditorActionBar, {
     TableActions
 } from '../components/TableActionBar/FieldEditorActionBar';
+import JumpToColumnModal from '../components/JumpToColumnModal/JumpToColumnModal';
 
 interface Props {
     fileId: string;
@@ -72,8 +73,23 @@ const FieldEditorView = ({
     const [referenceEdit, setReferenceEdit] =
         useState<ReferenceEditRequest | null>(null);
     const [blobEdit, setBlobEdit] = useState<BlobEditRequest | null>(null);
+    // The open jump modal, with the cell to reselect on close. Kept with its
+    // table, so a table switch (the menu) closes it.
+    const [jump, setJump] = useState<{
+        tableId: number;
+        from: CellPosition | null;
+    } | null>(null);
 
     const { tableId } = table;
+    const isInverted = tableOrientation === TableOrientation.INVERTED;
+    if (jump && jump.tableId !== tableId) {
+        setJump(null);
+    }
+    const jumpFrom = jump?.tableId === tableId ? jump.from : undefined;
+    const columnNames = useMemo(
+        () => table.headers.map((header) => header.name),
+        [table]
+    );
     const handleFollowReference = useCallback(
         (targetTableId: number, recordIndex: number, mode: OpenMode) => {
             // A self-reference opened in a new tab still gets its own tab
@@ -100,6 +116,53 @@ const FieldEditorView = ({
         setBlobEdit(null);
     };
 
+    // v4 deselects first, so the grid doesn't take the modal's keys
+    const openJumpToColumn = useCallback(() => {
+        const from = gridRef.current?.getSelectedCell() ?? null;
+        gridRef.current?.deselectCell();
+        setJump({ tableId, from });
+    }, [tableId]);
+
+    // The modal talks in (record, field). Inverted, a field is a row and
+    // record r is column r + 1.
+    const jumpToCell = (row: number, col: number): void => {
+        setJump(null);
+        if (isInverted) {
+            gridRef.current?.selectCell(col, row + 1);
+        } else {
+            gridRef.current?.selectCell(row, col);
+        }
+    };
+
+    const closeJumpToColumn = (): void => {
+        if (jumpFrom) {
+            gridRef.current?.selectCell(jumpFrom.row, jumpFrom.col);
+        }
+        setJump(null);
+    };
+
+    const isModalOpen =
+        jumpFrom !== undefined || referenceEdit !== null || blobEdit !== null;
+    useEffect(() => {
+        if (isModalOpen) return;
+        const onKeyDown = (e: KeyboardEvent): void => {
+            if (
+                !(e.ctrlKey || e.metaKey) ||
+                e.key.toLowerCase() !== 'j' ||
+                // an edit in progress in the grid's cell editor
+                (e.target as HTMLElement | null)?.closest?.(
+                    '.handsontableInput'
+                )
+            ) {
+                return;
+            }
+            e.preventDefault();
+            openJumpToColumn();
+        };
+        document.addEventListener('keydown', onKeyDown);
+        return () => document.removeEventListener('keydown', onKeyDown);
+    }, [isModalOpen, openJumpToColumn]);
+
     const handleActionClick = (action: number) => {
         if (action === TableActions.EXPORT) {
             onExport();
@@ -107,6 +170,8 @@ const FieldEditorView = ({
             onImport();
         } else if (action === TableActions.PIN) {
             onTogglePin();
+        } else if (action === TableActions.JUMP_TO_COLUMN) {
+            openJumpToColumn();
         } else if (action === TableActions.SWITCH_ORIENTATION) {
             setTableOrientation(
                 tableOrientation === TableOrientation.NORMAL
@@ -129,7 +194,7 @@ const FieldEditorView = ({
                     fileId={fileId}
                     initialScroll={initialScroll}
                     initialSelection={initialSelection}
-                    isInverted={tableOrientation === TableOrientation.INVERTED}
+                    isInverted={isInverted}
                     onEditBlob={setBlobEdit}
                     onEditReference={setReferenceEdit}
                     onFollowReference={handleFollowReference}
@@ -154,6 +219,19 @@ const FieldEditorView = ({
                     onClose={closeReferenceEditor}
                     tables={tables}
                     value={referenceEdit.value}
+                />
+            )}
+            {jumpFrom !== undefined && (
+                <JumpToColumnModal
+                    columns={columnNames}
+                    initialRow={
+                        isInverted
+                            ? Math.max(0, (jumpFrom?.col ?? 1) - 1)
+                            : (jumpFrom?.row ?? 0)
+                    }
+                    onClose={closeJumpToColumn}
+                    onJump={jumpToCell}
+                    rowCount={table.records.length}
                 />
             )}
             {blobEdit && (

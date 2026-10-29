@@ -59,6 +59,11 @@ export interface BlobEditRequest extends CellPosition {
 export interface GridHandle {
     setDataAtCell: (row: number, col: number, value: unknown) => void;
     selectCell: (row: number, col: number) => void;
+    // The selected cell, or the last one before a click outside the grid
+    // deselected it. null after a header selection.
+    getSelectedCell: () => CellPosition | null;
+    // Also stops the grid listening to keys, until the next selectCell
+    deselectCell: () => void;
 }
 
 interface Props {
@@ -140,6 +145,8 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
         const hotRef = useRef<HotTableRef>(null);
         const wrapperRef = useRef<HTMLDivElement>(null);
         const propsRef = useRef(props);
+        // Kept through a deselect, for getSelectedCell
+        const lastSelectionRef = useRef<CellPosition | null>(null);
         const writeStateRef = useRef<WriteState>(
             isEditableTable(table)
                 ? createWriteState(table)
@@ -189,7 +196,13 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
                 setDataAtCell: (row, col, value) =>
                     hotRef.current?.hotInstance?.setDataAtCell(row, col, value),
                 selectCell: (row, col) =>
-                    hotRef.current?.hotInstance?.selectCell(row, col)
+                    hotRef.current?.hotInstance?.selectCell(row, col),
+                getSelectedCell: () => lastSelectionRef.current,
+                deselectCell: () => {
+                    const hot = hotRef.current?.hotInstance;
+                    hot?.deselectCell();
+                    hot?.unlisten();
+                }
             }),
             []
         );
@@ -404,7 +417,10 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
         const afterSelectionEnd = useCallback((row: number, col: number) => {
             // Header clicks select from -1
             if (row >= 0 && col >= 0) {
+                lastSelectionRef.current = { row, col };
                 propsRef.current.onSelectionChange?.({ row, col });
+            } else {
+                lastSelectionRef.current = null;
             }
         }, []);
 

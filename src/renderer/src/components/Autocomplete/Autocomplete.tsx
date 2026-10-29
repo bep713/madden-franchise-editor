@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import cx from 'classnames';
 import baseStyles from '../BaseFormInput/BaseFormInput.module.css';
 import styles from './Autocomplete.module.css';
@@ -17,6 +17,7 @@ interface Option {
 }
 
 interface Props extends BaseFormInputProps {
+    autoFocus?: boolean;
     id?: string;
     onBlur?: () => void;
     onFocus?: () => void;
@@ -32,6 +33,7 @@ interface Props extends BaseFormInputProps {
 }
 
 const Autocomplete: React.FC<Props> = ({
+    autoFocus,
     direction = 'vertical',
     errorMessage,
     id,
@@ -58,6 +60,46 @@ const Autocomplete: React.FC<Props> = ({
     useEffect(() => {
         onShowOptionsChangeRef.current = onShowOptionsChange;
     });
+
+    // The option that Enter picks. Back to the first one whenever the options
+    // change or the list opens, so pass memoized options.
+    const [highlight, setHighlight] = useState(0);
+    const [highlightFor, setHighlightFor] = useState({ options, showOptions });
+    if (
+        highlightFor.options !== options ||
+        highlightFor.showOptions !== showOptions
+    ) {
+        setHighlightFor({ options, showOptions });
+        setHighlight(0);
+    }
+    const activeIndex = Math.min(highlight, options.length - 1);
+
+    useEffect(() => {
+        if (!showOptions) return;
+        optionListRef.current
+            ?.querySelector(`.${styles.highlighted}`)
+            // not in jsdom
+            ?.scrollIntoView?.({ block: 'nearest' });
+    }, [activeIndex, showOptions]);
+
+    // Selectr's keys: the arrows open the list or move the highlight (no
+    // wrap), Enter picks the highlighted option
+    const onInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (!showOptions) {
+                onShowOptionsChange?.(true);
+                return;
+            }
+            const step = e.key === 'ArrowDown' ? 1 : -1;
+            setHighlight(
+                Math.max(0, Math.min(options.length - 1, activeIndex + step))
+            );
+        } else if (e.key === 'Enter' && showOptions && options.length > 0) {
+            e.preventDefault();
+            onOptionSelect?.(options[activeIndex]);
+        }
+    };
 
     const isInsideControl = (target: EventTarget | null): boolean =>
         !!dropdownRef.current?.contains(target as Node) ||
@@ -90,9 +132,10 @@ const Autocomplete: React.FC<Props> = ({
         return () => document.removeEventListener('mousedown', onMouseDown);
     }, [showOptions]);
 
-    const optionItems = options.map((option) => (
+    const optionItems = options.map((option, index) => (
         <Button
             align='left'
+            className={cx({ [styles.highlighted]: index === activeIndex })}
             key={option.id || option.value}
             onClick={() => onOptionSelect?.(option)}
             stretch
@@ -125,6 +168,7 @@ const Autocomplete: React.FC<Props> = ({
                         onFocus={onFocus}
                     >
                         <input
+                            autoFocus={autoFocus}
                             className={cx(
                                 baseStyles.inputElement,
                                 styles.inputElement
@@ -134,6 +178,7 @@ const Autocomplete: React.FC<Props> = ({
                             ref={inputRef}
                             value={text}
                             onChange={(e) => onTextChange?.(e.target.value)}
+                            onKeyDown={onInputKeyDown}
                             // read before the focus, which may open the options
                             onMouseDown={() => {
                                 openOnInputClickRef.current = !showOptions;
