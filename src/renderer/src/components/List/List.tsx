@@ -53,9 +53,7 @@ const List: React.FC<Props> = ({
         >
             {items.map((item, index) => (
                 <React.Fragment key={index}>
-                    <li className={styles.item}>
-                        {item}
-                    </li>
+                    <li className={styles.item}>{item}</li>
                     {showDivider &&
                         (dividerOnEnd || index < items.length - 1) && (
                             <li className={styles.divider}>

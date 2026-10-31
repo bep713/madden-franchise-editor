@@ -62,7 +62,7 @@ function toRecordChanges(
 }
 
 // Record-space edits → [row, col/prop, value] in the grid's current layout
-function toGridEdits(
+export function toGridEdits(
     edits: SourceEdit[],
     orientation: GridOrientation,
     toGrid: GridOrientation['toVisualCell' | 'toSourceCell']

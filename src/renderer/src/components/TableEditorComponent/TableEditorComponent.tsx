@@ -17,6 +17,7 @@ import { TableColumn, TableData } from '@shared/types';
 import { LoaderOptionsSetter } from '@renderer/hooks/useLoader';
 import { WriteState } from '@renderer/utils/cellWrites';
 import { OpenMode, getOpenMode } from '@renderer/utils/openMode';
+import { resolveReference } from '@renderer/utils/references';
 
 import {
     buildColumns,
@@ -25,6 +26,13 @@ import {
 } from './columns';
 import { getCellMeta } from './cellMeta';
 import {
+    buildContextMenu,
+    canEmptyRecords,
+    ContextMenuActions,
+    recordsToEmpty,
+    singleSelectedRecord
+} from './contextMenu';
+import {
     createOrientation,
     GridOrientation,
     RecordCell,
@@ -32,7 +40,11 @@ import {
 } from './orientation';
 import { createReferenceRenderer } from './renderers/referenceRenderer';
 import { blobRenderer } from './renderers/blobRenderer';
-import useCellWrites, { createWriteState } from './useCellWrites';
+import useCellWrites, {
+    CellWriteContext,
+    createWriteState
+} from './useCellWrites';
+import useEmptyRecords from './useEmptyRecords';
 import useUndoStack from './useUndoStack';
 import styles from './TableEditorComponent.module.css';
 
@@ -110,6 +122,8 @@ interface Props {
     ) => void;
     onEditReference?: (request: ReferenceEditRequest) => void;
     onEditBlob?: (request: BlobEditRequest) => void;
+    // Find references to this record... in the context menu
+    onFindReferences?: (recordIndex: number) => void;
 }
 
 // The element that scrolls the grid's viewport
@@ -269,20 +283,131 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
             []
         );
 
+        const getWriteContext = useCallback((): CellWriteContext | null => {
+            const { fileId, setLoaderOptions } = propsRef.current;
+            const current = propsRef.current.table;
+            if (!fileId || !setLoaderOptions || !isEditableTable(current)) {
+                return null;
+            }
+            return { fileId, table: current, setLoaderOptions };
+        }, []);
+
         const { beforeChange, afterChange } = useCellWrites(
             hotRef,
-            () => {
-                const { fileId, setLoaderOptions } = propsRef.current;
-                const current = propsRef.current.table;
-                if (!fileId || !setLoaderOptions || !isEditableTable(current)) {
-                    return null;
-                }
-                return { fileId, table: current, setLoaderOptions };
-            },
+            getWriteContext,
             writeStateRef,
             orientationRef,
             undo
         );
+
+        const emptyRecords = useEmptyRecords(
+            hotRef,
+            getWriteContext,
+            writeStateRef,
+            orientationRef
+        );
+
+        // v4's contextMenuService. Everything is read at call time, so the
+        // settings never change between renders. Only the last selection
+        // layer counts.
+        const contextMenu = useMemo(() => {
+            if (!editable) {
+                return false;
+            }
+            const getSelection = () =>
+                hotRef.current?.hotInstance?.getSelectedLast();
+            const getSingleRecord = () =>
+                singleSelectedRecord(getSelection(), orientationRef.current);
+
+            // The one selected cell, if it holds a resolvable reference
+            const getSelectedReference = () => {
+                const hot = hotRef.current?.hotInstance;
+                const range = getSelection();
+                const current = propsRef.current.table;
+                if (!hot || !range || !isEditableTable(current)) {
+                    return null;
+                }
+                const [row1, col1, row2, col2] = range;
+                if (row1 !== row2 || col1 !== col2) {
+                    return null;
+                }
+                const cell = orientationRef.current.toRecordCell(row1, col1);
+                const header = cell && current.headers[cell.fieldIndex];
+                if (!cell || !header?.isReference) {
+                    return null;
+                }
+                const resolved = resolveReference(
+                    hot.getDataAtCell(row1, col1),
+                    propsRef.current.tableNames ?? NO_TABLE_NAMES
+                );
+                return resolved && { resolved, cell };
+            };
+
+            const getRecordsToEmpty = () => {
+                const current = propsRef.current.table;
+                if (!isEditableTable(current) || !canEmptyRecords(current)) {
+                    return [];
+                }
+                return recordsToEmpty(
+                    getSelection(),
+                    orientationRef.current,
+                    writeStateRef.current.emptyRecordIndices
+                );
+            };
+
+            const actions: ContextMenuActions = {
+                findReferences: {
+                    disabled: () => getSingleRecord() === null,
+                    run: () => {
+                        const record = getSingleRecord();
+                        if (record !== null) {
+                            propsRef.current.onFindReferences?.(record);
+                        }
+                    }
+                },
+                openReferenceInNewTab: {
+                    disabled: () => !getSelectedReference(),
+                    run: () => {
+                        const reference = getSelectedReference();
+                        if (reference) {
+                            propsRef.current.onFollowReference?.(
+                                reference.resolved.tableId,
+                                reference.resolved.recordIndex,
+                                'background',
+                                toPosition(reference.cell)
+                            );
+                        }
+                    }
+                },
+                setRecordsEmpty: {
+                    disabled: () => getRecordsToEmpty().length === 0,
+                    run: () => {
+                        const indices = getRecordsToEmpty();
+                        if (indices.length) {
+                            void emptyRecords.setRecordsEmpty(indices);
+                        }
+                    }
+                },
+                setNextRecordToUse: {
+                    disabled: () => {
+                        const record = getSingleRecord();
+                        return (
+                            record === null ||
+                            !writeStateRef.current.emptyRecordIndices.has(
+                                record
+                            )
+                        );
+                    },
+                    run: () => {
+                        const record = getSingleRecord();
+                        if (record !== null) {
+                            void emptyRecords.setNextRecordToUse(record);
+                        }
+                    }
+                }
+            };
+            return buildContextMenu(actions);
+        }, [editable, emptyRecords]);
 
         const referenceRenderer = useMemo(
             () =>
@@ -562,6 +687,7 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
                     colHeaders={colHeaders}
                     colWidths={colWidths}
                     columns={columns}
+                    contextMenu={contextMenu}
                     currentRowClassName='active-row'
                     data={data}
                     height='100%'

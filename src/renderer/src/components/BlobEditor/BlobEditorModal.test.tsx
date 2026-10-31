@@ -22,7 +22,9 @@ vi.mock('../TextEditor/TextEditor', () => ({
 const setup = (value: unknown) => {
     const onApply = vi.fn();
     const onClose = vi.fn();
-    render(<BlobEditorModal onApply={onApply} onClose={onClose} value={value} />);
+    render(
+        <BlobEditorModal onApply={onApply} onClose={onClose} value={value} />
+    );
     return { onApply, onClose, user: userEvent.setup() };
 };
 

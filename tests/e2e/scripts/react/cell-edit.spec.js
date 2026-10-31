@@ -76,6 +76,25 @@ async function pasteColumn(tableEditor, values) {
   await tableEditor.grid.paste();
 }
 
+test("the context menu can set a record as empty (react)", async () => {
+  const tableEditor = await openPlayerTable();
+
+  await goToCell(tableEditor, 0, "LastName");
+  expect(await tableEditor.grid.isSelectedCellEmpty()).to.equal(false);
+
+  await tableEditor.setSelectedRecordToEmpty();
+
+  await poll(
+    () => tableEditor.grid.isSelectedCellEmpty(),
+    (empty) => empty === true,
+    { message: "The record never showed as empty" },
+  );
+  await poll(readEmptyPlayerRows, (rows) => rows.includes(0), {
+    ...FILE_POLL_OPTIONS,
+    message: "Record 0 never became empty in the file",
+  });
+});
+
 test("single-cell edits are saved to the file (react)", async () => {
   const tableEditor = await openPlayerTable();
 

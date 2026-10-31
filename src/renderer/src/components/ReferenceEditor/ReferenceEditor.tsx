@@ -177,7 +177,10 @@ const ReferenceEditor: React.FC<Props> = ({
                     label='Row Index'
                     min={0}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        const n = Math.max(0, parseInt(e.target.value, 10) || 0);
+                        const n = Math.max(
+                            0,
+                            parseInt(e.target.value, 10) || 0
+                        );
                         updateFromTableRow(tableId, n);
                     }}
                     text={String(row)}

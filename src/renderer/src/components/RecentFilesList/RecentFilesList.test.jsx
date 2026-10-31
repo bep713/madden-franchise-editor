@@ -6,18 +6,20 @@ import RecentFilesList from './RecentFilesList';
 
 // Mock child components for snapshot clarity
 vi.mock('../GridLayout/GridLayout', () => ({
-    default: ({ children }) => <div data-testid="GridLayout">{children}</div>
+    default: ({ children }) => <div data-testid='GridLayout'>{children}</div>
 }));
 vi.mock('../List/List', () => ({
-    default: ({ items }) => <div data-testid="List">{items}</div>
+    default: ({ items }) => <div data-testid='List'>{items}</div>
 }));
 vi.mock('../Link/Link', () => ({
     default: ({ text, onClick }) => (
-        <button data-testid="Link" onClick={onClick}>{text}</button>
+        <button data-testid='Link' onClick={onClick}>
+            {text}
+        </button>
     )
 }));
 vi.mock('../Text/Text', () => ({
-    default: ({ children }) => <span data-testid="Text">{children}</span>
+    default: ({ children }) => <span data-testid='Text'>{children}</span>
 }));
 
 const filesSample = [

@@ -75,6 +75,25 @@ describe('createOrientation (inverted)', () => {
     });
 });
 
+describe('toRecordIndex', () => {
+    it('maps normal rows through the row mapper; column headers are null', () => {
+        const normal = createOrientation(false, headerNames, rows);
+        expect(normal.toRecordIndex(2, 1)).toBe(12);
+        // a row header (col -1) is the whole record
+        expect(normal.toRecordIndex(2, -1)).toBe(12);
+        expect(normal.toRecordIndex(-1, 1)).toBeNull();
+    });
+
+    it('maps inverted columns to records; the field-name column is null', () => {
+        const inverted = createOrientation(true, headerNames, rows);
+        expect(inverted.toRecordIndex(1, 4)).toBe(3);
+        // a column header (row -1) is the whole record
+        expect(inverted.toRecordIndex(-1, 4)).toBe(3);
+        expect(inverted.toRecordIndex(1, 0)).toBeNull();
+        expect(inverted.toRecordIndex(-1, -1)).toBeNull();
+    });
+});
+
 describe('toSelectionCell', () => {
     it('reports a field-name cell as the first record of the field', () => {
         const inverted = createOrientation(true, headerNames, rows);

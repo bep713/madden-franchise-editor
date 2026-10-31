@@ -1,5 +1,7 @@
 const Grid = require("./Grid");
 const JumpToColumnModal = require("./JumpToColumnModal");
+const ContextMenu = require("./ContextMenu");
+const ReferencesModal = require("./ReferencesModal");
 const App = require("../App");
 const { stubOpenDialog, stubSaveDialog } = require("../../util/dialogStubs");
 const { poll } = require("../../util/poll");
@@ -9,6 +11,8 @@ class TableEditorPage {
     this.window = window;
     this.grid = new Grid(window);
     this.jumpToColumnModal = new JumpToColumnModal(window);
+    this.contextMenu = new ContextMenu(window, this.grid);
+    this.references = new ReferencesModal(window);
     this.locators = {
       // Handsontable has its own role="status" announcer
       loader: this.window.locator('[role="status"][aria-busy="true"]'),
@@ -251,6 +255,33 @@ class TableEditorPage {
     await this.jumpToColumnModal.setColumn(column);
     await this.jumpToColumnModal.setRowIndex(row);
     await this.jumpToColumnModal.go();
+  }
+
+  // The grid context menu's actions, on the selected cell or range. Each
+  // returns once the menu has closed (and, for the empty actions, the loader
+  // has hidden).
+  async setSelectedRecordToEmpty() {
+    await this.contextMenu.open();
+    await this.contextMenu.click("Set selected record(s) as empty");
+    await this.locators.loader.waitFor({ state: "hidden" });
+  }
+
+  // Returns once the References modal has finished loading
+  async findReferencesToSelectedRecord() {
+    await this.contextMenu.open();
+    await this.contextMenu.click("Find references to this record...");
+    await this.references.waitForLoaded();
+  }
+
+  async openSelectedReferenceInNewTab() {
+    await this.contextMenu.open();
+    await this.contextMenu.click("Open this reference in a new tab");
+  }
+
+  async setSelectedAsNextEmptyRecord() {
+    await this.contextMenu.open();
+    await this.contextMenu.clickAdvanced("Set as next empty record to use");
+    await this.locators.loader.waitFor({ state: "hidden" });
   }
 
   async switchOrientation() {

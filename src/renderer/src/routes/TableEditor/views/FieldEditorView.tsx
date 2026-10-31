@@ -8,7 +8,7 @@ import TableEditorComponent, {
 import ReferenceEditor from '@renderer/components/ReferenceEditor/ReferenceEditor';
 import BlobEditorModal from '@renderer/components/BlobEditor/BlobEditorModal';
 import TableHeader from '@renderer/components/TableHeader/TableHeader';
-import { TableData } from '@shared/types';
+import { RecordReference, TableData } from '@shared/types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LoaderOptionsSetter } from '@renderer/hooks/useLoader';
 import { OpenMode } from '@renderer/utils/openMode';
@@ -17,6 +17,7 @@ import FieldEditorActionBar, {
     TableActions
 } from '../components/TableActionBar/FieldEditorActionBar';
 import JumpToColumnModal from '../components/JumpToColumnModal/JumpToColumnModal';
+import ReferencesModal from '../components/ReferencesModal/ReferencesModal';
 
 interface Props {
     fileId: string;
@@ -28,13 +29,15 @@ interface Props {
     isInverted: boolean;
     onToggleOrientation: () => void;
     isPinned: boolean;
-    // Follow a reference to another table. Must be stable (see TableEditorComponent),
-    // as must the two change callbacks.
+    // Follow a reference to another table, selecting fieldIndex (default 0).
+    // Must be stable (see TableEditorComponent), as must the two change
+    // callbacks.
     onFollowReference: (
         tableId: number,
         recordIndex: number,
         mode: OpenMode,
-        from: CellPosition | null
+        from: CellPosition | null,
+        fieldIndex?: number
     ) => void;
     // A move within this table that goes into the tab's history (jump to
     // column, a self-reference), from the cell in `from`. Stable.
@@ -84,9 +87,19 @@ const FieldEditorView = ({
         from: CellPosition | null;
     } | null>(null);
 
+    // The open References modal, kept with its table like jump
+    const [references, setReferences] = useState<{
+        tableId: number;
+        recordIndex: number;
+        from: CellPosition | null;
+    } | null>(null);
+
     const { tableId } = table;
     if (jump && jump.tableId !== tableId) {
         setJump(null);
+    }
+    if (references && references.tableId !== tableId) {
+        setReferences(null);
     }
     const jumpFrom = jump?.tableId === tableId ? jump.from : undefined;
     const columnNames = useMemo(
@@ -98,15 +111,22 @@ const FieldEditorView = ({
             targetTableId: number,
             recordIndex: number,
             mode: OpenMode,
-            from: CellPosition | null
+            from: CellPosition | null,
+            fieldIndex = 0
         ) => {
             // A self-reference opened in a new tab still gets its own tab
             if (targetTableId === tableId && mode === 'current') {
-                const to = { row: recordIndex, col: 0 };
+                const to = { row: recordIndex, col: fieldIndex };
                 onNavigateInTable(to, from);
                 gridRef.current?.selectCell(to.row, to.col);
             } else {
-                onFollowReference(targetTableId, recordIndex, mode, from);
+                onFollowReference(
+                    targetTableId,
+                    recordIndex,
+                    mode,
+                    from,
+                    fieldIndex
+                );
             }
         },
         [gridRef, onFollowReference, onNavigateInTable, tableId]
@@ -147,8 +167,44 @@ const FieldEditorView = ({
         setJump(null);
     };
 
+    // Find references to this record... in the grid's context menu
+    const openReferences = useCallback(
+        (recordIndex: number) => {
+            const from = gridRef.current?.getSelectedCell() ?? null;
+            gridRef.current?.deselectCell();
+            setReferences({ tableId, recordIndex, from });
+        },
+        [gridRef, tableId]
+    );
+
+    // Opens the referencing cell, through the reference path
+    const openReference = (reference: RecordReference, mode: OpenMode) => {
+        const from = references?.from ?? null;
+        setReferences(null);
+        handleFollowReference(
+            reference.tableId,
+            reference.recordIndex,
+            mode,
+            from,
+            reference.fieldIndex
+        );
+    };
+
+    const closeReferences = (): void => {
+        if (references?.from) {
+            gridRef.current?.selectCell(
+                references.from.row,
+                references.from.col
+            );
+        }
+        setReferences(null);
+    };
+
     const isModalOpen =
-        jumpFrom !== undefined || referenceEdit !== null || blobEdit !== null;
+        jumpFrom !== undefined ||
+        referenceEdit !== null ||
+        blobEdit !== null ||
+        references !== null;
     useEffect(() => {
         if (isModalOpen) return;
         const onKeyDown = (e: KeyboardEvent): void => {
@@ -199,6 +255,7 @@ const FieldEditorView = ({
                     isInverted={isInverted}
                     onEditBlob={setBlobEdit}
                     onEditReference={setReferenceEdit}
+                    onFindReferences={openReferences}
                     onFollowReference={handleFollowReference}
                     onScroll={onScroll}
                     onSelectionChange={onSelectionChange}
@@ -230,6 +287,15 @@ const FieldEditorView = ({
                     onClose={closeJumpToColumn}
                     onJump={jumpToCell}
                     rowCount={table.records.length}
+                />
+            )}
+            {references && (
+                <ReferencesModal
+                    fileId={fileId}
+                    onClose={closeReferences}
+                    onOpen={openReference}
+                    recordIndex={references.recordIndex}
+                    table={{ tableId, name: table.name }}
                 />
             )}
             {blobEdit && (

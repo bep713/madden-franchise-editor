@@ -1,5 +1,6 @@
 import type {
     CellWrite,
+    EmptyRecordsState,
     RecordMeta,
     TableColumn,
     WriteBulkTableCellsResult
@@ -181,17 +182,48 @@ export function planWriteResult(
         (e) => e.tableId === table.tableId
     );
     if (emptyState) {
-        table.emptyRecordIndices = emptyState.emptyRecordIndices;
-        state.emptyRecordIndices.clear();
-        emptyState.emptyRecordIndices.forEach((i) =>
-            state.emptyRecordIndices.add(i)
-        );
-        for (const { index, record } of emptyState.emptyRecords) {
-            plan.sourceEdits.push(
-                ...getEmptyRecordRowEdits(table.headers, index, record)
-            );
-        }
+        plan.sourceEdits.push(...applyEmptyState(table, emptyState, state));
     }
 
     return plan;
+}
+
+/**
+ * Applies a table's new empty-record set from main. Mutates table and state;
+ * returns the first-4-byte edits of every empty record, for setSourceDataAtCell.
+ */
+export function applyEmptyState(
+    table: WritableTable,
+    emptyState: EmptyRecordsState,
+    state: WriteState
+): SourceEdit[] {
+    const next = new Set(emptyState.emptyRecordIndices);
+    for (const index of state.emptyRecordIndices) {
+        if (!next.has(index) && table.recordMeta[index]) {
+            table.recordMeta[index].isEmpty = false;
+        }
+    }
+    for (const index of next) {
+        if (table.recordMeta[index]) {
+            table.recordMeta[index].isEmpty = true;
+        }
+    }
+
+    table.emptyRecordIndices = emptyState.emptyRecordIndices;
+    state.emptyRecordIndices.clear();
+    next.forEach((i) => state.emptyRecordIndices.add(i));
+
+    const edits: SourceEdit[] = [];
+    for (const { index, record } of emptyState.emptyRecords) {
+        const rowEdits = getEmptyRecordRowEdits(table.headers, index, record);
+        // The inverted view's cells are copies, so the records need it too
+        const current = table.records[index];
+        if (current) {
+            for (const [, fieldName, value] of rowEdits) {
+                current[fieldName] = value;
+            }
+        }
+        edits.push(...rowEdits);
+    }
+    return edits;
 }

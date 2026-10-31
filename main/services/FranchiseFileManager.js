@@ -970,6 +970,52 @@ class FranchiseFileManager {
   }
 
   /**
+   * Point a table's empty-record chain at an already-empty record. Records
+   * before it drop out of the chain. A non-empty record would make the
+   * library read its first 4 bytes as the next pointer, so it is rejected.
+   * @param {string} fileId
+   * @param {number} tableId
+   * @param {number} recordIndex
+   * @returns {Promise<object>}
+   */
+  async setTableNextRecordToUse(fileId, tableId, recordIndex) {
+    const entry = this.activeFiles.get(fileId);
+    if (!entry) {
+      throw new Error(`File not found: ${fileId}`);
+    }
+
+    const table = entry.file.getTableById(tableId);
+    if (!table) {
+      throw new Error(`Table not found: ${tableId}`);
+    }
+
+    await table.readRecords();
+
+    const index = Number(recordIndex);
+    const record = Number.isInteger(index) ? table.records[index] : undefined;
+    if (!record) {
+      throw new Error(`Record not found: ${recordIndex}`);
+    }
+    if (!record.isEmpty) {
+      throw new Error(`Record ${index} is not empty`);
+    }
+
+    table.setNextRecordToUse(index, true);
+    // The library re-parses the chain but leaves isEmpty set on records that
+    // dropped out of it
+    table.records.forEach((r, i) => {
+      if (r.isEmpty && !table.emptyRecords.has(i)) {
+        r.isEmpty = false;
+      }
+    });
+
+    return {
+      nextRecordToUse: table.header.nextRecordToUse,
+      ...this._serializeEmptyState(table),
+    };
+  }
+
+  /**
    * Get table list
    * @param {string} fileId
    * @returns {Array<object>}
@@ -1010,12 +1056,12 @@ class FranchiseFileManager {
   }
 
   /**
-   * Get all records that reference a specific record.
-   * Falls back to a manual scan when the library helper is unavailable.
+   * Get all records that reference a specific record, one per referencing
+   * record and field.
    * @param {string} fileId
    * @param {number} tableId
    * @param {number} recordIndex
-   * @returns {Promise<Array<{tableId: number, name: string, recordIndex: number, fieldName?: string}>>}
+   * @returns {Promise<Array<{tableId: number, name: string, recordIndex: number, fieldName?: string, fieldIndex?: number}>>}
    */
   async getReferencesToRecord(fileId, tableId, recordIndex) {
     const entry = this.activeFiles.get(fileId);
@@ -1023,39 +1069,38 @@ class FranchiseFileManager {
       throw new Error(`File not found: ${fileId}`);
     }
 
+    // The library's FranchiseFile.getReferencesToRecord only finds the
+    // tables whose schema can reference the record and whose data holds its
+    // reference bytes, with no record index. Scan those for the records.
     const file = entry.file;
-    if (typeof file.getReferencesToRecord === "function") {
-      const result = file.getReferencesToRecord(tableId, recordIndex);
-      // Ensure the result is a plain array of plain objects
-      if (Array.isArray(result)) {
-        return result.map((ref) => ({
-          tableId: Number(ref.tableId),
-          name: String(ref.name),
-          recordIndex: Number(ref.recordIndex),
-          fieldName: ref.fieldName ? String(ref.fieldName) : undefined,
-        }));
-      }
-      return [];
-    }
-
     const targetTableId = Number(tableId);
     const targetRecordIndex = Number(recordIndex);
     const references = [];
     const seen = new Set();
 
-    for (const table of file.tables || []) {
-      const referenceHeaders = (table.offsetTable || []).filter(
-        (header) => header && header.isReference,
-      );
+    const candidates =
+      typeof file.getReferencesToRecord === "function"
+        ? (file.getReferencesToRecord(targetTableId, targetRecordIndex) || [])
+            .map((ref) => ref.table)
+            .filter(Boolean)
+        : file.tables || [];
 
-      if (referenceHeaders.length === 0) {
-        continue;
-      }
-
+    for (const table of candidates) {
+      // offsetTable is only filled in once the records are read
       try {
         await table.readRecords();
       } catch (error) {
         console.warn(`Failed to read records for table ${table.name}:`, error);
+        continue;
+      }
+
+      // With their offsetTable index, which is the field's column in
+      // readTableData's headers
+      const referenceHeaders = (table.offsetTable || [])
+        .map((header, index) => ({ header, index }))
+        .filter(({ header }) => header && header.isReference);
+
+      if (referenceHeaders.length === 0) {
         continue;
       }
 
@@ -1066,7 +1111,7 @@ class FranchiseFileManager {
       table.records.forEach((record, sourceRecordIndex) => {
         if (!record) return;
 
-        for (const header of referenceHeaders) {
+        for (const { header, index: fieldIndex } of referenceHeaders) {
           let referenceData;
 
           try {
@@ -1080,7 +1125,8 @@ class FranchiseFileManager {
           }
 
           const referencedTableId = Number(referenceData.tableId);
-          const referencedRecordIndex = Number(referenceData.recordIndex);
+          // The library calls the record index rowNumber
+          const referencedRecordIndex = Number(referenceData.rowNumber);
 
           if (
             referencedTableId === targetTableId &&
@@ -1095,6 +1141,7 @@ class FranchiseFileManager {
                 name: String(table.name),
                 recordIndex: Number(sourceRecordIndex),
                 fieldName: String(header.name),
+                fieldIndex,
               });
             }
             break;
@@ -1277,6 +1324,22 @@ class FranchiseFileManager {
             fileId,
             tableId,
             recordIndices,
+          );
+          return { success: true, ...result };
+        } catch (err) {
+          return { error: err.message };
+        }
+      },
+    );
+
+    loggedIpc.handle(
+      "franchise:set-table-next-record-to-use",
+      async (event, fileId, tableId, recordIndex) => {
+        try {
+          const result = await this.setTableNextRecordToUse(
+            fileId,
+            tableId,
+            recordIndex,
           );
           return { success: true, ...result };
         } catch (err) {

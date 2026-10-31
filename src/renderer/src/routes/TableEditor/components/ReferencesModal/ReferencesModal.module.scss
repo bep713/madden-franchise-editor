@@ -1,0 +1,48 @@
+@import '@assets/spacing.css';
+
+.dialog {
+    width: min(520px, 90vw);
+    max-height: 80vh;
+}
+
+.body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.body p {
+    margin: 0;
+}
+
+.list {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.reference {
+    display: flex;
+    gap: var(--spacing-3);
+    justify-content: space-between;
+    width: 100%;
+    padding: var(--spacing-2) var(--spacing-3);
+    font: inherit;
+    color: var(--text-primary);
+    text-align: left;
+    cursor: pointer;
+    background-color: var(--white);
+    border: none;
+}
+
+.reference:hover {
+    background-color: var(--timberwolf);
+}
+
+.reference:active {
+    background-color: var(--fawn);
+}
+
+.detail {
+    opacity: 0.7;
+}

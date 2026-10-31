@@ -146,3 +146,28 @@ export type WriteBulkTableCellsResult =
 
 // franchise:save-file / franchise:save-file-as
 export type SaveFileResult = { path: string } | ErrorResult;
+
+// franchise:get-references-to-record data[]: one per referencing record
+export interface RecordReference {
+    tableId: number;
+    name: string;
+    recordIndex: number;
+    fieldName?: string;
+    // The field's column in the table's headers
+    fieldIndex?: number;
+}
+
+export type GetReferencesResult = { data: RecordReference[] } | ErrorResult;
+
+// The empty-record state of the table a call changed
+export type EmptyRecordsState = Omit<EmptyState, 'tableId'>;
+
+// franchise:set-table-records-empty
+export type SetRecordsEmptyResult =
+    | ({ success: true; affectedCount: number } & EmptyRecordsState)
+    | ErrorResult;
+
+// franchise:set-table-next-record-to-use
+export type SetNextRecordResult =
+    | ({ success: true; nextRecordToUse: number } & EmptyRecordsState)
+    | ErrorResult;

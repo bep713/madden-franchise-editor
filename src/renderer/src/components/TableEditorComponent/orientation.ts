@@ -15,6 +15,9 @@ export interface GridOrientation {
     toSourceCell(cell: RecordCell): [row: number, prop: string | number];
     // A physical cell (cells()) → its record cell. null like toRecordCell.
     physicalToRecordCell(row: number, col: number): RecordCell | null;
+    // A visual cell → its record index. null for header coordinates (-1)
+    // and the inverted field-name column.
+    toRecordIndex(row: number, col: number): number | null;
     fieldIndexOf(fieldName: string): number | undefined;
 }
 
@@ -50,6 +53,8 @@ export function createOrientation(
             toVisualCell: toCell,
             toSourceCell: toCell,
             physicalToRecordCell: toRecordCell,
+            // A column-header click (row -1) still covers the whole record
+            toRecordIndex: (_row, col) => (col >= 1 ? col - 1 : null),
             fieldIndexOf
         };
     }
@@ -75,6 +80,7 @@ export function createOrientation(
             col < headerNames.length
                 ? { recordIndex: row, fieldIndex: col }
                 : null,
+        toRecordIndex: (row) => (row >= 0 ? rows.toPhysicalRow(row) : null),
         fieldIndexOf
     };
 }

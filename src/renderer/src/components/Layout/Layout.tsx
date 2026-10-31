@@ -3,17 +3,7 @@ import cx from 'classnames';
 import styles from './Layout.module.css';
 
 export type Gap =
-    | 'none'
-    | '05'
-    | '1'
-    | '2'
-    | '3'
-    | '4'
-    | '5'
-    | '6'
-    | '8'
-    | '12'
-    | '16';
+    'none' | '05' | '1' | '2' | '3' | '4' | '5' | '6' | '8' | '12' | '16';
 
 interface Props {
     alignItems?: 'end' | 'center' | 'start' | 'stretch';

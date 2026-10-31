@@ -7,11 +7,7 @@ interface Props {
     emphasis?: boolean;
     children: React.ReactNode;
     typography?:
-        | 'body'
-        | 'labelLarge'
-        | 'labelXLarge'
-        | 'label2XLarge'
-        | 'labelSmall';
+        'body' | 'labelLarge' | 'labelXLarge' | 'label2XLarge' | 'labelSmall';
 }
 
 const Text: React.FC<Props> = ({

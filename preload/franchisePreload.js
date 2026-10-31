@@ -112,6 +112,13 @@ contextBridge.exposeInMainWorld("franchiseAPI", {
       tableId,
       recordIndices,
     ),
+  setTableNextRecordToUse: (fileId, tableId, recordIndex) =>
+    ipcRenderer.invoke(
+      "franchise:set-table-next-record-to-use",
+      fileId,
+      tableId,
+      recordIndex,
+    ),
   getTableList: (fileId) =>
     ipcRenderer.invoke("franchise:get-table-list", fileId),
   findTablesByName: (fileId, tableName) =>

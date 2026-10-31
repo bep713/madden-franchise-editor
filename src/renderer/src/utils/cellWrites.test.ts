@@ -5,6 +5,7 @@ import type {
     WrittenRecord
 } from '@shared/types/franchise';
 import {
+    applyEmptyState,
     IGNORED_CHANGE_SOURCES,
     REDO_SOURCE,
     UNDO_SOURCE,
@@ -310,5 +311,56 @@ describe('planWriteResult', () => {
             makeState()
         );
         expect(plan.sourceEdits).toEqual([]);
+    });
+});
+
+describe('applyEmptyState', () => {
+    it('replaces the set and updates recordMeta both ways', () => {
+        const table = makeTable();
+        const state = makeState();
+        const set = state.emptyRecordIndices;
+        applyEmptyState(
+            table,
+            {
+                emptyRecordIndices: [0],
+                emptyRecords: [{ index: 0, record: { A: 0, B: 0, C: 0 } }]
+            },
+            state
+        );
+        expect(table.emptyRecordIndices).toEqual([0]);
+        expect(state.emptyRecordIndices).toBe(set);
+        expect([...set]).toEqual([0]);
+        expect(table.recordMeta).toEqual([
+            { index: 0, isEmpty: true },
+            { index: 1, isEmpty: false }
+        ]);
+    });
+
+    it('writes the first-4-byte fields into the records and returns their edits', () => {
+        const table = makeTable();
+        const row = table.records[0];
+        const edits = applyEmptyState(
+            table,
+            {
+                emptyRecordIndices: [0, 1],
+                emptyRecords: [
+                    { index: 0, record: { A: 10, B: 20, C: 30 } },
+                    { index: 1, record: { A: 40, B: 50, C: 60 } }
+                ]
+            },
+            makeState()
+        );
+        expect(edits).toEqual([
+            [0, 'A', 10],
+            [0, 'C', 30],
+            [1, 'A', 40],
+            [1, 'C', 60]
+        ]);
+        // in place; offset >= 32 fields untouched
+        expect(table.records[0]).toBe(row);
+        expect(table.records).toEqual([
+            { A: 10, B: 2, C: 30 },
+            { A: 40, B: 5, C: 60 }
+        ]);
     });
 });

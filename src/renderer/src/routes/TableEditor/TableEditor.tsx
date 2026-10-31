@@ -315,19 +315,20 @@ const TableEditor: React.FC = () => {
         [openTableTab]
     );
 
-    // A followed reference link
+    // A followed reference link, or a References modal row (with its field)
     const onFollowReference = useCallback(
         (
             tableId: number,
             recordIndex: number,
             mode: OpenMode,
-            from: CellPosition | null
+            from: CellPosition | null,
+            fieldIndex = 0
         ) => {
             const table = allTables?.find((t) => t.id === tableId);
             if (!table) {
                 return;
             }
-            const selection = { row: recordIndex, col: 0 };
+            const selection = { row: recordIndex, col: fieldIndex };
             if (mode === 'current') {
                 void onSelectTableRef.current(table, selection, { from });
             } else {
@@ -534,22 +535,7 @@ const TableEditor: React.FC = () => {
                 </Allotment>
             </div>
 
-            {/* <div id="reference-modal" className="reference-modal modal hidden">
-        <div className="modal-header">
-          <h2 className="title">References</h2>
-          <div className="close-modal">X</div>
-        </div>
-        <div className="modal-content">
-          <div className="reference-header">
-            <span>The following tables reference </span>
-            <span id="referenced-record-text"></span>
-          </div>
-          <div id="reference-list-wrapper" className="reference-list-wrapper">
-
-          </div>
-        </div>
-      </div>
-      <div className="spline-editor-wrapper">
+            {/* <div className="spline-editor-wrapper">
         <div id="spline-editor-area"></div>
       </div>
       <div className="underlay hidden"></div>

@@ -11,9 +11,12 @@ import type {
 import type {
     FileMetadata,
     CellWrite,
+    GetReferencesResult,
     OpenFileResult,
     ReadTableDataResult,
     SaveFileResult,
+    SetNextRecordResult,
+    SetRecordsEmptyResult,
     TableListItem,
     WriteBulkTableCellsResult
 } from '@shared/types';
@@ -45,6 +48,21 @@ declare global {
                 fileId: string,
                 changes: CellWrite[]
             ) => Promise<WriteBulkTableCellsResult>;
+            setTableRecordsEmpty: (
+                fileId: string,
+                tableId: number,
+                recordIndices: number[]
+            ) => Promise<SetRecordsEmptyResult>;
+            setTableNextRecordToUse: (
+                fileId: string,
+                tableId: number,
+                recordIndex: number
+            ) => Promise<SetNextRecordResult>;
+            getReferencesToRecord: (
+                fileId: string,
+                tableId: number,
+                recordIndex: number
+            ) => Promise<GetReferencesResult>;
             saveFile: (
                 fileId: string,
                 options?: { sync?: boolean }
