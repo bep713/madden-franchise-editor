@@ -28,6 +28,8 @@ const rowKey = (row: SidebarRow): string =>
     row.kind === 'table' ? `${row.section}-${row.table.id}` : row.kind;
 
 interface TableSidebarProps {
+    // Shown before the search box (the table editor's Back/Forward)
+    headerStart?: React.ReactNode;
     onFilter?: (filterText: string) => void;
     onTableSelect?: (table: TableListEntry, mode: OpenMode) => void;
     onTogglePin?: (table: TableListEntry) => void;
@@ -38,6 +40,7 @@ interface TableSidebarProps {
 }
 
 const TableSidebar: React.FC<TableSidebarProps> = ({
+    headerStart,
     onFilter,
     onTableSelect,
     onTogglePin,
@@ -138,6 +141,22 @@ const TableSidebar: React.FC<TableSidebarProps> = ({
     return (
         <div className={styles.wrapper}>
             <div className={styles.header}>
+                {headerStart}
+                <button
+                    aria-pressed={showPinnedTables}
+                    className={cx(styles.pinToggle, {
+                        [styles.pinToggleOff]: !showPinnedTables
+                    })}
+                    onClick={onTogglePinnedVisible}
+                    title={
+                        showPinnedTables
+                            ? 'Hide pinned tables'
+                            : 'Show pinned tables'
+                    }
+                    type='button'
+                >
+                    <Pushpin />
+                </button>
                 <div className={styles.search}>
                     <Textbox
                         leftAsset={
@@ -154,21 +173,6 @@ const TableSidebar: React.FC<TableSidebarProps> = ({
                         text={filterText}
                     />
                 </div>
-                <button
-                    aria-pressed={showPinnedTables}
-                    className={cx(styles.pinToggle, {
-                        [styles.pinToggleOff]: !showPinnedTables
-                    })}
-                    onClick={onTogglePinnedVisible}
-                    title={
-                        showPinnedTables
-                            ? 'Hide pinned tables'
-                            : 'Show pinned tables'
-                    }
-                    type='button'
-                >
-                    <Pushpin />
-                </button>
             </div>
             <div className={styles.autoSizerWrapper}>
                 <AutoSizer>

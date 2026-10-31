@@ -19,7 +19,7 @@ Each item becomes its own numbered plan. Cell editing and saving moved to 03a (s
 - Schema handling on open: port the `schema-mismatch:check` prompt and the missing-schema flow (v4 opens the schema manager when `franchise:open-file` returns `{ error }`; React only shows a message box).
 - Schedule and Schemas pages: 03t shows their tabs as stubs (`implemented: false` in `data/navigation.ts`) and ignores `general.defaultEditor` = `open-schedule` / `open-schema-viewer`. Each page's plan flips the flag and wires the preference.
 - Franchise-common files: v4's FTC year/type override prompt before `openFile` (`ftcModalService`, `gameYearOverride` / `gameTypeOverride`). React opens common files without it.
-- Reference navigation beyond 03a's link click: back button / nav history (per table tab, see [03t](03t-navigation-tabs.md)), "Find references to this record" (`franchise:get-references-to-record`). Empty records: the "Set selected record(s) as empty" and "Set as next empty record to use" context menu (03a shows empty rows and updates them after edits).
+- Reference navigation and the grid context menu moved to [03f and 03g](03-table-editor-parity.md) (back button / nav history; Find references, Open reference in new tab, Set records empty, Set next empty record).
 - App-menu integration for the remaining items: Import/Export, Log Table, Copy Unique ID, raw/FRT export and import, the external-change reload prompt (`file-changed`, `save-new-file`). 03a adds `useMenuState` (`REACT_MENU_IDS`) and handles Save, Save As and Close File; each later item adds its ids there.
 
 ## Out of scope (later)

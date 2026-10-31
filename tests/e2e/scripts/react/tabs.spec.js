@@ -146,7 +146,37 @@ test("tabs test (react)", async () => {
   expect(await nav.activeTabName()).to.equal("7482 - Team");
   expect(await tableEditor.getSelectedTableName()).to.equal("7482 - Team");
 
-  // TODO(04+ back button): each tab has its own history, as in v4
+  // each tab has its own history. Team was opened from 4096 in this tab, so
+  // Back goes to 4096 (not to 4098, which another tab visited).
+  expect(await tableEditor.isBackEnabled()).to.equal(true);
+  expect(await tableEditor.isForwardEnabled()).to.equal(false);
+  await tableEditor.clickBack();
+  await waitForTable(tableEditor, "4096");
+  await tableEditor.clickForward();
+  await waitForTable(tableEditor, "7482 - Team");
+  await poll(
+    () => tableEditor.grid.getTextAtSelectedCell(),
+    (text) => text === "New York",
+    { message: "Forward did not restore the selected cell" },
+  );
+
+  // a new tab starts with no history, and navigating in it doesn't touch the
+  // other tab's
+  await nav.openLastTab();
+  await nav.waitForActiveTab("4096");
+  await waitForTable(tableEditor, "4096");
+  expect(await tableEditor.isBackEnabled()).to.equal(false);
+  expect(await tableEditor.isForwardEnabled()).to.equal(false);
+  await tableEditor.openTableById(4104);
+  expect(await tableEditor.isBackEnabled()).to.equal(true);
+  await tableEditor.clickBack();
+  await waitForTable(tableEditor, "4096");
+  expect(await tableEditor.isForwardEnabled()).to.equal(true);
+
+  await nav.openTab("7482 - Team");
+  await waitForTable(tableEditor, "7482 - Team");
+  expect(await tableEditor.isBackEnabled()).to.equal(true);
+  expect(await tableEditor.isForwardEnabled()).to.equal(false);
 
   // can click the Home tab to go to the Welcome page
   await nav.openTab("Home");

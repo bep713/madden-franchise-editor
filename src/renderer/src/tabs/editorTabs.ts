@@ -1,6 +1,14 @@
 import { getNavigationItems } from '@data/navigation';
 import { FileMetadata, NavigationItem } from '@shared/types';
 import { tableTitle } from '@renderer/utils/tableTitle';
+import {
+    HistoryEntry,
+    HistoryPlace,
+    TabHistory,
+    goTo,
+    pushEntry,
+    startHistory
+} from './tabHistory';
 
 // The editor tab bar's state, as in v4's navigationService (tabs, addTab,
 // onTableEditorClicked, closeTabAndSelectNextAvailableIfNeeded). Pure, so
@@ -23,6 +31,9 @@ export interface TableTab {
     name: string;
     // Unset until the tab's first table loads
     tableId?: number;
+    // Back/forward. Unset until the tab's first table loads; a new tab
+    // starts without one, as in a browser.
+    history?: TabHistory;
 }
 
 export type EditorTab = MainTab | TableTab;
@@ -51,7 +62,21 @@ export type TabAction =
           name: string;
           background: boolean;
       }
-    | { type: 'tableChanged'; key: string; tableId: number; name: string };
+    | { type: 'tableChanged'; key: string; tableId: number; name: string }
+    | {
+          type: 'historyPush';
+          key: string;
+          entry: HistoryEntry;
+          from?: HistoryPlace;
+      }
+    | { type: 'historyGo'; key: string; index: number; from?: HistoryPlace };
+
+// Actions that change a tab without leaving the page it is on
+export const IN_PLACE_ACTIONS: ReadonlySet<TabAction['type']> = new Set([
+    'tableChanged',
+    'historyPush',
+    'historyGo'
+]);
 
 export const initialTabsState: EditorTabsState = syncFile(
     { tabs: [], activeKey: HOME_KEY, nextId: 1 },
@@ -154,6 +179,25 @@ function openTableEditor(state: EditorTabsState): EditorTabsState {
         : addNewTab(state);
 }
 
+function updateHistory(
+    state: EditorTabsState,
+    key: string,
+    update: (history: TabHistory | undefined) => TabHistory | undefined
+): EditorTabsState {
+    const tab = state.tabs.find((t) => t.key === key);
+    if (tab?.kind !== 'table') {
+        return state;
+    }
+    const history = update(tab.history);
+    if (!history || history === tab.history) {
+        return state;
+    }
+    return {
+        ...state,
+        tabs: state.tabs.map((t) => (t === tab ? { ...tab, history } : t))
+    };
+}
+
 function closeTab(state: EditorTabsState, key: string): EditorTabsState {
     const index = state.tabs.findIndex((tab) => tab.key === key);
     if (index < 0 || state.tabs[index].kind !== 'table') {
@@ -225,5 +269,17 @@ export function reduceTabs(
                 )
             };
         }
+        case 'historyPush':
+            return updateHistory(state, action.key, (history) =>
+                history
+                    ? pushEntry(history, action.entry, action.from)
+                    : startHistory(action.entry)
+            );
+        case 'historyGo':
+            return updateHistory(
+                state,
+                action.key,
+                (history) => history && goTo(history, action.index, action.from)
+            );
     }
 }

@@ -101,10 +101,12 @@ interface Props {
     // stable, like every other prop.
     onSelectionChange?: (selection: CellPosition) => void;
     onScroll?: (scroll: GridScroll) => void;
+    // `from` is the clicked cell, null when it isn't known
     onFollowReference?: (
         tableId: number,
         recordIndex: number,
-        mode: OpenMode
+        mode: OpenMode,
+        from: CellPosition | null
     ) => void;
     onEditReference?: (request: ReferenceEditRequest) => void;
     onEditBlob?: (request: BlobEditRequest) => void;
@@ -386,7 +388,8 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
                     onFollowReference?.(
                         Number(target.dataset.tableId),
                         Number(target.dataset.recordIndex),
-                        getOpenMode(event)
+                        getOpenMode(event),
+                        cell ? toPosition(cell) : null
                     );
                     break;
                 case 'edit-reference':
@@ -417,7 +420,8 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
                 propsRef.current.onFollowReference?.(
                     Number(target.dataset.tableId),
                     Number(target.dataset.recordIndex),
-                    'background'
+                    'background',
+                    null
                 );
             }
         }, []);

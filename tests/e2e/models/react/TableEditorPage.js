@@ -29,7 +29,100 @@ class TableEditorPage {
         '[data-action="SWITCH_ORIENTATION"]',
       ),
       pinnedToggle: this.window.locator('button[title$="pinned tables"]'),
+      backButton: this.window.locator('button[aria-label="Back"]'),
+      forwardButton: this.window.locator('button[aria-label="Forward"]'),
+      historyMenu: this.window.locator('[role="menu"]'),
+      historyMenuItems: this.window.locator(
+        '[role="menu"] [role="menuitem"]',
+      ),
     };
+    // True between a hold-to-open and the mouse release
+    this._mouseIsDown = false;
+  }
+
+  async clickBack() {
+    await this.locators.backButton.click();
+  }
+
+  async clickForward() {
+    await this.locators.forwardButton.click();
+  }
+
+  async isBackEnabled() {
+    return this.locators.backButton.isEnabled();
+  }
+
+  async isForwardEnabled() {
+    return this.locators.forwardButton.isEnabled();
+  }
+
+  // HOLD_MS in the app is 500
+  async _openHistoryMenu(button, { rightClick = false } = {}) {
+    if (rightClick) {
+      await button.click({ button: "right" });
+    } else {
+      // Press and keep holding. pickHistoryItem releases the mouse.
+      await button.hover();
+      await this.window.mouse.down();
+      this._mouseIsDown = true;
+      await this.window.waitForTimeout(700);
+    }
+    await this.locators.historyMenu.waitFor();
+  }
+
+  // Hold (default) or right-click the Back button. After a hold the mouse is
+  // still down: call pickHistoryItem or releaseMouse.
+  async openBackMenu(options) {
+    await this._openHistoryMenu(this.locators.backButton, options);
+  }
+
+  async openForwardMenu(options) {
+    await this._openHistoryMenu(this.locators.forwardButton, options);
+  }
+
+  async releaseMouse() {
+    if (this._mouseIsDown) {
+      this._mouseIsDown = false;
+      await this.window.mouse.up();
+    }
+  }
+
+  // Row texts, nearest first, as "<id> <name>" (just "<id>" if unnamed)
+  async historyMenuItems() {
+    const texts = await this.locators.historyMenuItems.evaluateAll((items) =>
+      items.map((item) => item.innerText),
+    );
+    return texts.map((text) => text.replace(/\s+/g, " ").trim());
+  }
+
+  // text is a row's text as returned by historyMenuItems. After a hold, moves
+  // onto the row and releases there (press-drag-release); otherwise clicks it.
+  async pickHistoryItem(text) {
+    const texts = await this.historyMenuItems();
+    const index = texts.indexOf(text);
+    if (index < 0) {
+      throw new Error(
+        `History item "${text}" not found in ${JSON.stringify(texts)}`,
+      );
+    }
+    const item = this.locators.historyMenuItems.nth(index);
+    if (this._mouseIsDown) {
+      const box = await item.boundingBox();
+      await this.window.mouse.move(
+        box.x + box.width / 2,
+        box.y + box.height / 2,
+        { steps: 5 },
+      );
+      await this.releaseMouse();
+    } else {
+      await item.click();
+    }
+  }
+
+  async closeHistoryMenu() {
+    await this.releaseMouse();
+    await this.window.keyboard.press("Escape");
+    await this.locators.historyMenu.waitFor({ state: "hidden" });
   }
 
   async waitForTableToLoad() {

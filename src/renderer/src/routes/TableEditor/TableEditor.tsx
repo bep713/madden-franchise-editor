@@ -25,9 +25,12 @@ import ExpressionEditorView from './views/ExpressionEditorView';
 import FieldEditorView from './views/FieldEditorView';
 import {
     CellPosition,
+    GridHandle,
     GridScroll
 } from '@renderer/components/TableEditorComponent/TableEditorComponent';
 import { useEditorTabs } from '@renderer/tabs/EditorTabsContext';
+import { HistoryPlace, TabHistory } from '@renderer/tabs/tabHistory';
+import HistoryButtons from './components/HistoryButtons/HistoryButtons';
 import { OpenMode } from '@renderer/utils/openMode';
 import useTableDataCommands from './useTableDataCommands';
 
@@ -38,6 +41,29 @@ interface LoadOptions {
     // Restored for a tab switch and an import reload; any other load of a
     // table starts in the normal view
     inverted?: boolean;
+    // 'push' adds a history entry once the table has loaded; 'none' is for
+    // moves within history, tab switches and reloads
+    history?: 'push' | 'none';
+    // The cell the user left from (a clicked reference), when the view
+    // state may not have it yet
+    from?: CellPosition | null;
+}
+
+// Where the user is on a tab, saved into the history entry being left
+function placeOf(
+    saved: { selection?: CellPosition; scroll?: GridScroll } | undefined,
+    selection?: CellPosition | null
+): HistoryPlace | undefined {
+    const at = selection ?? saved?.selection;
+    return at && { selection: at, scroll: saved?.scroll };
+}
+
+// Ignored while a modal is open or a cell is being edited (as Ctrl+J)
+function blocksHistoryKeys(target: EventTarget | null): boolean {
+    return (
+        !!document.querySelector('[role="dialog"]') ||
+        !!(target as HTMLElement | null)?.closest?.('.handsontableInput')
+    );
 }
 
 const TableEditor: React.FC = () => {
@@ -55,6 +81,8 @@ const TableEditor: React.FC = () => {
     const {
         activeTab,
         getViewState,
+        historyGo,
+        historyPush,
         openTableEditor,
         openTableTab,
         setViewState,
@@ -62,9 +90,16 @@ const TableEditor: React.FC = () => {
     } = useEditorTabs();
     // The tab a load or a grid event belongs to, read at event time
     const activeKeyRef = useRef(activeTab.key);
+    const history = activeTab.kind === 'table' ? activeTab.history : undefined;
+    const historyRef = useRef<TabHistory | undefined>(history);
+    const shownTableIdRef = useRef(selectedTableId);
     useLayoutEffect(() => {
         activeKeyRef.current = activeTab.key;
+        historyRef.current = history;
+        shownTableIdRef.current = selectedTableId;
     });
+    // The field editor's grid, for a Back/Forward within one table
+    const gridRef = useRef<GridHandle>(null);
     // Only the latest load is shown, when tabs are switched quickly
     const loadIdRef = useRef(0);
 
@@ -133,6 +168,8 @@ const TableEditor: React.FC = () => {
         }
         const tabKey = activeKeyRef.current;
         const loadId = ++loadIdRef.current;
+        // Before the load, which overwrites the view state
+        const from = placeOf(getViewState(tabKey), options.from);
 
         setTableLoaderOptions({
             message: 'Loading table...',
@@ -165,17 +202,103 @@ const TableEditor: React.FC = () => {
                 inverted: !!options.inverted
             });
             tableChanged(tabKey, table.id, table.name);
+            if (options.history !== 'none') {
+                historyPush(
+                    tabKey,
+                    {
+                        tableId: table.id,
+                        selection: selection ?? { row: 0, col: 0 },
+                        scroll: options.scroll
+                    },
+                    from
+                );
+            }
         }
         setTableLoaderOptions({
             show: false
         });
     };
 
+    // Back, Forward or a history menu item. The index moves at once, so two
+    // quick Backs go back two steps; a superseded load isn't shown.
+    const goToHistory = (index: number): void => {
+        const tabKey = activeKeyRef.current;
+        const entry = historyGo(tabKey, index, placeOf(getViewState(tabKey)));
+        const table = allTables?.find((t) => t.id === entry?.tableId);
+        if (!entry || !table) {
+            return;
+        }
+        if (
+            entry.tableId === selectedTableId &&
+            selectedTableData?.tableId === entry.tableId
+        ) {
+            // Already shown: drop any load in flight and select the cell
+            loadIdRef.current++;
+            setTableLoaderOptions({ show: false });
+            const { row, col } = entry.selection;
+            gridRef.current?.selectCell(row, col);
+            setViewState(tabKey, { selection: entry.selection });
+            return;
+        }
+        void onSelectTable(table, entry.selection, {
+            force: true,
+            scroll: entry.scroll,
+            history: 'none'
+        });
+    };
+
     // Stable, so the grid and sidebar don't re-render
     const onSelectTableRef = useRef(onSelectTable);
+    const goToHistoryRef = useRef(goToHistory);
     useLayoutEffect(() => {
         onSelectTableRef.current = onSelectTable;
+        goToHistoryRef.current = goToHistory;
     });
+    const onGoHistory = useCallback(
+        (index: number) => goToHistoryRef.current(index),
+        []
+    );
+
+    // Alt+Left/Right and the mouse's back/forward buttons
+    useEffect(() => {
+        const step = (delta: number): void => {
+            const h = historyRef.current;
+            const index = (h?.index ?? 0) + delta;
+            if (h && index >= 0 && index < h.entries.length) {
+                goToHistoryRef.current(index);
+            }
+        };
+        const onKeyDown = (e: KeyboardEvent): void => {
+            if (
+                !e.altKey ||
+                e.ctrlKey ||
+                e.metaKey ||
+                e.shiftKey ||
+                (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') ||
+                blocksHistoryKeys(e.target)
+            ) {
+                return;
+            }
+            e.preventDefault();
+            step(e.key === 'ArrowLeft' ? -1 : 1);
+        };
+        const onMouseUp = (e: MouseEvent): void => {
+            if (e.button !== 3 && e.button !== 4) {
+                return;
+            }
+            // Always, or Chromium also goes back in the HashRouter's history
+            e.preventDefault();
+            if (!blocksHistoryKeys(null)) {
+                step(e.button === 3 ? -1 : 1);
+            }
+        };
+        document.addEventListener('keydown', onKeyDown);
+        document.addEventListener('mouseup', onMouseUp);
+        return () => {
+            document.removeEventListener('keydown', onKeyDown);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
+    }, []);
 
     // A ctrl/middle-clicked table opens in a new tab, which loads it when
     // activated (the activeTab.key effect below)
@@ -194,14 +317,19 @@ const TableEditor: React.FC = () => {
 
     // A followed reference link
     const onFollowReference = useCallback(
-        (tableId: number, recordIndex: number, mode: OpenMode) => {
+        (
+            tableId: number,
+            recordIndex: number,
+            mode: OpenMode,
+            from: CellPosition | null
+        ) => {
             const table = allTables?.find((t) => t.id === tableId);
             if (!table) {
                 return;
             }
             const selection = { row: recordIndex, col: 0 };
             if (mode === 'current') {
-                void onSelectTableRef.current(table, selection);
+                void onSelectTableRef.current(table, selection, { from });
             } else {
                 openTableTab(table.id, table.name, {
                     selection,
@@ -210,6 +338,19 @@ const TableEditor: React.FC = () => {
             }
         },
         [allTables, openTableTab]
+    );
+
+    // A jump to column or a self-reference: a history entry in this table
+    const onNavigateInTable = useCallback(
+        (to: CellPosition, from: CellPosition | null) => {
+            const tabKey = activeKeyRef.current;
+            historyPush(
+                tabKey,
+                { tableId: shownTableIdRef.current, selection: to },
+                placeOf(getViewState(tabKey), from)
+            );
+        },
+        [getViewState, historyPush]
     );
 
     // Where the grid is, saved to the active tab. Stable, so the grid
@@ -255,7 +396,8 @@ const TableEditor: React.FC = () => {
                     {
                         force: true,
                         scroll: saved?.scroll,
-                        inverted: saved?.inverted
+                        inverted: saved?.inverted,
+                        history: 'none'
                     }
                 );
             }
@@ -299,7 +441,9 @@ const TableEditor: React.FC = () => {
             void onSelectTable(tabTable, saved?.selection ?? null, {
                 force: true,
                 scroll: saved?.scroll,
-                inverted: saved?.inverted
+                inverted: saved?.inverted,
+                // A tab's first load starts its history
+                history: activeTab.history ? 'none' : 'push'
             });
         } else if (firstTable) {
             void onSelectTable(firstTable, null, { force: true });
@@ -322,10 +466,17 @@ const TableEditor: React.FC = () => {
                 >
                     <Allotment.Pane
                         className={styles.tableListWrapper}
-                        minSize={200}
+                        minSize={240}
                         snap
                     >
                         <TableSidebar
+                            headerStart={
+                                <HistoryButtons
+                                    history={history}
+                                    onGo={onGoHistory}
+                                    tableNames={tableNames}
+                                />
+                            }
                             onFilter={setFilterText}
                             onTableSelect={onSidebarSelect}
                             onTogglePinnedVisible={() =>
@@ -353,11 +504,13 @@ const TableEditor: React.FC = () => {
                                 ) : (
                                     <FieldEditorView
                                         fileId={activeFranchiseFile.fileId}
+                                        gridRef={gridRef}
                                         initialScroll={pendingScroll}
                                         initialSelection={pendingSelection}
                                         isInverted={isInverted}
                                         isPinned={isPinned(selectedTable)}
                                         onFollowReference={onFollowReference}
+                                        onNavigateInTable={onNavigateInTable}
                                         onExport={onExport}
                                         onImport={onImport}
                                         onScroll={onScroll}

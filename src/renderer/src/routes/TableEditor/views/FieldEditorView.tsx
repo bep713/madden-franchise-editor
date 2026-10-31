@@ -9,7 +9,7 @@ import ReferenceEditor from '@renderer/components/ReferenceEditor/ReferenceEdito
 import BlobEditorModal from '@renderer/components/BlobEditor/BlobEditorModal';
 import TableHeader from '@renderer/components/TableHeader/TableHeader';
 import { TableData } from '@shared/types';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LoaderOptionsSetter } from '@renderer/hooks/useLoader';
 import { OpenMode } from '@renderer/utils/openMode';
 import baseStyles from '../TableEditor.module.scss';
@@ -33,8 +33,14 @@ interface Props {
     onFollowReference: (
         tableId: number,
         recordIndex: number,
-        mode: OpenMode
+        mode: OpenMode,
+        from: CellPosition | null
     ) => void;
+    // A move within this table that goes into the tab's history (jump to
+    // column, a self-reference), from the cell in `from`. Stable.
+    onNavigateInTable: (to: CellPosition, from: CellPosition | null) => void;
+    // The grid, owned by the caller so it can select cells (Back/Forward)
+    gridRef: React.RefObject<GridHandle>;
     onSelectionChange?: (selection: CellPosition) => void;
     onScroll?: (scroll: GridScroll) => void;
     // The action bar's Export and Import (useTableDataCommands)
@@ -56,6 +62,8 @@ const FieldEditorView = ({
     onToggleOrientation,
     isPinned,
     onFollowReference,
+    onNavigateInTable,
+    gridRef,
     onSelectionChange,
     onScroll,
     onExport,
@@ -66,7 +74,6 @@ const FieldEditorView = ({
     tableNames,
     tables
 }: Props) => {
-    const gridRef = useRef<GridHandle>(null);
     const [referenceEdit, setReferenceEdit] =
         useState<ReferenceEditRequest | null>(null);
     const [blobEdit, setBlobEdit] = useState<BlobEditRequest | null>(null);
@@ -87,15 +94,22 @@ const FieldEditorView = ({
         [table]
     );
     const handleFollowReference = useCallback(
-        (targetTableId: number, recordIndex: number, mode: OpenMode) => {
+        (
+            targetTableId: number,
+            recordIndex: number,
+            mode: OpenMode,
+            from: CellPosition | null
+        ) => {
             // A self-reference opened in a new tab still gets its own tab
             if (targetTableId === tableId && mode === 'current') {
-                gridRef.current?.selectCell(recordIndex, 0);
+                const to = { row: recordIndex, col: 0 };
+                onNavigateInTable(to, from);
+                gridRef.current?.selectCell(to.row, to.col);
             } else {
-                onFollowReference(targetTableId, recordIndex, mode);
+                onFollowReference(targetTableId, recordIndex, mode, from);
             }
         },
-        [onFollowReference, tableId]
+        [gridRef, onFollowReference, onNavigateInTable, tableId]
     );
 
     const closeReferenceEditor = (): void => {
@@ -117,11 +131,12 @@ const FieldEditorView = ({
         const from = gridRef.current?.getSelectedCell() ?? null;
         gridRef.current?.deselectCell();
         setJump({ tableId, from });
-    }, [tableId]);
+    }, [gridRef, tableId]);
 
     // The modal and the grid handle both talk in (record, field)
     const jumpToCell = (row: number, col: number): void => {
         setJump(null);
+        onNavigateInTable({ row, col }, jumpFrom ?? null);
         gridRef.current?.selectCell(row, col);
     };
 

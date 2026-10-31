@@ -393,4 +393,87 @@ describe('editorTabs', () => {
             ).toBe(state);
         });
     });
+
+    describe('history', () => {
+        const entry = (tableId: number, row = 0) => ({
+            tableId,
+            selection: { row, col: 0 }
+        });
+        const push = (key: string, tableId: number, row = 0) =>
+            ({ type: 'historyPush', key, entry: entry(tableId, row) }) as const;
+        const go = (key: string, index: number) =>
+            ({ type: 'historyGo', key, index }) as const;
+        const historyOf = (state: EditorTabsState, key: string) => {
+            const tab = state.tabs.find((t) => t.key === key);
+            return tab?.kind === 'table' ? tab.history : undefined;
+        };
+
+        it('starts and extends a table tab history', () => {
+            let state = run([open]);
+            const key = state.activeKey;
+            expect(historyOf(state, key)).toBeUndefined();
+            state = run([push(key, 4096)], FILE, state);
+            expect(historyOf(state, key)).toEqual({
+                entries: [entry(4096)],
+                index: 0
+            });
+            state = run([push(key, 4097)], FILE, state);
+            expect(historyOf(state, key)?.entries).toHaveLength(2);
+            expect(historyOf(state, key)?.index).toBe(1);
+        });
+
+        it('moves within a table tab history', () => {
+            let state = run([open]);
+            const key = state.activeKey;
+            state = run(
+                [push(key, 4096), push(key, 4097), go(key, 0)],
+                FILE,
+                state
+            );
+            expect(historyOf(state, key)?.index).toBe(0);
+            expect(reduceTabs(state, go(key, 0), FILE)).toBe(state);
+        });
+
+        it('keeps each tab its own history', () => {
+            let state = run([open, newTab]);
+            const [first, second] = state.tabs.filter(
+                (t) => t.kind === 'table'
+            );
+            state = run([push(first.key, 4096)], FILE, state);
+            expect(historyOf(state, first.key)).toBeDefined();
+            expect(historyOf(state, second.key)).toBeUndefined();
+        });
+
+        it('ignores main tabs and unknown keys', () => {
+            const state = run([open]);
+            expect(reduceTabs(state, push('home', 4096), FILE)).toBe(state);
+            expect(reduceTabs(state, push('nope', 4096), FILE)).toBe(state);
+            expect(reduceTabs(state, go('home', 0), FILE)).toBe(state);
+            expect(reduceTabs(state, go(state.activeKey, 0), FILE)).toBe(state);
+        });
+
+        it('opens a table in a new tab without history', () => {
+            let state = run([open]);
+            state = run(
+                [push(state.activeKey, 4096), openTable(7482, 'Team')],
+                FILE,
+                state
+            );
+            expect(historyOf(state, keyOf(state, '7482 - Team'))).toBe(
+                undefined
+            );
+        });
+
+        it('drops history with the tabs when the file changes', () => {
+            let state = run([open]);
+            state = run([push(state.activeKey, 4096)], FILE, state);
+            const other = makeFile('file-2');
+            state = run([open], other, state);
+            expect(
+                state.tabs.every(
+                    (t) => t.kind !== 'table' || t.history === undefined
+                )
+            ).toBe(true);
+        });
+    });
 });

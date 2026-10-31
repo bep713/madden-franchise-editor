@@ -14,6 +14,7 @@ import type { CellPosition } from '@renderer/components/TableEditorComponent/Tab
 import {
     EditorTab,
     EditorTabsState,
+    IN_PLACE_ACTIONS,
     TabAction,
     TabsFile,
     getActiveTab,
@@ -21,6 +22,7 @@ import {
     reduceTabs,
     syncFile
 } from './editorTabs';
+import { HistoryEntry, HistoryPlace } from './tabHistory';
 
 export interface ScrollPosition {
     top: number;
@@ -52,6 +54,19 @@ export interface EditorTabsValue {
         options?: { selection?: CellPosition; background?: boolean }
     ) => void;
     tableChanged: (key: string, tableId: number, name: string) => void;
+    // A table tab's back/forward history (TableTab.history). `from` is where
+    // the user was on the entry being left.
+    historyPush: (
+        key: string,
+        entry: HistoryEntry,
+        from?: HistoryPlace
+    ) => void;
+    // The entry moved to, so the caller can load it in the same tick
+    historyGo: (
+        key: string,
+        index: number,
+        from?: HistoryPlace
+    ) => HistoryEntry | undefined;
     getViewState: (key: string) => TabViewState | undefined;
     setViewState: (key: string, patch: TabViewState) => void;
 }
@@ -109,7 +124,7 @@ export function useEditorTabsController(): EditorTabsValue {
             }
         }
 
-        if (action.type !== 'tableChanged') {
+        if (!IN_PLACE_ACTIONS.has(action.type)) {
             const path = tabPath(getActiveTab(next));
             if (path !== latest.current.pathname) {
                 latest.current.navigate(path);
@@ -149,6 +164,20 @@ export function useEditorTabsController(): EditorTabsValue {
             },
             tableChanged: (key: string, tableId: number, name: string) =>
                 apply({ type: 'tableChanged', key, tableId, name }),
+            historyPush: (
+                key: string,
+                entry: HistoryEntry,
+                from?: HistoryPlace
+            ) => {
+                apply({ type: 'historyPush', key, entry, from });
+            },
+            historyGo: (key: string, index: number, from?: HistoryPlace) => {
+                const next = apply({ type: 'historyGo', key, index, from });
+                const tab = next.tabs.find((t) => t.key === key);
+                return tab?.kind === 'table' && tab.history
+                    ? tab.history.entries[tab.history.index]
+                    : undefined;
+            },
             getViewState: (key: string) => viewStates.current.get(key),
             setViewState: (key: string, patch: TabViewState) => {
                 viewStates.current.set(key, {
