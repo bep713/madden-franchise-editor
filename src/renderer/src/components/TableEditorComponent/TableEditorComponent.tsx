@@ -7,7 +7,6 @@ import React, {
     useMemo,
     useRef
 } from 'react';
-import cx from 'classnames';
 
 import type Handsontable from 'handsontable';
 import { HotTable, HotTableRef } from '@handsontable/react-wrapper';
@@ -16,15 +15,25 @@ import 'handsontable/styles/ht-theme-main.min.css';
 import { registerAllModules } from 'handsontable/registry';
 import { TableColumn, TableData } from '@shared/types';
 import { LoaderOptionsSetter } from '@renderer/hooks/useLoader';
-import { resolveReference } from '@renderer/utils/references';
 import { WriteState } from '@renderer/utils/cellWrites';
 import { OpenMode, getOpenMode } from '@renderer/utils/openMode';
 
-import { buildColumns, calculateColumnWidths } from './columns';
+import {
+    buildColumns,
+    calculateColumnWidths,
+    calculateInvertedColumnWidths
+} from './columns';
+import { getCellMeta } from './cellMeta';
+import {
+    createOrientation,
+    GridOrientation,
+    RecordCell,
+    toSelectionCell
+} from './orientation';
 import { createReferenceRenderer } from './renderers/referenceRenderer';
 import { blobRenderer } from './renderers/blobRenderer';
-import { errorRenderer } from './renderers/errorRenderer';
 import useCellWrites, { createWriteState } from './useCellWrites';
+import useUndoStack from './useUndoStack';
 import styles from './TableEditorComponent.module.css';
 
 registerAllModules();
@@ -35,10 +44,21 @@ interface ReadOnlyTable {
     records: TableData['records'];
 }
 
+// A cell outside the grid: row is the record index and col the field index,
+// in either orientation. Only TableEditorComponent knows visual cells.
 export interface CellPosition {
     row: number;
     col: number;
 }
+
+const toPosition = (cell: RecordCell): CellPosition => ({
+    row: cell.recordIndex,
+    col: cell.fieldIndex
+});
+const toRecordCell = (position: CellPosition): RecordCell => ({
+    recordIndex: position.row,
+    fieldIndex: position.col
+});
 
 export interface GridScroll {
     top: number;
@@ -136,9 +156,10 @@ function isEditableTable(table: Props['table']): table is TableData {
 }
 
 // React.memo matters here: the react-wrapper passes every prop to
-// updateSettings on each render, and Handsontable reloads `data` whenever it
-// is passed, which clears the undo stack and the selection. So every prop has
-// to be stable, and the hooks read the latest props from propsRef.
+// updateSettings on each render, and Handsontable updates `data` whenever it
+// is passed, which drops the selection. So every prop has to be stable, and
+// the hooks read the latest props from propsRef. Undo is our own stack
+// (useUndoStack), in record terms, so a data update doesn't affect it.
 const TableEditorComponent = forwardRef<GridHandle, Props>(
     function TableEditorComponent(props, ref) {
         const { isInverted, table } = props;
@@ -160,8 +181,31 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
             propsRef.current = props;
         });
 
-        const editable =
-            !isInverted && !!props.fileId && isEditableTable(table);
+        const editable = !!props.fileId && isEditableTable(table);
+
+        const headerNames = useMemo(
+            () => table.headers.map((header) => header.name),
+            [table]
+        );
+
+        // Visual cells ↔ (record, field). The hooks read it from the ref, so
+        // they stay stable.
+        const orientation = useMemo(
+            () =>
+                createOrientation(!!isInverted, headerNames, {
+                    toPhysicalRow: (row) =>
+                        hotRef.current?.hotInstance?.toPhysicalRow(row) ?? row,
+                    toVisualRow: (row) =>
+                        hotRef.current?.hotInstance?.toVisualRow(row) ?? row
+                }),
+            [headerNames, isInverted]
+        );
+        const orientationRef = useRef<GridOrientation>(orientation);
+        useLayoutEffect(() => {
+            orientationRef.current = orientation;
+        }, [orientation]);
+
+        const undo = useUndoStack(hotRef, orientationRef);
 
         useLayoutEffect(() => {
             if (isEditableTable(table)) {
@@ -190,13 +234,29 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
             return () => observer.disconnect();
         }, []);
 
+        // The grid exists once HotTable's own mount effect has run
+        useEffect(() => undo.registerShortcuts(), [undo]);
+
         useImperativeHandle(
             ref,
             () => ({
-                setDataAtCell: (row, col, value) =>
-                    hotRef.current?.hotInstance?.setDataAtCell(row, col, value),
+                setDataAtCell: (row, col, value) => {
+                    const [visualRow, visualCol] =
+                        orientationRef.current.toVisualCell(
+                            toRecordCell({ row, col })
+                        );
+                    hotRef.current?.hotInstance?.setDataAtCell(
+                        visualRow,
+                        visualCol,
+                        value
+                    );
+                },
                 selectCell: (row, col) =>
-                    hotRef.current?.hotInstance?.selectCell(row, col),
+                    hotRef.current?.hotInstance?.selectCell(
+                        ...orientationRef.current.toVisualCell(
+                            toRecordCell({ row, col })
+                        )
+                    ),
                 getSelectedCell: () => lastSelectionRef.current,
                 deselectCell: () => {
                     const hot = hotRef.current?.hotInstance;
@@ -212,17 +272,14 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
             () => {
                 const { fileId, setLoaderOptions } = propsRef.current;
                 const current = propsRef.current.table;
-                if (
-                    !fileId ||
-                    !setLoaderOptions ||
-                    !isEditableTable(current) ||
-                    propsRef.current.isInverted
-                ) {
+                if (!fileId || !setLoaderOptions || !isEditableTable(current)) {
                     return null;
                 }
                 return { fileId, table: current, setLoaderOptions };
             },
-            writeStateRef
+            writeStateRef,
+            orientationRef,
+            undo
         );
 
         const referenceRenderer = useMemo(
@@ -233,30 +290,39 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
             []
         );
 
-        const headerNames = useMemo(
-            () => table.headers.map((header) => header.name),
-            [table]
-        );
-
-        const columns = useMemo(
+        // Per field. Column settings in the normal view; inverted, where the
+        // grid's rows are arrays, cells() returns them per cell.
+        const fieldColumns = useMemo(
             () =>
                 editable
                     ? buildColumns((table as TableData).headers, {
                           reference: referenceRenderer,
                           blob: blobRenderer
                       })
-                    : isInverted
-                      ? undefined
-                      : headerNames.map((name) => ({ data: name })),
-            [editable, headerNames, isInverted, referenceRenderer, table]
+                    : [],
+            [editable, referenceRenderer, table]
         );
 
+        const columns = useMemo(
+            () =>
+                isInverted
+                    ? undefined
+                    : editable
+                      ? fieldColumns
+                      : headerNames.map((name) => ({ data: name })),
+            [editable, fieldColumns, headerNames, isInverted]
+        );
+
+        // Fixed inverted widths: measuring thousands of record columns after
+        // each switch is slow
         const colWidths = useMemo(
             () =>
-                editable
-                    ? calculateColumnWidths((table as TableData).headers)
-                    : undefined,
-            [editable, table]
+                isInverted
+                    ? calculateInvertedColumnWidths(table.headers)
+                    : editable
+                      ? calculateColumnWidths((table as TableData).headers)
+                      : undefined,
+            [editable, isInverted, table]
         );
 
         const data = useMemo(
@@ -283,63 +349,25 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
             [headerNames, isInverted, table]
         );
 
-        // v4's _getCellProperties. Every property is returned on every call,
-        // because Handsontable keeps what an earlier call set (for example the
-        // empty class after a row is un-emptied).
         const cells = useCallback(
             (
                 physicalRow: number,
                 physicalCol: number
             ): Handsontable.CellMeta => {
-                const { table: current, isInverted: inverted } =
-                    propsRef.current;
-                if (inverted || !isEditableTable(current)) {
+                const { table: current, tableNames } = propsRef.current;
+                // fieldColumns is empty when the table isn't editable
+                if (!isEditableTable(current)) {
                     return {};
                 }
-
-                const header = current.headers[physicalCol];
-                const column = columns?.[physicalCol] as
-                    Handsontable.ColumnSettings | undefined;
-                if (!header || !column) {
-                    return {};
-                }
-
-                const { cellErrors, emptyRecordIndices } =
-                    writeStateRef.current;
-                const errorMessage = cellErrors[physicalRow]?.[header.name];
-                if (errorMessage) {
-                    return {
-                        className: 'table-cell--error',
-                        readOnly: true,
-                        editor: false,
-                        renderer: errorRenderer,
-                        errorMessage
-                    };
-                }
-
-                let editor = column.editor;
-                if (
-                    header.isReference &&
-                    resolveReference(
-                        current.records[physicalRow]?.[header.name],
-                        propsRef.current.tableNames ?? NO_TABLE_NAMES
-                    )
-                ) {
-                    // A link to another table can't be typed into
-                    editor = false;
-                }
-
-                return {
-                    className: emptyRecordIndices.has(physicalRow)
-                        ? 'table-cell--empty'
-                        : '',
-                    readOnly: false,
-                    editor,
-                    renderer: column.renderer,
-                    errorMessage: undefined
-                };
+                return getCellMeta(physicalRow, physicalCol, {
+                    table: current,
+                    orientation: orientationRef.current,
+                    fieldColumns,
+                    writeState: writeStateRef.current,
+                    tableNames: tableNames ?? NO_TABLE_NAMES
+                });
             },
-            [columns]
+            [fieldColumns]
         );
 
         // Reference links and edit buttons: one listener for every cell
@@ -349,6 +377,7 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
                 return;
             }
             const { target, td, hot, row, col } = clicked;
+            const cell = orientationRef.current.toRecordCell(row, col);
 
             const { onEditBlob, onEditReference, onFollowReference } =
                 propsRef.current;
@@ -361,17 +390,17 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
                     );
                     break;
                 case 'edit-reference':
+                    if (!cell) break;
                     onEditReference?.({
-                        row,
-                        col,
+                        ...toPosition(cell),
                         value: String(hot.getDataAtCell(row, col) ?? ''),
                         anchorRect: td.getBoundingClientRect()
                     });
                     break;
                 case 'edit-blob':
+                    if (!cell) break;
                     onEditBlob?.({
-                        row,
-                        col,
+                        ...toPosition(cell),
                         value: hot.getDataAtCell(row, col)
                     });
                     break;
@@ -414,11 +443,26 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
             td.removeAttribute('title');
         }, []);
 
+        // Set from a table load or orientation switch until the reselect
+        // below. Handsontable keeps the old visual selection through a data
+        // update and reports it again, which in the new layout is another
+        // record and field.
+        const reselectPendingRef = useRef(false);
+        useLayoutEffect(() => {
+            reselectPendingRef.current = true;
+        }, [table, isInverted]);
+
         const afterSelectionEnd = useCallback((row: number, col: number) => {
+            if (reselectPendingRef.current) {
+                return;
+            }
             // Header clicks select from -1
             if (row >= 0 && col >= 0) {
-                lastSelectionRef.current = { row, col };
-                propsRef.current.onSelectionChange?.({ row, col });
+                const selection = toPosition(
+                    toSelectionCell(orientationRef.current, row, col)
+                );
+                lastSelectionRef.current = selection;
+                propsRef.current.onSelectionChange?.(selection);
             } else {
                 lastSelectionRef.current = null;
             }
@@ -434,23 +478,60 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
             }
         }, []);
 
-        // Select after each table load. HotTable applies the new data in its
-        // own effect, which runs before this one. The scroll is restored only
-        // for a new table, not when the orientation changes.
-        const scrolledTableRef = useRef<Props['table'] | null>(null);
+        // Select after each table load and orientation switch. HotTable
+        // applies the new data in its own effect, which runs before this one.
+        // A new table (or an import reload) gets initialSelection, its scroll
+        // and an empty undo history. A switch keeps the selected record and
+        // field, and selectCell scrolls them into view.
+        const loadedTableRef = useRef<Props['table'] | null>(null);
         useEffect(() => {
+            const hot = hotRef.current?.hotInstance;
+            const isNewTable = loadedTableRef.current !== table;
+            loadedTableRef.current = table;
+            if (isNewTable) {
+                undo.clear();
+            }
             const { initialSelection, initialScroll } = propsRef.current;
-            hotRef.current?.hotInstance?.selectCell(
-                initialSelection?.row ?? 0,
-                initialSelection?.col ?? 0
-            );
+            const selection = (isNewTable
+                ? initialSelection
+                : lastSelectionRef.current) ?? { row: 0, col: 0 };
+            reselectPendingRef.current = false;
+            if (hot) {
+                const [row, col] = orientationRef.current.toVisualCell(
+                    toRecordCell(selection)
+                );
+                // Clamped: an inverted table without records only has the
+                // field-name column
+                hot.selectCell(
+                    Math.max(0, Math.min(row ?? 0, hot.countRows() - 1)),
+                    Math.max(0, Math.min(col, hot.countCols() - 1))
+                );
+            }
             const holder = getScrollHolder(hotRef);
-            if (initialScroll && holder && scrolledTableRef.current !== table) {
+            if (initialScroll && holder && isNewTable) {
                 holder.scrollTop = initialScroll.top;
                 holder.scrollLeft = initialScroll.left;
             }
-            scrolledTableRef.current = table;
-        }, [table, isInverted]);
+            if (isNewTable || !hot) {
+                return;
+            }
+            // A switch runs inside the Switch Orientation click, and
+            // Handsontable's own document click listener (its focus scopes)
+            // unlistens after it. Listen again once the click is done, so
+            // keys like Ctrl+Z reach the grid.
+            const timer = setTimeout(() => {
+                if (!hot.isDestroyed) {
+                    hot.listen();
+                }
+            });
+            return () => clearTimeout(timer);
+        }, [table, isInverted, undo]);
+
+        // A paste past the grid's edge is clipped. It would add rows (records)
+        // or columns (fields, or inverted records) that aren't in the file:
+        // main rejects their writes, but the normal view's new rows would
+        // stay in table.records and show up inverted.
+        const beforeCreate = useCallback(() => false, []);
 
         return (
             <div
@@ -465,14 +546,15 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
                     afterScrollHorizontally={afterScroll}
                     afterScrollVertically={afterScroll}
                     afterSelectionEnd={afterSelectionEnd}
+                    autoColumnSize={isInverted ? false : undefined}
                     autoWrapCol={true}
                     autoWrapRow={true}
                     beforeChange={beforeChange}
+                    beforeCreateCol={beforeCreate}
+                    beforeCreateRow={beforeCreate}
                     beforeRenderer={beforeRenderer}
                     cells={cells}
-                    className={cx(styles.table, {
-                        [styles.inverted]: isInverted
-                    })}
+                    className={styles.table}
                     colHeaders={colHeaders}
                     colWidths={colWidths}
                     columns={columns}
@@ -489,6 +571,7 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
                         isInverted ? false : (index: number) => String(index)
                     }
                     themeName='ht-theme-main'
+                    undo={false}
                     width='100%'
                 />
             </div>

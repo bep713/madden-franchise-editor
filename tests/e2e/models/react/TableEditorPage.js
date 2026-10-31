@@ -161,7 +161,20 @@ class TableEditorPage {
   }
 
   async switchOrientation() {
+    const wasInverted = await this.isInverted();
     await this.locators.switchOrientationAction.click();
+    await poll(
+      () => this.isInverted(),
+      (inverted) => inverted !== wasInverted,
+      { message: "The orientation never switched" },
+    );
+  }
+
+  // The inverted grid's columns are "Field Name", then "Record <n>". The
+  // header row is virtualized, so the first rendered one may be a record.
+  async isInverted() {
+    const header = (await this.grid.locators.headers.first().innerText()).trim();
+    return header === "Field Name" || /^Record \d+$/.test(header);
   }
 
   // Call before a paste/undo/redo that writes more than one cell, then

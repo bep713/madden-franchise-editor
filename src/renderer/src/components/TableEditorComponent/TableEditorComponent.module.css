@@ -13,9 +13,9 @@
     text-align: left;
 }
 
-.inverted tbody tr td:first-child {
+/* The inverted view's read-only field-name column, set by cells() */
+.wrapper :global(td.table-cell--field-name) {
     font-weight: 500;
-    pointer-events: none;
     background-color: var(--ht-header-background-color);
 }
 

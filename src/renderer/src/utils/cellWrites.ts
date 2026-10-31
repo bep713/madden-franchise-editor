@@ -11,7 +11,27 @@ export type CellChange = [
     oldValue: unknown,
     newValue: unknown
 ];
+// [recordIndex, fieldName, value]. The grid maps it to its own layout.
 export type SourceEdit = [row: number, prop: string, value: unknown];
+
+// A cell in record terms, whatever the grid's orientation
+export interface RecordCell {
+    recordIndex: number;
+    fieldIndex: number;
+}
+
+// A CellChange resolved to its record and field
+export interface RecordChange {
+    cell: RecordCell;
+    fieldName: string;
+    oldValue: unknown;
+    newValue: unknown;
+}
+
+// Our undo and redo replays. Written to main like a user edit, but not
+// recorded on the undo stack.
+export const UNDO_SOURCE = 'mfe-undo';
+export const REDO_SOURCE = 'mfe-redo';
 
 // Sources of our own sync edits and of data loads (HOT 16 core.js); none are user edits.
 export const IGNORED_CHANGE_SOURCES: ReadonlySet<string> = new Set([
@@ -37,9 +57,16 @@ export interface WritableTable {
 
 export interface WritePlan {
     reverts: SourceEdit[];
-    unemptiedRows: number[];
-    // physical record indices, for setSourceDataAtCell
+    // Indices of the rejected changes, for the undo stack
+    failedChanges: number[];
+    // For setSourceDataAtCell, once mapped to the grid's layout
     sourceEdits: SourceEdit[];
+}
+
+export interface WritePlanOptions {
+    // Add an edit for every field main changed. Needed when the grid's
+    // cells are copies of the records (the inverted view).
+    syncChangedFields?: boolean;
 }
 
 /** Nulls out no-op changes in place and returns how many remain. */
@@ -58,15 +85,14 @@ export function dropNoopChanges(changes: (CellChange | null)[]): number {
 }
 
 export function toCellWrites(
-    changes: CellChange[],
-    tableId: number,
-    toPhysicalRow: (row: number) => number
+    changes: RecordChange[],
+    tableId: number
 ): CellWrite[] {
     return changes.map((change) => ({
         tableId,
-        recordIndex: toPhysicalRow(change[0]),
-        fieldName: String(change[1]),
-        value: change[3]
+        recordIndex: change.cell.recordIndex,
+        fieldName: change.fieldName,
+        value: change.newValue
     }));
 }
 
@@ -91,39 +117,50 @@ export function getEmptyRecordRowEdits(
     );
 }
 
-const toRevert = (change: CellChange): SourceEdit => [
-    change[0],
-    String(change[1]),
-    change[2]
+const toRevert = (change: RecordChange): SourceEdit => [
+    change.cell.recordIndex,
+    change.fieldName,
+    change.oldValue
 ];
 
 /** v4's _processChanges as data. Mutates table and state; the caller applies the plan to Handsontable. */
 export function planWriteResult(
     table: WritableTable,
-    changes: CellChange[],
+    changes: RecordChange[],
     response: WriteBulkTableCellsResult,
-    state: WriteState
+    state: WriteState,
+    { syncChangedFields = false }: WritePlanOptions = {}
 ): WritePlan {
-    const plan: WritePlan = { reverts: [], unemptiedRows: [], sourceEdits: [] };
+    const plan: WritePlan = { reverts: [], failedChanges: [], sourceEdits: [] };
 
     if (!response.success) {
         plan.reverts = changes.map(toRevert);
+        plan.failedChanges = changes.map((_change, index) => index);
         return plan;
     }
 
-    plan.reverts = response.results
-        .filter((r) => !r.success)
-        .map((r) => changes[r.index])
-        .filter(Boolean)
-        .map(toRevert);
+    for (const result of response.results) {
+        if (!result.success && changes[result.index]) {
+            plan.failedChanges.push(result.index);
+            plan.reverts.push(toRevert(changes[result.index]));
+        }
+    }
 
     for (const row of response.records) {
         if (row.tableId !== table.tableId) continue; // the user switched tables while waiting
         const { recordIndex } = row;
 
-        if (table.records[recordIndex]) {
+        const current = table.records[recordIndex];
+        if (current) {
+            if (syncChangedFields) {
+                for (const [fieldName, value] of Object.entries(row.record)) {
+                    if (current[fieldName] !== value) {
+                        plan.sourceEdits.push([recordIndex, fieldName, value]);
+                    }
+                }
+            }
             // in place, so Handsontable's source row keeps its identity
-            Object.assign(table.records[recordIndex], row.record);
+            Object.assign(current, row.record);
         }
         table.recordMeta[recordIndex] = row.recordMeta;
 
@@ -134,7 +171,6 @@ export function planWriteResult(
         }
 
         if (row.previousRecordMeta?.isEmpty && !row.recordMeta?.isEmpty) {
-            plan.unemptiedRows.push(recordIndex);
             plan.sourceEdits.push(
                 ...getRowEdits(table.headers, recordIndex, row.record)
             );

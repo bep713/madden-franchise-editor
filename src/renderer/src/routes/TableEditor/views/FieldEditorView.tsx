@@ -24,6 +24,9 @@ interface Props {
     initialSelection?: CellPosition | null;
     // Restored when the table loads (switching back to a tab)
     initialScroll?: GridScroll | null;
+    // The tab's orientation, toggled by Switch Orientation
+    isInverted: boolean;
+    onToggleOrientation: () => void;
     isPinned: boolean;
     // Follow a reference to another table. Must be stable (see TableEditorComponent),
     // as must the two change callbacks.
@@ -45,15 +48,12 @@ interface Props {
     tables: { id: number; name: string }[];
 }
 
-enum TableOrientation {
-    NORMAL,
-    INVERTED
-}
-
 const FieldEditorView = ({
     fileId,
     initialSelection,
     initialScroll,
+    isInverted,
+    onToggleOrientation,
     isPinned,
     onFollowReference,
     onSelectionChange,
@@ -66,9 +66,6 @@ const FieldEditorView = ({
     tableNames,
     tables
 }: Props) => {
-    const [tableOrientation, setTableOrientation] = useState<TableOrientation>(
-        TableOrientation.NORMAL
-    );
     const gridRef = useRef<GridHandle>(null);
     const [referenceEdit, setReferenceEdit] =
         useState<ReferenceEditRequest | null>(null);
@@ -81,7 +78,6 @@ const FieldEditorView = ({
     } | null>(null);
 
     const { tableId } = table;
-    const isInverted = tableOrientation === TableOrientation.INVERTED;
     if (jump && jump.tableId !== tableId) {
         setJump(null);
     }
@@ -123,15 +119,10 @@ const FieldEditorView = ({
         setJump({ tableId, from });
     }, [tableId]);
 
-    // The modal talks in (record, field). Inverted, a field is a row and
-    // record r is column r + 1.
+    // The modal and the grid handle both talk in (record, field)
     const jumpToCell = (row: number, col: number): void => {
         setJump(null);
-        if (isInverted) {
-            gridRef.current?.selectCell(col, row + 1);
-        } else {
-            gridRef.current?.selectCell(row, col);
-        }
+        gridRef.current?.selectCell(row, col);
     };
 
     const closeJumpToColumn = (): void => {
@@ -173,11 +164,7 @@ const FieldEditorView = ({
         } else if (action === TableActions.JUMP_TO_COLUMN) {
             openJumpToColumn();
         } else if (action === TableActions.SWITCH_ORIENTATION) {
-            setTableOrientation(
-                tableOrientation === TableOrientation.NORMAL
-                    ? TableOrientation.INVERTED
-                    : TableOrientation.NORMAL
-            );
+            onToggleOrientation();
         }
     };
 
@@ -224,11 +211,7 @@ const FieldEditorView = ({
             {jumpFrom !== undefined && (
                 <JumpToColumnModal
                     columns={columnNames}
-                    initialRow={
-                        isInverted
-                            ? Math.max(0, (jumpFrom?.col ?? 1) - 1)
-                            : (jumpFrom?.row ?? 0)
-                    }
+                    initialRow={jumpFrom?.row ?? 0}
                     onClose={closeJumpToColumn}
                     onJump={jumpToCell}
                     rowCount={table.records.length}

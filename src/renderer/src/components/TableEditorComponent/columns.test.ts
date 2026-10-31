@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { TableColumn } from '@shared/types/franchise';
-import { buildColumns, calculateColumnWidths } from './columns';
+import {
+    buildColumns,
+    calculateColumnWidths,
+    calculateInvertedColumnWidths,
+    INVERTED_RECORD_COLUMN_WIDTH
+} from './columns';
 
 const renderers = {
     reference: (() => {}) as never,
@@ -97,5 +102,17 @@ describe('calculateColumnWidths', () => {
         expect(
             calculateColumnWidths([col({ name, type: 'bool' }), col({ name })])
         ).toEqual([476, 476]);
+    });
+});
+
+describe('calculateInvertedColumnWidths', () => {
+    it('sizes column 0 to the longest field name and fixes record columns', () => {
+        const widths = calculateInvertedColumnWidths([
+            { name: 'A' },
+            { name: 'LongName' }
+        ]);
+        expect(widths(0)).toBe('LongName'.length * 9 + 26);
+        expect(widths(1)).toBe(INVERTED_RECORD_COLUMN_WIDTH);
+        expect(widths(4000)).toBe(INVERTED_RECORD_COLUMN_WIDTH);
     });
 });

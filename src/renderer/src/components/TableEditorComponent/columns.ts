@@ -44,6 +44,21 @@ export function buildColumns(
     });
 }
 
+export const INVERTED_RECORD_COLUMN_WIDTH = 200;
+
+// Inverted: the field names, then a fixed width per record. A function, so
+// thousands of records need no array and nothing is measured.
+export function calculateInvertedColumnWidths(
+    headers: Pick<TableColumn, 'name'>[]
+): (index: number) => number {
+    const fieldNameWidth = Math.max(
+        0,
+        ...headers.map((header) => header.name.length * 9 + 26)
+    );
+    return (index) =>
+        index === 0 ? fieldNameWidth : INVERTED_RECORD_COLUMN_WIDTH;
+}
+
 // Port of v4's _calculateColumnWidths.
 export function calculateColumnWidths(headers: TableColumn[]): number[] {
     return headers.map((header) => {

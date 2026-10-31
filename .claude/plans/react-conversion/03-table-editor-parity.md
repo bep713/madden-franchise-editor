@@ -10,9 +10,9 @@ Bring the React table editor (`src/renderer/src/routes/TableEditor/`) to parity 
 | 03b | Table pinning: labelled Pinned section at the top of the sidebar (toggle remembered in preferences), pinned cards decorated in place with unpin on hover, pin/unpin from the action bar, shared `pins.json` with v4 | [03b-table-pins.md](03b-table-pins.md) | Done (`b1e1d7f`) |
 | 03t | Navigation tabs: Home-only bar before a file opens, "Open Table..." replaced by per-table tabs (`<id> - <name>`, +, close, per-tab selection/scroll), Schedule/Schemas stubs, `general.defaultEditor` on file open | [03t-navigation-tabs.md](03t-navigation-tabs.md) | Done (`4249569`) |
 | 03u | Open a table in a new tab: ctrl+click (active) / middle-click (background) in the sidebar and on reference links | [03u-open-in-new-tab.md](03u-open-in-new-tab.md) | Done (`83a9974`) |
-| 03c | Export/import parity (v4 `ExternalDataHandler` / `externalDataService`): xlsx/csv export + import, raw table export/import, FRT export, File/Tools menu wiring | [03c-import-export.md](03c-import-export.md) | Implemented (uncommitted) |
-| 03d | Jump to column modal (v4 `TableEditorView` row/column jump): action bar + Ctrl+J, column search with arrows/Enter, row prefill, Esc restores the selection | [03d-jump-to-column.md](03d-jump-to-column.md) | Implemented (uncommitted) |
-| 03e | Editing in the inverted (Switch Orientation) view, which 03a leaves read-only | [03e-inverted-editing.md](03e-inverted-editing.md) (outline) | Not planned |
+| 03c | Export/import parity (v4 `ExternalDataHandler` / `externalDataService`): xlsx/csv export + import, raw table export/import, FRT export, File/Tools menu wiring | [03c-import-export.md](03c-import-export.md) | Done (`34e6e0b`) |
+| 03d | Jump to column modal (v4 `TableEditorView` row/column jump): action bar + Ctrl+J, column search with arrows/Enter, row prefill, Esc restores the selection | [03d-jump-to-column.md](03d-jump-to-column.md) | Done (`073e912`) |
+| 03e | Editing in the inverted (Switch Orientation) view, which 03a leaves read-only. The normal view stays canonical for export/import | [03e-inverted-editing.md](03e-inverted-editing.md) | Done |
 
 The reference editor and blob editor used to be separate items (03d, 03e). They are now part of 03a, because some fields can't be edited properly without them.
 

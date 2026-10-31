@@ -6,12 +6,15 @@ import type {
 } from '@shared/types/franchise';
 import {
     IGNORED_CHANGE_SOURCES,
+    REDO_SOURCE,
+    UNDO_SOURCE,
     dropNoopChanges,
     getEmptyRecordRowEdits,
     getRowEdits,
     planWriteResult,
     toCellWrites,
     type CellChange,
+    type RecordChange,
     type WritableTable,
     type WriteState
 } from './cellWrites';
@@ -63,10 +66,19 @@ const ok = (
     ...extra
 });
 
-const changes: CellChange[] = [
-    [3, 'A', 1, 10],
-    [4, 'B', 'x', 'y']
-];
+const change = (
+    recordIndex: number,
+    fieldIndex: number,
+    oldValue: unknown,
+    newValue: unknown
+): RecordChange => ({
+    cell: { recordIndex, fieldIndex },
+    fieldName: headers[fieldIndex].name,
+    oldValue,
+    newValue
+});
+
+const changes: RecordChange[] = [change(3, 0, 1, 10), change(4, 1, 'x', 'y')];
 
 describe('IGNORED_CHANGE_SOURCES', () => {
     it('covers v4 and Handsontable 16 data-load sources', () => {
@@ -81,6 +93,9 @@ describe('IGNORED_CHANGE_SOURCES', () => {
         }
         expect(IGNORED_CHANGE_SOURCES.has('edit')).toBe(false);
         expect(IGNORED_CHANGE_SOURCES.has('CopyPaste.paste')).toBe(false);
+        // Undo/redo replays are written like user edits
+        expect(IGNORED_CHANGE_SOURCES.has(UNDO_SOURCE)).toBe(false);
+        expect(IGNORED_CHANGE_SOURCES.has(REDO_SOURCE)).toBe(false);
     });
 });
 
@@ -101,14 +116,11 @@ describe('dropNoopChanges', () => {
 });
 
 describe('toCellWrites', () => {
-    it('maps visual rows to physical rows and stringifies the prop', () => {
-        expect(toCellWrites(changes, 7, (row) => row + 100)).toEqual([
-            { tableId: 7, recordIndex: 103, fieldName: 'A', value: 10 },
-            { tableId: 7, recordIndex: 104, fieldName: 'B', value: 'y' }
+    it('writes the new value to each record and field', () => {
+        expect(toCellWrites(changes, 7)).toEqual([
+            { tableId: 7, recordIndex: 3, fieldName: 'A', value: 10 },
+            { tableId: 7, recordIndex: 4, fieldName: 'B', value: 'y' }
         ]);
-        expect(toCellWrites([[0, 2, 'a', 'b']], 1, (r) => r)[0].fieldName).toBe(
-            '2'
-        );
     });
 });
 
@@ -145,6 +157,7 @@ describe('planWriteResult', () => {
             [3, 'A', 1],
             [4, 'B', 'x']
         ]);
+        expect(plan.failedChanges).toEqual([0, 1]);
         expect(plan.sourceEdits).toEqual([]);
         expect(table).toEqual(makeTable());
         expect(state).toEqual(makeState());
@@ -162,7 +175,9 @@ describe('planWriteResult', () => {
             }),
             makeState()
         );
+        // record space: [recordIndex, fieldName, oldValue]
         expect(plan.reverts).toEqual([[4, 'B', 'x']]);
+        expect(plan.failedChanges).toEqual([1]);
     });
 
     it('merges records in place and updates recordMeta', () => {
@@ -176,7 +191,6 @@ describe('planWriteResult', () => {
         );
         expect(table.records[0]).toBe(row);
         expect(row).toEqual({ A: 9, B: 2, C: 3 });
-        expect(plan.unemptiedRows).toEqual([]);
         expect(plan.sourceEdits).toEqual([]);
     });
 
@@ -211,7 +225,6 @@ describe('planWriteResult', () => {
             }),
             makeState()
         );
-        expect(plan.unemptiedRows).toEqual([1]);
         expect(plan.sourceEdits).toEqual([
             [1, 'A', 7],
             [1, 'B', 8],
@@ -262,8 +275,40 @@ describe('planWriteResult', () => {
         expect(state).toEqual(makeState());
         expect(plan).toEqual({
             reverts: [],
-            unemptiedRows: [],
+            failedChanges: [],
             sourceEdits: []
         });
+    });
+
+    it('syncs only the fields main changed when syncChangedFields is set', () => {
+        const table = makeTable();
+        const plan = planWriteResult(
+            table,
+            changes,
+            ok({
+                records: [
+                    written({ record: { A: 9, B: 2, C: 30 } }),
+                    // another table: never synced
+                    written({ tableId: 99, record: { A: 0, B: 0, C: 0 } })
+                ]
+            }),
+            makeState(),
+            { syncChangedFields: true }
+        );
+        expect(plan.sourceEdits).toEqual([
+            [0, 'A', 9],
+            [0, 'C', 30]
+        ]);
+        expect(table.records[0]).toEqual({ A: 9, B: 2, C: 30 });
+    });
+
+    it('syncs no fields without syncChangedFields', () => {
+        const plan = planWriteResult(
+            makeTable(),
+            changes,
+            ok({ records: [written({ record: { A: 9, B: 2, C: 30 } })] }),
+            makeState()
+        );
+        expect(plan.sourceEdits).toEqual([]);
     });
 });

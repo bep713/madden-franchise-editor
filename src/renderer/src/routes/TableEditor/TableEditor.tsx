@@ -35,6 +35,9 @@ interface LoadOptions {
     // Reload even if the table is already shown (a tab switch)
     force?: boolean;
     scroll?: GridScroll;
+    // Restored for a tab switch and an import reload; any other load of a
+    // table starts in the normal view
+    inverted?: boolean;
 }
 
 const TableEditor: React.FC = () => {
@@ -47,6 +50,7 @@ const TableEditor: React.FC = () => {
     const [pendingSelection, setPendingSelection] =
         useState<CellPosition | null>(null);
     const [pendingScroll, setPendingScroll] = useState<GridScroll | null>(null);
+    const [isInverted, setIsInverted] = useState(false);
 
     const {
         activeTab,
@@ -154,9 +158,11 @@ const TableEditor: React.FC = () => {
             setSelectedTableData(tableResult);
             setPendingSelection(selection);
             setPendingScroll(options.scroll ?? null);
+            setIsInverted(!!options.inverted);
             setViewState(tabKey, {
                 selection: selection ?? { row: 0, col: 0 },
-                scroll: options.scroll
+                scroll: options.scroll,
+                inverted: !!options.inverted
             });
             tableChanged(tabKey, table.id, table.name);
         }
@@ -217,6 +223,10 @@ const TableEditor: React.FC = () => {
         (scroll: GridScroll) => setViewState(activeKeyRef.current, { scroll }),
         [setViewState]
     );
+    const onToggleOrientation = (): void => {
+        setIsInverted(!isInverted);
+        setViewState(activeKeyRef.current, { inverted: !isInverted });
+    };
 
     const fileId = activeFranchiseFile?.fileId;
 
@@ -237,12 +247,16 @@ const TableEditor: React.FC = () => {
                 if (activeKeyRef.current !== tabKey) {
                     return;
                 }
-                // Back on the same cell and scroll position
+                // Back on the same cell, scroll position and orientation
                 const saved = getViewState(tabKey);
                 await onSelectTableRef.current(
                     table,
                     saved?.selection ?? null,
-                    { force: true, scroll: saved?.scroll }
+                    {
+                        force: true,
+                        scroll: saved?.scroll,
+                        inverted: saved?.inverted
+                    }
                 );
             }
         };
@@ -284,7 +298,8 @@ const TableEditor: React.FC = () => {
             // eslint-disable-next-line react-hooks/set-state-in-effect
             void onSelectTable(tabTable, saved?.selection ?? null, {
                 force: true,
-                scroll: saved?.scroll
+                scroll: saved?.scroll,
+                inverted: saved?.inverted
             });
         } else if (firstTable) {
             void onSelectTable(firstTable, null, { force: true });
@@ -340,12 +355,16 @@ const TableEditor: React.FC = () => {
                                         fileId={activeFranchiseFile.fileId}
                                         initialScroll={pendingScroll}
                                         initialSelection={pendingSelection}
+                                        isInverted={isInverted}
                                         isPinned={isPinned(selectedTable)}
                                         onFollowReference={onFollowReference}
                                         onExport={onExport}
                                         onImport={onImport}
                                         onScroll={onScroll}
                                         onSelectionChange={onSelectionChange}
+                                        onToggleOrientation={
+                                            onToggleOrientation
+                                        }
                                         onTogglePin={() =>
                                             togglePin(selectedTable)
                                         }

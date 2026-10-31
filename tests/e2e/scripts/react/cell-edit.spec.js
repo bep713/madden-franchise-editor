@@ -248,3 +248,27 @@ test("an enum dropdown edit is saved to the file (react)", async () => {
   await goToCell(tableEditor, 0, "InjuryStatus");
   expect(await tableEditor.grid.getTextAtSelectedCell()).to.equal("Injured");
 });
+
+test("undo doesn't reach into another table (react)", async () => {
+  const tableEditor = await openPlayerTable();
+  await goToCell(tableEditor, 0, "LastName");
+  await tableEditor.grid.setTextAtSelectedCell("BeforeSwitch");
+  await poll(
+    async () => (await readPlayerColumn("LastName"))[0],
+    (name) => name === "BeforeSwitch",
+    { ...FILE_POLL_OPTIONS, message: "The edit never reached the file" },
+  );
+
+  // Ctrl+Z in another table changes nothing there, or in the first table
+  const TEAM_TABLE_ID = 7482;
+  const before = await app.readTable(TEAM_TABLE_ID);
+  await tableEditor.openTableById(TEAM_TABLE_ID);
+  await tableEditor.grid.selectCellAt(0, 0);
+  await tableEditor.grid.undo();
+  // a write would take this long to reach the file
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  expect((await app.readTable(TEAM_TABLE_ID)).records).to.deep.equal(
+    before.records,
+  );
+  expect((await readPlayerColumn("LastName"))[0]).to.equal("BeforeSwitch");
+});

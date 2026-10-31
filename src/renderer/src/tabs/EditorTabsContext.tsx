@@ -30,8 +30,11 @@ export interface ScrollPosition {
 // Where a table tab was left, restored when it is activated again
 // (v4's saveTableEditorTabState)
 export interface TabViewState {
+    // (record, field), in either orientation
     selection?: CellPosition;
     scroll?: ScrollPosition;
+    // Switch Orientation, for the tab's current table only
+    inverted?: boolean;
 }
 
 export interface EditorTabsValue {
