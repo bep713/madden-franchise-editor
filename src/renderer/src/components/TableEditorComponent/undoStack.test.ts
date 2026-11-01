@@ -10,7 +10,10 @@ const change = (recordIndex: number, oldValue: unknown, newValue: unknown) =>
         newValue
     }) satisfies RecordChange;
 
-const entry = (...changes: RecordChange[]): UndoEntry => ({ changes });
+const entry = (...changes: RecordChange[]): UndoEntry => ({
+    kind: 'cells',
+    changes
+});
 
 describe('createUndoStack', () => {
     it('moves entries between undo and redo', () => {
@@ -56,6 +59,22 @@ describe('createUndoStack', () => {
         stack.takeUndo();
         stack.dropChanges(failed, [0]);
         expect(stack.takeRedo()).toBeNull();
+    });
+
+    it('keeps an empty entry with its record indices', () => {
+        const stack = createUndoStack();
+        const emptied: UndoEntry = {
+            kind: 'empty',
+            recordIndices: [3],
+            changes: [change(3, 7, 21)]
+        };
+        stack.push(entry(change(0, 1, 2)));
+        stack.push(emptied);
+        expect(stack.takeUndo()).toBe(emptied);
+        expect(stack.takeRedo()).toBe(emptied);
+
+        stack.dropChanges(emptied, [0]);
+        expect(stack.takeUndo()).not.toBe(emptied);
     });
 
     it('clears both lists', () => {

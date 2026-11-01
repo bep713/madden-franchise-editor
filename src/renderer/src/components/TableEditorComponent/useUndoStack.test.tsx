@@ -8,7 +8,7 @@ import {
     type RecordChange
 } from '@renderer/utils/cellWrites';
 import { createOrientation, type GridOrientation } from './orientation';
-import useUndoStack from './useUndoStack';
+import useUndoStack, { type EmptyHandler } from './useUndoStack';
 
 interface FakeShortcut {
     keys: string[][];
@@ -57,7 +57,7 @@ const change = (
     newValue
 });
 
-function setup() {
+function setup(emptyHandler?: EmptyHandler) {
     const fake = makeHot();
     const hotRef = {
         current: { hotInstance: fake.hot }
@@ -65,7 +65,10 @@ function setup() {
     const orientationRef: { current: GridOrientation } = {
         current: createOrientation(false, headerNames, identityRows)
     };
-    const hook = renderHook(() => useUndoStack(hotRef, orientationRef));
+    const emptyHandlerRef = { current: emptyHandler ?? null };
+    const hook = renderHook(() =>
+        useUndoStack(hotRef, orientationRef, emptyHandlerRef)
+    );
     return { ...fake, orientationRef, hook };
 }
 
@@ -129,6 +132,68 @@ describe('useUndoStack', () => {
         hook.result.current.clear();
         shortcuts[0].callback();
         expect(hot.setDataAtCell).not.toHaveBeenCalled();
+    });
+
+    it('undoes an empty entry by writing the old values back', () => {
+        const emptyHandler = vi.fn(async () => true);
+        const { hot, hook, shortcuts } = setup(emptyHandler);
+        hook.result.current.registerShortcuts();
+        hook.result.current.recordEmpty(
+            [2, 5],
+            [change(2, 0, 'a', 21), change(5, 0, 'b', 2)]
+        );
+        shortcuts[0].callback();
+        expect(hot.setDataAtCell).toHaveBeenCalledWith(
+            [
+                [2, 0, 'a'],
+                [5, 0, 'b']
+            ],
+            UNDO_SOURCE
+        );
+        expect(emptyHandler).not.toHaveBeenCalled();
+    });
+
+    it('redoes an empty entry through the handler', async () => {
+        const emptyHandler = vi.fn(async () => true);
+        const { hot, hook, shortcuts } = setup(emptyHandler);
+        hook.result.current.registerShortcuts();
+        hook.result.current.recordEmpty(
+            [2, 5],
+            [change(2, 0, 'a', 21), change(5, 0, 'b', 2)]
+        );
+        shortcuts[0].callback();
+        hot.setDataAtCell.mockClear();
+        hot.selectCell.mockClear();
+
+        shortcuts[1].callback();
+        expect(emptyHandler).toHaveBeenCalledWith([2, 5]);
+        expect(hot.setDataAtCell).not.toHaveBeenCalled();
+        await vi.waitFor(() =>
+            expect(hot.selectCell).toHaveBeenCalledWith(2, 0, 5, 0)
+        );
+
+        // Still on the stack
+        shortcuts[0].callback();
+        expect(hot.setDataAtCell).toHaveBeenCalledTimes(1);
+    });
+
+    it('drops an empty entry whose redo failed', async () => {
+        const emptyHandler = vi.fn(async () => false);
+        const { hot, hook, shortcuts } = setup(emptyHandler);
+        hook.result.current.registerShortcuts();
+        hook.result.current.recordEmpty([2], [change(2, 0, 'a', 21)]);
+        shortcuts[0].callback();
+        hot.setDataAtCell.mockClear();
+        hot.selectCell.mockClear();
+
+        shortcuts[1].callback();
+        await vi.waitFor(() => expect(emptyHandler).toHaveBeenCalled());
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        shortcuts[0].callback();
+        shortcuts[1].callback();
+        expect(hot.setDataAtCell).not.toHaveBeenCalled();
+        expect(emptyHandler).toHaveBeenCalledTimes(1);
+        expect(hot.selectCell).not.toHaveBeenCalled();
     });
 
     it('registers the shortcuts once and removes them', () => {

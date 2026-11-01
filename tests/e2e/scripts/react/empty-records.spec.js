@@ -165,3 +165,68 @@ test("editing an empty record keeps it empty with auto-unempty off (react)", asy
   expect(await grid.getTextAtSelectedCell()).to.equal(CAPACITY_POINTER);
   await waitForEmptyRows([3]);
 });
+
+test("setting records as empty can be undone and redone (react)", async () => {
+  const tableEditor = await openTable();
+  const { grid } = tableEditor;
+
+  const original = {};
+  for (const [row, col] of [[3, 0], [6, 0], [6, 1]]) {
+    await grid.selectCellAt(row, col);
+    original[`${row},${col}`] = await grid.getTextAtSelectedCell();
+  }
+
+  await grid.selectCellAt(3, 0);
+  await tableEditor.setSelectedRecordToEmpty();
+  await waitForCellText(grid, CAPACITY_POINTER);
+  await grid.selectCellAt(6, 0);
+  await tableEditor.setSelectedRecordToEmpty();
+  await waitForCellText(grid, CAPACITY_POINTER);
+  await waitForEmptyRows([3, 6]);
+
+  /** undo takes row 6 out of the chain. Row 3 points to 21 again */
+  await grid.undo();
+  await waitForEmptyRows([3]);
+  await grid.selectCellAt(6, 0);
+  await waitForCellText(grid, original["6,0"]);
+  expect(await grid.isSelectedCellEmpty()).to.equal(false);
+  await grid.selectCellAt(6, 1);
+  expect(await grid.getTextAtSelectedCell()).to.equal(original["6,1"]);
+  await grid.selectCellAt(3, 0);
+  await waitForCellText(grid, CAPACITY_POINTER);
+  expect(await grid.isSelectedCellEmpty()).to.equal(true);
+
+  /** undo again: nothing is empty */
+  await grid.undo();
+  await waitForEmptyRows([]);
+  await grid.selectCellAt(3, 0);
+  await waitForCellText(grid, original["3,0"]);
+  expect(await grid.isSelectedCellEmpty()).to.equal(false);
+
+  /** redo twice rebuilds the chain 3 -> 6 -> 21 */
+  await grid.redo();
+  await waitForEmptyRows([3]);
+  await grid.redo();
+  await waitForEmptyRows([3, 6]);
+  await grid.selectCellAt(3, 0);
+  await waitForCellText(grid, "00000000000000000000000000000110");
+  expect(await grid.isSelectedCellEmpty()).to.equal(true);
+  await grid.selectCellAt(6, 0);
+  await waitForCellText(grid, CAPACITY_POINTER);
+  expect(await grid.isSelectedCellEmpty()).to.equal(true);
+
+  /** undo once more, then the restored row 6 survives a save and reopen */
+  await grid.undo();
+  await waitForEmptyRows([3]);
+  await app.saveFile();
+  await electronApp.close();
+  const reopened = await openTable();
+  expect((await app.readTable(TABLE_ID)).emptyRecordIndices).to.deep.equal([3]);
+  await reopened.grid.selectCellAt(6, 0);
+  expect(await reopened.grid.getTextAtSelectedCell()).to.equal(original["6,0"]);
+  expect(await reopened.grid.isSelectedCellEmpty()).to.equal(false);
+  await reopened.grid.selectCellAt(6, 1);
+  expect(await reopened.grid.getTextAtSelectedCell()).to.equal(original["6,1"]);
+  await reopened.grid.selectCellAt(3, 0);
+  expect(await reopened.grid.getTextAtSelectedCell()).to.equal(CAPACITY_POINTER);
+});

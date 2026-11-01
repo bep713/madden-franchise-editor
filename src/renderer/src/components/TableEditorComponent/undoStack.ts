@@ -1,10 +1,13 @@
 import type { RecordCell, RecordChange } from '@renderer/utils/cellWrites';
 
-// One user edit (a typed value, a paste, a fill), in record terms, so it
-// replays into the same cells in either orientation
-export interface UndoEntry {
-    changes: RecordChange[];
-}
+// One user edit, in record terms, so it replays into the same cells in
+// either orientation. 'cells' is a typed value, a paste or a fill. 'empty'
+// is "set as empty": its changes are the first-4-byte fields (old value,
+// chain pointer). Undo writes the old values back, which takes the records
+// out of the chain; redo empties the records again.
+export type UndoEntry =
+    | { kind: 'cells'; changes: RecordChange[] }
+    | { kind: 'empty'; recordIndices: number[]; changes: RecordChange[] };
 
 export interface UndoStack {
     push(entry: UndoEntry): void; // clears redo

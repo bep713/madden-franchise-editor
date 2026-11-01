@@ -45,7 +45,7 @@ import useCellWrites, {
     createWriteState
 } from './useCellWrites';
 import useEmptyRecords from './useEmptyRecords';
-import useUndoStack from './useUndoStack';
+import useUndoStack, { EmptyHandler } from './useUndoStack';
 import styles from './TableEditorComponent.module.css';
 
 registerAllModules();
@@ -221,7 +221,9 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
             orientationRef.current = orientation;
         }, [orientation]);
 
-        const undo = useUndoStack(hotRef, orientationRef);
+        // Set below, once useEmptyRecords exists (it needs undo)
+        const emptyHandlerRef = useRef<EmptyHandler | null>(null);
+        const undo = useUndoStack(hotRef, orientationRef, emptyHandlerRef);
 
         useLayoutEffect(() => {
             if (isEditableTable(table)) {
@@ -304,8 +306,13 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
             hotRef,
             getWriteContext,
             writeStateRef,
-            orientationRef
+            orientationRef,
+            undo
         );
+        useLayoutEffect(() => {
+            emptyHandlerRef.current = (indices) =>
+                emptyRecords.setRecordsEmpty(indices, { record: false });
+        }, [emptyRecords]);
 
         // v4's contextMenuService. Everything is read at call time, so the
         // settings never change between renders. Only the last selection

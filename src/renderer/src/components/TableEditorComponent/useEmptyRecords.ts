@@ -1,28 +1,43 @@
 import { MutableRefObject, RefObject, useCallback, useMemo } from 'react';
 import type { HotTableRef } from '@handsontable/react-wrapper';
 import type { SetNextRecordResult, SetRecordsEmptyResult } from '@shared/types';
-import { applyEmptyState, WriteState } from '@renderer/utils/cellWrites';
+import {
+    applyEmptyState,
+    getEmptyRecordRowEdits,
+    RecordChange,
+    SourceEdit,
+    WriteState
+} from '@renderer/utils/cellWrites';
 import type { GridOrientation } from './orientation';
 import { CellWriteContext, toGridEdits } from './useCellWrites';
+import type { UndoControls } from './useUndoStack';
 
 type EmptyRecordsResult = SetRecordsEmptyResult | SetNextRecordResult;
 
-// The context menu's empty-record commands. Not undoable, as in v4: the sync
-// uses the 'onEmpty' source, which never reaches main or the undo stack.
+// The context menu's empty-record commands. The sync uses the 'onEmpty'
+// source, which never reaches main or the undo stack, so "set as empty"
+// records its own undo entry (v4 couldn't undo it). Setting the next record
+// to use isn't undoable.
 export default function useEmptyRecords(
     hotRef: RefObject<HotTableRef | null>,
     getContext: () => CellWriteContext | null,
     stateRef: MutableRefObject<WriteState>,
-    orientationRef: RefObject<GridOrientation | null>
+    orientationRef: RefObject<GridOrientation | null>,
+    undo: Pick<UndoControls, 'recordEmpty'>
 ) {
+    // Resolves to whether main made the change
     const run = useCallback(
         async (
             errorTitle: string,
-            call: (context: CellWriteContext) => Promise<EmptyRecordsResult>
-        ): Promise<void> => {
+            call: (context: CellWriteContext) => Promise<EmptyRecordsResult>,
+            onSuccess?: (
+                context: CellWriteContext,
+                result: EmptyRecordsResult
+            ) => void
+        ): Promise<boolean> => {
             const context = getContext();
             if (!context) {
-                return;
+                return false;
             }
             const { table, setLoaderOptions } = context;
 
@@ -49,7 +64,7 @@ export default function useEmptyRecords(
                         title: errorTitle,
                         message: result.error
                     });
-                    return;
+                    return false;
                 }
 
                 const hot = hotRef.current?.hotInstance;
@@ -62,7 +77,7 @@ export default function useEmptyRecords(
                     !orientation ||
                     getContext()?.table !== table
                 ) {
-                    return;
+                    return true;
                 }
 
                 const edits = applyEmptyState(table, result, stateRef.current);
@@ -78,6 +93,8 @@ export default function useEmptyRecords(
                 }
                 // cells() picks up the empty styling
                 hot.render();
+                onSuccess?.(context, result);
+                return true;
             } finally {
                 setLoaderOptions({ show: false });
             }
@@ -85,16 +102,57 @@ export default function useEmptyRecords(
         [getContext, hotRef, orientationRef, stateRef]
     );
 
+    // record: false for a redo, which is already on the stack
     const setRecordsEmpty = useCallback(
-        (indices: number[]) =>
-            run('Unable to set records as empty', ({ fileId, table }) =>
-                window.franchiseAPI.setTableRecordsEmpty(
-                    fileId,
-                    table.tableId,
-                    indices
-                )
-            ),
-        [run]
+        (indices: number[], { record = true } = {}) => {
+            // Before the call: applyEmptyState overwrites these fields
+            const context = getContext();
+            const before: SourceEdit[] = [];
+            for (const index of indices) {
+                const current = context?.table.records[index];
+                if (current) {
+                    before.push(
+                        ...getEmptyRecordRowEdits(
+                            context.table.headers,
+                            index,
+                            current
+                        )
+                    );
+                }
+            }
+
+            return run(
+                'Unable to set records as empty',
+                ({ fileId, table }) =>
+                    window.franchiseAPI.setTableRecordsEmpty(
+                        fileId,
+                        table.tableId,
+                        indices
+                    ),
+                // After success, so an undo can't start before main is done
+                ({ table }, result) => {
+                    const orientation = orientationRef.current;
+                    if (!record || !orientation || 'error' in result) {
+                        return;
+                    }
+                    const changes: RecordChange[] = [];
+                    for (const [recordIndex, fieldName, oldValue] of before) {
+                        const fieldIndex = orientation.fieldIndexOf(fieldName);
+                        if (fieldIndex === undefined) continue;
+                        changes.push({
+                            cell: { recordIndex, fieldIndex },
+                            fieldName,
+                            oldValue,
+                            newValue: table.records[recordIndex]?.[fieldName]
+                        });
+                    }
+                    if (changes.length) {
+                        undo.recordEmpty(indices, changes);
+                    }
+                }
+            );
+        },
+        [getContext, orientationRef, run, undo]
     );
 
     const setNextRecordToUse = useCallback(

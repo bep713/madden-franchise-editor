@@ -16,37 +16,49 @@ import {
 
 const SHORTCUTS_GROUP = 'mfeUndoRedo';
 
+export type EmptyHandler = (recordIndices: number[]) => Promise<boolean>;
+
 export interface UndoControls {
     // One entry per user edit (one afterChange call)
     record: (changes: RecordChange[]) => UndoEntry;
+    // One "set as empty" that succeeded. changes are its first-4-byte fields.
+    recordEmpty: (
+        recordIndices: number[],
+        changes: RecordChange[]
+    ) => UndoEntry;
     dropChanges: UndoStack['dropChanges'];
     clear: () => void;
 }
 
-// Replays an entry through the current orientation, then selects the
-// replayed range (which also scrolls it into view)
-function replay(
+// The entry's cells in the current orientation, skipping records and fields
+// that no longer exist
+function toVisualCells(
     hot: Handsontable,
     orientation: GridOrientation,
     entry: UndoEntry,
     direction: 'undo' | 'redo'
-): void {
+): [number, number, unknown][] {
     const rowCount = hot.countRows();
     const colCount = hot.countCols();
     const cells: [number, number, unknown][] = [];
     for (const { cell, value } of toReplayChanges(entry, direction)) {
         const [row, col] = orientation.toVisualCell(cell);
-        // The record or field no longer exists
         if (row === null || row < 0 || row >= rowCount || col >= colCount) {
             continue;
         }
         cells.push([row, col, value]);
     }
+    return cells;
+}
+
+// Selects the cells' bounding range, which also scrolls it into view
+function selectRange(
+    hot: Handsontable,
+    cells: [number, number, unknown][]
+): void {
     if (cells.length === 0) {
         return;
     }
-
-    hot.setDataAtCell(cells, direction === 'undo' ? UNDO_SOURCE : REDO_SOURCE);
     let [top, left] = cells[0];
     let [bottom, right] = cells[0];
     for (const [row, col] of cells) {
@@ -58,13 +70,32 @@ function replay(
     hot.selectCell(top, left, bottom, right);
 }
 
+// Replays an entry's values through the current orientation, then selects
+// the replayed range
+function replay(
+    hot: Handsontable,
+    orientation: GridOrientation,
+    entry: UndoEntry,
+    direction: 'undo' | 'redo'
+): void {
+    const cells = toVisualCells(hot, orientation, entry, direction);
+    if (cells.length === 0) {
+        return;
+    }
+    hot.setDataAtCell(cells, direction === 'undo' ? UNDO_SOURCE : REDO_SOURCE);
+    selectRange(hot, cells);
+}
+
 // Our own undo/redo in record terms, in place of Handsontable's UndoRedo
 // plugin (turn it off with `undo={false}`). Its entries hold visual cells,
 // so they can't follow an orientation switch. Call registerShortcuts once
-// the grid exists.
+// the grid exists. emptyHandlerRef empties records again for a redo of
+// "set as empty" (replaying the pointer values would leave the records out of
+// the chain); it returns false on an error.
 export default function useUndoStack(
     hotRef: RefObject<HotTableRef | null>,
-    orientationRef: RefObject<GridOrientation | null>
+    orientationRef: RefObject<GridOrientation | null>,
+    emptyHandlerRef: RefObject<EmptyHandler | null>
 ): UndoControls & { registerShortcuts: () => () => void } {
     // One stack for the grid's lifetime
     const [stack] = useState(createUndoStack);
@@ -79,11 +110,37 @@ export default function useUndoStack(
 
             const entry =
                 direction === 'undo' ? stack.takeUndo() : stack.takeRedo();
-            if (entry) {
-                replay(hot, orientation, entry, direction);
+            if (!entry) {
+                return;
             }
+            if (direction === 'undo' || entry.kind === 'cells') {
+                replay(hot, orientation, entry, direction);
+                return;
+            }
+
+            const emptyRecords = emptyHandlerRef.current;
+            if (!emptyRecords) {
+                return;
+            }
+            void emptyRecords(entry.recordIndices).then((success) => {
+                if (!success) {
+                    // Not redone, so it can't be undone either
+                    stack.dropChanges(
+                        entry,
+                        entry.changes.map((_change, index) => index)
+                    );
+                    return;
+                }
+                const current = orientationRef.current ?? orientation;
+                if (!hot.isDestroyed) {
+                    selectRange(
+                        hot,
+                        toVisualCells(hot, current, entry, direction)
+                    );
+                }
+            });
         },
-        [hotRef, orientationRef, stack]
+        [emptyHandlerRef, hotRef, orientationRef, stack]
     );
 
     const registerShortcuts = useCallback(() => {
@@ -126,7 +183,16 @@ export default function useUndoStack(
     return useMemo(
         () => ({
             record: (changes: RecordChange[]) => {
-                const entry = { changes };
+                const entry: UndoEntry = { kind: 'cells', changes };
+                stack.push(entry);
+                return entry;
+            },
+            recordEmpty: (recordIndices: number[], changes: RecordChange[]) => {
+                const entry: UndoEntry = {
+                    kind: 'empty',
+                    recordIndices,
+                    changes
+                };
                 stack.push(entry);
                 return entry;
             },
