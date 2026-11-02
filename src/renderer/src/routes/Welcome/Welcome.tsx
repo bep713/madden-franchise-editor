@@ -17,6 +17,10 @@ import Card from '@renderer/components/Card/Card';
 import RecentFilesList from '@renderer/components/RecentFilesList/RecentFilesList';
 import GameFileCard from '@renderer/components/GameFilesCard/GameFilesCard';
 import GetStartedCard, { GetStartedActions } from './Cards/GetStartedCard';
+import useCommonFilePrompt, {
+    CommonFileOverrides
+} from './components/CommonFileModal/useCommonFilePrompt';
+import { FileType } from '@shared/types/franchise';
 
 function toRecentFiles(entries: RecentFileEntry[]): RecentFile[] {
     return entries.map((entry) => ({
@@ -48,6 +52,8 @@ const Welcome: React.FC = () => {
     >({});
     const [recentFiles, setRecentFiles] = useState<RecentFile[]>([]);
     const [openFile, setOpenFile] = useContext(FranchiseFileContext);
+    const { promptForOverrides, modal: commonFileModal } =
+        useCommonFilePrompt();
 
     useEffect((): void => {
         (async (): Promise<void> => {
@@ -93,16 +99,27 @@ const Welcome: React.FC = () => {
         }
     }
 
-    // Follows v4's navigationService "open-file" flow. TODO: FTC year/type
-    // overrides and the schema picker (see react-conversion/plan.md).
+    // Follows v4's navigationService "open-file" flow. TODO: the schema
+    // picker (see react-conversion/plan.md).
     async function initializeFile(path: string): Promise<void> {
+        // Common files don't record their year or type, so ask, as v4 does
+        let openOptions: CommonFileOverrides | undefined;
+        const { format } =
+            await window.franchiseAPI.getMetadataFromFilePath(path);
+        if (format === FileType.COMMON) {
+            const overrides = await promptForOverrides();
+            // Cancelled: keep the current file open
+            if (!overrides) return;
+            openOptions = overrides;
+        }
+
         // Release the previous file so two parsed files never coexist in main
         if (openFile) {
             setOpenFile?.(undefined);
             await window.franchiseAPI.closeFile(openFile.fileId);
         }
 
-        const result = await window.franchiseAPI.openFile(path);
+        const result = await window.franchiseAPI.openFile(path, openOptions);
         if ('error' in result) {
             await window.electronAPI.showMessageBox({
                 type: 'error',
@@ -234,6 +251,7 @@ const Welcome: React.FC = () => {
                     </main>
                 </Allotment.Pane>
             </Allotment>
+            {commonFileModal}
         </Layout>
     );
 };

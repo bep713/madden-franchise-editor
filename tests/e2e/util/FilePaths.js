@@ -14,6 +14,8 @@ module.exports = {
     },
     m22: {
         base: BASE_DIRS.m22,
+        // A franchise-common file. Only opened, never saved.
+        common: path.join(BASE_DIRS.m22, 'common/FTC-E2ETEST'),
         career: {
             pristine: path.join(BASE_DIRS.m22, 'career/CAREER-M22TEST'),
             test: path.join(BASE_DIRS.m22, 'career/test/CAREER-E2ETEST')

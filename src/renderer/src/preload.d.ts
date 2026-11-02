@@ -28,16 +28,26 @@ export interface RecentFileEntry {
     time: number;
 }
 
+// franchise:open-file options (FranchiseFileManager._buildFileSettings)
+export interface OpenFileOptions {
+    gameYearOverride?: number;
+    gameTypeOverride?: string;
+}
+
 declare global {
     interface Window {
         franchiseAPI: {
             openFile: (
                 filePath: string,
-                options?: Record<string, unknown>
+                options?: OpenFileOptions
             ) => Promise<OpenFileResult>;
             closeFile: (fileId: string) => Promise<boolean>;
             getActiveFileId: () => Promise<string | null>;
             getMetadata: (fileId: string) => Promise<FileMetadata | null>;
+            // A header sniff before opening; format is null if unreadable
+            getMetadataFromFilePath: (
+                filePath: string
+            ) => Promise<{ format: string | null }>;
             getTableList: (fileId: string) => Promise<TableListItem[]>;
             readTableData: (
                 fileId: string,

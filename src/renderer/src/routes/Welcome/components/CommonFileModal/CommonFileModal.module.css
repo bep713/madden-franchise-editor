@@ -1,0 +1,21 @@
+@import '@assets/spacing.css';
+
+.dialog {
+    width: min(420px, 90vw);
+}
+
+.body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.body p {
+    margin: 0;
+}
+
+.checkbox {
+    display: flex;
+    gap: var(--spacing-2);
+    align-items: center;
+}

@@ -41,9 +41,15 @@ class WelcomePage {
     );
   }
 
-  async openFranchiseFile(electronApp, filePath) {
+  // Clicks "Open a file..." without waiting for the file, so a test can
+  // answer the common-file prompt first
+  async startOpenFile(electronApp, filePath) {
     await stubOpenDialog(electronApp, filePath);
     await this.locators.openFileLink.click();
+  }
+
+  async openFranchiseFile(electronApp, filePath) {
+    await this.startOpenFile(electronApp, filePath);
     await this.waitForOpenFile(filePath);
   }
 
