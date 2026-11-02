@@ -1,4 +1,8 @@
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
 const { expect } = require("chai");
+const { FranchiseFile } = require("madden-franchise");
 const { test } = require("../../util/test");
 
 const electron = require("../../util/Electron");
@@ -18,6 +22,7 @@ const NEXT_EMPTY_PLAYER_ROW = 427;
 const MAX_BULK_PASTE_MS = 15000;
 const FILE_POLL_OPTIONS = { timeout: 30000 };
 const AUTO_UNEMPTY = { general: { autoUnempty: [true] } };
+const AUTO_SAVE = { general: { autoSave: [true] } };
 
 let app;
 let electronApp;
@@ -62,6 +67,25 @@ async function goToCell(tableEditor, row, fieldName) {
 async function readPlayerColumn(fieldName) {
   const table = await app.readTable(PLAYER_TABLE_ID, [fieldName]);
   return table.records.map((record) => record[fieldName]);
+}
+
+// Parses the file on disk in the test process, not the app's in-memory copy.
+// Returns null while the file can't be parsed (mid-write).
+async function readPlayerFieldFromDisk(fieldName, row) {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "mfe-disk-read-"));
+  try {
+    const file = await FranchiseFile.create(FilePaths.m22.career.test, {
+      schemaDirectory: tmpDir,
+      saveOnChange: false,
+    });
+    const table = file.getTableById(PLAYER_TABLE_ID);
+    await table.readRecords();
+    return table.records[row][fieldName];
+  } catch {
+    return null;
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
 }
 
 async function readEmptyPlayerRows() {
@@ -290,4 +314,45 @@ test("undo doesn't reach into another table (react)", async () => {
     before.records,
   );
   expect((await readPlayerColumn("LastName"))[0]).to.equal("BeforeSwitch");
+});
+
+// Regression: a write that arrived during an auto-save was never saved, and
+// its response could land before the earlier write's, flickering the grid
+test("fast edits and a fast double undo with autoSave reach the grid and the disk (react)", async () => {
+  const tableEditor = await openPlayerTable(AUTO_SAVE);
+
+  // Once every queued save is done, the grid, main's copy and the file on
+  // disk all hold `value`
+  const expectSettled = async (value) => {
+    await poll(
+      () => tableEditor.grid.getTextAtSelectedCell(),
+      (text) => text === String(value),
+      { message: `The grid never showed ${value}` },
+    );
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    expect(await tableEditor.grid.getTextAtSelectedCell()).to.equal(
+      String(value),
+    );
+    expect((await readPlayerColumn("JerseyNum"))[0]).to.equal(value);
+    const onDisk = await poll(
+      () => readPlayerFieldFromDisk("JerseyNum", 0),
+      (diskValue) => diskValue !== null,
+      { ...FILE_POLL_OPTIONS, message: "The file on disk couldn't be read" },
+    );
+    expect(onDisk).to.equal(value);
+  };
+
+  // the second edit arrives while the first one is saving
+  await goToCell(tableEditor, 0, "JerseyNum");
+  await tableEditor.grid.setTextAtSelectedCell("5");
+  await tableEditor.grid.setTextAtSelectedCell("6");
+  await expectSettled(6);
+
+  await tableEditor.grid.setTextAtSelectedCell("7");
+  await expectSettled(7);
+
+  // two quick Ctrl+Z presses
+  await tableEditor.grid.undo();
+  await tableEditor.grid.undo();
+  await expectSettled(5);
 });

@@ -21,8 +21,15 @@ const { detectFormat } = require("../utils/detectFormat");
  */
 class FranchiseFileManager {
   constructor() {
-    /** @type {Map<string, { file: FranchiseFile, path: string }>} */
+    /** @type {Map<string, { file: FranchiseFile, path: string, autoSave: boolean }>} */
     this.activeFiles = new Map();
+    // fileId -> tail of that file's task queue (see _runExclusive). Keyed by
+    // fileId because loadSchema replaces the activeFiles entry.
+    /** @type {Map<string, Promise<void>>} */
+    this._fileQueues = new Map();
+    // fileId -> { pending } where pending is a queued auto-save that hasn't started
+    /** @type {Map<string, { pending: Promise<void>|null }>} */
+    this._autoSaves = new Map();
     this._nextFileId = 1;
     this._schemaDirectory = path.join(app.getPath("userData"), "schemas");
     this._preferencesProvider = null;
@@ -78,9 +85,6 @@ class FranchiseFileManager {
    */
   _buildFileSettings(options = {}) {
     const preferences = this._getPreferences();
-    const autoSave =
-      options.autoSave ??
-      this._isPreferenceEnabled(preferences?.general?.autoSave);
     const autoUnempty =
       options.autoUnempty ??
       this._isPreferenceEnabled(preferences?.general?.autoUnempty);
@@ -88,7 +92,8 @@ class FranchiseFileManager {
     const settings = {
       autoParse: true,
       autoUnempty,
-      saveOnChange: autoSave,
+      // The library's saveOnChange is always off; requestAutoSave saves instead
+      saveOnChange: false,
       schemaDirectory: options.schemaDirectory || this._schemaDirectory,
     };
 
@@ -114,6 +119,19 @@ class FranchiseFileManager {
   }
 
   /**
+   * Resolve whether a file auto-saves: the open option wins over the preference.
+   * @param {object} options
+   * @returns {boolean}
+   * @private
+   */
+  _resolveAutoSave(options = {}) {
+    return (
+      options.autoSave ??
+      this._isPreferenceEnabled(this._getPreferences()?.general?.autoSave)
+    );
+  }
+
+  /**
    * Apply managed editor preferences to a loaded file instance.
    * @param {FranchiseFile} file
    * @param {object} preferences
@@ -132,9 +150,7 @@ class FranchiseFileManager {
       autoUnempty: this._isPreferenceEnabled(
         resolvedPreferences?.general?.autoUnempty,
       ),
-      saveOnChange: this._isPreferenceEnabled(
-        resolvedPreferences?.general?.autoSave,
-      ),
+      saveOnChange: false,
     };
   }
 
@@ -144,8 +160,13 @@ class FranchiseFileManager {
    * @returns {{ updatedFileCount: number }}
    */
   applyPreferenceSettings(preferences = null) {
-    this.activeFiles.forEach(({ file }) => {
-      this._applyPreferencesToFile(file, preferences);
+    const resolvedPreferences = preferences || this._getPreferences();
+    const autoSave = this._isPreferenceEnabled(
+      resolvedPreferences?.general?.autoSave,
+    );
+    this.activeFiles.forEach((entry) => {
+      this._applyPreferencesToFile(entry.file, resolvedPreferences);
+      entry.autoSave = autoSave;
     });
 
     return { updatedFileCount: this.activeFiles.size };
@@ -309,6 +330,7 @@ class FranchiseFileManager {
    */
   async openFile(filePath, options = {}, metaOptions = {}) {
     const settings = this._buildFileSettings(options);
+    const autoSave = this._resolveAutoSave(options);
 
     return new Promise((resolve, reject) => {
       startupProfiler.mark("open:parse-start");
@@ -336,12 +358,15 @@ class FranchiseFileManager {
         this.activeFiles.set(fileId, {
           file,
           path: filePath,
+          autoSave,
         });
 
         // Set up change event forwarding
         file.on("change", (table) => {
           const current = this.activeFiles.get(fileId);
-          if (current?.suppressChangeEvents) return;
+          if (current?.file !== file) return; // closed or replaced by a reload
+          this.requestAutoSave(fileId);
+          if (current.suppressChangeEvents) return;
           this._emitToFileWindows(fileId, "franchise:table-changed", {
             fileId,
             tableId: table.header.tableId,
@@ -350,8 +375,8 @@ class FranchiseFileManager {
         });
 
         // forward the saving and saved events to main
-        file.on("saving", () => this._loggedIpc?.emit("saving"));
-        file.on("saved", () => this._loggedIpc?.emit("saved"));
+        file.on("saving", () => this._loggedIpc?.emit?.("saving"));
+        file.on("saved", () => this._loggedIpc?.emit?.("saved"));
 
         // Back up the original bytes on user-initiated opens only
         // (internal reopens pass an existing fileId)
@@ -393,7 +418,56 @@ class FranchiseFileManager {
    * @returns {boolean}
    */
   closeFile(fileId) {
+    // Queued tasks keep their own file reference and finish
+    this._fileQueues.delete(fileId);
+    this._autoSaves.delete(fileId);
     return this.activeFiles.delete(fileId);
+  }
+
+  /**
+   * Run fn after every earlier task for this file has settled. File writes,
+   * saves and reloads go through here so they never interleave.
+   * @template T
+   * @param {string} fileId
+   * @param {() => T|Promise<T>} fn
+   * @returns {Promise<T>}
+   */
+  _runExclusive(fileId, fn) {
+    const tail = this._fileQueues.get(fileId) || Promise.resolve();
+    const result = tail.then(() => fn());
+    // the stored tail never rejects, so one failure doesn't block the queue
+    this._fileQueues.set(fileId, result.catch(() => {}));
+    return result;
+  }
+
+  /**
+   * Queue a save if the file auto-saves. Requests made before the queued save
+   * starts share it. Save errors are logged, never thrown.
+   * @param {string} fileId
+   * @returns {Promise<void>}
+   */
+  requestAutoSave(fileId) {
+    const entry = this.activeFiles.get(fileId);
+    if (!entry?.autoSave) return Promise.resolve();
+
+    let state = this._autoSaves.get(fileId);
+    if (!state) {
+      state = { pending: null };
+      this._autoSaves.set(fileId, state);
+    }
+    if (state.pending) return state.pending;
+
+    const pending = this._runExclusive(fileId, async () => {
+      // requests from now on need a new save
+      state.pending = null;
+      const current = this.activeFiles.get(fileId);
+      if (!current?.autoSave) return;
+      await current.file.save();
+    }).catch((error) => {
+      console.error(`Auto-save failed for ${fileId}:`, error);
+    });
+    state.pending = pending;
+    return pending;
   }
 
   /**
@@ -466,6 +540,12 @@ class FranchiseFileManager {
    * @returns {Promise<string>}
    */
   async saveFile(fileId, options = {}) {
+    return this._runExclusive(fileId, () =>
+      this._saveFileUnlocked(fileId, options),
+    );
+  }
+
+  async _saveFileUnlocked(fileId, options = {}) {
     const entry = this.activeFiles.get(fileId);
     if (!entry) {
       throw new Error(`File not found: ${fileId}`);
@@ -474,17 +554,8 @@ class FranchiseFileManager {
     const { file } = entry;
     const { path } = options;
 
-    return new Promise((resolve, reject) => {
-      const savePromise = options.sync
-        ? Promise.resolve(file.save(path, { sync: true }))
-        : file.save(path);
-
-      savePromise
-        .then(() => {
-          resolve(file.filePath || entry.path);
-        })
-        .catch(reject);
-    });
+    await (options.sync ? file.save(path, { sync: true }) : file.save(path));
+    return file.filePath || entry.path;
   }
 
   /**
@@ -509,14 +580,16 @@ class FranchiseFileManager {
    * @returns {Promise<string>}
    */
   async saveFileAsAndOpen(fileId, newPath) {
-    const entry = this.activeFiles.get(fileId);
-    if (!entry) {
-      throw new Error(`File not found: ${fileId}`);
-    }
+    return this._runExclusive(fileId, () => {
+      const entry = this.activeFiles.get(fileId);
+      if (!entry) {
+        throw new Error(`File not found: ${fileId}`);
+      }
 
-    entry.file.filePath = newPath;
-    entry.path = newPath;
-    return this.saveFile(fileId, {});
+      entry.file.filePath = newPath;
+      entry.path = newPath;
+      return this._saveFileUnlocked(fileId, {});
+    });
   }
 
   /**
@@ -527,6 +600,12 @@ class FranchiseFileManager {
    * @returns {Promise<object>}
    */
   async loadSchema(fileId, schemaPath, saveSchema = false) {
+    return this._runExclusive(fileId, () =>
+      this._loadSchemaUnlocked(fileId, schemaPath, saveSchema),
+    );
+  }
+
+  async _loadSchemaUnlocked(fileId, schemaPath, saveSchema) {
     const entry = this.activeFiles.get(fileId);
     if (!entry) {
       throw new Error(`File not found: ${fileId}`);
@@ -537,6 +616,7 @@ class FranchiseFileManager {
       entry.path,
       {
         ...file.settings,
+        autoSave: entry.autoSave,
         schemaDirectory: this._schemaDirectory,
         schemaOverride: { path: schemaPath },
       },
@@ -822,14 +902,17 @@ class FranchiseFileManager {
    * @returns {Promise<{results: Array<object>, records: Array<object>, emptyStates: Array<object>}>}
    */
   async writeBulkTableCells(fileId, changes) {
+    return this._runExclusive(fileId, () =>
+      this._writeBulkTableCellsUnlocked(fileId, changes),
+    );
+  }
+
+  async _writeBulkTableCellsUnlocked(fileId, changes) {
     const entry = this.activeFiles.get(fileId);
     if (!entry) {
       throw new Error(`File not found: ${fileId}`);
     }
 
-    const file = entry.file;
-    const originalSaveOnChange = file.settings.saveOnChange;
-    file.settings.saveOnChange = false;
     entry.suppressChangeEvents = true; // coalesced table-changed events are sent below
 
     const results = [];
@@ -867,7 +950,6 @@ class FranchiseFileManager {
         }
       }
     } finally {
-      file.settings.saveOnChange = originalSaveOnChange;
       entry.suppressChangeEvents = false;
     }
 
@@ -913,10 +995,8 @@ class FranchiseFileManager {
       });
     }
 
-    if (originalSaveOnChange && changedTables.size > 0) {
-      await file.save();
-    }
-
+    // The library's change events already queued an auto-save behind this
+    // write; the response doesn't wait for it
     return { results, records, emptyStates };
   }
 
@@ -928,6 +1008,12 @@ class FranchiseFileManager {
    * @returns {Promise<object>}
    */
   async setTableRecordsEmpty(fileId, tableId, recordIndices = []) {
+    return this._runExclusive(fileId, () =>
+      this._setTableRecordsEmptyUnlocked(fileId, tableId, recordIndices),
+    );
+  }
+
+  async _setTableRecordsEmptyUnlocked(fileId, tableId, recordIndices) {
     const entry = this.activeFiles.get(fileId);
     if (!entry) {
       throw new Error(`File not found: ${fileId}`);
@@ -979,6 +1065,12 @@ class FranchiseFileManager {
    * @returns {Promise<object>}
    */
   async setTableNextRecordToUse(fileId, tableId, recordIndex) {
+    return this._runExclusive(fileId, () =>
+      this._setTableNextRecordToUseUnlocked(fileId, tableId, recordIndex),
+    );
+  }
+
+  async _setTableNextRecordToUseUnlocked(fileId, tableId, recordIndex) {
     const entry = this.activeFiles.get(fileId);
     if (!entry) {
       throw new Error(`File not found: ${fileId}`);
