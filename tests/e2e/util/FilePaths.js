@@ -1,10 +1,17 @@
 const path = require('path');
 
 const BASE_DIRS = {
-    m22: path.join(__dirname, '../../data/m22')
+    m22: path.join(__dirname, '../../data/m22'),
+    c27: path.join(__dirname, '../../data/c27')
 };
 
 module.exports = {
+    c27: {
+        base: BASE_DIRS.c27,
+        dynasty: {
+            test: path.join(BASE_DIRS.c27, 'dynasty/test/DYNASTY-E2ETEST')
+        }
+    },
     m22: {
         base: BASE_DIRS.m22,
         career: {

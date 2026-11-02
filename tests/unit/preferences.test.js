@@ -56,21 +56,33 @@ test("a real user's file loads and is rewritten with only the missing sections a
     path.join(__dirname, "fixtures/preferences/real-user.json"),
     "utf8",
   );
-  // The fixture predates the tableEditor section, which is appended on load
+  // The fixture predates showPinnedTables, which is filled in on load. The
+  // store merges general over the defaults, so it lands in schema order.
+  const saved = JSON.parse(input);
+  const general = {};
+  for (const [key, value] of Object.entries(saved.general)) {
+    general[key] = value;
+    if (key === "autoSave") general.showPinnedTables = [true];
+  }
   const expected = {
-    ...JSON.parse(input),
-    tableEditor: { showPinnedTables: true },
+    ...saved,
+    general,
+    settingsManager: {
+      ...saved.settingsManager,
+      general: { ...saved.settingsManager.general, showPinnedTablesSet: false },
+    },
   };
   const { ipc } = boot(input);
   assert.deepStrictEqual(await ipc.invoke("preferences:get"), expected);
   assert.equal(fs.readFileSync(prefsFile(), "utf8"), json(expected));
 });
 
-test("defaults include the tableEditor section", () => {
+test("defaults show pinned tables, as a new general setting", () => {
   const { handler } = boot();
-  assert.deepStrictEqual(handler.getPreferenceDefaults().tableEditor, {
-    showPinnedTables: true,
-  });
+  const defaults = handler.getPreferenceDefaults();
+  assert.deepStrictEqual(defaults.general.showPinnedTables, [true]);
+  assert.equal(defaults.settingsManager.general.showPinnedTablesSet, false);
+  assert.equal("tableEditor" in defaults, false);
 });
 
 test("no file: defaults are returned and written with 4-space indent", async () => {

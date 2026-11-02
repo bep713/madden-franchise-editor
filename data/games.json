@@ -5,6 +5,7 @@
       "gameFilesRelativePath": "Madden NFL 19",
       "savesRelativePath": "Madden NFL 19/settings"
     },
+    "gameType": "madden",
     "gameYear": 19,
     "isSupported": true,
     "iconPath": "assets/game-icons/M19.PNG",
@@ -18,6 +19,7 @@
       "gameFilesRelativePath": "Madden NFL 20",
       "savesRelativePath": "Madden NFL 20/settings"
     },
+    "gameType": "madden",
     "gameYear": 20,
     "isSupported": true,
     "iconPath": "assets/game-icons/M20.PNG",
@@ -31,6 +33,7 @@
       "gameFilesRelativePath": "Madden NFL 21",
       "savesRelativePath": "Madden NFL 21/saves"
     },
+    "gameType": "madden",
     "gameYear": 21,
     "isSupported": true,
     "iconPath": "assets/game-icons/M21.PNG",
@@ -44,6 +47,7 @@
       "gameFilesRelativePath": "Madden NFL 22",
       "savesRelativePath": "Madden NFL 22/saves"
     },
+    "gameType": "madden",
     "gameYear": 22,
     "isSupported": true,
     "iconPath": "assets/game-icons/M22.PNG",
@@ -57,6 +61,7 @@
       "gameFilesRelativePath": "Madden NFL 23",
       "savesRelativePath": "Madden NFL 23/saves"
     },
+    "gameType": "madden",
     "gameYear": 23,
     "isSupported": true,
     "iconPath": "assets/game-icons/M23.PNG",
@@ -70,6 +75,7 @@
       "gameFilesRelativePath": "Madden NFL 24",
       "savesRelativePath": "Madden NFL 24/saves"
     },
+    "gameType": "madden",
     "gameYear": 24,
     "isSupported": true,
     "iconPath": "assets/game-icons/M24.PNG",
@@ -83,6 +89,7 @@
       "gameFilesRelativePath": "Madden NFL 25",
       "savesRelativePath": "Madden NFL 25/saves"
     },
+    "gameType": "madden",
     "gameYear": 25,
     "isSupported": true,
     "iconPath": "assets/game-icons/M25.PNG",
@@ -96,6 +103,7 @@
       "gameFilesRelativePath": "Madden NFL 26",
       "savesRelativePath": "Madden NFL 26/saves"
     },
+    "gameType": "madden",
     "gameYear": 26,
     "isSupported": true,
     "iconPath": "assets/game-icons/M26.PNG",
@@ -109,11 +117,26 @@
       "gameFilesRelativePath": "Madden NFL 27",
       "savesRelativePath": "Madden NFL 27/settings"
     },
+    "gameType": "madden",
     "gameYear": 27,
     "isSupported": true,
     "iconPath": "assets/game-icons/M27.PNG",
     "shortTitle": "Madden 27",
     "title": "Madden NFL 27",
+    "year": "27"
+  },
+  {
+    "abbreviation": "C27",
+    "directories": {
+      "gameFilesRelativePath": "EA SPORTS College Football 27",
+      "savesRelativePath": "College Football 27/saves"
+    },
+    "gameType": "college",
+    "gameYear": 27,
+    "isSupported": true,
+    "iconPath": "assets/game-icons/C27.PNG",
+    "shortTitle": "CFB 27",
+    "title": "College Football 27",
     "year": "27"
   }
 ]

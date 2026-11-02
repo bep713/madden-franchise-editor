@@ -8,6 +8,7 @@ class SettingsManager {
       continueButton: this.window.locator(".continue-btn"),
       autoSaveCheckbox: this.window.locator("#autoSave"),
       autoUnemptyCheckbox: this.window.locator("#autoUnempty"),
+      showPinnedTablesCheckbox: this.window.locator("#showPinnedTables"),
       openExcelAfterExportCheckbox: this.window.locator(
         "#openExcelAfterImport",
       ),

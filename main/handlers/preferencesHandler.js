@@ -229,7 +229,6 @@ function getPreferenceDefaults() {
   }
   // Include the sections that are not part of the settings form
   defaults.settingsManager = preferencesSchema.settingsManager;
-  defaults.tableEditor = preferencesSchema.tableEditor;
   return defaults;
 }
 

@@ -14,10 +14,18 @@ export function buildOpenFranchiseFile(
         path,
         metadata,
         tables: tables.map((table, index) => ({ ...table, index })),
-        game: (games as GameVersion[]).find(
-            (game) => game.gameYear === metadata.gameYear
-        )
+        game: findGame(metadata)
     };
+}
+
+// Madden and College Football share game years, so match on the type too.
+// Files without a gameType are Madden, as in v4.
+export function findGame(metadata: FileMetadata): GameVersion | undefined {
+    const gameType = metadata.type?.gameType || 'madden';
+    return (games as GameVersion[]).find(
+        (game) =>
+            game.gameYear === metadata.gameYear && game.gameType === gameType
+    );
 }
 
 export default function useActiveFranchiseFile(): [

@@ -55,6 +55,14 @@
           "help": "If checked, the app will save after any change is made."
         },
         {
+          "key": "showPinnedTables",
+          "label": "Show pinned tables in the table editor",
+          "type": "checkbox",
+          "defaultValue": [true],
+          "options": [{ "label": "Show pinned tables", "value": true }],
+          "help": "If checked, pinned tables are listed in their own section at the top of the table editor's table list."
+        },
+        {
           "key": "checkForSchemaUpdates",
           "label": "Automatically re-scan schemas after a Madden update",
           "type": "checkbox",
@@ -183,9 +191,6 @@
       ]
     }
   ],
-  "tableEditor": {
-    "showPinnedTables": true
-  },
   "settingsManager": {
     "general": {
       "defaultDirectorySet": false,
@@ -193,6 +198,7 @@
       "checkForUpdatesSet": false,
       "updateChannelSet": false,
       "autoSaveSet": false,
+      "showPinnedTablesSet": false,
       "autoUnemptySet": false,
       "checkForSchemaUpdatesSet": false,
       "openExcelAfterImportSet": false,

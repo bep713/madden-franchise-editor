@@ -51,6 +51,13 @@ class WelcomePage {
     await this.locators.tableEditorLink.click();
   }
 
+  // The open file's game icon on the Get Started card, by game shortTitle
+  gameIcon(shortTitle) {
+    return this.locators.getStartedCard.getByRole("img", {
+      name: `${shortTitle} icon`,
+    });
+  }
+
   // The Recent Files card for `name` (a file's basename)
   recentFile(name) {
     return this.locators.recentFiles

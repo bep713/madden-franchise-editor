@@ -13,6 +13,7 @@ export interface GameVersion {
         gameFilesRelativePath: string;
         savesRelativePath: string;
     };
+    gameType: string;
     gameYear: number;
     isSupported: boolean;
     iconPath: string;

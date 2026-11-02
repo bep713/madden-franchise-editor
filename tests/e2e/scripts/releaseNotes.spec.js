@@ -24,6 +24,9 @@ test("release notes continue button advances to settings", async () => {
   // the general settings page should now be shown
   await settingsManager.locators.autoSaveCheckbox.waitFor();
   expect(await settingsManager.locators.autoSaveCheckbox.isVisible()).to.eql(true);
+  expect(
+    await settingsManager.locators.showPinnedTablesCheckbox.isChecked(),
+  ).to.eql(true);
 
   // previous goes back to release notes
   await settingsManager.clickPrevious();

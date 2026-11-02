@@ -78,7 +78,7 @@ const GetStartedCard: React.FC<GetStartedCardProps> = ({
                         title: openFile
                             ? openFile.path
                                 ? basename(openFile.path)
-                                : `M${openFile.metadata.gameYear} file`
+                                : `${openFile.game?.abbreviation ?? `M${openFile.metadata.gameYear}`} file`
                             : 'Get Started'
                     }}
                 >

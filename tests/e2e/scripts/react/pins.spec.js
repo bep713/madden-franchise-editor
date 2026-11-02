@@ -137,8 +137,8 @@ test("pins e2e test (react)", async () => {
   await tableEditor.togglePinnedSection();
   await tableEditor.waitForPinnedTableIds([]);
   await poll(
-    async () => (await readJson(prefsFile))?.tableEditor?.showPinnedTables,
-    (value) => value === false,
+    async () => (await readJson(prefsFile))?.general?.showPinnedTables,
+    (value) => Array.isArray(value) && value.length === 0,
     { message: "showPinnedTables was never saved as false" },
   );
   // with the section hidden, pinned tables are back in the full list. It is

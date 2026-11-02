@@ -4,7 +4,8 @@ const { app, shell } = require("electron");
 const games = require("../../data/games.json");
 const { ensureRecentFilesLoaded } = require("./recentFilesHandler");
 
-const CAREER_FILE_PATTERN = /^CAREER-\w+$/;
+// Madden saves are CAREER-*, College Football saves are DYNASTY-*
+const SAVE_FILE_PATTERN = /^(CAREER|DYNASTY)-\w+$/;
 
 /**
  * Main process handlers for the React welcome page (window.electronAPI.files).
@@ -47,7 +48,7 @@ function getRecentFiles() {
 }
 
 /**
- * Scans each game's Documents saves folder for CAREER-* files.
+ * Scans each game's Documents saves folder for CAREER-* and DYNASTY-* files.
  * Games without a saves folder (or without saves) are left out.
  */
 async function getSavesByGame() {
@@ -70,7 +71,7 @@ async function getSavesByGame() {
     const files = await Promise.all(
       dirents
         .filter(
-          (dirent) => dirent.isFile() && CAREER_FILE_PATTERN.test(dirent.name),
+          (dirent) => dirent.isFile() && SAVE_FILE_PATTERN.test(dirent.name),
         )
         .map(async (dirent) => {
           const fullPath = path.join(savesFullPath, dirent.name);

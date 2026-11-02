@@ -108,10 +108,11 @@ const TableEditor: React.FC = () => {
 
     const { pinnedTables, isPinned, togglePin } =
         usePinnedTables(activeFranchiseFile);
-    const [showPinnedTables, setShowPinnedTables] = usePreference(
-        'tableEditor.showPinnedTables',
-        true
-    );
+    // A settings checkbox, so it is stored as [true] (on) or [] (off)
+    const [showPinnedTablesValue, setShowPinnedTablesValue] = usePreference<
+        unknown[]
+    >('general.showPinnedTables', [true]);
+    const showPinnedTables = showPinnedTablesValue.length > 0;
 
     const selectedTable = activeFranchiseFile?.tables.find(
         (table) => table.id === selectedTableId
@@ -481,7 +482,9 @@ const TableEditor: React.FC = () => {
                             onFilter={setFilterText}
                             onTableSelect={onSidebarSelect}
                             onTogglePinnedVisible={() =>
-                                setShowPinnedTables(!showPinnedTables)
+                                setShowPinnedTablesValue(
+                                    showPinnedTables ? [] : [true]
+                                )
                             }
                             onTogglePin={togglePin}
                             rows={sidebarRows}
