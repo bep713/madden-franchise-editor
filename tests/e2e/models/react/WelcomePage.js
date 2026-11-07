@@ -17,6 +17,10 @@ class WelcomePage {
       openFileLink: this.locators.getStartedCard.getByText(
         /^Open (a|a different) file\.\.\.$/,
       ),
+      // Next to a common file's name in the card header
+      changeFileParametersLink: this.locators.getStartedCard.locator(
+        '[data-action="change-file-parameters"]',
+      ),
       tableEditorLink: this.locators.getStartedCard.getByText(
         "Open the table editor",
         { exact: true },
@@ -51,6 +55,11 @@ class WelcomePage {
   async openFranchiseFile(electronApp, filePath) {
     await this.startOpenFile(electronApp, filePath);
     await this.waitForOpenFile(filePath);
+  }
+
+  // Re-opens the common-file prompt for the open file
+  async changeFileParameters() {
+    await this.locators.changeFileParametersLink.click();
   }
 
   async openTableEditor() {

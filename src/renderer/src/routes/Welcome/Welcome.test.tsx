@@ -22,6 +22,10 @@ vi.mock('allotment', () => {
 });
 
 const METADATA = { gameYear: 22, format: 'franchise', type: {} };
+const FTC_PATH = 'C:/saves/franchise-common.FTC';
+
+// userData/commonFileChoices.json
+let storedChoices: unknown = null;
 
 const electronAPI = {
     getVersion: vi.fn(async () => '5.0.0'),
@@ -37,6 +41,12 @@ const electronAPI = {
     })),
     showMessageBox: vi.fn(),
     preferences: { getValue: vi.fn(), set: vi.fn(async () => undefined) },
+    fs: {
+        readJson: vi.fn(async () => storedChoices),
+        writeJson: vi.fn(async (_name: string, data: unknown) => {
+            storedChoices = data;
+        })
+    },
     send: vi.fn()
 };
 const franchiseAPI = {
@@ -130,6 +140,7 @@ describe('Welcome common files', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        storedChoices = null;
         Object.assign(window, { electronAPI, franchiseAPI });
         electronAPI.preferences.getValue.mockImplementation(
             async (key: string) => FTC_PREFS[key]
@@ -183,7 +194,7 @@ describe('Welcome common files', () => {
         expect(electronAPI.preferences.set).not.toHaveBeenCalled();
     });
 
-    it('saves the choices as strings with the default box ticked', async () => {
+    it('remembers the choices for the path with the box ticked', async () => {
         setup();
         await clickOpenFile();
         const dialog = await screen.findByRole('dialog');
@@ -192,18 +203,32 @@ describe('Welcome common files', () => {
             '27'
         );
         await userEvent.click(
-            within(dialog).getByLabelText('Make these my default choices')
+            within(dialog).getByLabelText('Remember my choices for this file')
         );
         await userEvent.click(
             within(dialog).getByRole('button', { name: 'Confirm' })
         );
         await waitFor(() => expect(electronAPI.send).toHaveBeenCalled());
-        expect(electronAPI.preferences.set).toHaveBeenCalledExactlyOnceWith({
-            general: {
-                ftcGameYearOverride: '27',
-                ftcGameTypeOverride: 'madden'
-            }
-        });
+        await waitFor(() =>
+            expect(storedChoices).toEqual({
+                'C:/saves/CAREER-TEST': { gameYear: 27, gameType: 'madden' }
+            })
+        );
+        // The general defaults are left alone
+        expect(electronAPI.preferences.set).not.toHaveBeenCalled();
+    });
+
+    it('opens a remembered file without asking', async () => {
+        storedChoices = {
+            'C:/saves/CAREER-TEST': { gameYear: 25, gameType: 'college' }
+        };
+        setup();
+        await openFile();
+        expect(screen.queryByRole('dialog')).toBeNull();
+        expect(franchiseAPI.openFile).toHaveBeenCalledExactlyOnceWith(
+            'C:/saves/CAREER-TEST',
+            { gameYearOverride: 25, gameTypeOverride: 'college' }
+        );
     });
 
     it('falls back to the schema defaults when nothing is saved', async () => {
@@ -220,8 +245,9 @@ describe('Welcome common files', () => {
     it('opens nothing when the prompt is closed', async () => {
         setup({
             fileId: 'current',
-            path: 'C:/saves/CAREER-CURRENT'
-        } as OpenFranchiseFile);
+            path: 'C:/saves/CAREER-CURRENT',
+            metadata: METADATA
+        } as unknown as OpenFranchiseFile);
         await userEvent.click(
             within(screen.getByTestId('get-started-card')).getByText(
                 'Open a different file...'
@@ -233,5 +259,127 @@ describe('Welcome common files', () => {
         expect(franchiseAPI.closeFile).not.toHaveBeenCalled();
         expect(franchiseAPI.openFile).not.toHaveBeenCalled();
         expect(setOpenFile).not.toHaveBeenCalled();
+    });
+});
+
+describe('Welcome change file parameters', () => {
+    const COMMON_FILE = {
+        fileId: 'current',
+        path: FTC_PATH,
+        metadata: {
+            gameYear: 25,
+            format: 'franchise-common',
+            type: { gameType: 'college' }
+        }
+    } as unknown as OpenFranchiseFile;
+
+    const card = () => within(screen.getByTestId('get-started-card'));
+    const changeLink = () => card().queryByText('Change', { exact: true });
+
+    async function openPrompt(): Promise<HTMLElement> {
+        setup(COMMON_FILE);
+        await userEvent.click(changeLink()!);
+        return screen.findByRole('dialog');
+    }
+
+    async function confirm(dialog: HTMLElement): Promise<void> {
+        await userEvent.click(
+            within(dialog).getByRole('button', { name: 'Confirm' })
+        );
+        await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    }
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        storedChoices = {
+            [FTC_PATH]: { gameYear: 25, gameType: 'college' }
+        };
+        Object.assign(window, { electronAPI, franchiseAPI });
+        electronAPI.preferences.getValue.mockResolvedValue(undefined);
+    });
+
+    it('is only offered for a common file', () => {
+        setup({
+            fileId: 'current',
+            path: 'C:/saves/CAREER-TEST',
+            metadata: METADATA
+        } as unknown as OpenFranchiseFile);
+        expect(changeLink()).toBeNull();
+        expect(card().getByText('CAREER-TEST')).toBeInTheDocument();
+    });
+
+    it('shows the game next to the file name', () => {
+        setup(COMMON_FILE);
+        expect(card().getByText('franchise-common.FTC')).toBeInTheDocument();
+        // No games.json entry for CFB 25, so the type label and year
+        expect(
+            card().getByText('College Football (CFB) 25')
+        ).toBeInTheDocument();
+        expect(changeLink()).toBeInTheDocument();
+    });
+
+    it('re-opens with the new choice without asking', async () => {
+        const dialog = await openPrompt();
+        expect(within(dialog).getByLabelText('Game Year')).toHaveValue('25');
+        expect(within(dialog).getByLabelText('Game Type')).toHaveValue(
+            'college'
+        );
+        expect(
+            within(dialog).getByLabelText('Remember my choices for this file')
+        ).toBeChecked();
+        expect(
+            within(dialog).getByText(/re-opens the file/)
+        ).toBeInTheDocument();
+
+        await userEvent.selectOptions(
+            within(dialog).getByLabelText('Game Year'),
+            '27'
+        );
+        await confirm(dialog);
+
+        await waitFor(() => expect(electronAPI.send).toHaveBeenCalled());
+        expect(electronAPI.showMessageBox).not.toHaveBeenCalled();
+        expect(franchiseAPI.closeFile).toHaveBeenCalledExactlyOnceWith(
+            'current'
+        );
+        expect(franchiseAPI.openFile).toHaveBeenCalledExactlyOnceWith(
+            FTC_PATH,
+            { gameYearOverride: 27, gameTypeOverride: 'college' }
+        );
+        expect(storedChoices).toEqual({
+            [FTC_PATH]: { gameYear: 27, gameType: 'college' }
+        });
+    });
+
+    it('prefills the open file, not the defaults, when nothing is remembered', async () => {
+        storedChoices = null;
+        electronAPI.preferences.getValue.mockResolvedValue('23');
+        const dialog = await openPrompt();
+        expect(within(dialog).getByLabelText('Game Year')).toHaveValue('25');
+        expect(within(dialog).getByLabelText('Game Type')).toHaveValue(
+            'college'
+        );
+        expect(
+            within(dialog).getByLabelText('Remember my choices for this file')
+        ).not.toBeChecked();
+    });
+
+    it('only updates the remembered choice when the values are unchanged', async () => {
+        const dialog = await openPrompt();
+        await userEvent.click(
+            within(dialog).getByLabelText('Remember my choices for this file')
+        );
+        await confirm(dialog);
+        await waitFor(() => expect(storedChoices).toEqual({}));
+        expect(franchiseAPI.closeFile).not.toHaveBeenCalled();
+        expect(franchiseAPI.openFile).not.toHaveBeenCalled();
+    });
+
+    it('keeps the file open when the prompt is closed', async () => {
+        await openPrompt();
+        await userEvent.keyboard('{Escape}');
+        await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+        expect(franchiseAPI.closeFile).not.toHaveBeenCalled();
+        expect(franchiseAPI.openFile).not.toHaveBeenCalled();
     });
 });

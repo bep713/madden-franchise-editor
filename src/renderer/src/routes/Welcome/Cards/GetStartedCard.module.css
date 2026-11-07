@@ -5,6 +5,10 @@
     background-color: var(--white-smoke);
 }
 
+.fileParameters {
+    color: var(--text-secondary);
+}
+
 .verticalList {
     display: none;
 }

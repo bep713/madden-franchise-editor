@@ -15,6 +15,7 @@
     --platinum: #e5e5e5;
     --timberwolf: #d1d1d1;
     --silver: #c2c2c2;
+    --dim-gray: #6e6e6e;
     --link: var(--honolulu-blue);
     --success: var(--pigment-green);
     --primary: var(--dark-orange);
@@ -23,6 +24,7 @@
     --info: var(--uranian-blue);
     --disabled: var(--white-smoke);
     --text-primary: var(--black);
+    --text-secondary: var(--dim-gray);
     --text-link: var(--link);
     --divider-color: var(--timberwolf);
 }

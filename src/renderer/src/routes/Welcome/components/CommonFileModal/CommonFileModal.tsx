@@ -8,12 +8,17 @@ import styles from './CommonFileModal.module.css';
 export interface CommonFileChoice {
     gameYear: number;
     gameType: string;
-    saveAsDefault: boolean;
+    // Remember the choice for this file's path
+    remember: boolean;
 }
 
 interface Props {
     initialYear: string;
     initialType: string;
+    // Starts ticked when the file's choice is already remembered
+    initialRemember?: boolean;
+    // The file is already open, so confirming re-opens it
+    reopenWarning?: boolean;
     onConfirm: (choice: CommonFileChoice) => void;
     // Escape, the underlay or X. The file isn't opened.
     onClose: () => void;
@@ -24,12 +29,14 @@ interface Props {
 const CommonFileModal: React.FC<Props> = ({
     initialYear,
     initialType,
+    initialRemember = false,
+    reopenWarning = false,
     onConfirm,
     onClose
 }) => {
     const [year, setYear] = useState(initialYear);
     const [type, setType] = useState(initialType);
-    const [saveAsDefault, setSaveAsDefault] = useState(false);
+    const [remember, setRemember] = useState(initialRemember);
 
     return (
         <Modal
@@ -66,18 +73,24 @@ const CommonFileModal: React.FC<Props> = ({
                 />
                 <label className={styles.checkbox}>
                     <input
-                        checked={saveAsDefault}
-                        onChange={(e) => setSaveAsDefault(e.target.checked)}
+                        checked={remember}
+                        onChange={(e) => setRemember(e.target.checked)}
                         type='checkbox'
                     />
-                    Make these my default choices
+                    Remember my choices for this file
                 </label>
+                {reopenWarning && (
+                    <p>
+                        Changing these re-opens the file. Unsaved changes will
+                        be lost.
+                    </p>
+                )}
                 <Button
                     onClick={() =>
                         onConfirm({
                             gameYear: parseInt(year, 10),
                             gameType: type,
-                            saveAsDefault
+                            remember
                         })
                     }
                     type='primary'

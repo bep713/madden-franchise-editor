@@ -7,7 +7,7 @@ class CommonFileModal {
     this.locators = {
       gameYear: this.dialog.getByLabel("Game Year"),
       gameType: this.dialog.getByLabel("Game Type"),
-      saveAsDefault: this.dialog.getByLabel("Make these my default choices"),
+      remember: this.dialog.getByLabel("Remember my choices for this file"),
       confirm: this.dialog.getByRole("button", { name: "Confirm" }),
     };
   }
@@ -34,8 +34,12 @@ class CommonFileModal {
     await this.locators.gameType.selectOption(type);
   }
 
-  async setSaveAsDefault(checked) {
-    await this.locators.saveAsDefault.setChecked(checked);
+  async isRemembered() {
+    return this.locators.remember.isChecked();
+  }
+
+  async setRemember(checked) {
+    await this.locators.remember.setChecked(checked);
   }
 
   async confirm() {

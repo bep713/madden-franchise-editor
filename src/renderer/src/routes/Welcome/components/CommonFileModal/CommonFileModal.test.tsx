@@ -9,15 +9,17 @@ import {
     YEAR_KEY
 } from './commonFileOptions';
 
-const setup = () => {
+const setup = (initialRemember?: boolean, reopenWarning?: boolean) => {
     const onConfirm = vi.fn();
     const onClose = vi.fn();
     render(
         <CommonFileModal
+            initialRemember={initialRemember}
             initialType='madden'
             initialYear='22'
             onClose={onClose}
             onConfirm={onConfirm}
+            reopenWarning={reopenWarning}
         />
     );
     return { onConfirm, onClose, user: userEvent.setup() };
@@ -50,23 +52,52 @@ describe('CommonFileModal', () => {
         expect(screen.getByLabelText('Game Year')).toHaveValue('22');
         expect(screen.getByLabelText('Game Type')).toHaveValue('madden');
         expect(
-            screen.getByLabelText('Make these my default choices')
+            screen.getByLabelText('Remember my choices for this file')
         ).not.toBeChecked();
     });
 
-    it('confirms with a numeric year, the type and the default box', async () => {
+    it('confirms with a numeric year, the type and the remember box', async () => {
         const { onConfirm, user } = setup();
         await user.selectOptions(screen.getByLabelText('Game Year'), '27');
         await user.selectOptions(screen.getByLabelText('Game Type'), 'college');
         await user.click(
-            screen.getByLabelText('Make these my default choices')
+            screen.getByLabelText('Remember my choices for this file')
         );
         await user.click(screen.getByRole('button', { name: 'Confirm' }));
         expect(onConfirm).toHaveBeenCalledExactlyOnceWith({
             gameYear: 27,
             gameType: 'college',
-            saveAsDefault: true
+            remember: true
         });
+    });
+
+    it('starts ticked for a remembered file', async () => {
+        const { onConfirm, user } = setup(true);
+        const remember = screen.getByLabelText(
+            'Remember my choices for this file'
+        );
+        expect(remember).toBeChecked();
+        await user.click(remember);
+        await user.click(screen.getByRole('button', { name: 'Confirm' }));
+        expect(onConfirm).toHaveBeenCalledExactlyOnceWith({
+            gameYear: 22,
+            gameType: 'madden',
+            remember: false
+        });
+    });
+
+    it('warns about unsaved changes only when re-opening', () => {
+        setup();
+        expect(screen.queryByText(/re-opens the file/)).toBeNull();
+    });
+
+    it('shows the re-open warning', () => {
+        setup(false, true);
+        expect(
+            screen.getByText(
+                'Changing these re-opens the file. Unsaved changes will be lost.'
+            )
+        ).toBeInTheDocument();
     });
 
     it('closes on Escape', async () => {

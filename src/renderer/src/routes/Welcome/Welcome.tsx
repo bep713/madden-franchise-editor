@@ -20,6 +20,7 @@ import GetStartedCard, { GetStartedActions } from './Cards/GetStartedCard';
 import useCommonFilePrompt, {
     CommonFileOverrides
 } from './components/CommonFileModal/useCommonFilePrompt';
+import { getRememberedChoice } from './components/CommonFileModal/commonFileChoices';
 import { FileType } from '@shared/types/franchise';
 
 function toRecentFiles(entries: RecentFileEntry[]): RecentFile[] {
@@ -100,17 +101,30 @@ const Welcome: React.FC = () => {
     }
 
     // Follows v4's navigationService "open-file" flow. TODO: the schema
-    // picker (see react-conversion/plan.md).
-    async function initializeFile(path: string): Promise<void> {
-        // Common files don't record their year or type, so ask, as v4 does
-        let openOptions: CommonFileOverrides | undefined;
-        const { format } =
-            await window.franchiseAPI.getMetadataFromFilePath(path);
-        if (format === FileType.COMMON) {
-            const overrides = await promptForOverrides();
-            // Cancelled: keep the current file open
-            if (!overrides) return;
-            openOptions = overrides;
+    // picker (see react-conversion/plan.md). `overrides`: a common file's
+    // year and type, already chosen.
+    async function initializeFile(
+        path: string,
+        overrides?: CommonFileOverrides
+    ): Promise<void> {
+        // Common files don't record their year or type, so use the file's
+        // remembered choice or ask, as v4 does
+        let openOptions = overrides;
+        if (!openOptions) {
+            const { format } =
+                await window.franchiseAPI.getMetadataFromFilePath(path);
+            if (format === FileType.COMMON) {
+                const remembered = await getRememberedChoice(path);
+                const chosen = remembered
+                    ? {
+                          gameYearOverride: remembered.gameYear,
+                          gameTypeOverride: remembered.gameType
+                      }
+                    : await promptForOverrides(path);
+                // Cancelled: keep the current file open
+                if (!chosen) return;
+                openOptions = chosen;
+            }
         }
 
         // Release the previous file so two parsed files never coexist in main
@@ -160,6 +174,31 @@ const Welcome: React.FC = () => {
         });
     }
 
+    // Asks again for the open common file's year and type, then re-opens it
+    // if they changed. The prompt warns that unsaved changes are lost.
+    async function changeCommonFileParameters(): Promise<void> {
+        if (!openFile?.path) return;
+        const { path, metadata } = openFile;
+        // Files without a gameType are Madden, as in findGame
+        const current = {
+            gameYear: metadata.gameYear,
+            gameType: metadata.type?.gameType || 'madden'
+        };
+        const overrides = await promptForOverrides(path, {
+            initial: current,
+            remembered: !!(await getRememberedChoice(path)),
+            reopen: true
+        });
+        if (
+            !overrides ||
+            (overrides.gameYearOverride === current.gameYear &&
+                overrides.gameTypeOverride === current.gameType)
+        ) {
+            return;
+        }
+        await initializeFile(path, overrides);
+    }
+
     return (
         <Layout alignItems='stretch' rowGap='none' direction='column'>
             <Headline
@@ -192,6 +231,9 @@ const Welcome: React.FC = () => {
                                                     openFile.path
                                                 );
                                             }
+                                            break;
+                                        case GetStartedActions.CHANGE_FILE_PARAMETERS:
+                                            await changeCommonFileParameters();
                                             break;
                                         case GetStartedActions.OPEN_TABLE_EDITOR:
                                             editorTabs.openTableEditor();
