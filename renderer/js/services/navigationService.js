@@ -382,6 +382,23 @@ navigationService.onHomeClicked = async function () {
   welcomeService.start(navigationService.currentlyOpenedFile);
 };
 
+// After a UI switch main still has the file open; pick it back up so Home
+// shows the file links. Any failure leaves an empty Home.
+navigationService.restoreOpenFile = async function () {
+  try {
+    const active = await window.franchiseAPI.getActiveFile();
+    if (!active) return;
+    const metadata = await window.franchiseAPI.getMetadata(active.fileId);
+    if (!metadata) return;
+    adoptOpenedFile(
+      { fileId: active.fileId, path: active.path, metadata },
+      { restored: true, loaded: active.loaded },
+    );
+  } catch (err) {
+    console.error("Error restoring the open file:", err);
+  }
+};
+
 navigationService.onScheduleEditorClicked = async function () {
   navigationService.selectTab("Schedule");
   const scheduleService = getScheduleService();
@@ -769,47 +786,7 @@ function setupEvents() {
       }
 
       const { fileId, metadata } = result;
-
-      navigationService.currentlyOpenedFile.fileId = fileId;
-      navigationService.currentlyOpenedFile.metadata = metadata;
-
-      // assume m22 if no game year is set
-      if (!metadata.gameYear) {
-        metadata.gameYear = 22;
-      }
-      if (!metadata.type?.year) {
-        metadata.type = metadata.type || {};
-        metadata.type.year = 22;
-      }
-
-      navigationService.currentlyOpenedFile.gameYear = metadata.gameYear;
-      navigationService.currentlyOpenedFile.type = metadata.type;
-
-      // reset table to select on new file (a not-yet-loaded editor has none)
-      if (tableEditorWrapper) {
-        tableEditorWrapper.initialTableToSelect = null;
-      }
-      navigationService.generateMainNavigationTabs();
-      perfService.mark("open:tabs-generated");
-
-      window.electronAPI.send("file-loaded", {
-        path: navigationService.currentlyOpenedFile.path,
-        type: navigationService.currentlyOpenedFile.type,
-        fileId: fileId,
-      });
-      perfService.mark("open:file-loaded-sent");
-
-      window.electronAPI.send("is-currently-searching");
-
-      // Set up event listeners for saving/saved
-      window.franchiseAPI.onFileSaving(function () {
-        window.electronAPI.send("saving");
-        reloadFileService.hide();
-      });
-
-      window.franchiseAPI.onFileSaved(function () {
-        window.electronAPI.send("saved");
-      });
+      adoptOpenedFile({ fileId, path: file, metadata }, { restored: false });
 
       const editorToOpen = preferencesService.getValue("general.defaultEditor");
       perfService.mark("open:editor-start", { editor: editorToOpen });
@@ -870,6 +847,55 @@ function setupEvents() {
     } else {
       navigationService.scrollToActiveTab();
     }
+  });
+}
+
+// Sets up the renderer for a file main has open. `restored` is true when the
+// page was reloaded (UI switch) with the file already open in main; main then
+// only needs file-loaded if the previous page never sent it (`loaded: false`).
+function adoptOpenedFile({ fileId, path, metadata }, { restored, loaded }) {
+  navigationService.currentlyOpenedFile.path = path;
+  navigationService.currentlyOpenedFile.fileId = fileId;
+  navigationService.currentlyOpenedFile.metadata = metadata;
+
+  // assume m22 if no game year is set
+  if (!metadata.gameYear) {
+    metadata.gameYear = 22;
+  }
+  if (!metadata.type?.year) {
+    metadata.type = metadata.type || {};
+    metadata.type.year = 22;
+  }
+
+  navigationService.currentlyOpenedFile.gameYear = metadata.gameYear;
+  navigationService.currentlyOpenedFile.type = metadata.type;
+
+  // reset table to select on new file (a not-yet-loaded editor has none)
+  if (tableEditorWrapper) {
+    tableEditorWrapper.initialTableToSelect = null;
+  }
+  navigationService.generateMainNavigationTabs();
+  perfService.mark("open:tabs-generated");
+
+  if (!restored || !loaded) {
+    window.electronAPI.send("file-loaded", {
+      path: navigationService.currentlyOpenedFile.path,
+      type: navigationService.currentlyOpenedFile.type,
+      fileId: fileId,
+    });
+    perfService.mark("open:file-loaded-sent");
+  }
+
+  window.electronAPI.send("is-currently-searching");
+
+  // Set up event listeners for saving/saved
+  window.franchiseAPI.onFileSaving(function () {
+    window.electronAPI.send("saving");
+    reloadFileService.hide();
+  });
+
+  window.franchiseAPI.onFileSaved(function () {
+    window.electronAPI.send("saved");
   });
 }
 

@@ -409,6 +409,12 @@ function createWindow() {
     mainWindow.webContents.openDevTools();
   }
 
+  // A UI switch reloads the page, whose <title> would replace the file path
+  // main put in the title. Main owns the title while a file is open.
+  mainWindow.on("page-title-updated", (event) => {
+    if (currentFilePath) event.preventDefault();
+  });
+
   // Emitted when the window is closed.
   mainWindow.on("closed", () => {
     // Dereference the window object, usually you would store windows
@@ -815,6 +821,21 @@ function addIpcListeners() {
     // Return the most recently opened fileId from the manager
     const ids = [...franchiseFileManager.activeFiles.keys()];
     return ids.length > 0 ? ids[ids.length - 1] : null;
+  });
+
+  // The file a reloaded/switched UI should adopt. `loaded` is false when the
+  // previous page was cut off between openFile and file-loaded.
+  ipcMain.handle("app:get-active-file", () => {
+    const { activeFiles } = franchiseFileManager;
+    if (activeFiles.size === 0) return null;
+    const fileId = activeFiles.has(currentFileId)
+      ? currentFileId
+      : [...activeFiles.keys()].pop();
+    return {
+      fileId,
+      path: activeFiles.get(fileId).path,
+      loaded: fileId === currentFileId,
+    };
   });
 
   // --- File system IPC handlers (replaces fs in renderer) ---

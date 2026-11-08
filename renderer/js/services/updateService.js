@@ -44,6 +44,7 @@ updateService.initialize = () => {
   hideElementImmediately(downloadProgressWrapper);
 
   addEventListeners();
+  restoreUpdateStatus();
 };
 
 updateService.showCheckForUpdatesNotification = () => {
@@ -64,79 +65,115 @@ function hideElementImmediately(element) {
   element.classList.add(WRAPPER_HIDDEN_CLASS);
 }
 
+// A function, not a const: addIpcListeners runs at module load, above this.
+function getUpdateHandlers() {
+  return {
+    "checking-for-updates": onCheckingForUpdates,
+    "update-ready": onUpdateReady,
+    "update-not-available": onUpdateNotAvailable,
+    "update-error": onUpdateError,
+    "update-downloading": onUpdateDownloading,
+    "update-progress": onUpdateProgress,
+    "update-downloaded": onUpdateDownloaded,
+  };
+}
+
 function addIpcListeners() {
-  window.electronAPI.on("checking-for-updates", function () {
-    if (!updateService.checkingForUpdatesElement) {
-      return;
-    }
-    showElement(updateService.checkingForUpdatesElement);
+  Object.entries(getUpdateHandlers()).forEach(([channel, handler]) => {
+    window.electronAPI.on(channel, handler);
   });
+}
 
-  window.electronAPI.on("update-ready", function (info) {
-    if (!updateService.notificationElement) {
-      return;
+// A reloaded page (UI switch) missed the updater events; main keeps the last
+// one a user acts on, so show it again.
+async function restoreUpdateStatus() {
+  try {
+    const status = await window.electronAPI.getUpdateStatus();
+    if (!status) return;
+    // progress/downloaded update the download notification, which the
+    // update-downloading event normally shows first
+    if (
+      status.channel === "update-progress" ||
+      status.channel === "update-downloaded"
+    ) {
+      onUpdateDownloading();
     }
+    getUpdateHandlers()[status.channel]?.(status.data);
+  } catch (err) {
+    console.error("Error restoring the update status:", err);
+  }
+}
 
-    if (info && info.version) {
-      const textElement =
-        updateService.notificationElement.querySelector(".update-ready-text");
-      if (textElement) {
-        const label =
-          info.channel === "nightly" ? "Nightly build" : "Version";
-        textElement.textContent = `${label} ${info.version} is available (you have ${info.currentVersion}). It will take less than 5 minutes to install.`;
-      }
+function onCheckingForUpdates() {
+  if (!updateService.checkingForUpdatesElement) {
+    return;
+  }
+  showElement(updateService.checkingForUpdatesElement);
+}
+
+function onUpdateReady(info) {
+  if (!updateService.notificationElement) {
+    return;
+  }
+
+  if (info && info.version) {
+    const textElement =
+      updateService.notificationElement.querySelector(".update-ready-text");
+    if (textElement) {
+      const label = info.channel === "nightly" ? "Nightly build" : "Version";
+      textElement.textContent = `${label} ${info.version} is available (you have ${info.currentVersion}). It will take less than 5 minutes to install.`;
     }
+  }
 
-    showElement(updateService.notificationElement);
-  });
+  showElement(updateService.notificationElement);
+}
 
-  window.electronAPI.on("update-not-available", function () {
-    if (!updateService.noUpdatesAvailableElement) {
-      return;
-    }
-    showElement(updateService.noUpdatesAvailableElement);
+function onUpdateNotAvailable() {
+  if (!updateService.noUpdatesAvailableElement) {
+    return;
+  }
+  showElement(updateService.noUpdatesAvailableElement);
 
-    setTimeout(() => {
-      hideNotificationElements();
-    }, 3500);
-  });
+  setTimeout(() => {
+    hideNotificationElements();
+  }, 3500);
+}
 
-  window.electronAPI.on("update-error", function (err) {
-    console.log(err);
-    if (!updateService.updateErrorElement) {
-      return;
-    }
-    showElement(updateService.updateErrorElement);
-  });
+function onUpdateError(err) {
+  console.log(err);
+  if (!updateService.updateErrorElement) {
+    return;
+  }
+  showElement(updateService.updateErrorElement);
+}
 
-  window.electronAPI.on("update-downloading", function () {
-    if (!updateService.downloadProgressElement) {
-      return;
-    }
-    hideNotificationElement(updateService.notificationElement);
-    showElement(updateService.downloadProgressElement);
-  });
+function onUpdateDownloading() {
+  if (!updateService.downloadProgressElement) {
+    return;
+  }
+  hideNotificationElement(updateService.notificationElement);
+  showElement(updateService.downloadProgressElement);
+}
 
-  window.electronAPI.on("update-progress", function (progressObj) {
-    if (!updateService.downloadProgressElement) {
-      return;
-    }
-    updateService.downloadProgressElement.querySelector(
-      ".percent-complete",
-    ).innerHTML = `${progressObj.percent.toFixed(2)}%`;
-  });
+function onUpdateProgress(progressObj) {
+  if (!updateService.downloadProgressElement) {
+    return;
+  }
+  updateService.downloadProgressElement.querySelector(
+    ".percent-complete",
+  ).innerHTML = `${progressObj.percent.toFixed(2)}%`;
+}
 
-  window.electronAPI.on("update-downloaded", function () {
-    if (!updateService.downloadProgressElement) {
-      return;
-    }
-    updateService.downloadProgressElement.querySelector(
-      ".notification-text",
-    ).innerHTML = "Installing...";
-    updateService.downloadProgressElement.querySelector(
-      ".percent-complete",
-    ).innerHTML = "";
-  });
+function onUpdateDownloaded() {
+  if (!updateService.downloadProgressElement) {
+    return;
+  }
+  updateService.downloadProgressElement.querySelector(
+    ".notification-text",
+  ).innerHTML = "Installing...";
+  updateService.downloadProgressElement.querySelector(
+    ".percent-complete",
+  ).innerHTML = "";
 }
 
 function showElement(element) {

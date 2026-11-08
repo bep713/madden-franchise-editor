@@ -87,6 +87,7 @@ contextBridge.exposeInMainWorld("franchiseAPI", {
   hasUnsavedChanges: (fileId) =>
     ipcRenderer.invoke("franchise:has-unsaved-changes", fileId),
   getActiveFileId: () => ipcRenderer.invoke("app:get-active-file-id"),
+  getActiveFile: () => ipcRenderer.invoke("app:get-active-file"),
 
   // Schema operations
   getSavedSchemas: () => ipcRenderer.invoke("franchise:get-saved-schemas"),
