@@ -21,7 +21,9 @@ const { detectFormat } = require("../utils/detectFormat");
  */
 class FranchiseFileManager {
   constructor() {
-    /** @type {Map<string, { file: FranchiseFile, path: string, autoSave: boolean }>} */
+    // changeCount/savedCount: change events seen, and the count at the last
+    // save to the entry's own path (see hasUnsavedChanges)
+    /** @type {Map<string, { file: FranchiseFile, path: string, autoSave: boolean, changeCount: number, savedCount: number }>} */
     this.activeFiles = new Map();
     // fileId -> tail of that file's task queue (see _runExclusive). Keyed by
     // fileId because loadSchema replaces the activeFiles entry.
@@ -359,12 +361,15 @@ class FranchiseFileManager {
           file,
           path: filePath,
           autoSave,
+          changeCount: 0,
+          savedCount: 0,
         });
 
         // Set up change event forwarding
         file.on("change", (table) => {
           const current = this.activeFiles.get(fileId);
           if (current?.file !== file) return; // closed or replaced by a reload
+          current.changeCount++; // quiet writes count too
           this.requestAutoSave(fileId);
           if (current.suppressChangeEvents) return;
           this._emitToFileWindows(fileId, "franchise:table-changed", {
@@ -462,7 +467,7 @@ class FranchiseFileManager {
       state.pending = null;
       const current = this.activeFiles.get(fileId);
       if (!current?.autoSave) return;
-      await current.file.save();
+      await this._saveFileUnlocked(fileId);
     }).catch((error) => {
       console.error(`Auto-save failed for ${fileId}:`, error);
     });
@@ -552,10 +557,32 @@ class FranchiseFileManager {
     }
 
     const { file } = entry;
-    const { path } = options;
+    const savePath = options.path;
+    // a copy to another path leaves the file on disk unchanged
+    const savesOwnPath = !savePath || savePath === entry.path;
+    const changeCount = entry.changeCount;
 
-    await (options.sync ? file.save(path, { sync: true }) : file.save(path));
+    await (options.sync
+      ? file.save(savePath, { sync: true })
+      : file.save(savePath));
+    if (savesOwnPath) {
+      // a change made during the save keeps the file dirty
+      entry.savedCount = changeCount;
+    }
     return file.filePath || entry.path;
+  }
+
+  /**
+   * Whether the file has changes since it was opened or last saved to its own
+   * path. Waits for queued writes and saves first. Undos count as changes.
+   * @param {string} fileId
+   * @returns {Promise<boolean>}
+   */
+  async hasUnsavedChanges(fileId) {
+    return this._runExclusive(fileId, () => {
+      const entry = this.activeFiles.get(fileId);
+      return !!entry && entry.changeCount !== entry.savedCount;
+    });
   }
 
   /**
@@ -700,12 +727,57 @@ class FranchiseFileManager {
   }
 
   /**
-   * Get saved schemas
-   * @returns {Array<object>}
+   * Whether a path is inside the custom schema directory (not the directory itself)
+   * @param {string} p
+   * @returns {boolean}
+   * @private
+   */
+  _isInSchemaDirectory(p) {
+    const rel = path.relative(this._schemaDirectory, path.resolve(p));
+    // path.relative returns an absolute path for another drive
+    return rel !== "" && !rel.startsWith("..") && !path.isAbsolute(rel);
+  }
+
+  /**
+   * Get the bundled and custom schemas, each tagged with its source
+   * @returns {Array<{gameType: string|null, gameYear: number|null, major: number, minor: number, path: string, source: "bundled"|"custom"}>}
    */
   getSavedSchemas() {
-    console.log(`Saved schemas: ${this._schemaDirectory}`);
-    return schemaPicker.retrieveSchemas(this._schemaDirectory);
+    // retrieveSchemas throws if the custom dir is missing
+    this._ensureSchemaDirectory();
+    return schemaPicker
+      .retrieveSchemas(this._schemaDirectory)
+      .map((schema) => ({
+        ...schema,
+        source: this._isInSchemaDirectory(schema.path) ? "custom" : "bundled",
+      }));
+  }
+
+  /**
+   * Delete a custom schema file. Refuses bundled schemas, anything outside the
+   * schema directory, folders, and a schema an open file has loaded.
+   * @param {string} schemaPath
+   * @returns {Promise<void>}
+   */
+  async deleteSchema(schemaPath) {
+    const resolved = path.resolve(schemaPath);
+    if (!this._isInSchemaDirectory(resolved)) {
+      throw new Error(`Not a custom schema: ${schemaPath}`);
+    }
+    const stats = await fs.promises.stat(resolved);
+    if (!stats.isFile()) {
+      throw new Error(`Not a schema file: ${schemaPath}`);
+    }
+
+    const key = resolved.toLowerCase();
+    for (const { file } of this.activeFiles.values()) {
+      const loadedPath = file.schemaList?.path;
+      if (loadedPath && path.resolve(loadedPath).toLowerCase() === key) {
+        throw new Error(`Schema is loaded by an open file: ${schemaPath}`);
+      }
+    }
+
+    await fs.promises.unlink(resolved);
   }
 
   /**
@@ -1355,6 +1427,13 @@ class FranchiseFileManager {
         } catch (err) {
           return { error: err.message };
         }
+      },
+    );
+
+    loggedIpc.handle(
+      "franchise:has-unsaved-changes",
+      async (event, fileId) => {
+        return this.hasUnsavedChanges(fileId);
       },
     );
 

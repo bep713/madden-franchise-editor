@@ -11,10 +11,12 @@ import type {
 import type {
     FileMetadata,
     CellWrite,
+    ErrorResult,
     GetReferencesResult,
     OpenFileResult,
     ReadTableDataResult,
     SaveFileResult,
+    SchemaEntry,
     SetNextRecordResult,
     SetRecordsEmptyResult,
     TableListItem,
@@ -81,6 +83,19 @@ declare global {
                 fileId: string,
                 filePath: string
             ) => Promise<SaveFileResult>;
+            // Waits for queued writes/saves; undos count as changes
+            hasUnsavedChanges: (fileId: string) => Promise<boolean>;
+            // Bundled and custom schemas
+            getSavedSchemas: () => Promise<SchemaEntry[]>;
+            // Reopens the file from disk with this schema, keeping its fileId.
+            // Unsaved edits are lost.
+            loadSchema: (
+                fileId: string,
+                schemaPath: string,
+                saveSchema: boolean
+            ) => Promise<
+                { status: 'successful'; metadata: FileMetadata } | ErrorResult
+            >;
         };
         electronAPI: {
             showOpenDialog: (
@@ -151,6 +166,14 @@ declare global {
                 revealInExplorer: (
                     filePath: string
                 ) => Promise<{ success: boolean }>;
+            };
+            schema: {
+                // Creates <userData>/schemas if needed and returns its path
+                initialize: () => Promise<string>;
+                // Custom schemas only; refuses bundled and loaded ones
+                delete: (
+                    schemaPath: string
+                ) => Promise<{ success: true } | ErrorResult>;
             };
             files: {
                 getSaves: () => Promise<GameSaveResponse>;

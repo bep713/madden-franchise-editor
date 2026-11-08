@@ -84,6 +84,8 @@ contextBridge.exposeInMainWorld("franchiseAPI", {
     ipcRenderer.invoke("franchise:load-schema", fileId, schemaPath, saveSchema),
   addSchema: (fileId, schemaPath) =>
     ipcRenderer.invoke("franchise:add-schema", fileId, schemaPath),
+  hasUnsavedChanges: (fileId) =>
+    ipcRenderer.invoke("franchise:has-unsaved-changes", fileId),
   getActiveFileId: () => ipcRenderer.invoke("app:get-active-file-id"),
 
   // Schema operations
@@ -299,6 +301,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // Schema operations
   schema: {
     initialize: () => ipcRenderer.invoke("schema:initialize"),
+    delete: (schemaPath) => ipcRenderer.invoke("schema:delete", schemaPath),
   },
 
   // Schema search operations
