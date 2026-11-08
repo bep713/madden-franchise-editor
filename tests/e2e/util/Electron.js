@@ -37,16 +37,13 @@ const buildTestPreferences = () => {
 
 const REACT_INDEX = path.join(__dirname, '../../../out/renderer/index.html');
 
-// The UI is picked by env vars (see main.js). Drop the ones a dev shell may
-// have set, so they can't switch the UI under test.
-const buildLaunchEnv = (ui) => {
+// The UI is picked by the seeded general.uiVersion preference (see
+// launchWithDefaultOptions). Drop the env overrides a dev shell may have set
+// (see main.js), so they can't switch the UI under test.
+const buildLaunchEnv = () => {
     const env = { ...process.env, 'NODE_ENV': 'testing' };
     delete env.MFE_RENDERER_URL;
-    if (ui === 'react') {
-        env.MFE_UI = 'react';
-    } else {
-        delete env.MFE_UI;
-    }
+    delete env.MFE_UI;
     return env;
 };
 
@@ -69,6 +66,7 @@ class Electron {
         // preferences, pins, recent files or schemas.
         this.userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mfe-e2e-'));
         const preferences = buildTestPreferences();
+        preferences.general.uiVersion = options.ui === 'react' ? 'v5' : 'v4';
         for (const [section, values] of Object.entries(options.preferences || {})) {
             preferences[section] = { ...preferences[section], ...values };
         }
@@ -90,7 +88,7 @@ class Electron {
                 // E2E_SCALE=1 mimics the CI display (with E2E_WINDOW_SIZE, see App.js)
                 ...(process.env.E2E_SCALE ? [`--force-device-scale-factor=${process.env.E2E_SCALE}`] : [])
             ],
-            env: buildLaunchEnv(options.ui)
+            env: buildLaunchEnv()
         });
 
         // Saved on failure by the fixture in util/test.js.

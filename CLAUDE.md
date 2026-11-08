@@ -14,7 +14,7 @@ This branch (`v5-react-conversion`) is also building a v5 React/TypeScript UI in
 
 ```bash
 npm install                 # also runs patch-package (patches/, currently none)
-npm run dev                 # sass watch + browserify watch + electron (NODE_ENV=development), with auto-reload
+npm run dev                 # sass watch + browserify watch + electron (NODE_ENV=development, MFE_UI=v4 forces v4), with auto-reload
 npm run build:renderer      # one-off browserify build of the 3 renderer bundles
 npm run sass:build          # compile renderer/sass/app-manifest.scss -> renderer/css/app-manifest.css
 npm run build:app           # electron-builder Windows build (publishes to GitHub releases)
@@ -100,7 +100,9 @@ New code should call `window.franchiseAPI` / `window.electronAPI` directly.
 
 - Code: `src/renderer/` (Vite root; `index.html` → `src/main.tsx`), shared TS types in `src/shared/`, and nav/game data in `data/navigation.ts` and `data/games.json` (`games.json` is also `require`d by main). Aliases: `@renderer`, `@shared`, `@assets`, `@data` (in `vite.config.mts` and `tsconfig.web.json`). CSS modules use camelCase class names; `*.svg?react` imports go through svgr.
 - Only `index.html` is built. `schema.html` and `settings.html` still point at v4 scripts.
-- `main.js` loads the React UI when `MFE_RENDERER_URL` (dev server) or `MFE_UI=react` (built output) is set, and v4 otherwise.
+- The `general.uiVersion` preference (`"v5"` / `"v4"`) picks the main window's UI (`main/utils/uiSelection.js`, `loadMainUi()` in `main.js`). `MFE_RENDERER_URL` (dev server) or `MFE_UI=react` force v5 and `MFE_UI=v4` forces v4, for that session only. v5 loads the dev server URL if set, else `out/renderer/index.html`, and falls back to v4 with a console warning if that's missing.
+- Switching is live: View → Interface (radio items `UiVersionV5`/`UiVersionV4`) or changing the preference anywhere runs `switchMainUi()`, which reloads only the main window's page and clears the env override. The open file, its unsaved edits, the watcher and the title stay in main. The update check runs on the first load only; a reloaded UI reads the last updater event with `electronAPI.getUpdateStatus()`.
+- e2e picks the UI by seeding `general.uiVersion` (`tests/e2e/util/Electron.js`), and clears `MFE_UI`/`MFE_RENDERER_URL`.
 - The React renderer calls the same preload objects as v4, `window.franchiseAPI` and `window.electronAPI`, and gets the same response shapes (`src/shared/types/franchise.ts`). `src/renderer/src/preload.d.ts` declares only the methods React uses, so add a declaration when React starts calling a new one. The only React-specific channels are `files:get-saves` and `files:open-folder` (`electronAPI.files`, `main/handlers/filesHandler.js`).
 - Handsontable: React uses `handsontable@16` + `@handsontable/react-wrapper`. v4 needs 11.1.0, installed under the alias `handsontable-v11` (`require("handsontable-v11")`). Don't collapse them.
 - Monaco is bundled locally (`utils/monacoLoader.ts`, editor core + worker only), and the CSP allows `worker-src blob:`.

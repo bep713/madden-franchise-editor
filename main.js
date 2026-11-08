@@ -4,6 +4,7 @@ if (startupProfiler.enabled) {
   startupProfiler.startEventLoopMonitor();
   startupProfiler.mark("main:module-start");
 }
+const fs = require("fs");
 const path = require("path");
 const {
   app,
@@ -14,6 +15,7 @@ const {
   dialog,
 } = require("electron");
 const preferencesHandler = require("./main/handlers/preferencesHandler");
+const uiSelection = require("./main/utils/uiSelection");
 const franchiseFileManager = require("./main/services/FranchiseFileManager");
 const {
   registerExternalDataHandlers,
@@ -201,6 +203,20 @@ function createApplicationMenu() {
         { role: "zoomout" },
         { type: "separator" },
         {
+          label: "Interface",
+          // Not in navigation.json, so neither UI enables/disables these.
+          submenu: [
+            ["v5", "UiVersionV5", "New"],
+            ["v4", "UiVersionV4", "Legacy"],
+          ].map(([value, id, label]) => ({
+            id,
+            label,
+            type: "radio",
+            click: () => selectUiFromMenu(value),
+          })),
+        },
+        { type: "separator" },
+        {
           id: "RevealInExplorer",
           label: "Reveal in Explorer",
           accelerator: "CmdOrCtrl+Shift+E",
@@ -338,11 +354,14 @@ function createApplicationMenu() {
   Menu.setApplicationMenu(menu);
 }
 
-const homePage = "renderer/index.html";
-// v5 React UI (src/renderer). MFE_RENDERER_URL points at the Vite dev server;
-// MFE_UI=react loads the `vite build` output. Otherwise the v4 UI loads.
+// The main window loads v5 (React, src/renderer) or v4 (legacy, renderer/).
+// The general.uiVersion preference picks it, and changing it switches live
+// (switchMainUi). MFE_RENDERER_URL (Vite dev server) / MFE_UI=react|v4
+// override the preference until the first switch.
 const reactRendererUrl = process.env.MFE_RENDERER_URL;
-const reactHomePage = "out/renderer/index.html";
+let uiOverride = uiSelection.envUiOverride(process.env);
+let currentUi = null;
+const uiMenuIds = { v5: "UiVersionV5", v4: "UiVersionV4" };
 const creditsPage = "renderer/credits.html";
 const schemaPage = "renderer/schema-manager.html";
 const settingsPage = "renderer/settings-manager.html";
@@ -383,14 +402,7 @@ function createWindow() {
   // Create logged webContents wrapper for this window
   loggedMain = createLoggedWebContents(mainWindow.webContents);
 
-  // and load the index.html of the app.
-  if (reactRendererUrl) {
-    mainWindow.loadURL(reactRendererUrl);
-  } else if (process.env.MFE_UI === "react") {
-    mainWindow.loadFile(reactHomePage);
-  } else {
-    mainWindow.loadFile(homePage);
-  }
+  loadMainUi();
 
   if (isDev) {
     // Open the DevTools.
@@ -418,15 +430,19 @@ function createWindow() {
     app.quit();
   });
 
+  let mainUiLoadedOnce = false;
   mainWindow.webContents.on("did-finish-load", () => {
+    const firstLoad = !mainUiLoadedOnce;
+    mainUiLoadedOnce = true;
     const preferencesInstance = preferencesHandler.getPreferencesInstance();
     const checkForUpdates = preferencesInstance
       ? preferencesInstance.value("general.checkForUpdates")
       : undefined;
 
     // Deferred so the check (and loading electron-updater) doesn't compete
-    // with the renderer's startup work.
-    if (checkboxSettingIsEnabled(checkForUpdates)) {
+    // with the renderer's startup work. Only on the first load: a reload or
+    // UI switch reads the last result with app:get-update-status.
+    if (firstLoad && checkboxSettingIsEnabled(checkForUpdates)) {
       setTimeout(() => {
         if (mainWindow) runUpdateCheck();
       }, STARTUP_UPDATE_CHECK_DELAY_MS);
@@ -476,7 +492,79 @@ function createWindow() {
     }
   });
 
+  preferencesHandler.onPreferenceChange("general.uiVersion", () => {
+    // A switch made in this session follows the preference from now on.
+    uiOverride = null;
+    // Let preferences:set reply before the renderer that sent it goes away.
+    setImmediate(switchMainUi);
+  });
+
   startupProfiler.mark("main:create-window-end");
+}
+
+/** Load the UI picked by the env override / preference into mainWindow. */
+function loadMainUi() {
+  const preference = preferencesHandler
+    .getPreferencesInstance()
+    ?.value("general.uiVersion");
+  const target = uiSelection.uiTarget({
+    ui: uiSelection.resolveUi({ override: uiOverride, preference }),
+    rendererUrl: reactRendererUrl,
+    reactBuildExists: fs.existsSync(
+      path.join(__dirname, uiSelection.V5_PAGE),
+    ),
+  });
+
+  if (target.fallback) {
+    const message = `${uiSelection.V5_PAGE} is missing, loading the legacy (v4) UI`;
+    // In a packaged build a missing out/renderer means a broken installer.
+    if (app.isPackaged) console.error(message);
+    else console.warn(`${message}. Run npm run build:react.`);
+  }
+
+  currentUi = target.ui;
+  // Radio items: checking one unchecks the other (writing false re-checks it).
+  mutateMenuIds([uiMenuIds[target.ui]], "checked", true);
+
+  if (target.url) {
+    mainWindow.loadURL(target.url);
+  } else {
+    mainWindow.loadFile(target.file);
+  }
+}
+
+/**
+ * View -> Interface. A changed preference switches through its callback.
+ * Under an env override the stored value can already be the one picked;
+ * that's still a switch, so drop the override here too.
+ */
+function selectUiFromMenu(ui) {
+  uiOverride = null;
+  preferencesHandler.setPreferences({ general: { uiVersion: ui } });
+  setImmediate(switchMainUi);
+}
+
+/**
+ * Reload the main window into the UI the preference now picks. The open file,
+ * its unsaved edits, the watcher and the other windows live in main and stay.
+ */
+function switchMainUi() {
+  if (!mainWindow) return;
+  const preference = preferencesHandler
+    .getPreferencesInstance()
+    ?.value("general.uiVersion");
+  if (uiSelection.resolveUi({ override: uiOverride, preference }) === currentUi) {
+    return;
+  }
+
+  if (currentFilePath) {
+    // Each UI narrows the file menu again on its first page.
+    enableFileMenuItems();
+    // A saving -> saved pair cut off by the reload would leave "Saving..."
+    setCurrentWindowTitle(`${baseWindowTitle} - ${currentFilePath}`);
+  }
+  pendingSaves = [];
+  loadMainUi();
 }
 
 // This method will be called when Electron has finished
@@ -720,6 +808,8 @@ function addIpcListeners() {
   ipcMain.handle("app:get-version", () => {
     return packageJson.version;
   });
+
+  ipcMain.handle("app:get-update-status", () => lastUpdateEvent);
 
   ipcMain.handle("app:get-active-file-id", () => {
     // Return the most recently opened fileId from the manager
@@ -975,7 +1065,7 @@ function runUpdateCheck() {
   startupProfiler.mark("main:update-check");
   const reportError = (error) => {
     console.error("Failed to check for updates:", error);
-    loggedMain.send("update-error", {
+    sendUpdateEvent("update-error", {
       message: error.message,
     });
   };
@@ -997,17 +1087,33 @@ function getAutoUpdater() {
   return autoUpdaterService.getAutoUpdater();
 }
 
+// Last updater state a user acts on, so a reloaded/switched UI can show it
+// again (app:get-update-status). A new check or "no update" clears it.
+let lastUpdateEvent = null;
+const KEPT_UPDATE_EVENTS = new Set([
+  "update-ready",
+  "update-progress",
+  "update-downloaded",
+  "update-error",
+]);
+
+function sendUpdateEvent(channel, data) {
+  lastUpdateEvent = KEPT_UPDATE_EVENTS.has(channel) ? { channel, data } : null;
+  if (data === undefined) loggedMain.send(channel);
+  else loggedMain.send(channel, data);
+}
+
 function addAutoUpdaterListeners(autoUpdater) {
   function sendStatusToWindow(text) {
     // mainWindow.webContents.send('message', text);
   }
 
   autoUpdater.on("checking-for-update", () => {
-    loggedMain.send("checking-for-updates");
+    sendUpdateEvent("checking-for-updates");
   });
 
   autoUpdater.on("update-available", (info) => {
-    loggedMain.send("update-ready", {
+    sendUpdateEvent("update-ready", {
       version: info?.version,
       currentVersion: app.getVersion(),
       // Channel of the offered build, not the user's preference: nightly users are also offered stable releases.
@@ -1017,11 +1123,11 @@ function addAutoUpdaterListeners(autoUpdater) {
   });
 
   autoUpdater.on("update-not-available", (info) => {
-    loggedMain.send("update-not-available");
+    sendUpdateEvent("update-not-available");
   });
 
   autoUpdater.on("error", (err) => {
-    loggedMain.send("update-error", err);
+    sendUpdateEvent("update-error", err);
   });
 
   autoUpdater.on("download-progress", (progressObj) => {
@@ -1034,11 +1140,11 @@ function addAutoUpdaterListeners(autoUpdater) {
       "/" +
       progressObj.total +
       ")";
-    loggedMain.send("update-progress", progressObj);
+    sendUpdateEvent("update-progress", progressObj);
   });
 
   autoUpdater.on("update-downloaded", (info) => {
-    loggedMain.send("update-downloaded");
+    sendUpdateEvent("update-downloaded");
   });
 }
 

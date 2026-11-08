@@ -56,12 +56,14 @@ test("a real user's file loads and is rewritten with only the missing sections a
     path.join(__dirname, "fixtures/preferences/real-user.json"),
     "utf8",
   );
-  // The fixture predates showPinnedTables, which is filled in on load. The
-  // store merges general over the defaults, so it lands in schema order.
+  // The fixture predates showPinnedTables and uiVersion, which are filled in
+  // on load. The store merges general over the defaults, so they land in
+  // schema order.
   const saved = JSON.parse(input);
   const general = {};
   for (const [key, value] of Object.entries(saved.general)) {
     general[key] = value;
+    if (key === "defaultEditor") general.uiVersion = "v4";
     if (key === "autoSave") general.showPinnedTables = [true];
   }
   const expected = {
@@ -239,6 +241,21 @@ test("onPreferenceChange fires once per actual change", async () => {
   await ipc.invoke("preferences:set", { general: { updateChannel: "nightly" } });
   await ipc.invoke("preferences:set", { general: { updateChannel: "nightly" } });
   assert.deepStrictEqual(calls, [["nightly", "stable"]]);
+});
+
+test("setPreferences runs the change callback once and broadcasts the update", () => {
+  const { handler, loggedMain } = boot();
+  const calls = [];
+  handler.onPreferenceChange("general.uiVersion", (...args) => calls.push(args));
+
+  assert.equal(handler.setPreferences({ general: { uiVersion: "v5" } }), true);
+  assert.deepStrictEqual(calls, [["v5", "v4"]]);
+  assert.equal(handler.getPreferencesInstance().value("general.uiVersion"), "v5");
+  const updates = loggedMain.sent.filter((m) => m.channel === "preferences:update");
+  assert.equal(updates.length, 1);
+  assert.equal(updates[0].args[0].general.uiVersion, "v5");
+  // Only the given key changes.
+  assert.equal(updates[0].args[0].general.updateChannel, "stable");
 });
 
 test("returned values are copies", async () => {

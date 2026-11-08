@@ -214,6 +214,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getUserDataPath: () => ipcRenderer.invoke("app:get-user-data-path"),
   getDocumentsPath: () => ipcRenderer.invoke("app:get-documents-path"),
   getVersion: () => ipcRenderer.invoke("app:get-version"),
+  // Last updater event ({ channel, data }) the user acts on, or null
+  getUpdateStatus: () => ipcRenderer.invoke("app:get-update-status"),
   // IPC send (for existing channels)
   send: (channel, data) => ipcRenderer.send(channel, data),
   sendSync: (channel, data) => ipcRenderer.sendSync(channel, data),

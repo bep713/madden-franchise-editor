@@ -26,6 +26,17 @@
           "help": "Choose the editor to open when you open a new file."
         },
         {
+          "key": "uiVersion",
+          "label": "User interface",
+          "type": "dropdown",
+          "defaultValue": "v4",
+          "options": [
+            { "label": "New (v5)", "value": "v5" },
+            { "label": "Legacy (v4)", "value": "v4" }
+          ],
+          "help": "Legacy is the previous interface. It stays available but doesn't get new features. Switching reloads the window; the open file stays open and unsaved changes are kept."
+        },
+        {
           "key": "checkForUpdates",
           "label": "Automatically check for application updates",
           "type": "checkbox",

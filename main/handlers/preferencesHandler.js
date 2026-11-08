@@ -5,6 +5,8 @@ const preferencesSchema = require("../../data/preferencesSchema.json");
 
 let preferencesInstance = null;
 const changeCallbacks = new Map();
+// Set by registerPreferencesHandlers, used by setPreferences.
+let registered = { franchiseFileManager: null, getLoggedMain: () => null };
 
 /**
  * Subscribe to changes of a preference made through `preferences:set`.
@@ -101,6 +103,60 @@ function buildPreferenceSections() {
 }
 
 /**
+ * Write preferences ({ <section>: { <key>: value } }, per key), apply them to
+ * the file manager, run the change callbacks and broadcast
+ * `preferences:update`. Backs `preferences:set`; main calls it directly too.
+ */
+function setPreferences(preferences) {
+  if (!preferencesInstance) {
+    throw new Error("Preferences not initialized");
+  }
+  if (!preferences || typeof preferences !== "object") {
+    throw new Error("Invalid preferences object");
+  }
+  const { franchiseFileManager, getLoggedMain } = registered;
+  const watchedBefore = new Map();
+  for (const keyPath of changeCallbacks.keys()) {
+    watchedBefore.set(keyPath, preferencesInstance.value(keyPath));
+  }
+
+  // Write each top-level section, saving once
+  const entries = [];
+  for (const [section, values] of Object.entries(preferences)) {
+    if (typeof values === "object" && !Array.isArray(values)) {
+      for (const [key, value] of Object.entries(values)) {
+        entries.push([`${section}.${key}`, value]);
+      }
+    }
+  }
+  if (entries.length > 0) {
+    preferencesInstance.setMany(entries);
+  }
+
+  if (franchiseFileManager?.applyPreferenceSettings) {
+    franchiseFileManager.applyPreferenceSettings(preferencesInstance.value());
+  }
+
+  for (const [keyPath, before] of watchedBefore) {
+    const after = preferencesInstance.value(keyPath);
+    if (JSON.stringify(before) !== JSON.stringify(after)) {
+      for (const cb of changeCallbacks.get(keyPath)) {
+        try {
+          cb(after, before);
+        } catch (err) {
+          console.error(`Preference change callback failed (${keyPath}):`, err);
+        }
+      }
+    }
+  }
+
+  const loggedMain = getLoggedMain();
+  loggedMain.send("preferences:update", preferencesInstance.value(undefined, ""));
+
+  return true;
+}
+
+/**
  * Register IPC handlers for preferences operations.
  */
 function registerPreferencesHandlers(
@@ -108,6 +164,8 @@ function registerPreferencesHandlers(
   franchiseFileManager = null,
   { loggedMain: getLoggedMain },
 ) {
+  registered = { franchiseFileManager, getLoggedMain };
+
   loggedIpc.handle("preferences:get", async () => {
     try {
       if (!preferencesInstance) {
@@ -121,56 +179,7 @@ function registerPreferencesHandlers(
 
   loggedIpc.handle("preferences:set", async (event, preferences) => {
     try {
-      if (!preferencesInstance) {
-        throw new Error("Preferences not initialized");
-      }
-      if (!preferences || typeof preferences !== "object") {
-        throw new Error("Invalid preferences object");
-      }
-      const watchedBefore = new Map();
-      for (const keyPath of changeCallbacks.keys()) {
-        watchedBefore.set(keyPath, preferencesInstance.value(keyPath));
-      }
-
-      // Write each top-level section, saving once
-      const entries = [];
-      for (const [section, values] of Object.entries(preferences)) {
-        if (typeof values === "object" && !Array.isArray(values)) {
-          for (const [key, value] of Object.entries(values)) {
-            entries.push([`${section}.${key}`, value]);
-          }
-        }
-      }
-      if (entries.length > 0) {
-        preferencesInstance.setMany(entries);
-      }
-
-      if (franchiseFileManager?.applyPreferenceSettings) {
-        franchiseFileManager.applyPreferenceSettings(
-          preferencesInstance.value(),
-        );
-      }
-
-      for (const [keyPath, before] of watchedBefore) {
-        const after = preferencesInstance.value(keyPath);
-        if (JSON.stringify(before) !== JSON.stringify(after)) {
-          for (const cb of changeCallbacks.get(keyPath)) {
-            try {
-              cb(after, before);
-            } catch (err) {
-              console.error(`Preference change callback failed (${keyPath}):`, err);
-            }
-          }
-        }
-      }
-
-      const loggedMain = getLoggedMain();
-      loggedMain.send(
-        "preferences:update",
-        preferencesInstance.value(undefined, ""),
-      );
-
-      return true;
+      return setPreferences(preferences);
     } catch (error) {
       throw new Error(`Failed to set preferences: ${error.message}`);
     }
@@ -245,4 +254,5 @@ module.exports = {
   getPreferenceDefaults,
   getPreferencesInstance,
   onPreferenceChange,
+  setPreferences,
 };
