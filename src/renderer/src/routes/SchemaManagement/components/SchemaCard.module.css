@@ -1,0 +1,18 @@
+@import '@assets/colors.css';
+
+.row {
+    min-height: 20px;
+}
+
+.delete {
+    display: inline-flex;
+    padding: 2px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    background: none;
+    border: none;
+}
+
+.delete:hover {
+    color: var(--danger);
+}

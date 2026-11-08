@@ -14,27 +14,3 @@
 .sideNav {
     align-items: stretch;
 }
-
-.filesByGame {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: var(--spacing-4);
-}
-
-@container main (width >= 1450px) {
-    .filesByGame {
-        grid-template-columns: 1fr 1fr 1fr 1fr;
-    }
-}
-
-@container main (width <= 950px) {
-    .filesByGame {
-        grid-template-columns: 1fr 1fr;
-    }
-}
-
-@container main (width <= 650px) {
-    .filesByGame {
-        grid-template-columns: 1fr;
-    }
-}

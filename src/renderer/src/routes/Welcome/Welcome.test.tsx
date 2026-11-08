@@ -58,6 +58,7 @@ const franchiseAPI = {
 
 const setOpenFile = vi.fn();
 const openTableEditor = vi.fn();
+const selectTab = vi.fn();
 
 // `current`: the file already open
 function setup(current?: OpenFranchiseFile) {
@@ -65,7 +66,12 @@ function setup(current?: OpenFranchiseFile) {
         <MemoryRouter>
             <FranchiseFileContext.Provider value={[current, setOpenFile]}>
                 <EditorTabsContext.Provider
-                    value={{ openTableEditor } as unknown as EditorTabsValue}
+                    value={
+                        {
+                            openTableEditor,
+                            selectTab
+                        } as unknown as EditorTabsValue
+                    }
                 >
                     <Welcome />
                 </EditorTabsContext.Provider>
@@ -111,7 +117,24 @@ describe('Welcome default editor', () => {
         );
     });
 
-    it.each(['open-home', 'open-schedule', 'open-schema-viewer', undefined])(
+    it('opens Schemas for the new file with open-schema-viewer', async () => {
+        electronAPI.preferences.getValue.mockResolvedValue(
+            'open-schema-viewer'
+        );
+        setup();
+        await openFile();
+
+        expect(selectTab).toHaveBeenCalledExactlyOnceWith(
+            'schema-management',
+            expect.objectContaining({ fileId: 'file-1' })
+        );
+        expect(setOpenFile.mock.invocationCallOrder[0]).toBeLessThan(
+            selectTab.mock.invocationCallOrder[0]
+        );
+        expect(openTableEditor).not.toHaveBeenCalled();
+    });
+
+    it.each(['open-home', 'open-schedule', undefined])(
         'stays Home with %s',
         async (value) => {
             electronAPI.preferences.getValue.mockResolvedValue(value);
@@ -119,6 +142,7 @@ describe('Welcome default editor', () => {
             await openFile();
             expect(setOpenFile).toHaveBeenCalled();
             expect(openTableEditor).not.toHaveBeenCalled();
+            expect(selectTab).not.toHaveBeenCalled();
         }
     );
 
@@ -129,6 +153,31 @@ describe('Welcome default editor', () => {
         await openFile();
         expect(setOpenFile).toHaveBeenCalled();
         expect(openTableEditor).not.toHaveBeenCalled();
+    });
+});
+
+describe('Welcome schema management', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        Object.assign(window, { electronAPI, franchiseAPI });
+    });
+
+    it('selects the Schemas tab from the side nav', async () => {
+        setup();
+        await userEvent.click(screen.getByText('Schema Management'));
+        expect(selectTab).toHaveBeenCalledExactlyOnceWith('schema-management');
+    });
+
+    it('selects the Schemas tab from the Get Started card', async () => {
+        setup({
+            fileId: 'file-1',
+            path: 'C:/saves/CAREER-TEST',
+            metadata: METADATA,
+            tables: [],
+            revision: 0
+        } as unknown as OpenFranchiseFile);
+        await userEvent.click(screen.getByText('Open schema management'));
+        expect(selectTab).toHaveBeenCalledExactlyOnceWith('schema-management');
     });
 });
 

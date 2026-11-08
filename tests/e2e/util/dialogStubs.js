@@ -15,4 +15,26 @@ async function stubSaveDialog(electronApp, filePath) {
   }, filePath);
 }
 
-module.exports = { stubOpenDialog, stubSaveDialog };
+// Answers every later message box with button `response`, and records each
+// box's options for messageBoxCalls
+async function stubMessageBox(electronApp, response) {
+  await electronApp.evaluate(({ dialog }, r) => {
+    globalThis.__messageBoxCalls = globalThis.__messageBoxCalls || [];
+    // Called as (options) or (parentWindow, options)
+    dialog.showMessageBox = async (...args) => {
+      globalThis.__messageBoxCalls.push(args[args.length - 1]);
+      return { response: r, checkboxChecked: false };
+    };
+  }, response);
+}
+
+async function messageBoxCalls(electronApp) {
+  return electronApp.evaluate(() => globalThis.__messageBoxCalls || []);
+}
+
+module.exports = {
+  stubOpenDialog,
+  stubSaveDialog,
+  stubMessageBox,
+  messageBoxCalls,
+};

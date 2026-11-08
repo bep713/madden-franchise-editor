@@ -72,9 +72,9 @@ function keyOf(state: EditorTabsState, name: string): string {
 
 describe('editorTabs', () => {
     describe('fresh tab set', () => {
-        it('shows only Home without a file', () => {
+        it('shows only Home and Schemas without a file', () => {
             const state = run([open, newTab], null);
-            expect(names(state)).toEqual(['Home']);
+            expect(names(state)).toEqual(['Home', 'Schemas']);
             expect(activeName(state)).toBe('Home');
         });
 
@@ -163,10 +163,7 @@ describe('editorTabs', () => {
         it('goes Home on a reopen while a table tab is active', () => {
             const before = run([open]);
             expect(getActiveTab(before).kind).toBe('table');
-            const after = syncFile(
-                before,
-                makeFile('file-1', { revision: 1 })
-            );
+            const after = syncFile(before, makeFile('file-1', { revision: 1 }));
             expect(names(after)).toEqual([
                 'Home',
                 'Schedule',
@@ -185,9 +182,9 @@ describe('editorTabs', () => {
             expect(activeName(after)).toBe('Home');
         });
 
-        it('drops every tab but Home when the file is closed', () => {
+        it('drops every tab but Home and Schemas when the file is closed', () => {
             const state = run([open], null, run([open, newTab]));
-            expect(names(state)).toEqual(['Home']);
+            expect(names(state)).toEqual(['Home', 'Schemas']);
         });
     });
 
@@ -368,8 +365,14 @@ describe('editorTabs', () => {
             expect(reduceTabs(state, select('schedule-editor'), FILE)).toBe(
                 state
             );
-            expect(reduceTabs(state, select('schema-management'), FILE)).toBe(
-                state
+        });
+
+        it('selects Schemas, with or without a file', () => {
+            expect(activeName(run([select('schema-management')]))).toBe(
+                'Schemas'
+            );
+            expect(activeName(run([select('schema-management')], null))).toBe(
+                'Schemas'
             );
         });
     });
@@ -387,8 +390,21 @@ describe('editorTabs', () => {
             expect(state.tabs).toHaveLength(4);
         });
 
+        it('activates Schemas, the tab to the left', () => {
+            let state = run([open]);
+            state = run([close(state.activeKey)], FILE, state);
+            expect(activeName(state)).toBe('Schemas');
+        });
+
         it('skips stub tabs to the left, back to Home', () => {
             let state = run([open]);
+            // Home, Schedule (a stub), New Tab
+            state = {
+                ...state,
+                tabs: state.tabs.filter(
+                    (tab) => tab.key !== 'schema-management'
+                )
+            };
             state = run([close(state.activeKey)], FILE, state);
             expect(activeName(state)).toBe('Home');
         });

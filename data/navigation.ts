@@ -65,6 +65,8 @@ const navigation: Navigation = {
             image: 'schema.png',
             service: 'schemaViewerService',
             clickListener: 'onSchemaViewerClicked',
+            alwaysShow: true,
+            implemented: true,
             availableVersions: ALL_VERSIONS,
             availableFormats: [FileType.FRANCHISE, FileType.COMMON],
             menu: {
@@ -109,7 +111,7 @@ const navigation: Navigation = {
 };
 
 // The main tabs for an open file (v4's generateMainNavigationTabs). Without a
-// file, only the alwaysShow items (Home).
+// file, only the alwaysShow items (Home, Schemas).
 export function getNavigationItems(metadata?: FileMetadata): NavigationItem[] {
     return navigation.items.filter(
         (item) =>

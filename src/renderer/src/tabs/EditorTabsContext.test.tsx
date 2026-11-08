@@ -52,7 +52,7 @@ describe('useEditorTabsController', () => {
             file: undefined
         };
         const { result, rerender } = setup(current);
-        expect(names(result.current.tabs.tabs)).toEqual(['Home']);
+        expect(names(result.current.tabs.tabs)).toEqual(['Home', 'Schemas']);
 
         const file = makeFile('file-1');
         act(() => {
@@ -71,7 +71,7 @@ describe('useEditorTabsController', () => {
         expect(result.current.pathname).toBe('/table-editor');
     });
 
-    it('shows only Home after the file is closed', () => {
+    it('shows only Home and Schemas after the file is closed', () => {
         const current: { file: OpenFranchiseFile | undefined } = {
             file: makeFile('file-1')
         };
@@ -84,7 +84,7 @@ describe('useEditorTabsController', () => {
 
         current.file = undefined;
         rerender();
-        expect(names(result.current.tabs.tabs)).toEqual(['Home']);
+        expect(names(result.current.tabs.tabs)).toEqual(['Home', 'Schemas']);
         expect(result.current.tabs.activeTab.key).toBe('home');
     });
 
@@ -127,7 +127,8 @@ describe('useEditorTabsController', () => {
             result.current.tabs.closeTab(key);
         });
         expect(result.current.tabs.getViewState(key)).toBeUndefined();
-        expect(result.current.pathname).toBe('/');
+        // Schemas is the tab to the left
+        expect(result.current.pathname).toBe('/schema-management');
     });
 
     it('seeds a new table tab with the selection, leaving the current tab alone', () => {

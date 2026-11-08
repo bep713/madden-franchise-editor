@@ -10,3 +10,7 @@
     display: inline-flex;
     padding: var(--spacing-3);
 }
+
+.item[role='button'] {
+    cursor: pointer;
+}

@@ -11,6 +11,7 @@ const App = require("../../models/App");
 const WelcomePage = require("../../models/react/WelcomePage");
 const NavigationBar = require("../../models/react/NavigationBar");
 const TableEditorPage = require("../../models/react/TableEditorPage");
+const SchemaManagementPage = require("../../models/react/SchemaManagementPage");
 
 const MAIN_TABS = ["Home", "Schedule", "Schemas"];
 
@@ -45,9 +46,9 @@ test("tabs test (react)", async () => {
   const nav = new NavigationBar(window);
   const tableEditor = new TableEditorPage(window);
 
-  // only Home before a file is open
+  // only Home and Schemas before a file is open
   await welcome.waitForPageLoad();
-  expect(await nav.tabNames()).to.deep.equal(["Home"]);
+  expect(await nav.tabNames()).to.deep.equal(["Home", "Schemas"]);
   expect(await nav.hasNewTabButton()).to.equal(false);
 
   await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
@@ -72,7 +73,7 @@ test("tabs test (react)", async () => {
   await welcome.waitForPageLoad();
   await poll(
     () => nav.tabNames(),
-    (names) => names.length === 1 && names[0] === "Home",
+    (names) => names.join() === "Home,Schemas",
     { message: "Closing the file did not reset the tabs" },
   );
   await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
@@ -189,13 +190,15 @@ test("tabs test (react)", async () => {
   await waitForTable(tableEditor, "7482 - Team");
   expect(await nav.tabCount()).to.equal(5);
 
-  // can close every table tab. Closing the active one skips the stub tabs
-  // back to Home.
+  // can close every table tab. Closing the active one goes to the tab on its
+  // left, Schemas.
   await nav.closeActiveTab();
-  await welcome.waitForPageLoad();
-  expect(await nav.activeTabName()).to.equal("Home");
+  await nav.waitForActiveTab("Schemas");
+  await new SchemaManagementPage(window).waitForPageLoad();
   await nav.closeTab("4096");
   expect(await nav.tabNames()).to.deep.equal(MAIN_TABS);
+  await nav.openTab("Home");
+  await welcome.waitForPageLoad();
 
   // the Welcome link then opens a new tab on the first table
   await welcome.openTableEditor();

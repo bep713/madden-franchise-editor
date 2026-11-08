@@ -30,13 +30,25 @@ const sidenav = [
     }
 ];
 
-const SideNav: React.FC = () => {
+interface Props {
+    onSchemaManagementClick?: () => void;
+}
+
+const SideNav: React.FC<Props> = ({ onSchemaManagementClick }: Props) => {
+    // Only Schema Management has a page so far
+    const onClick: Record<string, (() => void) | undefined> = {
+        schemaManagement: onSchemaManagementClick
+    };
     return (
         <aside className={styles.sideNav}>
             <SideNavBase
                 items={sidenav.map((item) => ({
                     leftAsset: item.icon,
-                    text: item.text
+                    text: item.text,
+                    ...(onClick[item.id] && {
+                        onClick: onClick[item.id],
+                        role: 'button'
+                    })
                 }))}
             />
         </aside>

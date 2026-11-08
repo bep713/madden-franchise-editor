@@ -17,7 +17,9 @@
     --silver: #c2c2c2;
     --dim-gray: #6e6e6e;
     --link: var(--honolulu-blue);
+    --fire-brick: #b22222;
     --success: var(--pigment-green);
+    --danger: var(--fire-brick);
     --primary: var(--dark-orange);
     --secondary: var(--white-smoke);
     --error: var(--mini-pink);

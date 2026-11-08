@@ -8,3 +8,8 @@
 .black {
     color: var(--black);
 }
+
+.disabled {
+    color: var(--text-secondary);
+    cursor: default;
+}

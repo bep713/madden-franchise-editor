@@ -17,6 +17,7 @@ import {
 export const HOME_KEY = 'home';
 // The "Open Table..." main tab, replaced by a table tab when clicked
 export const PLACEHOLDER_KEY = 'table-editor';
+export const SCHEMA_MANAGEMENT_KEY = 'schema-management';
 export const NEW_TAB_NAME = 'New Tab';
 
 export interface MainTab {

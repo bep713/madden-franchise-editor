@@ -12,8 +12,10 @@ import { buildOpenFranchiseFile } from '@renderer/hooks/useActiveFranchiseFile';
 import type { RecentFileEntry } from '@renderer/preload';
 import { basename, dirname } from '@renderer/utils/path';
 import { useEditorTabs } from '@renderer/tabs/EditorTabsContext';
+import { SCHEMA_MANAGEMENT_KEY } from '@renderer/tabs/editorTabs';
 import SideNav from './SideNav';
 import Card from '@renderer/components/Card/Card';
+import GameGrid from '@renderer/components/GameGrid/GameGrid';
 import RecentFilesList from '@renderer/components/RecentFilesList/RecentFilesList';
 import GameFileCard from '@renderer/components/GameFilesCard/GameFilesCard';
 import GetStartedCard, { GetStartedActions } from './Cards/GetStartedCard';
@@ -161,9 +163,11 @@ const Welcome: React.FC = () => {
         setOpenFile?.(file);
         if (defaultEditor === 'open-table-editor') {
             editorTabs.openTableEditor(file);
+        } else if (defaultEditor === 'open-schema-viewer') {
+            editorTabs.selectTab(SCHEMA_MANAGEMENT_KEY, file);
         }
-        // TODO(04+): open-schedule and open-schema-viewer, once React has
-        // those pages. Until then they stay on Home.
+        // TODO(04+): open-schedule, once React has that page. Until then it
+        // stays on Home.
         // Main sets the title, enables the file menu items and starts
         // watching the file. A restore after a renderer reload skips this,
         // since main still has that state (same as v4).
@@ -208,7 +212,11 @@ const Welcome: React.FC = () => {
             />
             <Allotment defaultSizes={[1, 4]}>
                 <Allotment.Pane minSize={235} snap>
-                    <SideNav />
+                    <SideNav
+                        onSchemaManagementClick={() =>
+                            editorTabs.selectTab(SCHEMA_MANAGEMENT_KEY)
+                        }
+                    />
                 </Allotment.Pane>
                 <Allotment.Pane>
                     <main className={styles.main}>
@@ -238,7 +246,11 @@ const Welcome: React.FC = () => {
                                         case GetStartedActions.OPEN_TABLE_EDITOR:
                                             editorTabs.openTableEditor();
                                             break;
-                                        // OPEN_SCHEMA_MANAGEMENT: no page yet
+                                        case GetStartedActions.OPEN_SCHEMA_MANAGEMENT:
+                                            editorTabs.selectTab(
+                                                SCHEMA_MANAGEMENT_KEY
+                                            );
+                                            break;
                                     }
                                 }}
                             />
@@ -254,7 +266,7 @@ const Welcome: React.FC = () => {
                                 />
                             </Card>
                             {filesByGame && (
-                                <div className={styles.filesByGame}>
+                                <GameGrid>
                                     {Object.entries(filesByGame)
                                         .sort(
                                             (
@@ -287,7 +299,7 @@ const Welcome: React.FC = () => {
                                                 }
                                             />
                                         ))}
-                                </div>
+                                </GameGrid>
                             )}
                         </Layout>
                     </main>
