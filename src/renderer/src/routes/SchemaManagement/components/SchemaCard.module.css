@@ -16,3 +16,18 @@
 .delete:hover {
     color: var(--danger);
 }
+
+.bundled {
+    display: inline-flex;
+    padding: 2px;
+    color: var(--text-secondary);
+    cursor: help;
+}
+
+/* check.svg is 10px, so pad it out to the 14px icons' footprint */
+.active {
+    display: inline-flex;
+    padding: 4px;
+    color: var(--text-secondary);
+    cursor: help;
+}

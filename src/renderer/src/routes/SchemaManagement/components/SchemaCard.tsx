@@ -5,10 +5,15 @@ import Layout from '@renderer/components/Layout/Layout';
 import Link from '@renderer/components/Link/Link';
 import List from '@renderer/components/List/List';
 import Text from '@renderer/components/Text/Text';
+import Bundled from '@assets/icons/bundled.svg?react';
+import Check from '@assets/icons/check.svg?react';
 import Trash from '@assets/icons/trash.svg?react';
 import { isLoaded } from '../schemaList';
 
 import styles from './SchemaCard.module.css';
+
+const BUNDLED_HINT = 'Bundled schema - cannot delete';
+const ACTIVE_HINT = 'Active schema - cannot delete';
 
 interface Props {
     // None for the Other card
@@ -63,6 +68,29 @@ const SchemaCard: React.FC<Props> = ({
                         >
                             <Trash />
                         </button>
+                    )}
+                    {/* These sit where the trash would, to say why there is none */}
+                    {entry.source === 'custom' && loaded && (
+                        <span
+                            aria-label={ACTIVE_HINT}
+                            className={styles.active}
+                            data-testid='active-schema'
+                            role='img'
+                            title={ACTIVE_HINT}
+                        >
+                            <Check />
+                        </span>
+                    )}
+                    {entry.source === 'bundled' && (
+                        <span
+                            aria-label={BUNDLED_HINT}
+                            className={styles.bundled}
+                            data-testid='bundled-schema'
+                            role='img'
+                            title={BUNDLED_HINT}
+                        >
+                            <Bundled />
+                        </span>
                     )}
                 </Layout>
             </div>

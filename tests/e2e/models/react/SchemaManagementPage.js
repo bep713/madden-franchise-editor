@@ -65,6 +65,22 @@ class SchemaManagementPage {
     return (await this.row(name).locator('[data-action="delete-schema"]').count()) > 0;
   }
 
+  async hasBundledBadge(name) {
+    return (await this.row(name).getByTestId("bundled-schema").count()) > 0;
+  }
+
+  async bundledBadgeTitle(name) {
+    return this.row(name).getByTestId("bundled-schema").getAttribute("title");
+  }
+
+  async hasActiveBadge(name) {
+    return (await this.row(name).getByTestId("active-schema").count()) > 0;
+  }
+
+  async activeBadgeTitle(name) {
+    return this.row(name).getByTestId("active-schema").getAttribute("title");
+  }
+
   async hasLoadedCard() {
     return (await this.locators.loadedCard.count()) > 0;
   }

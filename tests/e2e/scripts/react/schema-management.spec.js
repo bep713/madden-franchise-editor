@@ -89,6 +89,10 @@ test("lists the bundled schemas without a file (react)", async () => {
   expect(await schemas.hasRow(BUNDLED)).to.equal(true);
   expect(await schemas.isLink(BUNDLED)).to.equal(false);
   expect(await schemas.hasDeleteButton(BUNDLED)).to.equal(false);
+  expect(await schemas.hasBundledBadge(BUNDLED)).to.equal(true);
+  expect(await schemas.bundledBadgeTitle(BUNDLED)).to.equal(
+    "Bundled schema - cannot delete",
+  );
 
   await electronApp.close();
 });
@@ -112,6 +116,8 @@ test("loads, then deletes a custom schema (react)", async () => {
   await schemas.clickSchema(BUNDLED);
   await schemas.waitForLoaded(BUNDLED);
   expect(await schemas.hasDeleteButton(CUSTOM)).to.equal(true);
+  expect(await schemas.hasBundledBadge(CUSTOM)).to.equal(false);
+  expect(await schemas.hasActiveBadge(CUSTOM)).to.equal(false);
 
   // A clean file loads without a prompt
   await stubMessageBox(electronApp, CANCEL);
@@ -121,6 +127,9 @@ test("loads, then deletes a custom schema (react)", async () => {
   expect((await messageBoxCalls(electronApp)).length).to.equal(callsBefore);
   expect(await schemas.isLoadedRow(CUSTOM)).to.equal(true);
   expect(await schemas.hasDeleteButton(CUSTOM)).to.equal(false);
+  expect(await schemas.activeBadgeTitle(CUSTOM)).to.equal(
+    "Active schema - cannot delete",
+  );
   expect(
     samePath((await getMetadata(window)).schemaList.path, customSchemaPath()),
   ).to.equal(true);

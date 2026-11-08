@@ -95,6 +95,12 @@ function row(name: string): HTMLElement {
 const hasLink = (name: string): boolean =>
     row(name).querySelector('a') !== null;
 
+const hasBundledBadge = (name: string): boolean =>
+    row(name).querySelector('[data-testid="bundled-schema"]') !== null;
+
+const hasActiveBadge = (name: string): boolean =>
+    row(name).querySelector('[data-testid="active-schema"]') !== null;
+
 describe('SchemaManagement', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -119,6 +125,42 @@ describe('SchemaManagement', () => {
             screen.getByRole('button', { name: 'Delete M22 v329.1 (Custom)' })
         ).toBeTruthy();
         expect(screen.getAllByRole('button')).toHaveLength(1);
+    });
+
+    it('marks bundled schemas as undeletable', async () => {
+        await setup();
+        expect(hasBundledBadge('M22 v329.1')).toBe(true);
+        expect(hasBundledBadge('M22 v329.0')).toBe(true);
+        expect(hasBundledBadge('M22 v329.1 (Custom)')).toBe(false);
+        const badge = within(row('M22 v329.1')).getByRole('img', {
+            name: 'Bundled schema - cannot delete'
+        });
+        expect(badge.getAttribute('title')).toBe(
+            'Bundled schema - cannot delete'
+        );
+    });
+
+    it('keeps the bundled badge on the loaded bundled schema', async () => {
+        await setup(file(metadata(BUNDLED.path)));
+        expect(row('M22 v329.1').dataset.loaded).toBeDefined();
+        expect(hasBundledBadge('M22 v329.1')).toBe(true);
+        expect(hasActiveBadge('M22 v329.1')).toBe(false);
+    });
+
+    it('marks the loaded custom schema as active', async () => {
+        await setup(file(metadata(CUSTOM.path)));
+        const badge = within(row('M22 v329.1 (Custom)')).getByRole('img', {
+            name: 'Active schema - cannot delete'
+        });
+        expect(badge.getAttribute('title')).toBe(
+            'Active schema - cannot delete'
+        );
+        expect(hasActiveBadge('M22 v329.1')).toBe(false);
+    });
+
+    it('shows no active badge without a file', async () => {
+        await setup();
+        expect(hasActiveBadge('M22 v329.1 (Custom)')).toBe(false);
     });
 
     it('links other schemas and bolds the loaded one', async () => {
