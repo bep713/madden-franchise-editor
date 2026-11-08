@@ -40,6 +40,7 @@ export type EditorTab = MainTab | TableTab;
 
 export interface EditorTabsState {
     fileId?: string;
+    revision?: number;
     tabs: EditorTab[];
     activeKey: string;
     // Table tab keys are never reused, so per-tab view state can't leak
@@ -48,6 +49,7 @@ export interface EditorTabsState {
 
 export interface TabsFile {
     fileId: string;
+    revision: number;
     metadata: FileMetadata;
 }
 
@@ -99,22 +101,29 @@ export function getActiveTab(state: EditorTabsState): EditorTab {
 
 // A fresh tab set whenever the open file changes (v4 rebuilds it on every
 // open): the main tabs with "Open Table..." last, and Home active. No file
-// means only Home.
+// means only Home. A reopen of the same file (a new revision) also drops the
+// table tabs, as v4's generateMainNavigationTabs does after a schema load,
+// but stays on the active main tab.
 export function syncFile(
     state: EditorTabsState,
     file: TabsFile | undefined
 ): EditorTabsState {
-    if (state.tabs.length && state.fileId === file?.fileId) {
+    const sameFile = !!state.tabs.length && state.fileId === file?.fileId;
+    if (sameFile && state.revision === file?.revision) {
         return state;
     }
+    const tabs = getNavigationItems(file?.metadata).map((item): MainTab => ({
+        kind: 'main',
+        key: item.id,
+        item
+    }));
+    const keepActive =
+        sameFile && tabs.some((tab) => tab.key === state.activeKey);
     return {
         fileId: file?.fileId,
-        tabs: getNavigationItems(file?.metadata).map((item): MainTab => ({
-            kind: 'main',
-            key: item.id,
-            item
-        })),
-        activeKey: HOME_KEY,
+        revision: file?.revision,
+        tabs,
+        activeKey: keepActive ? state.activeKey : HOME_KEY,
         nextId: state.nextId
     };
 }

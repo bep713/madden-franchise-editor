@@ -372,6 +372,7 @@ const TableEditor: React.FC = () => {
     };
 
     const fileId = activeFranchiseFile?.fileId;
+    const revision = activeFranchiseFile?.revision;
 
     // Built when a command starts. The reload after an import is skipped if
     // the user has switched tabs since; that tab reloads when activated.
@@ -450,10 +451,10 @@ const TableEditor: React.FC = () => {
         } else if (firstTable) {
             void onSelectTable(firstTable, null, { force: true });
         }
-        // Only on a tab switch or a new file. The tab's tableId changes on
-        // every load in it, which must not reload.
+        // Only on a tab switch or a new or reopened file. The tab's tableId
+        // changes on every load in it, which must not reload.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeTab.key, fileId]);
+    }, [activeTab.key, fileId, revision]);
 
     if (!activeFranchiseFile) {
         return null;

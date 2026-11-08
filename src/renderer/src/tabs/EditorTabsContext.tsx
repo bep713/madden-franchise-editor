@@ -45,7 +45,8 @@ export interface EditorTabsValue {
     // `file` is for a file that was just opened, before the context has it
     openTableEditor: (file?: TabsFile) => void;
     newTab: () => void;
-    selectTab: (key: string) => void;
+    // `file` as in openTableEditor
+    selectTab: (key: string, file?: TabsFile) => void;
     closeTab: (key: string) => void;
     // A table in a new tab, active unless `background`
     openTableTab: (
@@ -105,9 +106,10 @@ export function useEditorTabsController(): EditorTabsValue {
     // the tab bar
     const viewStates = useRef(new Map<string, TabViewState>());
     const fileId = openFile?.fileId;
+    const revision = openFile?.revision;
     useEffect(() => {
         viewStates.current.clear();
-    }, [fileId]);
+    }, [fileId, revision]);
 
     const apply = useCallback((action: TabAction, file?: TabsFile) => {
         const target = file ?? latest.current.openFile;
@@ -140,7 +142,8 @@ export function useEditorTabsController(): EditorTabsValue {
             openTableEditor: (file?: TabsFile) =>
                 apply({ type: 'openTableEditor' }, file),
             newTab: () => apply({ type: 'newTab' }),
-            selectTab: (key: string) => apply({ type: 'selectTab', key }),
+            selectTab: (key: string, file?: TabsFile) =>
+                apply({ type: 'selectTab', key }, file),
             closeTab: (key: string) => apply({ type: 'closeTab', key }),
             openTableTab: (
                 tableId: number,

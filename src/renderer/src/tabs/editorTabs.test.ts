@@ -16,11 +16,18 @@ function makeFile(
     {
         format = FileType.FRANCHISE,
         gameYear = 22,
-        gameType = 'madden'
-    }: { format?: FileType; gameYear?: number; gameType?: string } = {}
+        gameType = 'madden',
+        revision = 0
+    }: {
+        format?: FileType;
+        gameYear?: number;
+        gameType?: string;
+        revision?: number;
+    } = {}
 ): TabsFile {
     return {
         fileId,
+        revision,
         metadata: {
             gameYear,
             format,
@@ -128,6 +135,54 @@ describe('editorTabs', () => {
                 'Schemas',
                 'New Tab'
             ]);
+        });
+
+        it('is a no-op for the same file and revision', () => {
+            const state = run([open, newTab]);
+            expect(syncFile(state, makeFile())).toBe(state);
+        });
+
+        it('keeps the active main tab and drops table tabs on a reopen', () => {
+            // Schemas isn't implemented yet, so it can't be selected
+            const state = {
+                ...run([open, newTab]),
+                activeKey: 'schema-management'
+            };
+            const after = syncFile(state, makeFile('file-1', { revision: 1 }));
+            expect(names(after)).toEqual([
+                'Home',
+                'Schedule',
+                'Schemas',
+                'Open Table...'
+            ]);
+            expect(activeName(after)).toBe('Schemas');
+            expect(after.revision).toBe(1);
+            expect(after.nextId).toBe(state.nextId);
+        });
+
+        it('goes Home on a reopen while a table tab is active', () => {
+            const before = run([open]);
+            expect(getActiveTab(before).kind).toBe('table');
+            const after = syncFile(
+                before,
+                makeFile('file-1', { revision: 1 })
+            );
+            expect(names(after)).toEqual([
+                'Home',
+                'Schedule',
+                'Schemas',
+                'Open Table...'
+            ]);
+            expect(activeName(after)).toBe('Home');
+        });
+
+        it('goes Home for a new file, whatever was active', () => {
+            const state = {
+                ...run([open, newTab]),
+                activeKey: 'schema-management'
+            };
+            const after = syncFile(state, makeFile('file-2'));
+            expect(activeName(after)).toBe('Home');
         });
 
         it('drops every tab but Home when the file is closed', () => {

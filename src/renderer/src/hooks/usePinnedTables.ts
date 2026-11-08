@@ -30,6 +30,7 @@ export default function usePinnedTables(
     const writeQueue = useRef<Promise<void>>(Promise.resolve());
 
     const fileId = file?.fileId;
+    const revision = file?.revision;
     const tables = file?.tables;
     const gameYear = file?.metadata.gameYear;
     const gameType = file?.metadata.type?.gameType || 'madden';
@@ -69,9 +70,10 @@ export default function usePinnedTables(
         return () => {
             cancelled = true;
         };
-        // tables is replaced only when another file is opened
+        // tables is replaced only when a file is opened or reopened (a new
+        // revision, e.g. after a schema load)
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [fileId]);
+    }, [fileId, revision]);
 
     const key = useMemo(
         () => (gameYear === undefined ? undefined : { gameYear, gameType }),

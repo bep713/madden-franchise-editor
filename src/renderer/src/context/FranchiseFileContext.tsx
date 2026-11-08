@@ -9,6 +9,9 @@ export interface OpenFranchiseFile {
     metadata: FileMetadata;
     tables: (TableListItem & { index: number })[];
     game?: GameVersion;
+    // Bumped when the same fileId is reopened (e.g. a schema load), so state
+    // keyed on the file is rebuilt. 0 for a fresh open.
+    revision: number;
 }
 
 export const FranchiseFileContext = createContext<

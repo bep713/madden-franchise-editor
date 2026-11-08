@@ -15,7 +15,7 @@ Decisions (confirmed with the user):
 | Step | Scope | Plan | Status |
 |---|---|---|---|
 | 04s1 | Main + preload: `getSavedSchemas` (dir check, `source` tag), `deleteSchema` + `schema:delete`, unsaved-change tracking + `franchise:has-unsaved-changes`, `SchemaEntry` type, `preload.d.ts` | [04s1-schema-ipc.md](04s1-schema-ipc.md) | Implemented, uncommitted |
-| 04s2 | `OpenFranchiseFile.revision`, tab rebuild on a same-`fileId` reopen, effects keyed on `[fileId, revision]`, `selectTab(key, file?)` | [04s2-reload-revision.md](04s2-reload-revision.md) | Not started |
+| 04s2 | `OpenFranchiseFile.revision`, tab rebuild on a same-`fileId` reopen, effects keyed on `[fileId, revision]`, `selectTab(key, file?)` | [04s2-reload-revision.md](04s2-reload-revision.md) | Implemented, uncommitted |
 | 04s3 | `schemaList.ts`, `GameGrid` extraction, the page and its cards, `Link` `disabled`, Welcome wiring, nav flag, e2e | [04s3-schema-page.md](04s3-schema-page.md) | Not started |
 
 ## Order

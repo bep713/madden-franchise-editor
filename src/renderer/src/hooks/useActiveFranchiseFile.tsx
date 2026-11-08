@@ -7,14 +7,16 @@ export function buildOpenFranchiseFile(
     fileId: string,
     metadata: FileMetadata,
     tables: TableListItem[],
-    path?: string
+    path?: string,
+    revision = 0
 ): OpenFranchiseFile {
     return {
         fileId,
         path,
         metadata,
         tables: tables.map((table, index) => ({ ...table, index })),
-        game: findGame(metadata)
+        game: findGame(metadata),
+        revision
     };
 }
 

@@ -10,7 +10,7 @@ import {
 import { useEditorTabsController } from './EditorTabsContext';
 import { EditorTab, tabName } from './editorTabs';
 
-function makeFile(fileId: string): OpenFranchiseFile {
+function makeFile(fileId: string, revision = 0): OpenFranchiseFile {
     return {
         fileId,
         metadata: {
@@ -18,7 +18,8 @@ function makeFile(fileId: string): OpenFranchiseFile {
             format: FileType.FRANCHISE,
             type: { gameType: 'madden' }
         } as FileMetadata,
-        tables: []
+        tables: [],
+        revision
     };
 }
 
@@ -163,5 +164,47 @@ describe('useEditorTabsController', () => {
             result.current.tabs.getViewState(result.current.tabs.activeTab.key)
         ).toBeUndefined();
         expect(result.current.pathname).toBe('/table-editor');
+    });
+
+    it('selects a tab for a file the context does not have yet', () => {
+        const current: { file: OpenFranchiseFile | undefined } = {
+            file: undefined
+        };
+        const { result, rerender } = setup(current);
+
+        const file = makeFile('file-1');
+        act(() => {
+            result.current.tabs.selectTab('table-editor', file);
+        });
+        current.file = file;
+        rerender();
+
+        expect(result.current.tabs.activeTab.kind).toBe('table');
+        expect(result.current.pathname).toBe('/table-editor');
+    });
+
+    it('clears view states when the file is reopened', () => {
+        const current: { file: OpenFranchiseFile | undefined } = {
+            file: makeFile('file-1')
+        };
+        const { result, rerender } = setup(current);
+        act(() => {
+            result.current.tabs.openTableEditor();
+        });
+        const key = result.current.tabs.activeTab.key;
+        result.current.tabs.setViewState(key, {
+            selection: { row: 5, col: 1 }
+        });
+
+        current.file = makeFile('file-1', 1);
+        rerender();
+        expect(result.current.tabs.getViewState(key)).toBeUndefined();
+        expect(names(result.current.tabs.tabs)).toEqual([
+            'Home',
+            'Schedule',
+            'Schemas',
+            'Open Table...'
+        ]);
+        expect(result.current.tabs.activeTab.key).toBe('home');
     });
 });
