@@ -63,7 +63,7 @@ test("a real user's file loads and is rewritten with only the missing sections a
   const general = {};
   for (const [key, value] of Object.entries(saved.general)) {
     general[key] = value;
-    if (key === "defaultEditor") general.uiVersion = "v4";
+    if (key === "defaultEditor") general.uiVersion = "v5";
     if (key === "autoSave") general.showPinnedTables = [true];
   }
   const expected = {
@@ -248,12 +248,12 @@ test("setPreferences runs the change callback once and broadcasts the update", (
   const calls = [];
   handler.onPreferenceChange("general.uiVersion", (...args) => calls.push(args));
 
-  assert.equal(handler.setPreferences({ general: { uiVersion: "v5" } }), true);
-  assert.deepStrictEqual(calls, [["v5", "v4"]]);
-  assert.equal(handler.getPreferencesInstance().value("general.uiVersion"), "v5");
+  assert.equal(handler.setPreferences({ general: { uiVersion: "v4" } }), true);
+  assert.deepStrictEqual(calls, [["v4", "v5"]]);
+  assert.equal(handler.getPreferencesInstance().value("general.uiVersion"), "v4");
   const updates = loggedMain.sent.filter((m) => m.channel === "preferences:update");
   assert.equal(updates.length, 1);
-  assert.equal(updates[0].args[0].general.uiVersion, "v5");
+  assert.equal(updates[0].args[0].general.uiVersion, "v4");
   // Only the given key changes.
   assert.equal(updates[0].args[0].general.updateChannel, "stable");
 });

@@ -1,6 +1,6 @@
 # React conversion (v5) — roadmap
 
-Branch `v5-react-conversion`. Build a React/TypeScript UI in `src/` next to the v4 vanilla UI, against the same main process. v4 stays the default until the React UI reaches parity (see the parity checklist); then v5 becomes the default and v4 stays as legacy (05).
+Branch `v5-react-conversion`. Build a React/TypeScript UI in `src/` next to the v4 vanilla UI, against the same main process. v5 is the default and v4 stays as legacy (05). 05d flipped the default before the parity checklist was complete, at the user's request, so the branch must not reach `master` until every checklist item is checked.
 
 Each numbered step is its own plan file in this folder. Write the plan before starting a step.
 
@@ -13,7 +13,7 @@ From step 02 on, every step adds or extends a React e2e spec (`tests/e2e/scripts
 | 02 | [React e2e tests](02-react-e2e.md): Playwright `react` project (`MFE_UI=react`), port the v4 specs React can already pass (smoke, tabs, export, in part), test-per-feature rule | Done (`cbd80c9`, `c257f8a`) |
 | 03 | [Table editor parity](03-table-editor-parity.md): cell editing, reference/blob editors and saving (03a), pinning (03b), navigation tabs (03t), open in new tab (03u), export/import (03c), jump to column (03d), inverted-view editing (03e), back/forward history (03f), grid context menu and References modal (03g) | 03a done (`bedefcf`, `d28514e`); 03b done (`b1e1d7f`); 03t done (`4249569`); 03u implemented (uncommitted, 2026-10-27); 03c–03e not planned (03e outlined) |
 | 04+ | Remaining items toward v4 parity (below) | Not planned |
-| 05 | [UI switch](05-ui-switch.md): `general.uiVersion` preference, live switch between v5 and legacy v4 keeping the open file, View → Interface menu (05a main, 05b v4 restore + link, 05c React restore + link, 05d v5 default + installer). 05d waits for the parity checklist | 05a–05c done; 05d waits for parity |
+| 05 | [UI switch](05-ui-switch.md): `general.uiVersion` preference, live switch between v5 and legacy v4 keeping the open file, View → Interface menu (05a main, 05b v4 restore + link, 05c React restore + link, 05d v5 default + installer). 05d waits for the parity checklist | Done (05a `95488c6`, 05b `f5f0a10`, 05c `adb41f7`, 05d uncommitted). 05d landed ahead of parity; the checklist still gates `master` |
 
 ## Parity checklist (gate for 05d and for merging to `master`)
 No build with v5 ships, nightly or stable, until every box is checked. v4 stays in the app indefinitely as "legacy", so this is about v5 being complete, not about removing v4.

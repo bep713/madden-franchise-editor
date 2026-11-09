@@ -8,7 +8,7 @@ Electron desktop app for editing Madden NFL (19–27) and College Football 27 fr
 
 The app was recently upgraded from an older Electron that ran renderers with `nodeIntegration` and no preload. Expect a mix of legacy and new code. New work belongs on the IPC/preload side of that split.
 
-This branch (`v5-react-conversion`) is also building a v5 React/TypeScript UI in `src/` next to the v4 UI (see "v5 React UI" below). Both run against the same main process. v4 stays the default until the React UI reaches parity.
+This branch (`v5-react-conversion`) is also building a v5 React/TypeScript UI in `src/` next to the v4 UI (see "v5 React UI" below). Both run against the same main process. v5 is the default; v4 is "legacy" and is kept indefinitely. v4 gets no new features, but changes to main, preload or IPC must keep it working, and the `v4` e2e project stays in CI.
 
 ## Commands
 
@@ -100,14 +100,14 @@ New code should call `window.franchiseAPI` / `window.electronAPI` directly.
 
 - Code: `src/renderer/` (Vite root; `index.html` → `src/main.tsx`), shared TS types in `src/shared/`, and nav/game data in `data/navigation.ts` and `data/games.json` (`games.json` is also `require`d by main). Aliases: `@renderer`, `@shared`, `@assets`, `@data` (in `vite.config.mts` and `tsconfig.web.json`). CSS modules use camelCase class names; `*.svg?react` imports go through svgr.
 - Only `index.html` is built. `schema.html` and `settings.html` still point at v4 scripts.
-- The `general.uiVersion` preference (`"v5"` / `"v4"`) picks the main window's UI (`main/utils/uiSelection.js`, `loadMainUi()` in `main.js`). `MFE_RENDERER_URL` (dev server) or `MFE_UI=react` force v5 and `MFE_UI=v4` forces v4, for that session only. v5 loads the dev server URL if set, else `out/renderer/index.html`, and falls back to v4 with a console warning if that's missing.
+- The `general.uiVersion` preference (`"v5"` / `"v4"`) picks the main window's UI (`main/utils/uiSelection.js`, `loadMainUi()` in `main.js`); the default is `"v5"`. `MFE_RENDERER_URL` (dev server) or `MFE_UI=react` force v5 and `MFE_UI=v4` forces v4, for that session only. v5 loads the dev server URL if set, else `out/renderer/index.html`, and falls back to v4 with a console warning if that's missing.
 - Switching is live: View → Interface (radio items `UiVersionV5`/`UiVersionV4`) or changing the preference anywhere runs `switchMainUi()`, which reloads only the main window's page and clears the env override. The open file, its unsaved edits, the watcher and the title stay in main. The update check runs on the first load only; a reloaded UI reads the last updater event with `electronAPI.getUpdateStatus()`.
 - e2e picks the UI by seeding `general.uiVersion` (`tests/e2e/util/Electron.js`), and clears `MFE_UI`/`MFE_RENDERER_URL`.
 - The React renderer calls the same preload objects as v4, `window.franchiseAPI` and `window.electronAPI`, and gets the same response shapes (`src/shared/types/franchise.ts`). `src/renderer/src/preload.d.ts` declares only the methods React uses, so add a declaration when React starts calling a new one. The only React-specific channels are `files:get-saves` and `files:open-folder` (`electronAPI.files`, `main/handlers/filesHandler.js`).
 - Handsontable: React uses `handsontable@16` + `@handsontable/react-wrapper`. v4 needs 11.1.0, installed under the alias `handsontable-v11` (`require("handsontable-v11")`). Don't collapse them.
 - Monaco is bundled locally (`utils/monacoLoader.ts`, editor core + worker only), and the CSP allows `worker-src blob:`.
 - `frtk` (expression tables) isn't published. Its types the renderer needs are copied into `src/shared/types/frtk.ts`.
-- Renderer-only packages (react, handsontable 16, monaco, …) are devDependencies, because Vite bundles them and electron-builder would otherwise pack them. `out/renderer` isn't in `build.files` yet, so installers still ship only v4.
+- Renderer-only packages (react, handsontable 16, monaco, …) are devDependencies, because Vite bundles them and electron-builder would otherwise pack them. Installers ship both UIs: `build.files` includes `out/renderer/**/*`, and `build:app` runs `build:react`.
 - Vitest uses non-scoped CSS-module class names, so snapshots don't depend on file paths.
 - **Every React feature ships with tests.** A change that adds or changes user-visible React behaviour must add a spec in `tests/e2e/scripts/react/`, or extend one, so the flow runs through the real main process: the happy path, plus any persisted result (the saved file, `pins.json`, preferences). The harness (from `.claude/plans/react-conversion/02-react-e2e.md`):
     - Playwright has two projects: `v4` (everything outside `react/`) and `react` (`tests/e2e/scripts/react/**`). React specs launch with `electron.launchWithDefaultOptions({ ui: "react" })`, which loads the built `out/renderer`, so run `npm run build:react` after changing `src/`.

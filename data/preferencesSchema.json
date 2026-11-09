@@ -29,7 +29,7 @@
           "key": "uiVersion",
           "label": "User interface",
           "type": "dropdown",
-          "defaultValue": "v4",
+          "defaultValue": "v5",
           "options": [
             { "label": "New (v5)", "value": "v5" },
             { "label": "Legacy (v4)", "value": "v4" }

@@ -355,9 +355,9 @@ function createApplicationMenu() {
 }
 
 // The main window loads v5 (React, src/renderer) or v4 (legacy, renderer/).
-// The general.uiVersion preference picks it, and changing it switches live
-// (switchMainUi). MFE_RENDERER_URL (Vite dev server) / MFE_UI=react|v4
-// override the preference until the first switch.
+// The general.uiVersion preference picks it (v5 is the default), and changing
+// it switches live (switchMainUi). MFE_RENDERER_URL (Vite dev server) /
+// MFE_UI=react|v4 override the preference until the first switch.
 const reactRendererUrl = process.env.MFE_RENDERER_URL;
 let uiOverride = uiSelection.envUiOverride(process.env);
 let currentUi = null;
