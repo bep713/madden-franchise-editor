@@ -114,6 +114,21 @@ class App {
     );
   }
 
+  // Clicks the item from main, so it works while the main window is reloading
+  async clickMenuItem(id) {
+    await this.app.evaluate(
+      ({ Menu }, id) => Menu.getApplicationMenu().getMenuItemById(id).click(),
+      id,
+    );
+  }
+
+  async isMenuItemChecked(id) {
+    return this.app.evaluate(
+      ({ Menu }, id) => Menu.getApplicationMenu().getMenuItemById(id).checked,
+      id,
+    );
+  }
+
   async _clickMenuItem(menuItemId) {
     const mainWindow = await this.getMainWindow();
     await mainWindow.evaluate(

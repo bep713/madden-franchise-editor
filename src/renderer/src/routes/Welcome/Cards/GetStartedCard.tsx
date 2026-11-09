@@ -65,7 +65,6 @@ const GetStartedCard: React.FC<GetStartedCardProps> = ({
             }
             text='Open schema management'
         />,
-        // The path is unknown after a renderer reload
         openFile?.path && (
             <Link
                 key={GetStartedActions.OPEN_FILE_LOCATION}

@@ -181,6 +181,31 @@ describe('Welcome schema management', () => {
     });
 });
 
+describe('Welcome side nav', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        Object.assign(window, { electronAPI, franchiseAPI });
+    });
+
+    it('switches to the legacy UI', async () => {
+        setup();
+        const item = screen.getByText('Switch to legacy UI');
+        expect(item.closest('[data-action="switch-ui"]')).not.toBeNull();
+        await userEvent.click(item);
+        expect(electronAPI.preferences.set).toHaveBeenCalledExactlyOnceWith({
+            general: { uiVersion: 'v4' }
+        });
+    });
+
+    it('opens Preferences from Settings', async () => {
+        setup();
+        await userEvent.click(screen.getByText('Settings'));
+        expect(electronAPI.send).toHaveBeenCalledExactlyOnceWith(
+            'show-preferences-window'
+        );
+    });
+});
+
 describe('Welcome common files', () => {
     const FTC_PREFS: Record<string, string> = {
         'general.ftcGameYearOverride': '22',

@@ -6,6 +6,7 @@ import Document from '@assets/icons/document.svg?react';
 import File from '@assets/icons/file.svg?react';
 import Folder from '@assets/icons/folder.svg?react';
 import Settings from '@assets/icons/settings.svg?react';
+import SwitchOrientation from '@assets/icons/switchOrientation.svg?react';
 
 const sidenav = [
     {
@@ -27,26 +28,40 @@ const sidenav = [
         id: 'settings',
         icon: <Settings />,
         text: 'Settings'
+    },
+    {
+        id: 'switchUi',
+        icon: <SwitchOrientation />,
+        text: 'Switch to legacy UI',
+        'data-action': 'switch-ui'
     }
 ];
 
 interface Props {
     onSchemaManagementClick?: () => void;
+    onSettingsClick?: () => void;
+    onSwitchUiClick?: () => void;
 }
 
-const SideNav: React.FC<Props> = ({ onSchemaManagementClick }: Props) => {
-    // Only Schema Management has a page so far
+const SideNav: React.FC<Props> = ({
+    onSchemaManagementClick,
+    onSettingsClick,
+    onSwitchUiClick
+}: Props) => {
     const onClick: Record<string, (() => void) | undefined> = {
-        schemaManagement: onSchemaManagementClick
+        schemaManagement: onSchemaManagementClick,
+        settings: onSettingsClick,
+        switchUi: onSwitchUiClick
     };
     return (
         <aside className={styles.sideNav}>
             <SideNavBase
-                items={sidenav.map((item) => ({
-                    leftAsset: item.icon,
-                    text: item.text,
-                    ...(onClick[item.id] && {
-                        onClick: onClick[item.id],
+                items={sidenav.map(({ id, icon, text, ...rest }) => ({
+                    leftAsset: icon,
+                    text,
+                    ...rest,
+                    ...(onClick[id] && {
+                        onClick: onClick[id],
                         role: 'button'
                     })
                 }))}

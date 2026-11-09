@@ -169,8 +169,8 @@ const Welcome: React.FC = () => {
         // TODO(04+): open-schedule, once React has that page. Until then it
         // stays on Home.
         // Main sets the title, enables the file menu items and starts
-        // watching the file. A restore after a renderer reload skips this,
-        // since main still has that state (same as v4).
+        // watching the file. A restore after a reload or UI switch only sends
+        // it if the open was cut off before this (useActiveFranchiseFile).
         window.electronAPI.send('file-loaded', {
             path,
             type: result.metadata.type,
@@ -215,6 +215,16 @@ const Welcome: React.FC = () => {
                     <SideNav
                         onSchemaManagementClick={() =>
                             editorTabs.selectTab(SCHEMA_MANAGEMENT_KEY)
+                        }
+                        onSettingsClick={() =>
+                            window.electronAPI.send('show-preferences-window')
+                        }
+                        // Main reloads the window into v4 once the
+                        // preference is written
+                        onSwitchUiClick={() =>
+                            window.electronAPI.preferences.set({
+                                general: { uiVersion: 'v4' }
+                            })
                         }
                     />
                 </Allotment.Pane>

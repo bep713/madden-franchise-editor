@@ -44,7 +44,13 @@ declare global {
                 options?: OpenFileOptions
             ) => Promise<OpenFileResult>;
             closeFile: (fileId: string) => Promise<boolean>;
-            getActiveFileId: () => Promise<string | null>;
+            // The file main has open. loaded is false when a UI switch cut
+            // the open off before file-loaded was sent.
+            getActiveFile: () => Promise<{
+                fileId: string;
+                path: string;
+                loaded: boolean;
+            } | null>;
             getMetadata: (fileId: string) => Promise<FileMetadata | null>;
             // A header sniff before opening; format is null if unreadable
             getMetadataFromFilePath: (
@@ -108,6 +114,11 @@ declare global {
                 options: MessageBoxOptions
             ) => Promise<MessageBoxReturnValue>;
             getVersion: () => Promise<string>;
+            // The last updater event a user acts on, or null (app:get-update-status)
+            getUpdateStatus: () => Promise<{
+                channel: string;
+                data: unknown;
+            } | null>;
             // ipcRenderer.send / on / removeAllListeners on any channel. The
             // preload has no per-callback removal.
             send: (channel: string, data?: unknown) => void;

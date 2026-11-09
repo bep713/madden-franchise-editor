@@ -13,6 +13,7 @@ class SettingsManager {
         "#openExcelAfterImport",
       ),
       updateChannelSelect: this.window.locator("#updateChannel"),
+      uiVersionSelect: this.window.locator("#uiVersion"),
     };
   }
 
@@ -49,6 +50,10 @@ class SettingsManager {
 
   async getUpdateChannel() {
     return await this.locators.updateChannelSelect.inputValue();
+  }
+
+  async setUiVersion(value) {
+    await this.locators.uiVersionSelect.selectOption(value);
   }
 
   async setAutoUnemptySetting(autoUnempty) {

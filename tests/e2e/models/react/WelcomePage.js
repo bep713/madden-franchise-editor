@@ -25,7 +25,15 @@ class WelcomePage {
         "Open the table editor",
         { exact: true },
       ),
+      // Only shown when the open file's path is known
+      openFileLocationLink: this.locators.getStartedCard.getByText(
+        "Open file location",
+        { exact: true },
+      ),
     });
+    this.locators.switchUiLink = this.window.locator(
+      '[data-action="switch-ui"]',
+    );
   }
 
   async waitForPageLoad() {
@@ -60,6 +68,11 @@ class WelcomePage {
   // Re-opens the common-file prompt for the open file
   async changeFileParameters() {
     await this.locators.changeFileParametersLink.click();
+  }
+
+  // Reloads the main window into v4
+  async switchToLegacy() {
+    await this.locators.switchUiLink.click();
   }
 
   async openTableEditor() {

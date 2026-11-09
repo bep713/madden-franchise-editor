@@ -37,19 +37,30 @@ export default function useActiveFranchiseFile(): [
     const [openFile, setOpenFile] = useState<OpenFranchiseFile | undefined>();
 
     useEffect(() => {
-        // Restore the file main still has open (e.g. after a renderer reload)
+        // Restore the file main still has open (after a reload or a UI switch)
         (async (): Promise<void> => {
-            const fileId = await window.franchiseAPI.getActiveFileId();
-            if (!fileId) {
+            const active = await window.franchiseAPI.getActiveFile();
+            if (!active) {
                 return;
             }
 
+            const { fileId, path, loaded } = active;
             const [metadata, tables] = await Promise.all([
                 window.franchiseAPI.getMetadata(fileId),
                 window.franchiseAPI.getTableList(fileId)
             ]);
-            if (metadata) {
-                setOpenFile(buildOpenFranchiseFile(fileId, metadata, tables));
+            if (!metadata) {
+                return;
+            }
+            setOpenFile(buildOpenFranchiseFile(fileId, metadata, tables, path));
+            // A switch cut the open off before file-loaded: send it now, so
+            // main sets the title, the file menu items and the watcher
+            if (!loaded) {
+                window.electronAPI.send('file-loaded', {
+                    path,
+                    type: metadata.type,
+                    fileId
+                });
             }
         })();
     }, []);
