@@ -11,6 +11,7 @@ class SchemaManagementPage {
       main: this.window.locator("main"),
       actionBar: this.window.getByTestId("schema-action-bar"),
       loadedCard: this.window.getByTestId("loaded-schema"),
+      pendingCard: this.window.getByTestId("pending-file"),
       grid: this.window.getByTestId("schema-grid"),
       cards: this.window.getByTestId("schema-grid").getByTestId("schema-card"),
       loader: this.window.locator('[aria-busy="true"]'),
@@ -83,6 +84,29 @@ class SchemaManagementPage {
 
   async hasLoadedCard() {
     return (await this.locators.loadedCard.count()) > 0;
+  }
+
+  // The card for a file waiting for a schema (PendingFileCard)
+  async hasPendingCard() {
+    return (await this.locators.pendingCard.count()) > 0;
+  }
+
+  async waitForPendingCard() {
+    await this.locators.pendingCard.waitFor();
+  }
+
+  async waitForPendingCardHidden() {
+    await this.locators.pendingCard.waitFor({ state: "detached" });
+  }
+
+  async pendingText() {
+    return this.locators.pendingCard.innerText();
+  }
+
+  async cancelPending() {
+    await this.locators.pendingCard
+      .locator('[data-action="cancel-pending"]')
+      .click();
   }
 
   // Starts a load; a confirm box may come first

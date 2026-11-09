@@ -1,3 +1,5 @@
+const { dismissBanners } = require("../util/banners");
+
 class App {
   constructor(app) {
     this.app = app;
@@ -74,6 +76,11 @@ class App {
 
   async close() {
     await this.app.close();
+  }
+
+  // Closes React banners until none is left (util/banners.js)
+  async dismissBanners() {
+    await dismissBanners(await this.getMainWindow());
   }
 
   async copyToClipboard(text) {

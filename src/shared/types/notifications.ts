@@ -2,19 +2,34 @@
 // over notifications:* channels (electronAPI.notifications).
 import type { SchemaMeta } from './franchise';
 
-export type NotificationKind = 'schema-mismatch'; // 04o6 adds 'schema-missing'
-
 export interface SchemaMismatchData {
     expected: SchemaMeta | null;
     loaded: SchemaMeta | null;
     gameType: string;
 }
 
-export interface AppNotification {
+// The open options a retry needs: a common file's year and type
+export interface SchemaMissingOpenOptions {
+    gameYearOverride?: number;
+    gameTypeOverride?: string;
+}
+
+export interface SchemaMissingData {
+    path: string;
+    openOptions?: SchemaMissingOpenOptions;
+    // Read from the file; absent when it couldn't be
+    game?: { gameYear: number; gameType: string };
+}
+
+interface NotificationBase {
     id: string;
-    kind: NotificationKind;
     createdAt: number; // ms epoch
     read: boolean;
     fileId?: string;
-    data: SchemaMismatchData;
 }
+
+export type AppNotification =
+    | (NotificationBase & { kind: 'schema-mismatch'; data: SchemaMismatchData })
+    | (NotificationBase & { kind: 'schema-missing'; data: SchemaMissingData });
+
+export type NotificationKind = AppNotification['kind'];

@@ -7,7 +7,7 @@ The parity checklist items that 03 didn't cover. Each item gets its own plan fil
 | # | Item | Plan | Status |
 |---|---|---|---|
 | 04s | Schema management page: the Schemas tab lists schemas per game, loads, deletes, refreshes, opens the schema folder (04s1 IPC, 04s2 reload revision, 04s3 page) | [04s-schema-management.md](04s-schema-management.md) | Done (04s1 `df8f934`, 04s2 `b225712`, 04s3 `9519810`) |
-| 04o | Schema handling on open: the `schema-mismatch:check` prompt and the missing-schema flow (v4 opens the schema manager when `franchise:open-file` returns `{ error }`), plus the bottom banner queue and the Home notification drawer | [04o-schema-notifications.md](04o-schema-notifications.md) | Planned |
+| 04o | Schema handling on open: the `schema-mismatch:check` prompt and the missing-schema flow (v4 opens the schema manager when `franchise:open-file` returns `{ error }`), plus the bottom banner queue and the Home notification drawer | [04o-schema-notifications.md](04o-schema-notifications.md) | Done (04o1-04o3 `8ead138`, 04o4 `c6933a3`, 04o5-04o6 uncommitted) |
 | 04v | Schema viewer: v4's `schemaViewerService` field browser for the loaded schema, on the Schemas page | Not written | Not started |
 | 04h | Schedule page: the Schedule tab (`implemented: false` today) and `general.defaultEditor` = `open-schedule` | Not written | Not started |
 | 04r | External-change reload prompt: `file-changed` and `save-new-file` | Not written | Not started |

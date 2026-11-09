@@ -6,7 +6,10 @@ const { test } = require("../../util/test");
 const electron = require("../../util/Electron");
 const FilePaths = require("../../util/FilePaths");
 const TestUtil = require("../../util/TestUtil");
-const { stubMessageBox } = require("../../util/dialogStubs");
+const {
+  stubMessageBox,
+  messageBoxCalls,
+} = require("../../util/dialogStubs");
 const { poll } = require("../../util/poll");
 
 const App = require("../../models/App");
@@ -15,6 +18,7 @@ const NavigationBar = require("../../models/react/NavigationBar");
 const SchemaManagementPage = require("../../models/react/SchemaManagementPage");
 const NotificationDrawer = require("../../models/react/NotificationDrawer");
 const CommonFileModal = require("../../models/react/CommonFileModal");
+const Banner = require("../../models/react/Banner");
 const LegacyWelcomePage = require("../../models/WelcomePage");
 
 const BUNDLED_M22 = path.join(
@@ -25,6 +29,8 @@ const BUNDLED = "M22 v329.1";
 const CUSTOM = "M22 v329.1 (Custom)";
 // The test career expects v328.1, and only v329.1 is bundled
 const MISMATCH = "Loaded M22 v329.1, expected M22 v328.1.";
+const BANNER_MESSAGE =
+  "We cannot find an exact match for this file's schema. Open the schema management page?";
 const CONFIRM = 0;
 
 test.beforeEach(TestUtil.overwriteTestCareer);
@@ -50,12 +56,24 @@ async function launch() {
     nav: new NavigationBar(window),
     schemas: new SchemaManagementPage(window),
     drawer: new NotificationDrawer(window),
+    banner: new Banner(window),
   };
 }
 
-async function openCareer(electronApp, welcome) {
-  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+async function openCareer(electronApp, welcome, options) {
+  await welcome.openFranchiseFile(
+    electronApp,
+    FilePaths.m22.career.test,
+    options,
+  );
 }
+
+// The store in main, read without opening the drawer (which marks all read)
+async function storedNotifications(window) {
+  return window.evaluate(() => window.electronAPI.notifications.list());
+}
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function openSchemas(nav, schemas) {
   await nav.openTab("Schemas");
@@ -237,3 +255,208 @@ test("the notification survives a UI switch (react)", async () => {
 
   await electronApp.close();
 });
+
+test("opening a mismatched file shows the banner (react)", async () => {
+  test.setTimeout(120 * 1000);
+  const { electronApp, welcome, drawer, banner } = await launch();
+
+  await openCareer(electronApp, welcome, { keepBanners: true });
+  await banner.waitForBanner("schema-mismatch");
+  expect(await banner.message()).to.equal(BANNER_MESSAGE);
+
+  // Already listed while the banner is up
+  const item = await mismatchItem(drawer);
+  expect(item.description).to.equal(MISMATCH);
+  expect(await banner.isVisible()).to.equal(true);
+
+  await electronApp.close();
+});
+
+test("the banner's Yes opens Schemas and marks it read (react)", async () => {
+  test.setTimeout(120 * 1000);
+  const { electronApp, window, welcome, nav, schemas, drawer, banner } =
+    await launch();
+
+  await openCareer(electronApp, welcome, { keepBanners: true });
+  await banner.waitForBanner("schema-mismatch");
+  await banner.click("Yes");
+  await nav.waitForActiveTab("Schemas");
+  await schemas.waitForPageLoad();
+  await banner.waitForHidden();
+
+  const [stored] = await storedNotifications(window);
+  expect(stored.read).to.equal(true);
+  await backHome(nav, welcome);
+  await drawer.waitForBadgeCount(0);
+
+  await electronApp.close();
+});
+
+test("the banner hides on its own and the notification stays (react)", async () => {
+  test.setTimeout(120 * 1000);
+  const { electronApp, window, welcome, drawer, banner } = await launch();
+
+  await openCareer(electronApp, welcome, { keepBanners: true });
+  await banner.waitForBanner("schema-mismatch");
+  await banner.waitForHidden({ timeout: 12 * 1000 });
+
+  const stored = await storedNotifications(window);
+  expect(stored).to.have.length(1);
+  expect(stored[0].read).to.equal(false);
+  await drawer.waitForBadgeCount(1);
+
+  await electronApp.close();
+});
+
+test("hovering keeps the banner up (react)", async () => {
+  test.setTimeout(120 * 1000);
+  const { electronApp, welcome, banner } = await launch();
+
+  await openCareer(electronApp, welcome, { keepBanners: true });
+  await banner.waitForBanner("schema-mismatch");
+  await banner.hover();
+  await wait(9 * 1000);
+  expect(await banner.isVisible()).to.equal(true);
+
+  await electronApp.close();
+});
+
+test("loading a mismatched schema by hand shows no banner (react)", async () => {
+  test.setTimeout(120 * 1000);
+  const { electronApp, welcome, nav, schemas, banner } = await launch();
+  copyBundledTo("M22_329_1.gz");
+
+  // Closes the open's banner
+  await openCareer(electronApp, welcome);
+  expect(await banner.isVisible()).to.equal(false);
+  await openSchemas(nav, schemas);
+  await stubMessageBox(electronApp, CONFIRM);
+  await schemas.clickSchema(BUNDLED);
+  await schemas.waitForLoaded(BUNDLED);
+  expect(await schemas.status()).to.equal("mismatch");
+
+  await wait(1000);
+  expect(await banner.isVisible()).to.equal(false);
+
+  await electronApp.close();
+});
+
+// The FTC fixture remembered as M18, which has no schema (bundled covers
+// 19-27), so its open fails with schema-not-found
+function rememberFtcAsM18() {
+  fs.writeFileSync(
+    path.join(electron.userDataDir, "commonFileChoices.json"),
+    JSON.stringify({
+      [FilePaths.m22.common]: { gameYear: 18, gameType: "madden" },
+    }),
+  );
+}
+
+const MISSING_BANNER =
+  "No schema was found for FTC-E2ETEST. Choose one on the Schema Management page?";
+const MISSING =
+  "FTC-E2ETEST could not be opened because no schema exists for M18.";
+
+// Opens the FTC fixture, which fails for lack of a schema. Answers any
+// message box, so one that shows is recorded instead of blocking.
+async function openMissing(electronApp, welcome, banner) {
+  rememberFtcAsM18();
+  await stubMessageBox(electronApp, CONFIRM);
+  await welcome.startOpenFile(electronApp, FilePaths.m22.common);
+  await banner.waitForBanner("schema-missing");
+}
+
+const normalize = (p) => p.replace(/\\/g, "/").toLowerCase();
+
+test("a missing schema shows a banner instead of an error (react)", async () => {
+  test.setTimeout(120 * 1000);
+  const { electronApp, welcome, drawer, banner } = await launch();
+
+  await openMissing(electronApp, welcome, banner);
+  expect(await banner.message()).to.equal(MISSING_BANNER);
+  expect(await messageBoxCalls(electronApp)).to.deep.equal([]);
+
+  await drawer.open();
+  await drawer.waitForItemCount(1);
+  const [item] = await drawer.items();
+  expect(item).to.include({
+    kind: "schema-missing",
+    title: "Schema Missing",
+    description: MISSING,
+    linkLabel: "Choose a schema",
+  });
+
+  await electronApp.close();
+});
+
+test("picking a schema for the missing file opens it (react)", async () => {
+  test.setTimeout(120 * 1000);
+  const { electronApp, window, welcome, nav, schemas, banner } =
+    await launch();
+
+  await openMissing(electronApp, welcome, banner);
+  await banner.click("Yes");
+  await nav.waitForActiveTab("Schemas");
+  await schemas.waitForPageLoad();
+  await schemas.waitForPendingCard();
+  expect(await schemas.pendingText()).to.contain(
+    "Choose a schema for FTC-E2ETEST",
+  );
+  expect(await schemas.pendingText()).to.contain("No schema exists for M18.");
+  expect(await schemas.hasLoadedCard()).to.equal(false);
+
+  await schemas.clickSchema(BUNDLED);
+  await schemas.waitForPendingCardHidden();
+  const metadata = await poll(
+    () =>
+      window.evaluate(async () => {
+        const fileId = await window.franchiseAPI.getActiveFileId();
+        return fileId ? window.franchiseAPI.getMetadata(fileId) : null;
+      }),
+    (m) => !!m,
+    { message: "The FTC never opened" },
+  );
+  expect(normalize(metadata.schemaList.path)).to.equal(
+    normalize(path.resolve(BUNDLED_M22)),
+  );
+  // The missing notification is gone, and a schemaOverride never notifies
+  await poll(
+    () => storedNotifications(window),
+    (list) => list.length === 0,
+    { message: "Notifications were left after the open" },
+  );
+  expect(await messageBoxCalls(electronApp)).to.deep.equal([]);
+
+  await electronApp.close();
+});
+
+test("the drawer link sets the pending file and Cancel clears it (react)", async () => {
+  test.setTimeout(120 * 1000);
+  const { electronApp, welcome, nav, schemas, drawer, banner } =
+    await launch();
+
+  await openMissing(electronApp, welcome, banner);
+  await banner.waitForHidden({ timeout: 12 * 1000 });
+
+  await drawer.open();
+  await drawer.waitForItemCount(1);
+  const [item] = await drawer.items();
+  await drawer.clickLink(item.id);
+  await nav.waitForActiveTab("Schemas");
+  await schemas.waitForPageLoad();
+  await schemas.waitForPendingCard();
+  expect(await schemas.isLink(BUNDLED)).to.equal(true);
+
+  await schemas.cancelPending();
+  await schemas.waitForPendingCardHidden();
+  // No file is open, so names are plain again
+  expect(await schemas.isLink(BUNDLED)).to.equal(false);
+
+  await electronApp.close();
+});
+
+// A compressed FTC whose expectedSchemaVersion is null gets no notification,
+// so no banner (tests/unit/schemaMismatch.test.js covers the check). There is
+// no such fixture: FTC-E2ETEST is zlib-compressed but still expects v328.1,
+// so it gets a real mismatch.
+test.skip("opening a compressed FTC with no expected schema shows no banner (react)", async () => {});

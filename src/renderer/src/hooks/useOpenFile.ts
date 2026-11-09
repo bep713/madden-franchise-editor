@@ -1,6 +1,7 @@
 import { useContext } from 'react';
 import { FileType } from '@shared/types/franchise';
 import { FranchiseFileContext } from '@renderer/context/FranchiseFileContext';
+import { usePendingOpen } from '@renderer/context/PendingOpenContext';
 import { buildOpenFranchiseFile } from '@renderer/hooks/useActiveFranchiseFile';
 import type { RecentFileEntry } from '@renderer/preload';
 import { useEditorTabs } from '@renderer/tabs/EditorTabsContext';
@@ -42,6 +43,7 @@ export default function useOpenFile({
 }): (path: string, overrides?: OpenFileOverrides) => Promise<OpenFileResult> {
     const editorTabs = useEditorTabs();
     const [openFile, setOpenFile] = useContext(FranchiseFileContext);
+    const [, setPending] = usePendingOpen();
 
     return async function openFileAt(
         path: string,
@@ -82,6 +84,15 @@ export default function useOpenFile({
 
         const result = await window.franchiseAPI.openFile(path, openOptions);
         if ('error' in result) {
+            // Main added a schema-missing notification, whose banner offers
+            // to pick a schema instead
+            if (result.code === 'schema-not-found') {
+                return {
+                    status: 'error',
+                    error: result.error,
+                    code: result.code
+                };
+            }
             await window.electronAPI.showMessageBox({
                 type: 'error',
                 message: `Could not open ${basename(path)}.`,
@@ -104,6 +115,8 @@ export default function useOpenFile({
         // In the same tick, so the tab bar renders once, already showing the
         // default editor (v4's navigationService open-file handler)
         setOpenFile?.(file);
+        // Whichever file it was waiting for, a schema pick is no longer due
+        setPending?.(undefined);
         if (defaultEditor === 'open-table-editor') {
             editorTabs.openTableEditor(file);
         } else if (defaultEditor === 'open-schema-viewer') {

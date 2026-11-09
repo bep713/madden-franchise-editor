@@ -24,7 +24,8 @@ function gameTypeOf(metadata: FileMetadata): string {
     return metadata.type?.gameType || 'madden';
 }
 
-function yearPrefix(gameType: string | null, gameYear: unknown): string {
+// e.g. "M22" or "C27"
+export function yearPrefix(gameType: string | null, gameYear: unknown): string {
     return `${gameType === 'college' ? 'C' : 'M'}${gameYear}`;
 }
 

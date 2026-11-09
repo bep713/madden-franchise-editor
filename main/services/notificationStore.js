@@ -1,5 +1,19 @@
 const crypto = require("crypto");
 
+// Windows paths: no case, either slash (schemaList.ts samePath)
+function samePath(a, b) {
+  if (!a || !b) return false;
+  const normalize = (p) => p.replace(/\\/g, "/").toLowerCase();
+  return normalize(a) === normalize(b);
+}
+
+// Same kind and fileId, or for kinds without a fileId, the same data.path
+function sameTarget(a, b) {
+  if (a.kind !== b.kind) return false;
+  if (a.fileId || b.fileId) return a.fileId === b.fileId;
+  return samePath(a.data?.path, b.data?.path);
+}
+
 /**
  * In-memory list of app notifications (schema mismatch, ...). Main owns it so
  * the list survives a UI switch; the renderer reads it over IPC and listens for
@@ -14,15 +28,13 @@ function createNotificationStore(send = () => {}) {
   const changed = () => send("notifications:changed", list());
 
   /**
-   * Add a notification. Replaces the existing one with the same kind and fileId.
+   * Add a notification. Replaces the existing one with the same kind and
+   * fileId, or the same kind and data.path when it has no fileId.
    * @param {{ kind: string, fileId?: string, data: object }} notification
    * @returns {object} The stored notification
    */
   function add(notification) {
-    items = items.filter(
-      (n) =>
-        !(n.kind === notification.kind && n.fileId === notification.fileId),
-    );
+    items = items.filter((n) => !sameTarget(n, notification));
     const stored = {
       ...notification,
       id: crypto.randomUUID(),
@@ -60,4 +72,4 @@ function createNotificationStore(send = () => {}) {
   return { add, remove, removeWhere, markRead, list };
 }
 
-module.exports = { createNotificationStore };
+module.exports = { createNotificationStore, samePath };

@@ -144,7 +144,8 @@ test("a missing schema returns code schema-not-found", async () => {
   const result = await open({ autoSave: false, gameYearOverride: 18 }, FTC);
   assert.ok(result.error);
   assert.equal(result.code, "schema-not-found");
-  assert.equal(store.list().length, 0);
+  // `game` goes to the notification, not the IPC result
+  assert.equal(result.game, undefined);
 });
 
 test("a corrupt file returns an error without a code", async () => {
@@ -153,4 +154,57 @@ test("a corrupt file returns an error without a code", async () => {
   const result = await open({ autoSave: false }, bad);
   assert.ok(result.error);
   assert.equal(result.code, undefined);
+});
+
+const missing = () => store.list().filter((n) => n.kind === "schema-missing");
+
+test("a missing schema adds one schema-missing notification", async () => {
+  await open(
+    { autoSave: false, gameYearOverride: 18, gameTypeOverride: "madden" },
+    FTC,
+  );
+  const list = missing();
+  assert.equal(list.length, 1);
+  assert.equal(list[0].fileId, undefined);
+  assert.deepEqual(list[0].data, {
+    path: FTC,
+    openOptions: { gameYearOverride: 18, gameTypeOverride: "madden" },
+    game: { gameYear: 18, gameType: "madden" },
+  });
+});
+
+test("a second missing-schema open of the same path replaces it", async () => {
+  await open({ autoSave: false, gameYearOverride: 18 }, FTC);
+  const [first] = missing();
+  // Same file, other case and slashes
+  await open(
+    { autoSave: false, gameYearOverride: 18 },
+    FTC.toUpperCase().replace(/\\/g, "/"),
+  );
+  const list = missing();
+  assert.equal(list.length, 1);
+  assert.notEqual(list[0].id, first.id);
+});
+
+test("a later successful open of the path removes it", async () => {
+  await open({ autoSave: false, gameYearOverride: 18 }, FTC);
+  assert.equal(missing().length, 1);
+  const { fileId } = await open(
+    {
+      autoSave: false,
+      gameYearOverride: 18,
+      schemaOverride: { path: bundled22().path },
+    },
+    FTC,
+  );
+  assert.ok(fileId);
+  assert.equal(missing().length, 0);
+  // schemaOverride: no mismatch either
+  assert.equal(store.list().length, 0);
+});
+
+test("a successful open of another path keeps it", async () => {
+  await open({ autoSave: false, gameYearOverride: 18 }, FTC);
+  await open({ autoSave: false });
+  assert.equal(missing().length, 1);
 });

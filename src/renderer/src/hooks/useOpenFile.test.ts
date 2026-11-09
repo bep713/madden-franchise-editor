@@ -10,6 +10,7 @@ import {
     EditorTabsValue
 } from '@renderer/tabs/EditorTabsContext';
 import { SCHEMA_MANAGEMENT_KEY } from '@renderer/tabs/editorTabs';
+import { PendingOpenContext } from '@renderer/context/PendingOpenContext';
 import useOpenFile from './useOpenFile';
 
 const METADATA = { gameYear: 22, format: 'franchise', type: {} };
@@ -40,6 +41,7 @@ const franchiseAPI = {
 };
 
 const setOpenFile = vi.fn();
+const setPending = vi.fn();
 const openTableEditor = vi.fn();
 const selectTab = vi.fn();
 const promptForOverrides = vi.fn();
@@ -51,14 +53,18 @@ function setup(current?: OpenFranchiseFile) {
             FranchiseFileContext.Provider,
             { value: [current, setOpenFile] },
             createElement(
-                EditorTabsContext.Provider,
-                {
-                    value: {
-                        openTableEditor,
-                        selectTab
-                    } as unknown as EditorTabsValue
-                },
-                children
+                PendingOpenContext.Provider,
+                { value: [{ path: 'C:/saves/FTC' }, setPending] },
+                createElement(
+                    EditorTabsContext.Provider,
+                    {
+                        value: {
+                            openTableEditor,
+                            selectTab
+                        } as unknown as EditorTabsValue
+                    },
+                    children
+                )
             )
         );
     return renderHook(() => useOpenFile({ promptForOverrides }), { wrapper })
@@ -102,7 +108,26 @@ describe('useOpenFile', () => {
         expect(franchiseAPI.closeFile).toHaveBeenCalledWith('old');
     });
 
-    it('shows a message box and returns the error code on an error', async () => {
+    it('shows a message box on an error', async () => {
+        franchiseAPI.openFile.mockResolvedValueOnce({
+            error: 'Bad file'
+        } as never);
+
+        const result = await setup()(PATH);
+
+        expect(result).toEqual({ status: 'error', error: 'Bad file' });
+        expect(electronAPI.showMessageBox).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'error',
+                message: 'Could not open CAREER-TEST.',
+                detail: 'Bad file'
+            })
+        );
+        expect(electronAPI.send).not.toHaveBeenCalled();
+    });
+
+    // Main's schema-missing notification shows a banner instead
+    it('returns schema-not-found without a message box', async () => {
         franchiseAPI.openFile.mockResolvedValueOnce({
             error: 'No schema',
             code: 'schema-not-found'
@@ -115,14 +140,21 @@ describe('useOpenFile', () => {
             error: 'No schema',
             code: 'schema-not-found'
         });
-        expect(electronAPI.showMessageBox).toHaveBeenCalledWith(
-            expect.objectContaining({
-                type: 'error',
-                message: 'Could not open CAREER-TEST.',
-                detail: 'No schema'
-            })
-        );
-        expect(electronAPI.send).not.toHaveBeenCalled();
+        expect(electronAPI.showMessageBox).not.toHaveBeenCalled();
+        expect(setPending).not.toHaveBeenCalled();
+    });
+
+    it('clears the pending file on open', async () => {
+        await setup()(PATH);
+        expect(setPending).toHaveBeenCalledWith(undefined);
+    });
+
+    it('keeps the pending file on an error', async () => {
+        franchiseAPI.openFile.mockResolvedValueOnce({
+            error: 'Bad file'
+        } as never);
+        await setup()(PATH);
+        expect(setPending).not.toHaveBeenCalled();
     });
 
     describe('common files', () => {

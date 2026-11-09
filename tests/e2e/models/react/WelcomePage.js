@@ -1,5 +1,6 @@
 const path = require("path");
 const { stubOpenDialog } = require("../../util/dialogStubs");
+const { dismissBanners } = require("../../util/banners");
 const { poll } = require("../../util/poll");
 
 class WelcomePage {
@@ -44,13 +45,16 @@ class WelcomePage {
     return (await this.locators.getStartedCard.innerText()).split("\n")[0];
   }
 
-  async waitForOpenFile(filePath) {
+  // Also closes the banners the open showed (a schema mismatch overlays the
+  // page), unless `keepBanners`
+  async waitForOpenFile(filePath, { keepBanners = false } = {}) {
     const name = path.basename(filePath);
     await poll(
       () => this.getStartedTitle(),
       (title) => title === name,
       { message: `Get Started card never showed ${name}` },
     );
+    if (!keepBanners) await dismissBanners(this.window);
   }
 
   // Clicks "Open a file..." without waiting for the file, so a test can
@@ -60,9 +64,9 @@ class WelcomePage {
     await this.locators.openFileLink.click();
   }
 
-  async openFranchiseFile(electronApp, filePath) {
+  async openFranchiseFile(electronApp, filePath, options) {
     await this.startOpenFile(electronApp, filePath);
-    await this.waitForOpenFile(filePath);
+    await this.waitForOpenFile(filePath, options);
   }
 
   // Re-opens the common-file prompt for the open file

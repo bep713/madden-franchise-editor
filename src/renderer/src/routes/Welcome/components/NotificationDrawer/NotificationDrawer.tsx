@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import cx from 'classnames';
-import type {
-    AppNotification,
-    NotificationKind
-} from '@shared/types/notifications';
+import type { AppNotification } from '@shared/types/notifications';
 import Close from '@assets/icons/close.svg?react';
+import {
+    pendingFromNotification,
+    usePendingOpen
+} from '@renderer/context/PendingOpenContext';
 import { describeNotification } from '@renderer/notifications/describe';
 import { relativeTime } from '@renderer/notifications/relativeTime';
 import { useEditorTabs } from '@renderer/tabs/EditorTabsContext';
@@ -25,14 +26,19 @@ const NotificationDrawer: React.FC<Props> = ({
     onClose
 }: Props) => {
     const editorTabs = useEditorTabs();
+    const [, setPending] = usePendingOpen();
     const [now, setNow] = useState(() => Date.now());
     // Ids that were unread when this viewing first saw them
     const seenUnread = useRef(new Set<string>());
     const [unread, setUnread] = useState<ReadonlySet<string>>(new Set());
 
-    const actions: Record<NotificationKind, () => void> = {
-        'schema-mismatch': () => editorTabs.selectTab(SCHEMA_MANAGEMENT_KEY)
-    };
+    // The drawer marks everything read already
+    function linkAction(n: AppNotification): void {
+        if (n.kind === 'schema-missing') {
+            setPending?.(pendingFromNotification(n));
+        }
+        editorTabs.selectTab(SCHEMA_MANAGEMENT_KEY);
+    }
 
     useEffect(() => {
         const ids = notifications
@@ -114,7 +120,7 @@ const NotificationDrawer: React.FC<Props> = ({
                                     <button
                                         className={styles.link}
                                         data-action='notification-link'
-                                        onClick={actions[n.kind]}
+                                        onClick={() => linkAction(n)}
                                         type='button'
                                     >
                                         {text.linkLabel}

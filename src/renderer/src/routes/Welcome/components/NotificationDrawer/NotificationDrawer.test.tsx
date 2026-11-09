@@ -7,6 +7,7 @@ import {
     EditorTabsContext,
     EditorTabsValue
 } from '@renderer/tabs/EditorTabsContext';
+import { PendingOpenContext } from '@renderer/context/PendingOpenContext';
 import useNotifications from '@renderer/notifications/useNotifications';
 import NotificationDrawer from './NotificationDrawer';
 
@@ -60,25 +61,28 @@ function notification(
 }
 
 const selectTab = vi.fn();
+const setPending = vi.fn();
 
 // Welcome's wiring: the list from main, the drawer mounted while open
 function Harness() {
     const { notifications } = useNotifications();
     const [open, setOpen] = useState(true);
     return (
-        <EditorTabsContext.Provider
-            value={{ selectTab } as unknown as EditorTabsValue}
-        >
-            <button onClick={() => setOpen((o) => !o)} type='button'>
-                toggle
-            </button>
-            {open && (
-                <NotificationDrawer
-                    notifications={notifications}
-                    onClose={() => setOpen(false)}
-                />
-            )}
-        </EditorTabsContext.Provider>
+        <PendingOpenContext.Provider value={[undefined, setPending]}>
+            <EditorTabsContext.Provider
+                value={{ selectTab } as unknown as EditorTabsValue}
+            >
+                <button onClick={() => setOpen((o) => !o)} type='button'>
+                    toggle
+                </button>
+                {open && (
+                    <NotificationDrawer
+                        notifications={notifications}
+                        onClose={() => setOpen(false)}
+                    />
+                )}
+            </EditorTabsContext.Provider>
+        </PendingOpenContext.Provider>
     );
 }
 
@@ -201,7 +205,35 @@ describe('NotificationDrawer', () => {
             })
         );
         expect(selectTab).toHaveBeenCalledExactlyOnceWith('schema-management');
+        expect(setPending).not.toHaveBeenCalled();
         expect(screen.getByRole('complementary')).toBeInTheDocument();
+    });
+
+    it('sets the pending file from a schema-missing link', async () => {
+        items = [
+            {
+                id: 'm',
+                kind: 'schema-missing',
+                createdAt: NOW,
+                read: false,
+                data: {
+                    path: 'C:/saves/FTC',
+                    openOptions: { gameYearOverride: 18 },
+                    game: { gameYear: 18, gameType: 'madden' }
+                }
+            }
+        ];
+        render(<Harness />);
+        await userEvent.click(
+            await screen.findByRole('button', { name: 'Choose a schema' })
+        );
+        expect(setPending).toHaveBeenCalledExactlyOnceWith({
+            path: 'C:/saves/FTC',
+            openOptions: { gameYearOverride: 18 },
+            game: { gameYear: 18, gameType: 'madden' },
+            notificationId: 'm'
+        });
+        expect(selectTab).toHaveBeenCalledExactlyOnceWith('schema-management');
     });
 
     it('closes from the close button', async () => {

@@ -38,12 +38,12 @@ The v5 design avoids each one (04o2): a one-at-a-time queue (1), banners hide on
 
 | Step | Scope | Plan | Status |
 |---|---|---|---|
-| 04o1 | Main + preload: notification store and IPC, `checkSchemaMismatch` (null fix), mismatch create/remove hooks, `schema-not-found` open error code | [04o1-notification-store.md](04o1-notification-store.md) | Not started |
-| 04o2 | React banner queue: `BannerProvider`/`useBanner`, `Banner` component, colors. Not wired to anything yet | [04o2-banner-queue.md](04o2-banner-queue.md) | Not started |
-| 04o3 | Move Welcome's open flow into `useOpenFile` (refactor, no visible change) | [04o3-open-file-hook.md](04o3-open-file-hook.md) | Not started |
-| 04o4 | Notification drawer on Home: bell, badge, pane, items, read state, `describe.ts`, `useNotifications` | [04o4-notification-drawer.md](04o4-notification-drawer.md) | Not started |
-| 04o5 | Mismatch banner: Layout turns new notifications into banners; e2e `dismissBanners()` for existing specs | [04o5-mismatch-banner.md](04o5-mismatch-banner.md) | Not started |
-| 04o6 | Missing schema: the `schema-missing` notification, Welcome branch, banner, Schemas pending-file mode | [04o6-missing-schema.md](04o6-missing-schema.md) | Not started |
+| 04o1 | Main + preload: notification store and IPC, `checkSchemaMismatch` (null fix), mismatch create/remove hooks, `schema-not-found` open error code | [04o1-notification-store.md](04o1-notification-store.md) | Done (`8ead138`) |
+| 04o2 | React banner queue: `BannerProvider`/`useBanner`, `Banner` component, colors. Not wired to anything yet | [04o2-banner-queue.md](04o2-banner-queue.md) | Done (`8ead138`) |
+| 04o3 | Move Welcome's open flow into `useOpenFile` (refactor, no visible change) | [04o3-open-file-hook.md](04o3-open-file-hook.md) | Done (`8ead138`) |
+| 04o4 | Notification drawer on Home: bell, badge, pane, items, read state, `describe.ts`, `useNotifications` | [04o4-notification-drawer.md](04o4-notification-drawer.md) | Done (`c6933a3`) |
+| 04o5 | Mismatch banner: Layout turns new notifications into banners; e2e `dismissBanners()` for existing specs | [04o5-mismatch-banner.md](04o5-mismatch-banner.md) | Done (uncommitted) |
+| 04o6 | Missing schema: the `schema-missing` notification, Welcome branch, banner, Schemas pending-file mode | [04o6-missing-schema.md](04o6-missing-schema.md) | Done (uncommitted) |
 
 ## Order
 - 04o1, 04o2 and 04o3 are independent and can run in parallel.

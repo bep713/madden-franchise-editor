@@ -13,6 +13,19 @@ import {
     useEditorTabsController
 } from '@renderer/tabs/EditorTabsContext';
 import { tabName } from '@renderer/tabs/editorTabs';
+import useNotificationBanners from '@renderer/notifications/useNotificationBanners';
+
+interface NotificationBannersProps {
+    selectTab: (key: string) => void;
+}
+
+// Inside BannerProvider, which useNotificationBanners needs
+const NotificationBanners: React.FC<NotificationBannersProps> = ({
+    selectTab
+}: NotificationBannersProps) => {
+    useNotificationBanners(selectTab);
+    return null;
+};
 
 const Layout: React.FC = () => {
     const [openFile] = useContext(FranchiseFileContext);
@@ -22,6 +35,7 @@ const Layout: React.FC = () => {
 
     return (
         <BannerProvider>
+            <NotificationBanners selectTab={editorTabs.selectTab} />
             <EditorTabsContext.Provider value={editorTabs}>
                 <div className={styles.appWrapper}>
                     <Navigation

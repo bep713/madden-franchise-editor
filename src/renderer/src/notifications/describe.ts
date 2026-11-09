@@ -1,7 +1,11 @@
 import type { SchemaMeta } from '@shared/types';
 import type { AppNotification } from '@shared/types/notifications';
 import type { BannerSeverity } from '@renderer/components/Banner/Banner';
-import { metaLabel } from '@renderer/routes/SchemaManagement/schemaList';
+import {
+    metaLabel,
+    yearPrefix
+} from '@renderer/routes/SchemaManagement/schemaList';
+import { basename } from '@renderer/utils/path';
 
 export interface NotificationText {
     title: string;
@@ -31,6 +35,17 @@ export function describeNotification(n: AppNotification): NotificationText {
                 linkLabel: 'Open Schema Management',
                 bannerMessage:
                     "We cannot find an exact match for this file's schema. Open the schema management page?",
+                bannerSeverity: 'error'
+            };
+        }
+        case 'schema-missing': {
+            const { path, game } = n.data;
+            const name = basename(path);
+            return {
+                title: 'Schema Missing',
+                description: `${name} could not be opened because no schema exists for ${game ? yearPrefix(game.gameType, game.gameYear) : 'this game'}.`,
+                linkLabel: 'Choose a schema',
+                bannerMessage: `No schema was found for ${name}. Choose one on the Schema Management page?`,
                 bannerSeverity: 'error'
             };
         }

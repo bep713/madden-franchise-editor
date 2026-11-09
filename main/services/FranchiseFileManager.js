@@ -15,6 +15,7 @@ const { decodeBlock } = require("../libs/lz4Block");
 const startupProfiler = require("./startupProfiler");
 const { detectFormat } = require("../utils/detectFormat");
 const { checkSchemaMismatch } = require("../handlers/schemaMismatchHandler");
+const { samePath } = require("./notificationStore");
 
 /**
  * Manages FranchiseFile instances in the main process.
@@ -1365,13 +1366,37 @@ class FranchiseFileManager {
   }
 
   /**
+   * Add a schema-missing notification for a file that could not be opened.
+   * Keeps only the year/type overrides, so a retry doesn't ask for them again.
+   * @param {string} filePath
+   * @param {object} [options] - The open-file options
+   * @param {{ gameYear: number, gameType: string }} [game]
+   * @private
+   */
+  _notifySchemaMissing(filePath, options, game) {
+    if (!this._notificationStore) return;
+    const openOptions = {};
+    if (options?.gameYearOverride != null) {
+      openOptions.gameYearOverride = options.gameYearOverride;
+    }
+    if (options?.gameTypeOverride != null) {
+      openOptions.gameTypeOverride = options.gameTypeOverride;
+    }
+    this._notificationStore.add({
+      kind: "schema-missing",
+      data: { path: filePath, openOptions, game },
+    });
+  }
+
+  /**
    * Build the open-file error result. Adds code "schema-not-found" when the
    * file's expected schema version has no schema in the bundled or custom
    * directory, the lookup the library's parse() does.
    * @param {Error} err
    * @param {string} filePath
    * @param {object} [options]
-   * @returns {Promise<{ error: string, code?: "schema-not-found" }>}
+   * With the code, `game` is the year and type read from the file.
+   * @returns {Promise<{ error: string, code?: "schema-not-found", game?: { gameYear: number, gameType: string } }>}
    * @private
    */
   async _openError(err, filePath, options) {
@@ -1401,7 +1426,16 @@ class FranchiseFileManager {
           // schema directory, is not a missing schema.
           if (!(pickError instanceof TypeError)) return { error: err.message };
         }
-        if (!picked) return { error: err.message, code: "schema-not-found" };
+        if (!picked) {
+          return {
+            error: err.message,
+            code: "schema-not-found",
+            game: {
+              gameYear: probe._gameYear,
+              gameType: probe._gameType || "madden",
+            },
+          };
+        }
       }
     } catch {
       // unreadable file: fall through to the plain error
@@ -1422,13 +1456,25 @@ class FranchiseFileManager {
       async (event, filePath, options) => {
         try {
           const result = await this.openFile(filePath, options);
+          this._notificationStore?.removeWhere(
+            (n) =>
+              n.kind === "schema-missing" && samePath(n.data?.path, filePath),
+          );
           if (!options?.schemaOverride) {
             this._notifyIfSchemaMismatch(result.fileId);
           }
           return result;
         } catch (err) {
           if (options?.schemaOverride) return { error: err.message };
-          return await this._openError(err, filePath, options);
+          const { game, ...result } = await this._openError(
+            err,
+            filePath,
+            options,
+          );
+          if (result.code === "schema-not-found") {
+            this._notifySchemaMissing(filePath, options, game);
+          }
+          return result;
         }
       },
     );

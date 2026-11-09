@@ -8,9 +8,13 @@ import Headline from '@renderer/components/Headline/Headline';
 import Layout from '@renderer/components/Layout/Layout';
 import Sticky from '@renderer/components/Sticky/Sticky';
 import { FranchiseFileContext } from '@renderer/context/FranchiseFileContext';
+import { usePendingOpen } from '@renderer/context/PendingOpenContext';
 import { buildOpenFranchiseFile } from '@renderer/hooks/useActiveFranchiseFile';
 import useLoader from '@renderer/hooks/useLoader';
+import useOpenFile from '@renderer/hooks/useOpenFile';
+import useCommonFilePrompt from '@renderer/routes/Welcome/components/CommonFileModal/useCommonFilePrompt';
 import LoadedSchemaCard from './components/LoadedSchemaCard';
+import PendingFileCard from './components/PendingFileCard';
 import SchemaActionBar from './components/SchemaActionBar';
 import SchemaCard from './components/SchemaCard';
 import {
@@ -31,6 +35,11 @@ const SchemaManagement: React.FC = () => {
     const [openFile, setOpenFile] = useContext(FranchiseFileContext);
     const { entries, schemaDir, refresh } = useSchemaList();
     const { loader, setOptions: setLoaderOptions } = useLoader();
+    const [pending, setPending] = usePendingOpen();
+    // A pending common file has its year and type, so this rarely prompts
+    const { promptForOverrides, modal: commonFileModal } =
+        useCommonFilePrompt();
+    const openFileAt = useOpenFile({ promptForOverrides });
     const metadata = openFile?.metadata;
 
     const { groups, other } = useMemo(
@@ -125,6 +134,24 @@ const SchemaManagement: React.FC = () => {
         }
     }
 
+    // Opens the pending file with this schema. Like an open from Home, this
+    // closes the current file without asking. useOpenFile clears `pending`
+    // on success and shows the error box on failure.
+    async function handlePick(entry: SchemaEntry): Promise<void> {
+        if (!pending) return;
+        setLoaderOptions({ message: 'Opening file...', show: true });
+        try {
+            await openFileAt(pending.path, {
+                ...pending.openOptions,
+                schemaOverride: { path: entry.path }
+            });
+        } catch (error) {
+            await showError('Could not open the file.', error);
+        } finally {
+            setLoaderOptions({ show: false });
+        }
+    }
+
     async function handleDelete(entry: SchemaEntry): Promise<void> {
         if (
             !(await confirm(
@@ -158,9 +185,11 @@ const SchemaManagement: React.FC = () => {
     const cardProps = {
         labelFor,
         metadata,
-        onLoad: handleLoad,
+        picking: !!pending,
+        onLoad: pending ? handlePick : handleLoad,
         onDelete: handleDelete
     };
+    const hasTopCard = !!pending || !!metadata;
 
     return (
         <div className={styles.page}>
@@ -172,8 +201,8 @@ const SchemaManagement: React.FC = () => {
                             <GameGrid className={styles.topGrid}>
                                 <div
                                     className={cx(styles.cell, {
-                                        [styles.actionsWithCard]: !!metadata,
-                                        [styles.actionsFull]: !metadata
+                                        [styles.actionsWithCard]: hasTopCard,
+                                        [styles.actionsFull]: !hasTopCard
                                     })}
                                 >
                                     <SchemaActionBar
@@ -181,7 +210,22 @@ const SchemaManagement: React.FC = () => {
                                         onRefresh={refresh}
                                     />
                                 </div>
-                                {metadata && (
+                                {pending && (
+                                    <div
+                                        className={cx(
+                                            styles.cell,
+                                            styles.loadedCard
+                                        )}
+                                    >
+                                        <PendingFileCard
+                                            onCancel={() =>
+                                                setPending?.(undefined)
+                                            }
+                                            pending={pending}
+                                        />
+                                    </div>
+                                )}
+                                {!pending && metadata && (
                                     <div
                                         className={cx(
                                             styles.cell,
@@ -232,6 +276,7 @@ const SchemaManagement: React.FC = () => {
                 </Layout>
             </main>
             {loader}
+            {commonFileModal}
         </div>
     );
 };

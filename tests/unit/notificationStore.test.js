@@ -45,6 +45,19 @@ test("add replaces the same kind and fileId and sorts it newest", () => {
   );
 });
 
+test("add replaces the same kind and path when there is no fileId", () => {
+  const { store } = setup();
+  const missing = (path) => ({ kind: "schema-missing", data: { path } });
+  const a = store.add(missing("C:\\saves\\FTC"));
+  const b = store.add(missing("C:\\saves\\OTHER"));
+  const a2 = store.add(missing("c:/SAVES/ftc"));
+  assert.deepEqual(
+    store.list().map((n) => n.id),
+    [a2.id, b.id],
+  );
+  assert.notEqual(a2.id, a.id);
+});
+
 test("list is newest first", () => {
   const { store } = setup();
   const a = store.add(mismatch("1"));

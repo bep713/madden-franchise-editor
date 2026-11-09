@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -6,7 +7,17 @@ import {
     FranchiseFileContext,
     OpenFranchiseFile
 } from '@renderer/context/FranchiseFileContext';
+import {
+    PendingOpen,
+    PendingOpenContext
+} from '@renderer/context/PendingOpenContext';
 import SchemaManagement from './SchemaManagement';
+
+// The open flow has its own tests (useOpenFile.test.ts)
+const openFileAt = vi.fn();
+vi.mock('@renderer/hooks/useOpenFile', () => ({
+    default: () => openFileAt
+}));
 
 const DIR = 'C:\\userData\\schemas';
 const BUNDLED: SchemaEntry = {
@@ -69,11 +80,28 @@ const franchiseAPI = {
 };
 
 const setOpenFile = vi.fn();
+// The latest pending file, as App's state holds it
+let currentPending: PendingOpen | undefined;
 
-async function setup(current?: OpenFranchiseFile): Promise<void> {
+function PendingHarness({ initial }: { initial?: PendingOpen }) {
+    const value = useState(initial);
+    useEffect(() => {
+        currentPending = value[0];
+    }, [value]);
+    return (
+        <PendingOpenContext.Provider value={value}>
+            <SchemaManagement />
+        </PendingOpenContext.Provider>
+    );
+}
+
+async function setup(
+    current?: OpenFranchiseFile,
+    pending?: PendingOpen
+): Promise<void> {
     render(
         <FranchiseFileContext.Provider value={[current, setOpenFile]}>
-            <SchemaManagement />
+            <PendingHarness initial={pending} />
         </FranchiseFileContext.Provider>
     );
     await screen.findByText('Madden 22 Schemas');
@@ -360,5 +388,85 @@ describe('SchemaManagement', () => {
         expect(
             screen.getByText('Add schema').closest('[aria-disabled]')
         ).toBeTruthy();
+    });
+
+    describe('pending file', () => {
+        const PENDING: PendingOpen = {
+            path: 'C:\\saves\\FTC-TEST',
+            openOptions: { gameYearOverride: 18, gameTypeOverride: 'madden' },
+            game: { gameYear: 18, gameType: 'madden' },
+            notificationId: 'n1'
+        };
+
+        it('shows the pending card and links every name without a file', async () => {
+            await setup(undefined, PENDING);
+            const card = screen.getByTestId('pending-file');
+            expect(card).toHaveTextContent('Choose a schema for FTC-TEST');
+            expect(card).toHaveTextContent('No schema exists for M18.');
+            expect(hasLink('M22 v329.1')).toBe(true);
+            expect(hasLink('M22 v329.0')).toBe(true);
+            expect(hasLink('M22 v329.1 (Custom)')).toBe(true);
+        });
+
+        it('says this game when the game is unknown', async () => {
+            await setup(undefined, { path: PENDING.path });
+            expect(screen.getByTestId('pending-file')).toHaveTextContent(
+                'No schema exists for this game.'
+            );
+        });
+
+        it('replaces the loaded card and links the loaded schema', async () => {
+            await setup(file(metadata(BUNDLED.path)), PENDING);
+            expect(screen.getByTestId('pending-file')).toBeTruthy();
+            expect(screen.queryByTestId('loaded-schema')).toBeNull();
+            expect(hasLink('M22 v329.1')).toBe(true);
+        });
+
+        it('Cancel clears the pending file', async () => {
+            await setup(file(metadata(BUNDLED.path)), PENDING);
+            await userEvent.click(screen.getByText('Cancel'));
+            expect(currentPending).toBeUndefined();
+            expect(screen.queryByTestId('pending-file')).toBeNull();
+            expect(screen.getByTestId('loaded-schema')).toBeTruthy();
+            expect(hasLink('M22 v329.1')).toBe(false);
+        });
+
+        it('a pick opens the file with that schema, without prompting', async () => {
+            openFileAt.mockResolvedValue({
+                status: 'opened',
+                recentFiles: []
+            });
+            await setup(file(metadata(BUNDLED.path)), PENDING);
+            await userEvent.click(
+                within(row('M22 v329.0')).getByText('M22 v329.0')
+            );
+            await waitFor(() =>
+                expect(openFileAt).toHaveBeenCalledExactlyOnceWith(
+                    PENDING.path,
+                    {
+                        gameYearOverride: 18,
+                        gameTypeOverride: 'madden',
+                        schemaOverride: { path: OLDER.path }
+                    }
+                )
+            );
+            expect(franchiseAPI.loadSchema).not.toHaveBeenCalled();
+            expect(franchiseAPI.hasUnsavedChanges).not.toHaveBeenCalled();
+            expect(electronAPI.showMessageBox).not.toHaveBeenCalled();
+        });
+
+        it('keeps the pending file when the open fails', async () => {
+            openFileAt.mockResolvedValue({
+                status: 'error',
+                error: 'bad file'
+            });
+            await setup(undefined, PENDING);
+            await userEvent.click(
+                within(row('M22 v329.1')).getByText('M22 v329.1')
+            );
+            await waitFor(() => expect(openFileAt).toHaveBeenCalled());
+            expect(currentPending).toEqual(PENDING);
+            expect(screen.getByTestId('pending-file')).toBeTruthy();
+        });
     });
 });

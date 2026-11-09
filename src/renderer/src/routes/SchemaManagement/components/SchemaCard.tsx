@@ -23,6 +23,8 @@ interface Props {
     labelFor: (entry: SchemaEntry) => string;
     // The open file's, if any. Names are links only with a file open.
     metadata?: FileMetadata;
+    // A file waits for a schema: every name is a link, loaded or not
+    picking?: boolean;
     onLoad: (entry: SchemaEntry) => void;
     onDelete: (entry: SchemaEntry) => void;
 }
@@ -33,6 +35,7 @@ const SchemaCard: React.FC<Props> = ({
     schemas,
     labelFor,
     metadata,
+    picking = false,
     onLoad,
     onDelete
 }: Props) => {
@@ -52,7 +55,7 @@ const SchemaCard: React.FC<Props> = ({
                     direction='row'
                     justifyContent='space-between'
                 >
-                    {metadata && !loaded ? (
+                    {picking || (metadata && !loaded) ? (
                         <Link onClick={() => onLoad(entry)} text={label} />
                     ) : (
                         <Text weight={loaded ? 'bold' : 'normal'}>{label}</Text>

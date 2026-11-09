@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type {
     AppNotification,
-    SchemaMismatchData
+    SchemaMismatchData,
+    SchemaMissingData
 } from '@shared/types/notifications';
 import { describeNotification } from './describe';
 
@@ -56,5 +57,50 @@ describe('describeNotification schema-mismatch', () => {
             })
         );
         expect(description).toBe('Loaded C27 v11.0, expected C27 v10.2.');
+    });
+});
+
+function missing(data: Partial<SchemaMissingData> = {}): AppNotification {
+    return {
+        id: 'n2',
+        kind: 'schema-missing',
+        createdAt: 0,
+        read: false,
+        data: {
+            path: 'C:\\saves\\FTC-E2ETEST',
+            openOptions: { gameYearOverride: 18, gameTypeOverride: 'madden' },
+            game: { gameYear: 18, gameType: 'madden' },
+            ...data
+        }
+    };
+}
+
+describe('describeNotification schema-missing', () => {
+    it('names the file and the game', () => {
+        expect(describeNotification(missing())).toEqual({
+            title: 'Schema Missing',
+            description:
+                'FTC-E2ETEST could not be opened because no schema exists for M18.',
+            linkLabel: 'Choose a schema',
+            bannerMessage:
+                'No schema was found for FTC-E2ETEST. Choose one on the Schema Management page?',
+            bannerSeverity: 'error'
+        });
+    });
+
+    it('says this game when the game is unknown', () => {
+        const { description } = describeNotification(
+            missing({ game: undefined })
+        );
+        expect(description).toBe(
+            'FTC-E2ETEST could not be opened because no schema exists for this game.'
+        );
+    });
+
+    it('uses C for college', () => {
+        const { description } = describeNotification(
+            missing({ game: { gameYear: 26, gameType: 'college' } })
+        );
+        expect(description).toContain('no schema exists for C26.');
     });
 });
