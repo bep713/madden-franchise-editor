@@ -28,9 +28,10 @@ function yearPrefix(gameType: string | null, gameYear: unknown): string {
     return `${gameType === 'college' ? 'C' : 'M'}${gameYear}`;
 }
 
-function versionLabel(
-    gameType: string | null,
-    meta: SchemaMeta | SchemaEntry
+// e.g. "M22 v329.1", or "v329.1" when the meta has no year
+export function metaLabel(
+    meta: SchemaMeta | SchemaEntry,
+    gameType: string | null
 ): string {
     const version = `v${meta.major}.${meta.minor}`;
     return meta.gameYear
@@ -50,7 +51,7 @@ function isTwin(a: SchemaEntry, b: SchemaEntry): boolean {
 // The label without a file name, with " (Custom)" when a bundled copy of the
 // same version exists
 function baseLabel(entry: SchemaEntry, entries: SchemaEntry[]): string {
-    const label = versionLabel(entry.gameType, entry);
+    const label = metaLabel(entry, entry.gameType);
     const hasBundledTwin =
         entry.source === 'custom' &&
         entries.some(
@@ -199,12 +200,12 @@ export function loadedLabel(
     const entry = entries.find((e) => isLoaded(e, metadata));
     return entry
         ? schemaLabel(entry, entries, customDir)
-        : versionLabel(gameTypeOf(metadata), schemaList.meta);
+        : metaLabel(schemaList.meta, gameTypeOf(metadata));
 }
 
 // No year when the file doesn't expect one (v4 shows "ANY")
 export function expectedLabel(metadata?: FileMetadata | null): string {
     const expected = metadata?.expectedSchemaVersion;
     if (!metadata || !expected) return 'Unknown';
-    return versionLabel(gameTypeOf(metadata), expected);
+    return metaLabel(expected, gameTypeOf(metadata));
 }

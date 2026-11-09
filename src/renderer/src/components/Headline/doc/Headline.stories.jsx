@@ -29,3 +29,10 @@ export const Small = {
         size: 'small'
     }
 };
+
+export const Actions = {
+    args: {
+        text: 'Welcome',
+        actions: <button type='button'>Action</button>
+    }
+};

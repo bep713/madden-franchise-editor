@@ -27,3 +27,11 @@
 .subtext {
     font-style: italic;
 }
+
+.actions {
+    display: flex;
+    gap: var(--spacing-2);
+    align-items: center;
+    align-self: center;
+    margin-left: auto;
+}

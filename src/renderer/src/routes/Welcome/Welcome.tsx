@@ -4,6 +4,7 @@ import { File, GameFileList, RecentFile } from '@shared/types/files';
 import styles from './Welcome.module.css';
 
 import { Allotment } from 'allotment';
+import Bell from '@assets/icons/bell.svg?react';
 import Headline from '@renderer/components/Headline/Headline';
 import Layout from '@renderer/components/Layout/Layout';
 
@@ -23,6 +24,8 @@ import useCommonFilePrompt, {
     CommonFileOverrides
 } from './components/CommonFileModal/useCommonFilePrompt';
 import { getRememberedChoice } from './components/CommonFileModal/commonFileChoices';
+import NotificationDrawer from './components/NotificationDrawer/NotificationDrawer';
+import useNotifications from '@renderer/notifications/useNotifications';
 
 function toRecentFiles(entries: RecentFileEntry[]): RecentFile[] {
     return entries.map((entry) => ({
@@ -44,6 +47,8 @@ const Welcome: React.FC = () => {
     const { promptForOverrides, modal: commonFileModal } =
         useCommonFilePrompt();
     const openFileAt = useOpenFile({ promptForOverrides });
+    const { notifications, unreadCount } = useNotifications();
+    const [notificationsOpen, setNotificationsOpen] = useState(false);
 
     useEffect((): void => {
         (async (): Promise<void> => {
@@ -128,6 +133,27 @@ const Welcome: React.FC = () => {
     return (
         <Layout alignItems='stretch' rowGap='none' direction='column'>
             <Headline
+                actions={
+                    <button
+                        aria-expanded={notificationsOpen}
+                        aria-label='Notifications'
+                        className={styles.bell}
+                        data-action='open-notifications'
+                        onClick={() => setNotificationsOpen((open) => !open)}
+                        type='button'
+                    >
+                        <Bell aria-hidden='true' />
+                        {unreadCount > 0 && (
+                            <span
+                                className={styles.badge}
+                                data-count={unreadCount}
+                                data-testid='notification-badge'
+                            >
+                                {unreadCount > 9 ? '9+' : unreadCount}
+                            </span>
+                        )}
+                    </button>
+                }
                 size='default'
                 subtext={version && `v${version}`}
                 text='Madden Franchise Editor'
@@ -151,90 +177,121 @@ const Welcome: React.FC = () => {
                     />
                 </Allotment.Pane>
                 <Allotment.Pane>
-                    <main className={styles.main}>
-                        <Layout
-                            alignItems='stretch'
-                            direction='column'
-                            justifyContent='space-between'
-                            rowGap='4'
+                    {/* Nested, so the drawer leaves the side nav's
+                        defaultSizes alone */}
+                    <Allotment
+                        onVisibleChange={(index, visible) => {
+                            if (index === 1 && !visible) {
+                                setNotificationsOpen(false);
+                            }
+                        }}
+                    >
+                        <Allotment.Pane>
+                            <main className={styles.main}>
+                                <Layout
+                                    alignItems='stretch'
+                                    direction='column'
+                                    justifyContent='space-between'
+                                    rowGap='4'
+                                >
+                                    <GetStartedCard
+                                        openFile={openFile}
+                                        onActionClick={async (action) => {
+                                            switch (action) {
+                                                case GetStartedActions.OPEN_FILE:
+                                                    await handleOpenFile();
+                                                    break;
+                                                case GetStartedActions.OPEN_FILE_LOCATION:
+                                                    if (openFile?.path) {
+                                                        window.electronAPI.welcome.revealInExplorer(
+                                                            openFile.path
+                                                        );
+                                                    }
+                                                    break;
+                                                case GetStartedActions.CHANGE_FILE_PARAMETERS:
+                                                    await changeCommonFileParameters();
+                                                    break;
+                                                case GetStartedActions.OPEN_TABLE_EDITOR:
+                                                    editorTabs.openTableEditor();
+                                                    break;
+                                                case GetStartedActions.OPEN_SCHEMA_MANAGEMENT:
+                                                    editorTabs.selectTab(
+                                                        SCHEMA_MANAGEMENT_KEY
+                                                    );
+                                                    break;
+                                            }
+                                        }}
+                                    />
+                                    <Card
+                                        data-testid='recent-files'
+                                        header={{ title: 'Recent Files' }}
+                                    >
+                                        <RecentFilesList
+                                            onClick={(r: RecentFile) =>
+                                                initializeFile(r.fullPath)
+                                            }
+                                            files={recentFiles}
+                                        />
+                                    </Card>
+                                    {filesByGame && (
+                                        <GameGrid>
+                                            {Object.entries(filesByGame)
+                                                .sort(
+                                                    (
+                                                        [, gameFilesA],
+                                                        [, gameFilesB]
+                                                    ) => {
+                                                        return (
+                                                            Number(
+                                                                gameFilesB.game
+                                                                    .year
+                                                            ) -
+                                                            Number(
+                                                                gameFilesA.game
+                                                                    .year
+                                                            )
+                                                        );
+                                                    }
+                                                )
+                                                .map(([game, gameFiles]) => (
+                                                    <GameFileCard
+                                                        key={game}
+                                                        files={gameFiles}
+                                                        onDirectoryClick={() =>
+                                                            window.electronAPI.files.openFolder(
+                                                                gameFiles.game
+                                                                    .directories
+                                                                    .savesFullPath
+                                                            )
+                                                        }
+                                                        onFileClick={(
+                                                            file: File
+                                                        ) =>
+                                                            initializeFile(
+                                                                file.fullPath
+                                                            )
+                                                        }
+                                                    />
+                                                ))}
+                                        </GameGrid>
+                                    )}
+                                </Layout>
+                            </main>
+                        </Allotment.Pane>
+                        <Allotment.Pane
+                            minSize={280}
+                            preferredSize={320}
+                            snap
+                            visible={notificationsOpen}
                         >
-                            <GetStartedCard
-                                openFile={openFile}
-                                onActionClick={async (action) => {
-                                    switch (action) {
-                                        case GetStartedActions.OPEN_FILE:
-                                            await handleOpenFile();
-                                            break;
-                                        case GetStartedActions.OPEN_FILE_LOCATION:
-                                            if (openFile?.path) {
-                                                window.electronAPI.welcome.revealInExplorer(
-                                                    openFile.path
-                                                );
-                                            }
-                                            break;
-                                        case GetStartedActions.CHANGE_FILE_PARAMETERS:
-                                            await changeCommonFileParameters();
-                                            break;
-                                        case GetStartedActions.OPEN_TABLE_EDITOR:
-                                            editorTabs.openTableEditor();
-                                            break;
-                                        case GetStartedActions.OPEN_SCHEMA_MANAGEMENT:
-                                            editorTabs.selectTab(
-                                                SCHEMA_MANAGEMENT_KEY
-                                            );
-                                            break;
-                                    }
-                                }}
-                            />
-                            <Card
-                                data-testid='recent-files'
-                                header={{ title: 'Recent Files' }}
-                            >
-                                <RecentFilesList
-                                    onClick={(r: RecentFile) =>
-                                        initializeFile(r.fullPath)
-                                    }
-                                    files={recentFiles}
+                            {notificationsOpen && (
+                                <NotificationDrawer
+                                    notifications={notifications}
+                                    onClose={() => setNotificationsOpen(false)}
                                 />
-                            </Card>
-                            {filesByGame && (
-                                <GameGrid>
-                                    {Object.entries(filesByGame)
-                                        .sort(
-                                            (
-                                                [, gameFilesA],
-                                                [, gameFilesB]
-                                            ) => {
-                                                return (
-                                                    Number(
-                                                        gameFilesB.game.year
-                                                    ) -
-                                                    Number(gameFilesA.game.year)
-                                                );
-                                            }
-                                        )
-                                        .map(([game, gameFiles]) => (
-                                            <GameFileCard
-                                                key={game}
-                                                files={gameFiles}
-                                                onDirectoryClick={() =>
-                                                    window.electronAPI.files.openFolder(
-                                                        gameFiles.game
-                                                            .directories
-                                                            .savesFullPath
-                                                    )
-                                                }
-                                                onFileClick={(file: File) =>
-                                                    initializeFile(
-                                                        file.fullPath
-                                                    )
-                                                }
-                                            />
-                                        ))}
-                                </GameGrid>
                             )}
-                        </Layout>
-                    </main>
+                        </Allotment.Pane>
+                    </Allotment>
                 </Allotment.Pane>
             </Allotment>
             {commonFileModal}

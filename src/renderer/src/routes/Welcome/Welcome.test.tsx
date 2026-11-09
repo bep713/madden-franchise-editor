@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { AppNotification } from '@shared/types/notifications';
 import {
     FranchiseFileContext,
     OpenFranchiseFile
@@ -27,6 +28,18 @@ const FTC_PATH = 'C:/saves/franchise-common.FTC';
 // userData/commonFileChoices.json
 let storedChoices: unknown = null;
 
+// main's notification store
+let notificationList: AppNotification[] = [];
+function notification(id: string, read = false): AppNotification {
+    return {
+        id,
+        kind: 'schema-mismatch',
+        createdAt: Date.now(),
+        read,
+        data: { expected: null, loaded: null, gameType: 'madden' }
+    };
+}
+
 const electronAPI = {
     getVersion: vi.fn(async () => '5.0.0'),
     files: { getSaves: vi.fn(async () => ({ success: false })) },
@@ -47,7 +60,14 @@ const electronAPI = {
             storedChoices = data;
         })
     },
-    send: vi.fn()
+    send: vi.fn(),
+    notifications: {
+        list: vi.fn(async () => notificationList),
+        dismiss: vi.fn(async () => undefined),
+        markRead: vi.fn(async () => undefined),
+        onChanged: vi.fn(() => () => undefined),
+        onAdded: vi.fn(() => () => undefined)
+    }
 };
 const franchiseAPI = {
     getMetadataFromFilePath: vi.fn(async () => ({ format: 'franchise' })),
@@ -455,5 +475,66 @@ describe('Welcome change file parameters', () => {
         await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
         expect(franchiseAPI.closeFile).not.toHaveBeenCalled();
         expect(franchiseAPI.openFile).not.toHaveBeenCalled();
+    });
+});
+
+describe('Welcome notifications', () => {
+    const bell = () => screen.getByRole('button', { name: 'Notifications' });
+    const badge = () => screen.queryByTestId('notification-badge');
+    // The side nav is an <aside> too
+    const drawer = () =>
+        screen.queryByRole('complementary', { name: 'Notifications' });
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        notificationList = [];
+        Object.assign(window, { electronAPI, franchiseAPI });
+    });
+
+    it('toggles the drawer from the bell', async () => {
+        setup();
+        expect(bell()).toHaveAttribute('aria-expanded', 'false');
+        expect(bell()).toHaveAttribute('data-action', 'open-notifications');
+        expect(drawer()).toBeNull();
+
+        await userEvent.click(bell());
+        expect(bell()).toHaveAttribute('aria-expanded', 'true');
+        expect(drawer()).toBeInTheDocument();
+        expect(screen.getByText('No notifications')).toBeInTheDocument();
+
+        await userEvent.click(bell());
+        expect(bell()).toHaveAttribute('aria-expanded', 'false');
+        expect(drawer()).toBeNull();
+    });
+
+    it('has no badge without unread notifications', async () => {
+        notificationList = [notification('a', true)];
+        setup();
+        await waitFor(() =>
+            expect(electronAPI.notifications.list).toHaveBeenCalled()
+        );
+        expect(badge()).toBeNull();
+    });
+
+    it('counts the unread notifications on the badge', async () => {
+        notificationList = [
+            notification('a'),
+            notification('b'),
+            notification('c', true)
+        ];
+        setup();
+        await waitFor(() => expect(badge()).not.toBeNull());
+        expect(badge()).toHaveAttribute('data-count', '2');
+        expect(badge()).toHaveTextContent('2');
+    });
+
+    it('shows 9+ above nine', async () => {
+        notificationList = Array.from({ length: 10 }, (_, i) =>
+            notification(String(i))
+        );
+        setup();
+        await waitFor(() => expect(badge()).not.toBeNull());
+        expect(badge()).toHaveAttribute('data-count', '10');
+        expect(badge()).toHaveTextContent('9+');
     });
 });
