@@ -24,6 +24,11 @@ export interface ErrorResult {
     error: string;
 }
 
+// franchise:open-file failure. code is set when the cause is known.
+export interface OpenFileErrorResult extends ErrorResult {
+    code?: 'schema-not-found';
+}
+
 // madden-franchise's FileType (FranchiseFile.type)
 export interface FranchiseFileType {
     format: FileType;
@@ -57,7 +62,7 @@ export interface FileMetadata {
 
 // franchise:open-file
 export type OpenFileResult =
-    { fileId: string; metadata: FileMetadata } | ErrorResult;
+    { fileId: string; metadata: FileMetadata } | OpenFileErrorResult;
 
 // getTableList
 export interface TableListItem {

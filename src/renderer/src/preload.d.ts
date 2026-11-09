@@ -23,6 +23,7 @@ import type {
     WriteBulkTableCellsResult
 } from '@shared/types';
 import type { GameSaveResponse } from '@shared/types/files';
+import type { AppNotification } from '@shared/types/notifications';
 
 // recent-files:* entries (main/handlers/recentFilesHandler.js)
 export interface RecentFileEntry {
@@ -34,6 +35,7 @@ export interface RecentFileEntry {
 export interface OpenFileOptions {
     gameYearOverride?: number;
     gameTypeOverride?: string;
+    schemaOverride?: { path: string };
 }
 
 declare global {
@@ -127,6 +129,18 @@ declare global {
                 callback: (...args: unknown[]) => void
             ) => void;
             removeAllListeners: (channel: string) => void;
+            // Notification store in main; subscribe functions return an unsubscribe
+            notifications: {
+                list: () => Promise<AppNotification[]>;
+                dismiss: (id: string) => Promise<void>;
+                markRead: (ids: string[]) => Promise<void>;
+                onChanged: (
+                    callback: (list: AppNotification[]) => void
+                ) => () => void;
+                onAdded: (
+                    callback: (notification: AppNotification) => void
+                ) => () => void;
+            };
             preferences: {
                 getValue: (keyPath: string) => Promise<unknown>;
                 // Writes only the given keys of each section

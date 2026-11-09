@@ -45,6 +45,12 @@ const {
 } = require("./main/services/updateChannelService");
 const autoUpdaterService = require("./main/services/autoUpdaterService");
 const { registerWelcomeHandlers } = require("./main/handlers/welcomeHandler");
+const {
+  registerNotificationsHandlers,
+} = require("./main/handlers/notificationsHandler");
+const {
+  createNotificationStore,
+} = require("./main/services/notificationStore");
 const { registerFilesHandlers } = require("./main/handlers/filesHandler");
 const {
   createLoggedIpcMain,
@@ -103,7 +109,14 @@ const loggedIpc = createLoggedIpcMain(ipcMain);
 franchiseFileManager.setPreferencesProvider(() =>
   preferencesHandler.getPreferencesInstance()?.value(undefined, ""),
 );
+const notificationStore = createNotificationStore((channel, payload) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send(channel, payload);
+  }
+});
+franchiseFileManager.setNotificationStore(notificationStore);
 franchiseFileManager.registerIpcHandlers(loggedIpc);
+registerNotificationsHandlers(loggedIpc, notificationStore);
 registerExternalDataHandlers(loggedIpc, franchiseFileManager);
 preferencesHandler.registerPreferencesHandlers(
   loggedIpc,

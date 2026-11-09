@@ -29,4 +29,7 @@
     --text-secondary: var(--dim-gray);
     --text-link: var(--link);
     --divider-color: var(--timberwolf);
+    --banner-info: #06c;
+    --banner-error: #f32617;
+    --banner-success: var(--pigment-green);
 }

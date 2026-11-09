@@ -1,5 +1,6 @@
 export * from './types/franchise';
 export * from './types/navigation';
+export * from './types/notifications';
 export * from './types/pins';
 export * from './types/schemas';
 

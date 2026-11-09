@@ -14,6 +14,7 @@ const { Readable } = require("stream");
 const { decodeBlock } = require("../libs/lz4Block");
 const startupProfiler = require("./startupProfiler");
 const { detectFormat } = require("../utils/detectFormat");
+const { checkSchemaMismatch } = require("../handlers/schemaMismatchHandler");
 
 /**
  * Manages FranchiseFile instances in the main process.
@@ -37,6 +38,15 @@ class FranchiseFileManager {
     this._preferencesProvider = null;
     this._ensureSchemaDirectory();
     this._loggedIpc = {};
+    this._notificationStore = null;
+  }
+
+  /**
+   * Set the notification store the open/load/close hooks write to.
+   * @param {object|null} store
+   */
+  setNotificationStore(store) {
+    this._notificationStore = store || null;
   }
 
   /**
@@ -1332,6 +1342,74 @@ class FranchiseFileManager {
   }
 
   /**
+   * Add a schema-mismatch notification if the file's loaded schema is not the
+   * one it expects.
+   * @param {string} fileId
+   * @private
+   */
+  _notifyIfSchemaMismatch(fileId) {
+    if (!this._notificationStore) return;
+    const file = this.activeFiles.get(fileId)?.file;
+    if (!file) return;
+    const { hasMismatch, expected, used } = checkSchemaMismatch(file);
+    if (!hasMismatch) return;
+    this._notificationStore.add({
+      kind: "schema-mismatch",
+      fileId,
+      data: {
+        expected,
+        loaded: used,
+        gameType: file.type?.gameType || "madden",
+      },
+    });
+  }
+
+  /**
+   * Build the open-file error result. Adds code "schema-not-found" when the
+   * file's expected schema version has no schema in the bundled or custom
+   * directory, the lookup the library's parse() does.
+   * @param {Error} err
+   * @param {string} filePath
+   * @param {object} [options]
+   * @returns {Promise<{ error: string, code?: "schema-not-found" }>}
+   * @private
+   */
+  async _openError(err, filePath, options) {
+    try {
+      const probe = await FranchiseFile.create(filePath, {
+        autoParse: false,
+        gameYearOverride: options?.gameYearOverride ?? undefined,
+        gameTypeOverride: options?.gameTypeOverride ?? undefined,
+      });
+      const expected = probe.expectedSchemaVersion;
+      if (expected) {
+        let picked = null;
+        try {
+          picked = schemaPicker.pick(
+            probe._gameYear,
+            expected.major,
+            expected.minor,
+            {
+              schemaDirectory:
+                options?.schemaDirectory || this._schemaDirectory,
+            },
+            probe._gameType,
+          );
+        } catch (pickError) {
+          // pick throws a TypeError (reduce of an empty list) when no schema
+          // exists for the game year. Anything else, like an unreadable
+          // schema directory, is not a missing schema.
+          if (!(pickError instanceof TypeError)) return { error: err.message };
+        }
+        if (!picked) return { error: err.message, code: "schema-not-found" };
+      }
+    } catch {
+      // unreadable file: fall through to the plain error
+    }
+    return { error: err.message };
+  }
+
+  /**
    * Set up IPC handlers for the franchise manager
    * @param {Object} loggedIpc - Wrapped IPC with dev logging
    */
@@ -1343,14 +1421,20 @@ class FranchiseFileManager {
       "franchise:open-file",
       async (event, filePath, options) => {
         try {
-          return await this.openFile(filePath, options);
+          const result = await this.openFile(filePath, options);
+          if (!options?.schemaOverride) {
+            this._notifyIfSchemaMismatch(result.fileId);
+          }
+          return result;
         } catch (err) {
-          return { error: err.message };
+          if (options?.schemaOverride) return { error: err.message };
+          return await this._openError(err, filePath, options);
         }
       },
     );
 
     loggedIpc.handle("franchise:close-file", async (event, fileId) => {
+      this._notificationStore?.removeWhere((n) => n.fileId === fileId);
       return this.closeFile(fileId);
     });
 
@@ -1412,7 +1496,11 @@ class FranchiseFileManager {
       "franchise:load-schema",
       async (event, fileId, schemaPath, saveSchema) => {
         try {
-          return await this.loadSchema(fileId, schemaPath, saveSchema);
+          const result = await this.loadSchema(fileId, schemaPath, saveSchema);
+          this._notificationStore?.removeWhere(
+            (n) => n.kind === "schema-mismatch" && n.fileId === fileId,
+          );
+          return result;
         } catch (err) {
           return { error: err.message };
         }

@@ -65,6 +65,16 @@ function removeListener(channel, callback) {
   }
 }
 
+/**
+ * Subscribe to a main-process event. Returns a function that removes only
+ * this listener.
+ */
+function subscribe(channel, callback) {
+  const wrapper = (event, payload) => callback(payload);
+  ipcRenderer.on(channel, wrapper);
+  return () => ipcRenderer.removeListener(channel, wrapper);
+}
+
 // Expose franchise API
 contextBridge.exposeInMainWorld("franchiseAPI", {
   // File operations
@@ -225,6 +235,16 @@ contextBridge.exposeInMainWorld("electronAPI", {
   },
   removeAllListeners: (channel) => {
     ipcRenderer.removeAllListeners(channel);
+  },
+
+  // Notification store (main/services/notificationStore.js). The subscribe
+  // functions return an unsubscribe that removes only that listener.
+  notifications: {
+    list: () => ipcRenderer.invoke("notifications:list"),
+    dismiss: (id) => ipcRenderer.invoke("notifications:dismiss", id),
+    markRead: (ids) => ipcRenderer.invoke("notifications:mark-read", ids),
+    onChanged: (callback) => subscribe("notifications:changed", callback),
+    onAdded: (callback) => subscribe("notifications:added", callback),
   },
 
   // File system operations (replaces fs in renderer)
