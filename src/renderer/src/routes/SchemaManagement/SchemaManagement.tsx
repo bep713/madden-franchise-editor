@@ -18,6 +18,7 @@ import { buildOpenFranchiseFile } from '@renderer/hooks/useActiveFranchiseFile';
 import useLoader from '@renderer/hooks/useLoader';
 import useOpenFile from '@renderer/hooks/useOpenFile';
 import useCommonFilePrompt from '@renderer/routes/Welcome/components/CommonFileModal/useCommonFilePrompt';
+import { confirm } from '@renderer/utils/confirm';
 import LoadedSchemaCard from './components/LoadedSchemaCard';
 import PendingFileCard from './components/PendingFileCard';
 import SchemaActionBar from './components/SchemaActionBar';
@@ -35,9 +36,6 @@ import { EMPTY_FILTERS, type FieldFilters } from './schemaViewer';
 import useSchemaList from './useSchemaList';
 
 import styles from './SchemaManagement.module.scss';
-
-// 0 is the first button, Load/Delete; Cancel is the default
-const CONFIRM = 0;
 
 interface Viewing {
     source: SchemaFieldsSource;
@@ -122,22 +120,6 @@ const SchemaManagement: React.FC = () => {
               viewing.fileRevision !== openFile?.revision);
     if (stale) {
         closeViewer();
-    }
-
-    async function confirm(
-        message: string,
-        detail: string,
-        button: string
-    ): Promise<boolean> {
-        const { response } = await window.electronAPI.showMessageBox({
-            type: 'warning',
-            message,
-            detail,
-            buttons: [button, 'Cancel'],
-            defaultId: 1,
-            cancelId: 1
-        });
-        return response === CONFIRM;
     }
 
     async function showError(message: string, error: unknown): Promise<void> {

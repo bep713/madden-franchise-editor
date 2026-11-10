@@ -5,6 +5,7 @@ import styles from './Layout.module.scss';
 
 import Navigation from '../../components/Navigation/Navigation';
 import { BannerProvider } from '@renderer/banners/BannerContext';
+import { ExternalChangeProvider } from '@renderer/context/ExternalChangeContext';
 import { FranchiseFileContext } from '@renderer/context/FranchiseFileContext';
 import useFileMenuCommands from '@renderer/hooks/useFileMenuCommands';
 import useMenuState from '@renderer/hooks/useMenuState';
@@ -35,24 +36,26 @@ const Layout: React.FC = () => {
 
     return (
         <BannerProvider>
-            <NotificationBanners selectTab={editorTabs.selectTab} />
-            <EditorTabsContext.Provider value={editorTabs}>
-                <div className={styles.appWrapper}>
-                    <Navigation
-                        activeKey={editorTabs.activeTab.key}
-                        onClose={editorTabs.closeTab}
-                        onNewTab={editorTabs.newTab}
-                        onSelect={editorTabs.selectTab}
-                        showNewTabButton={!!openFile}
-                        tabs={editorTabs.tabs.map((tab) => ({
-                            key: tab.key,
-                            name: tabName(tab),
-                            isClosable: tab.kind === 'table'
-                        }))}
-                    />
-                    <Outlet />
-                </div>
-            </EditorTabsContext.Provider>
+            <ExternalChangeProvider>
+                <NotificationBanners selectTab={editorTabs.selectTab} />
+                <EditorTabsContext.Provider value={editorTabs}>
+                    <div className={styles.appWrapper}>
+                        <Navigation
+                            activeKey={editorTabs.activeTab.key}
+                            onClose={editorTabs.closeTab}
+                            onNewTab={editorTabs.newTab}
+                            onSelect={editorTabs.selectTab}
+                            showNewTabButton={!!openFile}
+                            tabs={editorTabs.tabs.map((tab) => ({
+                                key: tab.key,
+                                name: tabName(tab),
+                                isClosable: tab.kind === 'table'
+                            }))}
+                        />
+                        <Outlet />
+                    </div>
+                </EditorTabsContext.Provider>
+            </ExternalChangeProvider>
         </BannerProvider>
     );
 };

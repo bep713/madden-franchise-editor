@@ -7,6 +7,7 @@ import {
     EditorTabsContext,
     EditorTabsValue
 } from '@renderer/tabs/EditorTabsContext';
+import { ExternalChangeContext } from '@renderer/context/ExternalChangeContext';
 import { PendingOpenContext } from '@renderer/context/PendingOpenContext';
 import useNotifications from '@renderer/notifications/useNotifications';
 import NotificationDrawer from './NotificationDrawer';
@@ -62,6 +63,10 @@ function notification(
 
 const selectTab = vi.fn();
 const setPending = vi.fn();
+const externalChange = {
+    reload: vi.fn(async () => undefined),
+    branch: vi.fn(async () => undefined)
+};
 
 // Welcome's wiring: the list from main, the drawer mounted while open
 function Harness() {
@@ -69,19 +74,21 @@ function Harness() {
     const [open, setOpen] = useState(true);
     return (
         <PendingOpenContext.Provider value={[undefined, setPending]}>
-            <EditorTabsContext.Provider
-                value={{ selectTab } as unknown as EditorTabsValue}
-            >
-                <button onClick={() => setOpen((o) => !o)} type='button'>
-                    toggle
-                </button>
-                {open && (
-                    <NotificationDrawer
-                        notifications={notifications}
-                        onClose={() => setOpen(false)}
-                    />
-                )}
-            </EditorTabsContext.Provider>
+            <ExternalChangeContext.Provider value={externalChange}>
+                <EditorTabsContext.Provider
+                    value={{ selectTab } as unknown as EditorTabsValue}
+                >
+                    <button onClick={() => setOpen((o) => !o)} type='button'>
+                        toggle
+                    </button>
+                    {open && (
+                        <NotificationDrawer
+                            notifications={notifications}
+                            onClose={() => setOpen(false)}
+                        />
+                    )}
+                </EditorTabsContext.Provider>
+            </ExternalChangeContext.Provider>
         </PendingOpenContext.Provider>
     );
 }
@@ -244,6 +251,7 @@ describe('NotificationDrawer', () => {
                 kind: 'file-changed',
                 createdAt: NOW,
                 read: false,
+                fileId: 'file-f',
                 data: { path: 'C:/saves/FTC' }
             }
         ];
@@ -265,6 +273,13 @@ describe('NotificationDrawer', () => {
         await userEvent.click(
             within(item('f')).getByRole('button', { name: 'Reload' })
         );
+        expect(externalChange.reload).toHaveBeenCalledExactlyOnceWith('file-f');
+        await userEvent.click(
+            within(item('f')).getByRole('button', {
+                name: 'Branch and save new'
+            })
+        );
+        expect(externalChange.branch).toHaveBeenCalledExactlyOnceWith('file-f');
         expect(selectTab).not.toHaveBeenCalled();
     });
 

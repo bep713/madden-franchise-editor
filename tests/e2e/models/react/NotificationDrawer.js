@@ -97,6 +97,15 @@ class NotificationDrawer {
       .click();
   }
 
+  // The data-link ids of a notification's links, in order
+  async linkIds(id) {
+    return this.item(id)
+      .locator('[data-action="notification-link"]')
+      .evaluateAll((elements) =>
+        elements.map((element) => element.getAttribute("data-link")),
+      );
+  }
+
   async dismiss(id) {
     await this.item(id).locator('[data-action="dismiss-notification"]').click();
   }

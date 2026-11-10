@@ -42,6 +42,19 @@ class Banner {
     await this.click("Close");
   }
 
+  // The file-changed banner's actions
+  async reload() {
+    await this.click("Reload");
+  }
+
+  async branch() {
+    await this.click("Branch and save new");
+  }
+
+  async dismiss() {
+    await this.click("Dismiss");
+  }
+
   async hover() {
     await this.locators.banner.hover();
   }

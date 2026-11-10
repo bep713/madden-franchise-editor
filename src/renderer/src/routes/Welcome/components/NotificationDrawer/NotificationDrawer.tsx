@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import cx from 'classnames';
 import type { AppNotification } from '@shared/types/notifications';
 import Close from '@assets/icons/close.svg?react';
+import { useExternalChange } from '@renderer/context/ExternalChangeContext';
 import {
     pendingFromNotification,
     usePendingOpen
@@ -30,6 +31,7 @@ const NotificationDrawer: React.FC<Props> = ({
 }: Props) => {
     const editorTabs = useEditorTabs();
     const [, setPending] = usePendingOpen();
+    const { reload, branch } = useExternalChange();
     const [now, setNow] = useState(() => Date.now());
     // Ids that were unread when this viewing first saw them
     const seenUnread = useRef(new Set<string>());
@@ -48,8 +50,10 @@ const NotificationDrawer: React.FC<Props> = ({
                 editorTabs.selectTab(SCHEMA_MANAGEMENT_KEY);
                 break;
             case 'reload':
+                if (n.fileId) void reload(n.fileId);
+                break;
             case 'branch':
-                // Wired up in 04r4
+                if (n.fileId) void branch(n.fileId);
                 break;
         }
     }

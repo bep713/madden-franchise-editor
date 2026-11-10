@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AppNotification } from '@shared/types/notifications';
 import { BannerProvider, SLIDE_MS } from '@renderer/banners/BannerContext';
+import { ExternalChangeContext } from '@renderer/context/ExternalChangeContext';
 import { PendingOpenContext } from '@renderer/context/PendingOpenContext';
 import { SCHEMA_MANAGEMENT_KEY } from '@renderer/tabs/editorTabs';
 import useNotificationBanners from './useNotificationBanners';
@@ -63,8 +64,23 @@ function missing(id: string, path = 'C:/saves/FTC'): AppNotification {
     };
 }
 
+function fileChanged(id: string, fileId = 'file-1'): AppNotification {
+    return {
+        id,
+        kind: 'file-changed',
+        createdAt: Date.now(),
+        read: false,
+        fileId,
+        data: { path: 'C:/saves/CAREER-TEST' }
+    };
+}
+
 const selectTab = vi.fn();
 const setPending = vi.fn();
+const externalChange = {
+    reload: vi.fn(async () => undefined),
+    branch: vi.fn(async () => undefined)
+};
 
 const Probe: React.FC = () => {
     useNotificationBanners(selectTab);
@@ -74,9 +90,11 @@ const Probe: React.FC = () => {
 function setup() {
     return render(
         <PendingOpenContext.Provider value={[undefined, setPending]}>
-            <BannerProvider>
-                <Probe />
-            </BannerProvider>
+            <ExternalChangeContext.Provider value={externalChange}>
+                <BannerProvider>
+                    <Probe />
+                </BannerProvider>
+            </ExternalChangeContext.Provider>
         </PendingOpenContext.Provider>
     );
 }
@@ -235,6 +253,59 @@ describe('useNotificationBanners', () => {
             expect(notificationsApi.markRead).toHaveBeenCalledWith(['m2']);
             advance(SLIDE_MS);
             expect(banner()).toBeNull();
+        });
+    });
+
+    describe('file-changed', () => {
+        it("shows v4's text with Dismiss, Branch and Reload", () => {
+            setup();
+            const n = fileChanged('c');
+            add(n, [n]);
+            expect(banner()).toHaveAttribute('data-kind', 'file-changed');
+            expect(banner()).toHaveTextContent(
+                'This save file has been modified outside of this program. Do you want to reload the file?'
+            );
+            expect(
+                screen.getAllByRole('button').map((b) => b.textContent)
+            ).toEqual(
+                expect.arrayContaining([
+                    'Dismiss',
+                    'Branch and save new',
+                    'Reload'
+                ])
+            );
+        });
+
+        it('Reload marks read and reloads the file', () => {
+            setup();
+            const n = fileChanged('c');
+            add(n, [n]);
+            fireEvent.click(screen.getByRole('button', { name: 'Reload' }));
+            expect(notificationsApi.markRead).toHaveBeenCalledWith(['c']);
+            expect(externalChange.reload).toHaveBeenCalledWith('file-1');
+            expect(externalChange.branch).not.toHaveBeenCalled();
+        });
+
+        it('Branch marks read and branches the file', () => {
+            setup();
+            const n = fileChanged('c');
+            add(n, [n]);
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Branch and save new' })
+            );
+            expect(notificationsApi.markRead).toHaveBeenCalledWith(['c']);
+            expect(externalChange.branch).toHaveBeenCalledWith('file-1');
+            expect(externalChange.reload).not.toHaveBeenCalled();
+        });
+
+        it('Dismiss dismisses the notification', () => {
+            setup();
+            const n = fileChanged('c');
+            add(n, [n]);
+            fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+            expect(notificationsApi.dismiss).toHaveBeenCalledWith('c');
+            expect(externalChange.reload).not.toHaveBeenCalled();
+            expect(externalChange.branch).not.toHaveBeenCalled();
         });
     });
 
