@@ -90,6 +90,7 @@ contextBridge.exposeInMainWorld("franchiseAPI", {
     ipcRenderer.invoke("franchise:save-file-as", fileId, options),
   saveFileAsAndOpen: (fileId, newPath) =>
     ipcRenderer.invoke("franchise:save-file-as-and-open", fileId, newPath),
+  reloadFile: (fileId) => ipcRenderer.invoke("franchise:reload-file", fileId),
   loadSchema: (fileId, schemaPath, saveSchema) =>
     ipcRenderer.invoke("franchise:load-schema", fileId, schemaPath, saveSchema),
   addSchema: (fileId, schemaPath) =>

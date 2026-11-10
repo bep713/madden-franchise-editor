@@ -116,8 +116,22 @@ const notificationStore = createNotificationStore((channel, payload) => {
   }
 });
 franchiseFileManager.setNotificationStore(notificationStore);
+// v5 pauses auto-save while the file changed on disk and the user hasn't
+// chosen what to do, so the game's save isn't overwritten. v4 doesn't.
+franchiseFileManager.setAutoSavePausedCheck(
+  (id) =>
+    currentUi === "v5" &&
+    notificationStore
+      .list()
+      .some((n) => n.kind === "file-changed" && n.fileId === id),
+);
 franchiseFileManager.registerIpcHandlers(loggedIpc);
-registerNotificationsHandlers(loggedIpc, notificationStore);
+registerNotificationsHandlers(loggedIpc, notificationStore, {
+  // Dismissing the change resumes auto-save and saves edits made while paused
+  onDismissed: (n) => {
+    if (n.kind === "file-changed") franchiseFileManager.requestAutoSave(n.fileId);
+  },
+});
 registerExternalDataHandlers(loggedIpc, franchiseFileManager);
 preferencesHandler.registerPreferencesHandlers(
   loggedIpc,

@@ -15,6 +15,7 @@ import type {
     GetReferencesResult,
     OpenFileResult,
     ReadTableDataResult,
+    ReloadFileResult,
     SaveFileResult,
     SchemaEntry,
     SchemaFieldsResult,
@@ -93,6 +94,14 @@ declare global {
                 fileId: string,
                 filePath: string
             ) => Promise<SaveFileResult>;
+            // Saves to the new path; the open file and watcher move there
+            saveFileAsAndOpen: (
+                fileId: string,
+                path: string
+            ) => Promise<{ path: string } | { error: string }>;
+            // Reopens the file from disk, keeping its fileId and schema.
+            // Unsaved edits are lost.
+            reloadFile: (fileId: string) => Promise<ReloadFileResult>;
             // Waits for queued writes/saves; undos count as changes
             hasUnsavedChanges: (fileId: string) => Promise<boolean>;
             // Bundled and custom schemas

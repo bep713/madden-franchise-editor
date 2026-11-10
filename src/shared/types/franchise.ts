@@ -152,6 +152,10 @@ export type WriteBulkTableCellsResult =
 // franchise:save-file / franchise:save-file-as
 export type SaveFileResult = { path: string } | ErrorResult;
 
+// franchise:reload-file
+export type ReloadFileResult =
+    { fileId: string; metadata: FileMetadata } | { error: string };
+
 // franchise:get-references-to-record data[]: one per referencing record
 export interface RecordReference {
     tableId: number;

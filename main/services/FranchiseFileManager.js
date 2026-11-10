@@ -40,6 +40,7 @@ class FranchiseFileManager {
     this._ensureSchemaDirectory();
     this._loggedIpc = {};
     this._notificationStore = null;
+    this._autoSavePausedCheck = null;
     // Resolved lowercase schema path -> built { meta, fields }, oldest first
     // (see getSchemaFields); capped at 3 since a big schema is ~21k rows
     this._schemaFieldsCache = new Map();
@@ -51,6 +52,15 @@ class FranchiseFileManager {
    */
   setNotificationStore(store) {
     this._notificationStore = store || null;
+  }
+
+  /**
+   * Set a check that pauses auto-save for a file while it returns true.
+   * Edits made while paused still count as unsaved changes.
+   * @param {((fileId: string) => boolean)|null} fn
+   */
+  setAutoSavePausedCheck(fn) {
+    this._autoSavePausedCheck = fn || null;
   }
 
   /**
@@ -468,6 +478,7 @@ class FranchiseFileManager {
   requestAutoSave(fileId) {
     const entry = this.activeFiles.get(fileId);
     if (!entry?.autoSave) return Promise.resolve();
+    if (this._autoSavePausedCheck?.(fileId)) return Promise.resolve();
 
     let state = this._autoSaves.get(fileId);
     if (!state) {
@@ -582,6 +593,7 @@ class FranchiseFileManager {
     if (savesOwnPath) {
       // a change made during the save keeps the file dirty
       entry.savedCount = changeCount;
+      this._removeFileChanged(fileId);
     }
     return file.filePath || entry.path;
   }
@@ -676,6 +688,33 @@ class FranchiseFileManager {
     }
 
     return { status: "successful", metadata };
+  }
+
+  /**
+   * Reopen the file from disk with its current settings, keeping its fileId,
+   * schema override and year/type overrides. Unsaved edits are lost. If the
+   * reopen fails, the old in-memory file stays.
+   * @param {string} fileId
+   * @returns {Promise<{ fileId: string, metadata: object }>}
+   */
+  async reloadFile(fileId) {
+    return this._runExclusive(fileId, async () => {
+      const entry = this.activeFiles.get(fileId);
+      if (!entry) {
+        throw new Error(`File not found: ${fileId}`);
+      }
+
+      const { file } = entry;
+      return this.openFile(
+        entry.path,
+        {
+          ...file.settings,
+          autoSave: entry.autoSave,
+          schemaDirectory: this._schemaDirectory,
+        },
+        { fileId },
+      );
+    });
   }
 
   /**
@@ -1460,6 +1499,17 @@ class FranchiseFileManager {
   }
 
   /**
+   * Remove the file's file-changed notification.
+   * @param {string} fileId
+   * @private
+   */
+  _removeFileChanged(fileId) {
+    this._notificationStore?.removeWhere(
+      (n) => n.kind === "file-changed" && n.fileId === fileId,
+    );
+  }
+
+  /**
    * Add a schema-missing notification for a file that could not be opened.
    * Keeps only the year/type overrides, so a retry doesn't ask for them again.
    * @param {string} filePath
@@ -1625,12 +1675,34 @@ class FranchiseFileManager {
       async (event, fileId, newPath) => {
         try {
           const path = await this.saveFileAsAndOpen(fileId, newPath);
+          this._removeFileChanged(fileId);
           return { path };
         } catch (err) {
           return { error: err.message };
         }
       },
     );
+
+    loggedIpc.handle("franchise:reload-file", async (event, fileId) => {
+      try {
+        const result = await this.reloadFile(fileId);
+        this._removeFileChanged(fileId);
+        const file = this.getFile(fileId);
+        if (!file?.settings?.schemaOverride) {
+          // add replaces an existing mismatch for the file
+          if (checkSchemaMismatch(file).hasMismatch) {
+            this._notifyIfSchemaMismatch(fileId);
+          } else {
+            this._notificationStore?.removeWhere(
+              (n) => n.kind === "schema-mismatch" && n.fileId === fileId,
+            );
+          }
+        }
+        return result;
+      } catch (err) {
+        return { error: err.message };
+      }
+    });
 
     loggedIpc.handle(
       "franchise:load-schema",
