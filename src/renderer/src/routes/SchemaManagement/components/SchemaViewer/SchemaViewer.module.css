@@ -1,0 +1,198 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+@import '@assets/typography.css';
+
+.viewer {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    background-color: var(--white);
+    border-left: 1px solid var(--divider-color);
+}
+
+.header {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-4);
+    border-bottom: 1px solid var(--divider-color);
+}
+
+.title {
+    margin: 0;
+    font: var(--font-large);
+}
+
+.iconButton {
+    display: inline-flex;
+    flex-shrink: 0;
+    padding: var(--spacing-1);
+    color: var(--text-secondary);
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+
+    &:hover,
+    &:focus-visible {
+        color: var(--text-primary);
+        background-color: var(--white-smoke);
+    }
+
+    svg {
+        width: 10px;
+        height: 10px;
+    }
+}
+
+.filters {
+    display: flex;
+    flex-shrink: 0;
+    flex-direction: column;
+    row-gap: var(--spacing-2);
+    padding: var(--spacing-3) var(--spacing-4);
+    border-bottom: 1px solid var(--divider-color);
+}
+
+.inputs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-2);
+}
+
+.filter {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    row-gap: var(--spacing-1);
+    min-width: 140px;
+
+    label {
+        font: var(--font-small);
+        color: var(--text-secondary);
+    }
+
+    input {
+        min-width: 0;
+        padding: var(--spacing-1) var(--spacing-2);
+        font: var(--font-body);
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+    }
+}
+
+.filterFooter {
+    display: flex;
+    column-gap: var(--spacing-4);
+    align-items: center;
+    justify-content: space-between;
+}
+
+.hint {
+    font: var(--font-small);
+    color: var(--text-secondary);
+}
+
+.count {
+    flex-shrink: 0;
+    padding: var(--spacing-2) var(--spacing-4);
+    margin: 0;
+    font: var(--font-small);
+    color: var(--text-secondary);
+}
+
+.table {
+    display: flex;
+    flex-grow: 1;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.columns {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: var(--spacing-2);
+    padding: 0 var(--spacing-4);
+}
+
+.headerRow {
+    flex-shrink: 0;
+    border-top: 1px solid var(--divider-color);
+    border-bottom: 1px solid var(--divider-color);
+}
+
+.columnHeader button {
+    width: 100%;
+    padding: var(--spacing-2) 0;
+    font: var(--font-body);
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+    background: none;
+    border: none;
+
+    &:hover {
+        color: var(--link);
+    }
+}
+
+.body {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+/* ROW_HEIGHT in SchemaViewer.tsx */
+.row {
+    box-sizing: border-box;
+    align-items: center;
+    height: 28px;
+    border-bottom: 1px solid var(--white-smoke);
+}
+
+.cell {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cellLink {
+    max-width: 100%;
+    padding: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font: inherit;
+    color: var(--link);
+    white-space: nowrap;
+    cursor: pointer;
+    background: none;
+    border: none;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+.empty,
+.message {
+    padding: var(--spacing-4);
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.message p {
+    margin: 0 0 var(--spacing-2);
+}
+
+.detail {
+    font: var(--font-small);
+    overflow-wrap: anywhere;
+}
+
+/* Loader covers its nearest positioned ancestor */
+.loading {
+    position: relative;
+    flex-grow: 1;
+    min-height: 0;
+}
