@@ -17,6 +17,27 @@
     color: var(--danger);
 }
 
+.icons {
+    display: inline-flex;
+    column-gap: 4px;
+    align-items: center;
+}
+
+.view {
+    display: inline-flex;
+    padding: 2px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    background: none;
+    border: none;
+}
+
+.view:hover,
+.view:focus-visible,
+.viewing {
+    color: var(--text-link);
+}
+
 .bundled {
     display: inline-flex;
     padding: 2px;

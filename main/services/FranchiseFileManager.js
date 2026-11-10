@@ -40,6 +40,9 @@ class FranchiseFileManager {
     this._ensureSchemaDirectory();
     this._loggedIpc = {};
     this._notificationStore = null;
+    // Resolved lowercase schema path -> built { meta, fields }, oldest first
+    // (see getSchemaFields); capped at 3 since a big schema is ~21k rows
+    this._schemaFieldsCache = new Map();
   }
 
   /**
@@ -684,16 +687,7 @@ class FranchiseFileManager {
    * @returns {Promise<{meta: {gameYear: number, major: number, minor: number}, savedPath: string, matchesExpected: boolean}>}
    */
   async addSchema(fileId, schemaPath) {
-    const schema = new FranchiseSchema(schemaPath);
-    await new Promise((resolve, reject) => {
-      // Listen before evaluate(); the .gz path emits synchronously
-      schema.once("schemas:done", resolve);
-      try {
-        schema.evaluate();
-      } catch (err) {
-        reject(err);
-      }
-    });
+    const schema = await this._parseSchemaFile(schemaPath);
 
     if (!schema.meta) {
       throw new Error("Schema file has no version information");
@@ -714,6 +708,105 @@ class FranchiseFileManager {
         expected.gameYear === gameYear);
 
     return { meta: { gameYear, major, minor }, savedPath, matchesExpected };
+  }
+
+  /**
+   * Read a schema file into a FranchiseSchema, without a franchise file
+   * @param {string} schemaPath
+   * @returns {Promise<FranchiseSchema>}
+   * @private
+   */
+  async _parseSchemaFile(schemaPath) {
+    const schema = new FranchiseSchema(schemaPath);
+    await new Promise((resolve, reject) => {
+      // Listen before evaluate(); the .gz path emits synchronously
+      schema.once("schemas:done", resolve);
+      try {
+        schema.evaluate();
+      } catch (err) {
+        reject(err);
+      }
+    });
+    return schema;
+  }
+
+  /**
+   * List every field of a schema as { name, table, type } rows, tables sorted
+   * by name. A path must be one of the known schemas (so the renderer can't
+   * make main parse arbitrary files); a fileId reads the open file's schema,
+   * which is the only way to reach an embedded one.
+   * @param {{path: string}|{fileId: string}} source
+   * @returns {Promise<{meta: {gameYear: number, major: number, minor: number}|null, fields: Array<{name: string, table: string, type: string}>}>}
+   */
+  async getSchemaFields(source) {
+    const keys =
+      source && typeof source === "object" ? Object.keys(source) : [];
+    const hasPath = keys.length === 1 && typeof source.path === "string";
+    const hasFileId = keys.length === 1 && typeof source.fileId === "string";
+    if (!hasPath && !hasFileId) {
+      throw new Error("Invalid schema source");
+    }
+
+    let schema;
+    let cacheKey = null;
+    if (hasPath) {
+      cacheKey = path.resolve(source.path).toLowerCase();
+      const known = this.getSavedSchemas().some(
+        (s) => path.resolve(s.path).toLowerCase() === cacheKey,
+      );
+      if (!known) {
+        throw new Error(`Not a known schema: ${source.path}`);
+      }
+      const hit = this._schemaFieldsCache.get(cacheKey);
+      if (hit) {
+        // Move to newest
+        this._schemaFieldsCache.delete(cacheKey);
+        this._schemaFieldsCache.set(cacheKey, hit);
+        return hit;
+      }
+      schema = await this._parseSchemaFile(source.path);
+    } else {
+      const entry = this.activeFiles.get(source.fileId);
+      if (!entry) {
+        throw new Error("File not found");
+      }
+      schema = entry.file.schemaList;
+      if (!schema) {
+        throw new Error("File has no schema");
+      }
+    }
+
+    const meta = schema.meta
+      ? {
+          gameYear: schema.meta.gameYear,
+          major: schema.meta.major,
+          minor: schema.meta.minor,
+        }
+      : null;
+    const tables = [...(schema.schemas ?? [])].sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+    );
+    const fields = [];
+    for (const table of tables) {
+      for (const attr of table.attributes ?? []) {
+        // The M19 schema has a hole in one attributes array
+        if (!attr) continue;
+        fields.push({
+          name: attr.name,
+          table: table.name,
+          type: attr.type ?? "",
+        });
+      }
+    }
+    const result = { meta, fields };
+
+    if (cacheKey) {
+      this._schemaFieldsCache.set(cacheKey, result);
+      while (this._schemaFieldsCache.size > 3) {
+        this._schemaFieldsCache.delete(this._schemaFieldsCache.keys().next().value);
+      }
+    }
+    return result;
   }
 
   /**
@@ -789,6 +882,7 @@ class FranchiseFileManager {
     }
 
     await fs.promises.unlink(resolved);
+    this._schemaFieldsCache.delete(key);
   }
 
   /**
@@ -1574,6 +1668,14 @@ class FranchiseFileManager {
     // Schema operations
     loggedIpc.handle("franchise:get-saved-schemas", async () => {
       return this.getSavedSchemas();
+    });
+
+    loggedIpc.handle("schema:get-fields", async (event, source) => {
+      try {
+        return await this.getSchemaFields(source);
+      } catch (e) {
+        return { error: e.message };
+      }
     });
 
     loggedIpc.handle(

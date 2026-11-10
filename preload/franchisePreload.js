@@ -325,6 +325,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   schema: {
     initialize: () => ipcRenderer.invoke("schema:initialize"),
     delete: (schemaPath) => ipcRenderer.invoke("schema:delete", schemaPath),
+    getFields: (source) => ipcRenderer.invoke("schema:get-fields", source),
   },
 
   // Schema search operations

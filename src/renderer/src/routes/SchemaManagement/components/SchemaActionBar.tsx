@@ -5,12 +5,14 @@ import List from '@renderer/components/List/List';
 interface Props {
     onOpenDirectory: () => void;
     onRefresh: () => void;
+    onViewLoaded?: () => void;
 }
 
 // Not sticky itself: the page sticks it together with the loaded card
 const SchemaActionBar: React.FC<Props> = ({
     onOpenDirectory,
-    onRefresh
+    onRefresh,
+    onViewLoaded
 }: Props) => (
     <Card
         border='black'
@@ -22,6 +24,16 @@ const SchemaActionBar: React.FC<Props> = ({
             divider='solid'
             gap='5'
             items={[
+                ...(onViewLoaded
+                    ? [
+                          <Link
+                              data-action='view-loaded-schema'
+                              key='view-loaded-schema'
+                              onClick={onViewLoaded}
+                              text='View loaded schema'
+                          />
+                      ]
+                    : []),
                 <Link
                     data-action='open-schema-directory'
                     key='open-schema-directory'

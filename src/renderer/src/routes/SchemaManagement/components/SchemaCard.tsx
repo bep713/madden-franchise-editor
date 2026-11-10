@@ -7,8 +7,9 @@ import List from '@renderer/components/List/List';
 import Text from '@renderer/components/Text/Text';
 import Bundled from '@assets/icons/bundled.svg?react';
 import Check from '@assets/icons/check.svg?react';
+import Eye from '@assets/icons/eye.svg?react';
 import Trash from '@assets/icons/trash.svg?react';
-import { isLoaded } from '../schemaList';
+import { isLoaded, samePath } from '../schemaList';
 
 import styles from './SchemaCard.module.css';
 
@@ -27,6 +28,10 @@ interface Props {
     picking?: boolean;
     onLoad: (entry: SchemaEntry) => void;
     onDelete: (entry: SchemaEntry) => void;
+    // Shows an eye on every row that opens the schema's fields
+    onView?: (entry: SchemaEntry) => void;
+    // The schema the viewer shows, if any
+    viewingPath?: string;
 }
 
 const SchemaCard: React.FC<Props> = ({
@@ -37,16 +42,20 @@ const SchemaCard: React.FC<Props> = ({
     metadata,
     picking = false,
     onLoad,
-    onDelete
+    onDelete,
+    onView,
+    viewingPath
 }: Props) => {
     const items = schemas.map((entry) => {
         const label = labelFor(entry);
         const loaded = isLoaded(entry, metadata);
+        const viewing = !!onView && samePath(entry.path, viewingPath);
         return (
             <div
                 className={styles.row}
                 data-loaded={loaded || undefined}
                 data-name={label}
+                data-viewing={viewing || undefined}
                 key={entry.path}
             >
                 <Layout
@@ -60,41 +69,59 @@ const SchemaCard: React.FC<Props> = ({
                     ) : (
                         <Text weight={loaded ? 'bold' : 'normal'}>{label}</Text>
                     )}
-                    {entry.source === 'custom' && !loaded && (
-                        <button
-                            aria-label={`Delete ${label}`}
-                            className={styles.delete}
-                            data-action='delete-schema'
-                            onClick={() => onDelete(entry)}
-                            title='Delete'
-                            type='button'
-                        >
-                            <Trash />
-                        </button>
-                    )}
-                    {/* These sit where the trash would, to say why there is none */}
-                    {entry.source === 'custom' && loaded && (
-                        <span
-                            aria-label={ACTIVE_HINT}
-                            className={styles.active}
-                            data-testid='active-schema'
-                            role='img'
-                            title={ACTIVE_HINT}
-                        >
-                            <Check />
-                        </span>
-                    )}
-                    {entry.source === 'bundled' && (
-                        <span
-                            aria-label={BUNDLED_HINT}
-                            className={styles.bundled}
-                            data-testid='bundled-schema'
-                            role='img'
-                            title={BUNDLED_HINT}
-                        >
-                            <Bundled />
-                        </span>
-                    )}
+                    <span className={styles.icons}>
+                        {onView && (
+                            <button
+                                aria-label={`View ${label}`}
+                                className={
+                                    viewing
+                                        ? `${styles.view} ${styles.viewing}`
+                                        : styles.view
+                                }
+                                data-action='view-schema'
+                                onClick={() => onView(entry)}
+                                title='View fields'
+                                type='button'
+                            >
+                                <Eye />
+                            </button>
+                        )}
+                        {entry.source === 'custom' && !loaded && (
+                            <button
+                                aria-label={`Delete ${label}`}
+                                className={styles.delete}
+                                data-action='delete-schema'
+                                onClick={() => onDelete(entry)}
+                                title='Delete'
+                                type='button'
+                            >
+                                <Trash />
+                            </button>
+                        )}
+                        {/* These sit where the trash would, to say why there is none */}
+                        {entry.source === 'custom' && loaded && (
+                            <span
+                                aria-label={ACTIVE_HINT}
+                                className={styles.active}
+                                data-testid='active-schema'
+                                role='img'
+                                title={ACTIVE_HINT}
+                            >
+                                <Check />
+                            </span>
+                        )}
+                        {entry.source === 'bundled' && (
+                            <span
+                                aria-label={BUNDLED_HINT}
+                                className={styles.bundled}
+                                data-testid='bundled-schema'
+                                role='img'
+                                title={BUNDLED_HINT}
+                            >
+                                <Bundled />
+                            </span>
+                        )}
+                    </span>
                 </Layout>
             </div>
         );

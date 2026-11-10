@@ -1,3 +1,5 @@
+import type { SchemaMeta } from './franchise';
+
 // franchise:get-saved-schemas entries (FranchiseFileManager.getSavedSchemas)
 
 // bundled: shipped with madden-franchise; custom: in <userData>/schemas
@@ -11,4 +13,19 @@ export interface SchemaEntry {
     minor: number;
     path: string;
     source: SchemaSource;
+}
+
+// electronAPI.schema.getFields entries and result
+export interface SchemaField {
+    name: string;
+    table: string;
+    // '' when the schema has none
+    type: string;
+}
+
+export type SchemaFieldsSource = { path: string } | { fileId: string };
+
+export interface SchemaFieldsResult {
+    meta: SchemaMeta | null;
+    fields: SchemaField[];
 }

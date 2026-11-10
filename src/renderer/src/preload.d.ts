@@ -17,6 +17,8 @@ import type {
     ReadTableDataResult,
     SaveFileResult,
     SchemaEntry,
+    SchemaFieldsResult,
+    SchemaFieldsSource,
     SetNextRecordResult,
     SetRecordsEmptyResult,
     TableListItem,
@@ -199,6 +201,10 @@ declare global {
                 delete: (
                     schemaPath: string
                 ) => Promise<{ success: true } | ErrorResult>;
+                // Bundled or custom schema by path, or an open file's embedded schema
+                getFields: (
+                    source: SchemaFieldsSource
+                ) => Promise<SchemaFieldsResult | { error: string }>;
             };
             files: {
                 getSaves: () => Promise<GameSaveResponse>;
