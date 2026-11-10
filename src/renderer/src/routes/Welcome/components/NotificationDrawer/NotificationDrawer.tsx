@@ -6,7 +6,10 @@ import {
     pendingFromNotification,
     usePendingOpen
 } from '@renderer/context/PendingOpenContext';
-import { describeNotification } from '@renderer/notifications/describe';
+import {
+    describeNotification,
+    type NotificationLinkId
+} from '@renderer/notifications/describe';
 import { relativeTime } from '@renderer/notifications/relativeTime';
 import { useEditorTabs } from '@renderer/tabs/EditorTabsContext';
 import { SCHEMA_MANAGEMENT_KEY } from '@renderer/tabs/editorTabs';
@@ -33,11 +36,22 @@ const NotificationDrawer: React.FC<Props> = ({
     const [unread, setUnread] = useState<ReadonlySet<string>>(new Set());
 
     // The drawer marks everything read already
-    function linkAction(n: AppNotification): void {
-        if (n.kind === 'schema-missing') {
-            setPending?.(pendingFromNotification(n));
+    function linkAction(n: AppNotification, id: NotificationLinkId): void {
+        switch (id) {
+            case 'pick-schema':
+                if (n.kind === 'schema-missing') {
+                    setPending?.(pendingFromNotification(n));
+                }
+                editorTabs.selectTab(SCHEMA_MANAGEMENT_KEY);
+                break;
+            case 'open-schemas':
+                editorTabs.selectTab(SCHEMA_MANAGEMENT_KEY);
+                break;
+            case 'reload':
+            case 'branch':
+                // Wired up in 04r4
+                break;
         }
-        editorTabs.selectTab(SCHEMA_MANAGEMENT_KEY);
     }
 
     useEffect(() => {
@@ -117,14 +131,22 @@ const NotificationDrawer: React.FC<Props> = ({
                                     >
                                         {text.description}
                                     </p>
-                                    <button
-                                        className={styles.link}
-                                        data-action='notification-link'
-                                        onClick={() => linkAction(n)}
-                                        type='button'
-                                    >
-                                        {text.linkLabel}
-                                    </button>
+                                    <div className={styles.links}>
+                                        {text.links.map((link) => (
+                                            <button
+                                                className={styles.link}
+                                                data-action='notification-link'
+                                                data-link={link.id}
+                                                key={link.id}
+                                                onClick={() =>
+                                                    linkAction(n, link.id)
+                                                }
+                                                type='button'
+                                            >
+                                                {link.label}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                                 <button
                                     aria-label={`Dismiss ${text.title}`}

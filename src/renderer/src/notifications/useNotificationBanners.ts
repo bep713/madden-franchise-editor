@@ -44,6 +44,14 @@ function actionsFor(
                     }
                 }
             ];
+        case 'file-changed':
+            // 04r4 adds Branch and Reload
+            return [
+                {
+                    label: 'Dismiss',
+                    onClick: () => window.electronAPI.notifications.dismiss(n.id)
+                }
+            ];
     }
 }
 

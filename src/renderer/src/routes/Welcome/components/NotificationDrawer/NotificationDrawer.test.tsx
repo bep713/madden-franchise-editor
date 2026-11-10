@@ -236,6 +236,38 @@ describe('NotificationDrawer', () => {
         expect(selectTab).toHaveBeenCalledExactlyOnceWith('schema-management');
     });
 
+    it('renders one link per entry, each with its data-link', async () => {
+        items = [
+            notification('a'),
+            {
+                id: 'f',
+                kind: 'file-changed',
+                createdAt: NOW,
+                read: false,
+                data: { path: 'C:/saves/FTC' }
+            }
+        ];
+        render(<Harness />);
+        await waitFor(() => expect(item('f')).not.toBeNull());
+        const links = (id: string) =>
+            [
+                ...item(id).querySelectorAll(
+                    '[data-action="notification-link"]'
+                )
+            ].map((el) => [el.getAttribute('data-link'), el.textContent]);
+        expect(links('a')).toEqual([
+            ['open-schemas', 'Open Schema Management']
+        ]);
+        expect(links('f')).toEqual([
+            ['reload', 'Reload'],
+            ['branch', 'Branch and save new']
+        ]);
+        await userEvent.click(
+            within(item('f')).getByRole('button', { name: 'Reload' })
+        );
+        expect(selectTab).not.toHaveBeenCalled();
+    });
+
     it('closes from the close button', async () => {
         render(<Harness />);
         await userEvent.click(

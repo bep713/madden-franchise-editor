@@ -27,7 +27,7 @@ describe('describeNotification schema-mismatch', () => {
         expect(describeNotification(mismatch())).toEqual({
             title: 'Schema Mismatch',
             description: 'Loaded M22 v329.1, expected M22 v328.1.',
-            linkLabel: 'Open Schema Management',
+            links: [{ id: 'open-schemas', label: 'Open Schema Management' }],
             bannerMessage:
                 "We cannot find an exact match for this file's schema. Open the schema management page?",
             bannerSeverity: 'error'
@@ -81,7 +81,7 @@ describe('describeNotification schema-missing', () => {
             title: 'Schema Missing',
             description:
                 'FTC-E2ETEST could not be opened because no schema exists for M18.',
-            linkLabel: 'Choose a schema',
+            links: [{ id: 'pick-schema', label: 'Choose a schema' }],
             bannerMessage:
                 'No schema was found for FTC-E2ETEST. Choose one on the Schema Management page?',
             bannerSeverity: 'error'
@@ -102,5 +102,29 @@ describe('describeNotification schema-missing', () => {
             missing({ game: { gameYear: 26, gameType: 'college' } })
         );
         expect(description).toContain('no schema exists for C26.');
+    });
+});
+
+describe('describeNotification file-changed', () => {
+    it('names the file and offers reload and branch', () => {
+        const n: AppNotification = {
+            id: 'n3',
+            kind: 'file-changed',
+            createdAt: 0,
+            read: false,
+            fileId: 'file-1',
+            data: { path: 'C:\\saves\\CAREER-TEST' }
+        };
+        expect(describeNotification(n)).toEqual({
+            title: 'File Changed',
+            description: 'CAREER-TEST was changed outside the editor.',
+            links: [
+                { id: 'reload', label: 'Reload' },
+                { id: 'branch', label: 'Branch and save new' }
+            ],
+            bannerMessage:
+                'This save file has been modified outside of this program. Do you want to reload the file?',
+            bannerSeverity: 'info'
+        });
     });
 });

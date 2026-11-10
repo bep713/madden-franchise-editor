@@ -51,6 +51,7 @@ const {
 const {
   createNotificationStore,
 } = require("./main/services/notificationStore");
+const { createFileWatcher } = require("./main/services/fileWatcher");
 const { registerFilesHandlers } = require("./main/handlers/filesHandler");
 const {
   createLoggedIpcMain,
@@ -385,7 +386,11 @@ let currentFilePath = "";
 let currentFileId = "";
 let waitForFileSaved = false;
 let pendingSaves = [];
-let baseFileWatcher;
+const fileWatcher = createFileWatcher({
+  send: (channel, payload) => loggedMain?.send(channel, payload),
+  store: notificationStore,
+  shouldIgnore: () => waitForFileSaved || pendingSaves.length > 0,
+});
 
 function createWindow() {
   startupProfiler.mark("main:create-window-start");
@@ -442,9 +447,7 @@ function createWindow() {
     if (settingsWindow) settingsWindow.destroy();
     settingsWindow = null;
 
-    if (baseFileWatcher) {
-      baseFileWatcher.close();
-    }
+    fileWatcher.close();
 
     app.quit();
   });
@@ -634,9 +637,7 @@ function addIpcListeners() {
       schemaWindow.close();
     }
 
-    if (baseFileWatcher) {
-      baseFileWatcher.close();
-    }
+    fileWatcher.close();
   });
 
   ipcMain.on("file-loaded", function (event, file) {
@@ -648,7 +649,7 @@ function addIpcListeners() {
     setCurrentWindowTitle(`${baseWindowTitle} - ${currentFilePath}`);
     enableFileMenuItems();
     startupProfiler.mark("open:watch-start");
-    watchFile(currentFilePath);
+    fileWatcher.watch(currentFilePath, currentFileId);
     startupProfiler.mark("open:watch-end");
   });
 
@@ -1234,16 +1235,3 @@ ipcMain.on("menu:disable", (event, ids) => {
   if (Array.isArray(ids)) disableMenuIds(ids);
 });
 
-function watchFile(filePath) {
-  if (baseFileWatcher) {
-    baseFileWatcher.close();
-  }
-
-  // chokidar is required here, not at startup, to keep it off the boot path.
-  const chokidar = require("chokidar");
-  baseFileWatcher = chokidar.watch(filePath).on("change", (path) => {
-    if (!waitForFileSaved && pendingSaves.length === 0) {
-      loggedMain.send("file-changed", path);
-    }
-  });
-}

@@ -21,6 +21,10 @@ export interface SchemaMissingData {
     game?: { gameYear: number; gameType: string };
 }
 
+export interface FileChangedData {
+    path: string;
+}
+
 interface NotificationBase {
     id: string;
     createdAt: number; // ms epoch
@@ -30,6 +34,7 @@ interface NotificationBase {
 
 export type AppNotification =
     | (NotificationBase & { kind: 'schema-mismatch'; data: SchemaMismatchData })
-    | (NotificationBase & { kind: 'schema-missing'; data: SchemaMissingData });
+    | (NotificationBase & { kind: 'schema-missing'; data: SchemaMissingData })
+    | (NotificationBase & { kind: 'file-changed'; data: FileChangedData });
 
 export type NotificationKind = AppNotification['kind'];

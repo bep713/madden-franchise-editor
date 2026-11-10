@@ -90,6 +90,13 @@ class NotificationDrawer {
     await this.item(id).locator('[data-action="notification-link"]').click();
   }
 
+  // A specific link of a notification, by its data-link id
+  async clickNotificationLink(id, linkId) {
+    await this.item(id)
+      .locator(`[data-action="notification-link"][data-link="${linkId}"]`)
+      .click();
+  }
+
   async dismiss(id) {
     await this.item(id).locator('[data-action="dismiss-notification"]').click();
   }
