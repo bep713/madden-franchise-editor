@@ -1,7 +1,12 @@
-import { useContext, useMemo } from 'react';
+import { useContext, useMemo, useState } from 'react';
+import { Allotment } from 'allotment';
 import cx from 'classnames';
 import games from '@data/games.json';
-import type { GameVersion, SchemaEntry } from '@shared/types';
+import type {
+    GameVersion,
+    SchemaEntry,
+    SchemaFieldsSource
+} from '@shared/types';
 
 import GameGrid from '@renderer/components/GameGrid/GameGrid';
 import Headline from '@renderer/components/Headline/Headline';
@@ -17,19 +22,36 @@ import LoadedSchemaCard from './components/LoadedSchemaCard';
 import PendingFileCard from './components/PendingFileCard';
 import SchemaActionBar from './components/SchemaActionBar';
 import SchemaCard from './components/SchemaCard';
+import SchemaViewer from './components/SchemaViewer/SchemaViewer';
 import {
     findExpectedSchema,
     groupSchemas,
     isLoaded,
     loadedLabel,
+    samePath,
     schemaLabel
 } from './schemaList';
+import { EMPTY_FILTERS, type FieldFilters } from './schemaViewer';
 import useSchemaList from './useSchemaList';
 
 import styles from './SchemaManagement.module.scss';
 
 // 0 is the first button, Load/Delete; Cancel is the default
 const CONFIRM = 0;
+
+interface Viewing {
+    source: SchemaFieldsSource;
+    // The header when no list entry has the source's path
+    fallbackLabel: string;
+    // An embedded schema belongs to this revision of the file
+    fileRevision?: number;
+}
+
+function viewingPathOf(viewing: Viewing | null): string | undefined {
+    return viewing && 'path' in viewing.source
+        ? viewing.source.path
+        : undefined;
+}
 
 const SchemaManagement: React.FC = () => {
     const [openFile, setOpenFile] = useContext(FranchiseFileContext);
@@ -49,6 +71,58 @@ const SchemaManagement: React.FC = () => {
     const labelFor = (entry: SchemaEntry): string =>
         schemaLabel(entry, entries, schemaDir);
     const expectedEntry = findExpectedSchema(entries, metadata);
+
+    const [viewing, setViewing] = useState<Viewing | null>(null);
+    // Kept when the pane switches schemas, reset when it closes
+    const [filters, setFilters] = useState<FieldFilters>(EMPTY_FILTERS);
+    const viewingPath = viewingPathOf(viewing);
+    const viewingEntry = viewingPath
+        ? entries.find((entry) => samePath(entry.path, viewingPath))
+        : undefined;
+
+    function closeViewer(): void {
+        setViewing(null);
+        setFilters(EMPTY_FILTERS);
+    }
+
+    function viewEntry(entry: SchemaEntry): void {
+        if (samePath(entry.path, viewingPath)) return;
+        setViewing({
+            source: { path: entry.path },
+            fallbackLabel: labelFor(entry)
+        });
+    }
+
+    // By path when the list has the loaded schema, so it stays on it after
+    // another load. Otherwise (embedded, or outside both dirs) by file.
+    function viewLoaded(): void {
+        if (!openFile) return;
+        const entry = entries.find((e) => isLoaded(e, metadata));
+        if (entry) {
+            viewEntry(entry);
+            return;
+        }
+        setViewing({
+            source: { fileId: openFile.fileId },
+            fallbackLabel: loadedLabel(metadata, entries, schemaDir),
+            fileRevision: openFile.revision
+        });
+    }
+
+    // Closes the pane during render, as SchemaViewer resets its sort:
+    // - a refresh or a delete dropped the viewed path. The pane only opens
+    //   once the list has loaded, so the initial empty list can't close it.
+    // - an embedded schema's file closed, changed or reloaded (new revision).
+    //   A path stays on its schema.
+    const stale =
+        !!viewing &&
+        ('path' in viewing.source
+            ? !viewingEntry
+            : viewing.source.fileId !== openFile?.fileId ||
+              viewing.fileRevision !== openFile?.revision);
+    if (stale) {
+        closeViewer();
+    }
 
     async function confirm(
         message: string,
@@ -166,6 +240,8 @@ const SchemaManagement: React.FC = () => {
             const result = await window.electronAPI.schema.delete(entry.path);
             if ('error' in result) {
                 await showError('Could not delete the schema.', result.error);
+            } else if (samePath(entry.path, viewingPath)) {
+                closeViewer();
             }
         } catch (error) {
             await showError('Could not delete the schema.', error);
@@ -187,94 +263,144 @@ const SchemaManagement: React.FC = () => {
         metadata,
         picking: !!pending,
         onLoad: pending ? handlePick : handleLoad,
-        onDelete: handleDelete
+        onDelete: handleDelete,
+        onView: viewEntry,
+        viewingPath
     };
     const hasTopCard = !!pending || !!metadata;
 
     return (
         <div className={styles.page}>
             <Headline size='default' text='Schema Management' />
-            <main className={styles.main}>
-                <Layout alignItems='stretch' direction='column' rowGap='4'>
-                    <Sticky placement='top'>
-                        <div className={styles.topRow}>
-                            <GameGrid className={styles.topGrid}>
-                                <div
-                                    className={cx(styles.cell, {
-                                        [styles.actionsWithCard]: hasTopCard,
-                                        [styles.actionsFull]: !hasTopCard
-                                    })}
-                                >
-                                    <SchemaActionBar
-                                        onOpenDirectory={handleOpenDirectory}
-                                        onRefresh={refresh}
-                                    />
-                                </div>
-                                {pending && (
-                                    <div
-                                        className={cx(
-                                            styles.cell,
-                                            styles.loadedCard
-                                        )}
-                                    >
-                                        <PendingFileCard
-                                            onCancel={() =>
-                                                setPending?.(undefined)
-                                            }
-                                            pending={pending}
-                                        />
-                                    </div>
-                                )}
-                                {!pending && metadata && (
-                                    <div
-                                        className={cx(
-                                            styles.cell,
-                                            styles.loadedCard
-                                        )}
-                                    >
-                                        <LoadedSchemaCard
-                                            expectedEntry={
-                                                expectedEntry &&
-                                                !isLoaded(
-                                                    expectedEntry,
-                                                    metadata
-                                                )
-                                                    ? expectedEntry
-                                                    : null
-                                            }
-                                            loadedLabel={loadedLabel(
-                                                metadata,
-                                                entries,
-                                                schemaDir
+            <div className={styles.panes}>
+                <Allotment
+                    onVisibleChange={(index, visible) => {
+                        if (index === 1 && !visible) closeViewer();
+                    }}
+                >
+                    <Allotment.Pane>
+                        <main className={styles.main}>
+                            <Layout
+                                alignItems='stretch'
+                                direction='column'
+                                rowGap='4'
+                            >
+                                <Sticky placement='top'>
+                                    <div className={styles.topRow}>
+                                        <GameGrid className={styles.topGrid}>
+                                            <div
+                                                className={cx(styles.cell, {
+                                                    [styles.actionsWithCard]:
+                                                        hasTopCard,
+                                                    [styles.actionsFull]:
+                                                        !hasTopCard
+                                                })}
+                                            >
+                                                <SchemaActionBar
+                                                    onOpenDirectory={
+                                                        handleOpenDirectory
+                                                    }
+                                                    onRefresh={refresh}
+                                                    onViewLoaded={
+                                                        metadata?.schemaList
+                                                            ?.meta && !pending
+                                                            ? viewLoaded
+                                                            : undefined
+                                                    }
+                                                />
+                                            </div>
+                                            {pending && (
+                                                <div
+                                                    className={cx(
+                                                        styles.cell,
+                                                        styles.loadedCard
+                                                    )}
+                                                >
+                                                    <PendingFileCard
+                                                        onCancel={() =>
+                                                            setPending?.(
+                                                                undefined
+                                                            )
+                                                        }
+                                                        pending={pending}
+                                                    />
+                                                </div>
                                             )}
-                                            metadata={metadata}
-                                            onLoad={handleLoad}
-                                        />
+                                            {!pending && metadata && (
+                                                <div
+                                                    className={cx(
+                                                        styles.cell,
+                                                        styles.loadedCard
+                                                    )}
+                                                >
+                                                    <LoadedSchemaCard
+                                                        expectedEntry={
+                                                            expectedEntry &&
+                                                            !isLoaded(
+                                                                expectedEntry,
+                                                                metadata
+                                                            )
+                                                                ? expectedEntry
+                                                                : null
+                                                        }
+                                                        loadedLabel={loadedLabel(
+                                                            metadata,
+                                                            entries,
+                                                            schemaDir
+                                                        )}
+                                                        metadata={metadata}
+                                                        onLoad={handleLoad}
+                                                    />
+                                                </div>
+                                            )}
+                                        </GameGrid>
                                     </div>
-                                )}
-                            </GameGrid>
-                        </div>
-                    </Sticky>
-                    <GameGrid data-testid='schema-grid'>
-                        {groups.map(({ game, schemas }) => (
-                            <SchemaCard
-                                game={game}
-                                key={`${game.gameType}-${game.gameYear}`}
-                                schemas={schemas}
-                                title={`${game.shortTitle} Schemas`}
-                                {...cardProps}
-                            />
-                        ))}
-                        {other.length > 0 && (
-                            <SchemaCard
-                                schemas={other}
-                                title='Other schemas'
-                                {...cardProps}
+                                </Sticky>
+                                <GameGrid data-testid='schema-grid'>
+                                    {groups.map(({ game, schemas }) => (
+                                        <SchemaCard
+                                            game={game}
+                                            key={`${game.gameType}-${game.gameYear}`}
+                                            schemas={schemas}
+                                            title={`${game.shortTitle} Schemas`}
+                                            {...cardProps}
+                                        />
+                                    ))}
+                                    {other.length > 0 && (
+                                        <SchemaCard
+                                            schemas={other}
+                                            title='Other schemas'
+                                            {...cardProps}
+                                        />
+                                    )}
+                                </GameGrid>
+                            </Layout>
+                        </main>
+                    </Allotment.Pane>
+                    <Allotment.Pane
+                        minSize={360}
+                        preferredSize='45%'
+                        snap
+                        visible={!!viewing}
+                    >
+                        {/* No key per schema: the viewer resets its sort
+                            and keeps the old rows while the next load */}
+                        {viewing && (
+                            <SchemaViewer
+                                filters={filters}
+                                label={
+                                    viewingEntry
+                                        ? labelFor(viewingEntry)
+                                        : viewing.fallbackLabel
+                                }
+                                onClose={closeViewer}
+                                onFiltersChange={setFilters}
+                                source={viewing.source}
                             />
                         )}
-                    </GameGrid>
-                </Layout>
-            </main>
+                    </Allotment.Pane>
+                </Allotment>
+            </div>
             {loader}
             {commonFileModal}
         </div>

@@ -66,9 +66,11 @@ const SchemaViewer: React.FC<Props> = ({
     }
 
     const deferred = useDeferredValue(filters);
+    // Sort first, so typing a filter doesn't re-sort (filtering keeps order)
+    const sorted = useMemo(() => sortFields(fields, sort), [fields, sort]);
     const visible = useMemo(
-        () => sortFields(filterFields(fields, deferred), sort),
-        [fields, deferred, sort]
+        () => filterFields(sorted, deferred),
+        [sorted, deferred]
     );
 
     useEffect(() => {

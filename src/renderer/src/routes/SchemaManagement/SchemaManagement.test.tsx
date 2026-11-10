@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FileMetadata, SchemaEntry } from '@shared/types';
@@ -17,6 +17,15 @@ import SchemaManagement from './SchemaManagement';
 const openFileAt = vi.fn();
 vi.mock('@renderer/hooks/useOpenFile', () => ({
     default: () => openFileAt
+}));
+
+// AutoSizer measures 0x0 in jsdom, which renders no rows
+vi.mock('react-virtualized-auto-sizer', () => ({
+    default: ({
+        children
+    }: {
+        children: (size: { height: number; width: number }) => unknown;
+    }) => children({ height: 600, width: 400 })
 }));
 
 const DIR = 'C:\\userData\\schemas';
@@ -68,7 +77,11 @@ const electronAPI = {
     showMessageBox: vi.fn(),
     schema: {
         initialize: vi.fn(async () => DIR),
-        delete: vi.fn(async () => ({ success: true }))
+        delete: vi.fn(async () => ({ success: true })),
+        getFields: vi.fn(async () => ({
+            meta: null,
+            fields: [{ name: 'FirstName', table: 'Player', type: 'string' }]
+        }))
     },
     files: { openFolder: vi.fn(async () => undefined) }
 };
@@ -95,20 +108,26 @@ function PendingHarness({ initial }: { initial?: PendingOpen }) {
     );
 }
 
-async function setup(
-    current?: OpenFranchiseFile,
-    pending?: PendingOpen
-): Promise<void> {
-    render(
+function tree(current?: OpenFranchiseFile, pending?: PendingOpen) {
+    return (
         <FranchiseFileContext.Provider value={[current, setOpenFile]}>
             <PendingHarness initial={pending} />
         </FranchiseFileContext.Provider>
     );
+}
+
+async function setup(
+    current?: OpenFranchiseFile,
+    pending?: PendingOpen
+): Promise<(next?: OpenFranchiseFile) => void> {
+    const { rerender } = render(tree(current, pending));
     await screen.findByText('Madden 22 Schemas');
     // Labels use the schema dir once it arrives
     await waitFor(() =>
         expect(electronAPI.schema.initialize).toHaveBeenCalled()
     );
+    // Swaps the open file, as App's state would
+    return (next) => rerender(tree(next, pending));
 }
 
 function row(name: string): HTMLElement {
@@ -152,7 +171,9 @@ describe('SchemaManagement', () => {
         expect(
             screen.getByRole('button', { name: 'Delete M22 v329.1 (Custom)' })
         ).toBeTruthy();
-        expect(screen.getAllByRole('button')).toHaveLength(1);
+        expect(
+            document.querySelectorAll('[data-action="delete-schema"]')
+        ).toHaveLength(1);
     });
 
     it('marks bundled schemas as undeletable', async () => {
@@ -467,6 +488,142 @@ describe('SchemaManagement', () => {
             await waitFor(() => expect(openFileAt).toHaveBeenCalled());
             expect(currentPending).toEqual(PENDING);
             expect(screen.getByTestId('pending-file')).toBeTruthy();
+        });
+    });
+
+    describe('schema viewer', () => {
+        const viewer = (): HTMLElement | null =>
+            screen.queryByRole('complementary', { name: 'Schema viewer' });
+
+        const title = (): string | null =>
+            viewer()?.querySelector('h2')?.textContent ?? null;
+
+        const fieldInput = (): HTMLInputElement =>
+            screen.getByLabelText('Field') as HTMLInputElement;
+
+        const viewLoadedLink = (): HTMLElement | null =>
+            document.querySelector('[data-action="view-loaded-schema"]');
+
+        async function waitForViewer(): Promise<void> {
+            await screen.findByRole('complementary', {
+                name: 'Schema viewer'
+            });
+        }
+
+        async function view(name: string): Promise<void> {
+            await userEvent.click(
+                within(row(name)).getByRole('button', { name: `View ${name}` })
+            );
+            await waitForViewer();
+        }
+
+        it('hides View loaded schema without a file', async () => {
+            await setup();
+            expect(viewLoadedLink()).toBeNull();
+        });
+
+        it('hides View loaded schema while a file is pending', async () => {
+            await setup(file(metadata(BUNDLED.path)), {
+                path: 'C:\\saves\\FTC-TEST'
+            });
+            expect(viewLoadedLink()).toBeNull();
+        });
+
+        it('an eye opens the pane on that schema', async () => {
+            await setup();
+            expect(viewer()).toBeNull();
+            await view('M22 v329.1 (Custom)');
+            expect(title()).toBe('M22 v329.1 (Custom) Schema Viewer');
+            expect(row('M22 v329.1 (Custom)').dataset.viewing).toBeDefined();
+            expect(row('M22 v329.1').dataset.viewing).toBeUndefined();
+            expect(electronAPI.schema.getFields).toHaveBeenCalledWith({
+                path: CUSTOM.path
+            });
+        });
+
+        it('keeps the filters when switching schemas', async () => {
+            await setup();
+            await view('M22 v329.1');
+            await userEvent.type(fieldInput(), 'Name');
+            await view('M22 v329.0');
+            expect(title()).toBe('M22 v329.0 Schema Viewer');
+            expect(fieldInput().value).toBe('Name');
+        });
+
+        it('resets the filters when closed and reopened', async () => {
+            await setup();
+            await view('M22 v329.1');
+            await userEvent.type(fieldInput(), 'Name');
+            await userEvent.click(
+                screen.getByRole('button', { name: 'Close schema viewer' })
+            );
+            expect(viewer()).toBeNull();
+            expect(row('M22 v329.1').dataset.viewing).toBeUndefined();
+            await view('M22 v329.1');
+            expect(fieldInput().value).toBe('');
+        });
+
+        it('closes when the viewed custom schema is deleted', async () => {
+            await setup();
+            await view('M22 v329.1 (Custom)');
+            // The refresh still lists it, so only the delete closes the pane
+            await userEvent.click(
+                screen.getByRole('button', {
+                    name: 'Delete M22 v329.1 (Custom)'
+                })
+            );
+            await waitFor(() => expect(viewer()).toBeNull());
+        });
+
+        it('closes when a refresh drops the viewed schema', async () => {
+            await setup();
+            await view('M22 v329.0');
+            franchiseAPI.getSavedSchemas.mockResolvedValueOnce([
+                BUNDLED,
+                CUSTOM
+            ]);
+            await userEvent.click(
+                document.querySelector<HTMLElement>(
+                    '[data-action="refresh-schemas"]'
+                )!
+            );
+            await waitFor(() => expect(viewer()).toBeNull());
+        });
+
+        it('views the loaded schema by path when it is listed', async () => {
+            await setup(file(metadata(BUNDLED.path)));
+            await userEvent.click(viewLoadedLink()!);
+            await waitForViewer();
+            expect(title()).toBe('M22 v329.1 Schema Viewer');
+            expect(electronAPI.schema.getFields).toHaveBeenCalledWith({
+                path: BUNDLED.path
+            });
+            expect(row('M22 v329.1').dataset.viewing).toBeDefined();
+        });
+
+        it('views an embedded schema by file and closes on a reload', async () => {
+            const current = file(metadata(''));
+            const swap = await setup(current);
+            await userEvent.click(viewLoadedLink()!);
+            await waitForViewer();
+            expect(title()).toBe('M22 v329.1 Schema Viewer');
+            expect(electronAPI.schema.getFields).toHaveBeenCalledWith({
+                fileId: 'file-1'
+            });
+
+            act(() => swap({ ...current, revision: current.revision + 1 }));
+            await waitFor(() => expect(viewer()).toBeNull());
+        });
+
+        it('stays on the viewed schema when another one loads', async () => {
+            const swap = await setup(file(metadata(BUNDLED.path)));
+            await userEvent.click(viewLoadedLink()!);
+            await waitForViewer();
+
+            act(() => swap({ ...file(metadata(OLDER.path, 0)), revision: 3 }));
+            expect(title()).toBe('M22 v329.1 Schema Viewer');
+            expect(row('M22 v329.1').dataset.viewing).toBeDefined();
+            expect(row('M22 v329.1').dataset.loaded).toBeUndefined();
         });
     });
 });

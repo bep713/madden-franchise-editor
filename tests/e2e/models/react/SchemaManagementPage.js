@@ -118,6 +118,29 @@ class SchemaManagementPage {
     await this.row(name).locator('[data-action="delete-schema"]').click();
   }
 
+  // Opens the schema viewer on this row's schema
+  async viewSchema(name) {
+    await this.row(name).locator('[data-action="view-schema"]').click();
+  }
+
+  async isViewingRow(name) {
+    return (await this.row(name).getAttribute("data-viewing")) !== null;
+  }
+
+  viewLoadedLink() {
+    return this.locators.actionBar.locator(
+      '[data-action="view-loaded-schema"]',
+    );
+  }
+
+  async hasViewLoadedLink() {
+    return (await this.viewLoadedLink().count()) > 0;
+  }
+
+  async viewLoaded() {
+    await this.viewLoadedLink().click();
+  }
+
   async refresh() {
     await this.locators.actionBar
       .locator('[data-action="refresh-schemas"]')

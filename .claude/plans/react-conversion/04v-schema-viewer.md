@@ -45,7 +45,7 @@ Decisions (confirmed with the user):
 | 04v2 | Shared TS types, `preload.d.ts`, pure utils `schemaViewer.ts` (filter, sort, reference lookup) + vitest | [04v2-viewer-utils.md](04v2-viewer-utils.md) | Done (uncommitted) |
 | 04v3 | Eye icon on every `SchemaCard` row, `eye.svg`, `SchemaActionBar` "View loaded schema" link (props only, not wired) | [04v3-card-eye-actions.md](04v3-card-eye-actions.md) | Done (uncommitted) |
 | 04v4 | `useSchemaFields` hook + `SchemaViewer` component (header, filters, count, sortable headers, virtualized rows, states) | [04v4-viewer-component.md](04v4-viewer-component.md) | Done (uncommitted) |
-| 04v5 | Page wiring: `Allotment` pane, `viewing` state, open/close lifecycle, filters held by the page, e2e spec | [04v5-page-wiring.md](04v5-page-wiring.md) | Not started |
+| 04v5 | Page wiring: `Allotment` pane, `viewing` state, open/close lifecycle, filters held by the page, e2e spec | [04v5-page-wiring.md](04v5-page-wiring.md) | Done (uncommitted) |
 
 ## Order
 - **Wave 1 (parallel):** 04v1, 04v2 and 04v3 touch disjoint files.
