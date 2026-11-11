@@ -8,6 +8,7 @@ const electron = require("../../util/Electron");
 const FilePaths = require("../../util/FilePaths");
 const { waitForFile } = require("../../util/FileCompare");
 const { poll } = require("../../util/poll");
+const { readSavedTable } = require("../../util/diskReader");
 
 const App = require("../../models/App");
 const WelcomePage = require("../../models/react/WelcomePage");
@@ -296,7 +297,7 @@ test("the orientation belongs to the tab's current table (react)", async () => {
 test("export and import from the inverted view use the normal layout (react)", async () => {
   test.setTimeout(150 * 1000);
   // openExcelAfterImport defaults to on, which would open Excel
-  let tableEditor = await openInverted(TEAM, {
+  const tableEditor = await openInverted(TEAM, {
     general: { openExcelAfterImport: [] },
   });
 
@@ -335,13 +336,10 @@ test("export and import from the inverted view use the normal layout (react)", a
   await tableEditor.switchOrientation();
   expect(await textAt(tableEditor, "LongName", 5)).to.equal("InvertedImport");
 
-  // 9. saved; a reopened table starts normal
+  // 9. saved
   await app.saveFile();
-  await electronApp.close();
-  tableEditor = await openTableEditor();
-  await tableEditor.openTableById(TEAM);
-  expect(await tableEditor.isInverted()).to.equal(false);
-  expect(await textAt(tableEditor, "LongName", 5)).to.equal("InvertedImport");
+  const saved = await readSavedTable(careerPath, TEAM, ["LongName"]);
+  expect(saved.records[5].LongName).to.equal("InvertedImport");
 });
 
 test("a paste past the grid's edge is clipped in both views (react)", async () => {

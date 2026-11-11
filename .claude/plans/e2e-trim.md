@@ -2,6 +2,15 @@
 
 Follows `.claude/plans/e2e-speedup.md` (steps 1–3 done: sandbox, clipboard lock, parallel workers). This plan replaces that plan's steps 4–7. Its step 8 (sharding) stays a fallback.
 
+## Status
+
+| Phase | State |
+|---|---|
+| 1 | Done, committed (cc91e50). Full suite ×2 green, 1,028 s/run (was 1,099). |
+| 2 | Done, committed (8ad812f). 101 tests, 989 s, all passing. |
+| 3 | Done, committed ("e2e trim phase 3"). Edited specs −71 s; 5 tests under the 40% bar (see Phase 3 result). |
+| 4–6 | Not started. |
+
 ## Goal
 
 - Full suite: about 1,100 s → ≤ 850 s of test time; about 6 min → ≤ 3.5 min wall time locally.
@@ -92,6 +101,8 @@ If deleting the first two leaves an unused helper in `bulk-edit.spec.js` (`readE
 **Keep real reopens in the app:** `react/save.spec.js` "edit, save, close and reopen" (React), v4 `smoke.spec.js` (v4), and both import specs' "fields persist after saving" (they use close-file + reopen in the same app, which is cheap). That keeps the reopen path covered.
 
 **Gate:** the edited specs pass with `--repeat-each=3`. Each edited test is at least 40% faster in the JSON report.
+
+**Result (11 Nov 2026, committed, detail in `e2e-trim-phase3.md`):** the 6 specs pass 3/3 (114 runs). Mean test time before → after: v4 undo/redo 41.0 → 17.1 s (−58%), react undo/redo 34.3 → 15.6 (−55%), "Set as next" 30.7 → 20.2 (−34%), save-as 16.8 → 11.1 (−34%), inverted export/import 12.9 → 8.1 (−37%), empty-records 1 10.5 → 7.2 (−31%), empty-records 4 12.7 → 8.7 (−31%). Total 159 → 88 s (−71 s, in the estimated range). Five tests miss the 40% bar: the relaunch was only ~4–10 s of their time; the rest is launch and in-test work. A disk read costs ~0.15 s, so no schema cache.
 
 ## Phase 4: Measure tracing and worker count
 

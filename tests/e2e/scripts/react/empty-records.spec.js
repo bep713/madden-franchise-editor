@@ -3,6 +3,10 @@ const { test } = require("../../util/test");
 
 const electron = require("../../util/Electron");
 const { poll } = require("../../util/poll");
+const {
+  readTableFromDisk,
+  readSavedTable,
+} = require("../../util/diskReader");
 
 const App = require("../../models/App");
 const WelcomePage = require("../../models/react/WelcomePage");
@@ -99,31 +103,28 @@ test("empty records can be set, chained and un-emptied (react)", async () => {
   );
   expect(await grid.isSelectedCellEmpty()).to.equal(true);
 
-  /** the file has both, and keeps them after a save and reopen */
+  /** the file has both, and keeps them after a save */
   await waitForEmptyRows([3, 6]);
   await app.saveFile();
-  await electronApp.close();
-  const reopened = await openTable();
-  expect((await app.readTable(TABLE_ID)).emptyRecordIndices.sort()).to.deep.equal(
-    [3, 6],
-  );
-  await reopened.grid.selectCellAt(6, 0);
-  expect(await reopened.grid.isSelectedCellEmpty()).to.equal(true);
+  expect(
+    (await readSavedTable(careerPath, TABLE_ID)).emptyRecordIndices,
+  ).to.deep.equal([3, 6]);
 
   /** can un-empty the second cell. The first cell pointer changes back to 21 */
-  await reopened.grid.editReferenceAtSelectedCell();
-  const referenceEditor = new ReferenceEditor(reopened.window);
+  await grid.selectCellAt(6, 0);
+  await grid.editReferenceAtSelectedCell();
+  const referenceEditor = new ReferenceEditor(tableEditor.window);
   await referenceEditor.waitForOpen();
   await referenceEditor.setTableById(TABLE_ID);
   await referenceEditor.setRowIndex(0);
   await referenceEditor.change();
   await referenceEditor.close();
-  await waitForCellText(reopened.grid, "OverallPercentage - 0");
-  expect(await reopened.grid.isSelectedCellEmpty()).to.equal(false);
+  await waitForCellText(grid, "OverallPercentage - 0");
+  expect(await grid.isSelectedCellEmpty()).to.equal(false);
 
-  await reopened.grid.selectCellAt(3, 0);
-  await waitForCellText(reopened.grid, CAPACITY_POINTER);
-  expect(await reopened.grid.isSelectedCellEmpty()).to.equal(true);
+  await grid.selectCellAt(3, 0);
+  await waitForCellText(grid, CAPACITY_POINTER);
+  expect(await grid.isSelectedCellEmpty()).to.equal(true);
   await waitForEmptyRows([3]);
 });
 
@@ -167,6 +168,9 @@ test("editing an empty record keeps it empty with auto-unempty off (react)", asy
 });
 
 test("setting records as empty can be undone and redone (react)", async () => {
+  // read before anything is saved, so this is the pristine record
+  const originalOnDisk = (await readTableFromDisk(careerPath, TABLE_ID))
+    .records[6];
   const tableEditor = await openTable();
   const { grid } = tableEditor;
 
@@ -215,18 +219,16 @@ test("setting records as empty can be undone and redone (react)", async () => {
   await waitForCellText(grid, CAPACITY_POINTER);
   expect(await grid.isSelectedCellEmpty()).to.equal(true);
 
-  /** undo once more, then the restored row 6 survives a save and reopen */
+  /** undo once more, then the restored row 6 is in the saved file */
   await grid.undo();
   await waitForEmptyRows([3]);
+  await grid.selectCellAt(6, 0);
+  await waitForCellText(grid, original["6,0"]);
+  expect(await grid.isSelectedCellEmpty()).to.equal(false);
+  await grid.selectCellAt(6, 1);
+  expect(await grid.getTextAtSelectedCell()).to.equal(original["6,1"]);
   await app.saveFile();
-  await electronApp.close();
-  const reopened = await openTable();
-  expect((await app.readTable(TABLE_ID)).emptyRecordIndices).to.deep.equal([3]);
-  await reopened.grid.selectCellAt(6, 0);
-  expect(await reopened.grid.getTextAtSelectedCell()).to.equal(original["6,0"]);
-  expect(await reopened.grid.isSelectedCellEmpty()).to.equal(false);
-  await reopened.grid.selectCellAt(6, 1);
-  expect(await reopened.grid.getTextAtSelectedCell()).to.equal(original["6,1"]);
-  await reopened.grid.selectCellAt(3, 0);
-  expect(await reopened.grid.getTextAtSelectedCell()).to.equal(CAPACITY_POINTER);
+  const saved = await readSavedTable(careerPath, TABLE_ID);
+  expect(saved.emptyRecordIndices).to.deep.equal([3]);
+  expect(saved.records[6]).to.deep.equal(originalOnDisk);
 });

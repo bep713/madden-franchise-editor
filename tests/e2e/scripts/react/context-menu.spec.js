@@ -3,6 +3,7 @@ const { test } = require("../../util/test");
 
 const electron = require("../../util/Electron");
 const { poll } = require("../../util/poll");
+const { readSavedTable } = require("../../util/diskReader");
 
 const App = require("../../models/App");
 const WelcomePage = require("../../models/react/WelcomePage");
@@ -287,8 +288,7 @@ test("Open this reference in a new tab opens a background tab (react)", async ()
 });
 
 test("Set as next empty record to use moves the chain head (react)", async () => {
-  test.setTimeout(120 * 1000);
-  let tableEditor = await openTable(PLAYER);
+  const tableEditor = await openTable(PLAYER);
 
   // not on a record that isn't empty
   await tableEditor.jumpToColumn("LastName", 0);
@@ -335,16 +335,13 @@ test("Set as next empty record to use moves the chain head (react)", async () =>
   await tableEditor.jumpToColumn("LastName", EMPTY_PLAYER_ROW);
   expect(await tableEditor.grid.isSelectedCellEmpty()).to.equal(true);
 
-  // it survives a save and reopen
+  // it's in the saved file
   await app.saveFile();
-  await electronApp.close();
-  tableEditor = await openTable(PLAYER);
-  const after = await app.readTable(PLAYER, ["LastName"]);
-  expect(after.header.nextRecordToUse).to.equal(EMPTY_PLAYER_ROW);
-  expect(after.emptyRecordIndices).to.not.include(373);
-  expect(after.emptyRecordIndices).to.not.include(374);
-  await tableEditor.jumpToColumn("LastName", 373);
-  expect(await tableEditor.grid.isSelectedCellEmpty()).to.equal(false);
+  const saved = await readSavedTable(careerPath, PLAYER, ["LastName"]);
+  expect(saved.header.nextRecordToUse).to.equal(EMPTY_PLAYER_ROW);
+  expect(saved.emptyRecordIndices).to.not.include(373);
+  expect(saved.emptyRecordIndices).to.not.include(374);
+  expect(saved.emptyRecordIndices).to.include(EMPTY_PLAYER_ROW);
 });
 
 test("Set as empty works on a record column in the inverted view (react)", async () => {

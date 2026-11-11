@@ -7,6 +7,7 @@ const { test } = require("../../util/test");
 const electron = require("../../util/Electron");
 const { stubSaveDialog } = require("../../util/dialogStubs");
 const { poll } = require("../../util/poll");
+const { readSavedTable } = require("../../util/diskReader");
 
 const App = require("../../models/App");
 const WelcomePage = require("../../models/react/WelcomePage");
@@ -155,28 +156,11 @@ test("save as writes a copy and leaves the original (react)", async () => {
   await electronApp.close();
 
   // the copy has the edit and the original doesn't
-  const readLongNameOf = async (filePath) => {
-    const launched = await electron.launchWithDefaultOptions({ ui: "react" });
-    const reopened = new App(launched);
-    await openTeamTableFrom(
-      launched,
-      await reopened.getMainWindow(),
-      filePath,
-    );
-    const name = await readLongName(reopened);
-    await launched.close();
-    return name;
-  };
+  const readLongNameOf = async (filePath) =>
+    (await readSavedTable(filePath, TEAM_TABLE_ID, ["LongName"])).records[ROW]
+      .LongName;
   expect(await readLongNameOf(savePath)).to.equal("Old York");
   expect(await readLongNameOf(careerPath)).to.equal("New York");
 
   await fs.rm(path.dirname(savePath), { recursive: true, force: true });
 });
-
-async function openTeamTableFrom(electronApp, window, filePath) {
-  const welcome = new WelcomePage(window);
-  const tableEditor = new TableEditorPage(window);
-  await welcome.waitForPageLoad();
-  await welcome.openFranchiseFile(electronApp, filePath);
-  return { welcome, tableEditor };
-}

@@ -1,6 +1,7 @@
 const { test, expect } = require("../util/test");
 
 const electron = require("../util/Electron");
+const { readSavedTable } = require("../util/diskReader");
 
 const App = require("../models/App");
 const WelcomePage = require("../models/WelcomePage");
@@ -52,11 +53,11 @@ async function openPlayerTable(preferences) {
   return tableEditor;
 }
 
-// Closes the app and opens the saved file again, so data is read back from disk.
-async function saveAndReopenPlayerTable() {
+// Saves, then reads the LastName column back from the file on disk
+async function saveAndReadLastNamesFromDisk() {
   await app.saveFile();
-  await app.close();
-  return openPlayerTable();
+  const table = await readSavedTable(careerPath, PLAYER_TABLE_ID, ["LastName"]);
+  return table.records.map((record) => record.LastName);
 }
 
 async function readPlayerColumn(fieldName) {
@@ -125,13 +126,11 @@ test("pasting into empty rows un-empties them and removes the empty styling", as
 });
 
 test("undo and redo after a bulk paste are saved to the file", async () => {
-  test.setTimeout(120 * 1000); // the file is reopened twice
-
   // Rows before the first empty row, so undo puts back real names
   const rowCount = FIRST_EMPTY_PLAYER_ROWS[0];
   const pastedNames = Array.from({ length: rowCount }, (_, i) => `Undo${i}`);
 
-  let tableEditor = await openPlayerTable();
+  const tableEditor = await openPlayerTable();
   const originalNames = (await readPlayerColumn("LastName")).slice(0, rowCount);
 
   await tableEditor.goToCell(0, "LastName");
@@ -144,23 +143,14 @@ test("undo and redo after a bulk paste are saved to the file", async () => {
   await tableEditor.waitForLoaderToShowAndHide();
   await tableEditor.goToCell(0, "LastName");
   expect(await tableEditor.getTextAtSelectedCell()).toBe(originalNames[0]);
-
-  tableEditor = await saveAndReopenPlayerTable();
-  expect((await readPlayerColumn("LastName")).slice(0, rowCount)).toEqual(originalNames);
+  expect((await saveAndReadLastNamesFromDisk()).slice(0, rowCount)).toEqual(originalNames);
 
   /** Ctrl+Y puts the pasted names back, in the grid and in the saved file */
-  await tableEditor.goToCell(0, "LastName");
-  await tableEditor.pasteAtSelectedCell(app, columnOfValues(pastedNames));
-  await tableEditor.waitForLoaderToShowAndHide();
-  await tableEditor.undo();
-  await tableEditor.waitForLoaderToShowAndHide();
   await tableEditor.redo();
   await tableEditor.waitForLoaderToShowAndHide();
   await tableEditor.goToCell(0, "LastName");
   expect(await tableEditor.getTextAtSelectedCell()).toBe(pastedNames[0]);
-
-  tableEditor = await saveAndReopenPlayerTable();
-  expect((await readPlayerColumn("LastName")).slice(0, rowCount)).toEqual(pastedNames);
+  expect((await saveAndReadLastNamesFromDisk()).slice(0, rowCount)).toEqual(pastedNames);
 });
 
 test("a paste with one invalid value only reverts that cell", async () => {

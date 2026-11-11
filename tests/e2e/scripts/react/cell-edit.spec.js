@@ -1,12 +1,12 @@
-const fs = require("fs");
-const os = require("os");
-const path = require("path");
 const { expect } = require("chai");
-const { FranchiseFile } = require("madden-franchise");
 const { test } = require("../../util/test");
 
 const electron = require("../../util/Electron");
 const { poll } = require("../../util/poll");
+const {
+  readTableFromDisk,
+  readSavedTable,
+} = require("../../util/diskReader");
 
 const App = require("../../models/App");
 const WelcomePage = require("../../models/react/WelcomePage");
@@ -53,13 +53,6 @@ async function openPlayerTable(preferences) {
   return tableEditor;
 }
 
-// Saves, closes the app and opens the file again, so data is read from disk
-async function saveAndReopenPlayerTable() {
-  await app.saveFile();
-  await electronApp.close();
-  return openPlayerTable();
-}
-
 async function goToCell(tableEditor, row, fieldName) {
   await tableEditor.jumpToColumn(fieldName, row);
 }
@@ -72,20 +65,17 @@ async function readPlayerColumn(fieldName) {
 // Parses the file on disk in the test process, not the app's in-memory copy.
 // Returns null while the file can't be parsed (mid-write).
 async function readPlayerFieldFromDisk(fieldName, row) {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "mfe-disk-read-"));
-  try {
-    const file = await FranchiseFile.create(careerPath, {
-      schemaDirectory: tmpDir,
-      saveOnChange: false,
-    });
-    const table = file.getTableById(PLAYER_TABLE_ID);
-    await table.readRecords();
-    return table.records[row][fieldName];
-  } catch {
-    return null;
-  } finally {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-  }
+  const table = await readTableFromDisk(careerPath, PLAYER_TABLE_ID, [
+    fieldName,
+  ]);
+  return table ? table.records[row][fieldName] : null;
+}
+
+// Saves, then reads the LastName column back from the file on disk
+async function saveAndReadLastNamesFromDisk() {
+  await app.saveFile();
+  const table = await readSavedTable(careerPath, PLAYER_TABLE_ID, ["LastName"]);
+  return table.records.map((record) => record.LastName);
 }
 
 async function readEmptyPlayerRows() {
@@ -171,15 +161,13 @@ test("pasting into empty rows un-empties them and removes the empty styling (rea
 // Also guards against the grid reloading its data when the loader re-renders
 // the page, which would clear the undo stack.
 test("undo and redo after a bulk paste are saved to the file (react)", async () => {
-  test.setTimeout(180 * 1000); // the file is reopened twice
-
   // Rows before the first empty row, so undo puts back real names
   const rowCount = FIRST_EMPTY_PLAYER_ROWS[0];
   const pastedNames = Array.from({ length: rowCount }, (_, i) => `Undo${i}`);
   const readPastedRows = async () =>
     (await readPlayerColumn("LastName")).slice(0, rowCount);
 
-  let tableEditor = await openPlayerTable();
+  const tableEditor = await openPlayerTable();
   const originalNames = await readPastedRows();
 
   await goToCell(tableEditor, 0, "LastName");
@@ -195,17 +183,11 @@ test("undo and redo after a bulk paste are saved to the file (react)", async () 
   expect(await tableEditor.grid.getTextAtSelectedCell()).to.equal(
     originalNames[0],
   );
-
-  tableEditor = await saveAndReopenPlayerTable();
-  expect(await readPastedRows()).to.deep.equal(originalNames);
+  expect(
+    (await saveAndReadLastNamesFromDisk()).slice(0, rowCount),
+  ).to.deep.equal(originalNames);
 
   /** Ctrl+Y puts the pasted names back, in the grid and in the saved file */
-  await goToCell(tableEditor, 0, "LastName");
-  await pasteColumn(tableEditor, pastedNames);
-  await tableEditor.waitForLoaderToShowAndHide();
-  await tableEditor.watchForLoader();
-  await tableEditor.grid.undo();
-  await tableEditor.waitForLoaderToShowAndHide();
   await tableEditor.watchForLoader();
   await tableEditor.grid.redo();
   await tableEditor.waitForLoaderToShowAndHide();
@@ -213,9 +195,9 @@ test("undo and redo after a bulk paste are saved to the file (react)", async () 
   expect(await tableEditor.grid.getTextAtSelectedCell()).to.equal(
     pastedNames[0],
   );
-
-  tableEditor = await saveAndReopenPlayerTable();
-  expect(await readPastedRows()).to.deep.equal(pastedNames);
+  expect(
+    (await saveAndReadLastNamesFromDisk()).slice(0, rowCount),
+  ).to.deep.equal(pastedNames);
 });
 
 test("a paste with one invalid value only reverts that cell (react)", async () => {
