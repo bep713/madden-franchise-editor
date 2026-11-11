@@ -72,12 +72,13 @@ async function selectedColumnHeader() {
   return (await header.first().innerText()).trim();
 }
 
-async function readEmptyRows(tableId) {
-  return (await app.readTable(tableId)).emptyRecordIndices;
+// field: any one column, so the whole table isn't sent through evaluate
+async function readEmptyRows(tableId, field) {
+  return (await app.readTable(tableId, [field])).emptyRecordIndices;
 }
 
-async function waitForEmptyRows(tableId, predicate, message) {
-  return poll(() => readEmptyRows(tableId), predicate, {
+async function waitForEmptyRows(tableId, field, predicate, message) {
+  return poll(() => readEmptyRows(tableId, field), predicate, {
     ...FILE_POLL_OPTIONS,
     message,
   });
@@ -321,7 +322,9 @@ test("Set as next empty record to use moves the chain head (react)", async () =>
       !table.emptyRecordIndices.includes(374),
     { ...FILE_POLL_OPTIONS, message: "The chain head never moved to 375" },
   );
-  expect(await readEmptyRows(PLAYER)).to.include(EMPTY_PLAYER_ROW);
+  expect(await readEmptyRows(PLAYER, "LastName")).to.include(
+    EMPTY_PLAYER_ROW,
+  );
 
   await tableEditor.jumpToColumn("LastName", 373);
   await poll(
@@ -359,6 +362,7 @@ test("Set as empty works on a record column in the inverted view (react)", async
   );
   await waitForEmptyRows(
     OVERALL_PERCENTAGE,
+    "PlayerPosition",
     (rows) => rows.length === 1 && rows[0] === 3,
     "Record 3 never became empty in the file",
   );

@@ -4,7 +4,6 @@ const { test } = require("../../util/test");
 
 const electron = require("../../util/Electron");
 const FilePaths = require("../../util/FilePaths");
-const TestUtil = require("../../util/TestUtil");
 const {
   fileCompare,
   waitForFile,
@@ -16,7 +15,11 @@ const WelcomePage = require("../../models/react/WelcomePage");
 const TableEditorPage = require("../../models/react/TableEditorPage");
 
 test("export table e2e test (react)", async ({ sandbox }) => {
-  const electronApp = await electron.launchWithDefaultOptions({ ui: "react" });
+  // openExcelAfterImport defaults to on, which would open Excel
+  const electronApp = await electron.launchWithDefaultOptions({
+    ui: "react",
+    preferences: { general: { openExcelAfterImport: [] } },
+  });
   const app = new App(electronApp);
 
   const window = await app.getMainWindow();
@@ -29,8 +32,6 @@ test("export table e2e test (react)", async ({ sandbox }) => {
 
   const tableEditor = new TableEditorPage(window);
   await tableEditor.waitForTableToLoad();
-  // Defaults to on, which would open Excel
-  await TestUtil.setAutoOpenExcel(app, false);
 
   // the import/export menu items are enabled in the table editor
   for (const id of [

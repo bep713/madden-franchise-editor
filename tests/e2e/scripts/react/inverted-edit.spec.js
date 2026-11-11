@@ -6,7 +6,6 @@ const { test } = require("../../util/test");
 
 const electron = require("../../util/Electron");
 const FilePaths = require("../../util/FilePaths");
-const TestUtil = require("../../util/TestUtil");
 const { waitForFile } = require("../../util/FileCompare");
 const { poll } = require("../../util/poll");
 
@@ -39,8 +38,11 @@ test.afterEach(async () => {
   electronApp = null;
 });
 
-async function openTableEditor() {
-  electronApp = await electron.launchWithDefaultOptions({ ui: "react" });
+async function openTableEditor(preferences) {
+  electronApp = await electron.launchWithDefaultOptions({
+    ui: "react",
+    preferences,
+  });
   app = new App(electronApp);
   window = await app.getMainWindow();
 
@@ -54,8 +56,8 @@ async function openTableEditor() {
   return tableEditor;
 }
 
-async function openInverted(tableId) {
-  const tableEditor = await openTableEditor();
+async function openInverted(tableId, preferences) {
+  const tableEditor = await openTableEditor(preferences);
   await tableEditor.openTableById(tableId);
   await tableEditor.switchOrientation();
   return tableEditor;
@@ -293,8 +295,10 @@ test("the orientation belongs to the tab's current table (react)", async () => {
 
 test("export and import from the inverted view use the normal layout (react)", async () => {
   test.setTimeout(150 * 1000);
-  let tableEditor = await openInverted(TEAM);
-  await TestUtil.setAutoOpenExcel(app, false);
+  // openExcelAfterImport defaults to on, which would open Excel
+  let tableEditor = await openInverted(TEAM, {
+    general: { openExcelAfterImport: [] },
+  });
 
   // 1-3. the export is in the normal layout: a row per record
   await fs.rm(sandbox.exportPath, { force: true });

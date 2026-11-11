@@ -428,7 +428,9 @@ test("the drawer link sets the pending file and Cancel clears it (react)", async
     await launch();
 
   await openMissing(electronApp, welcome, banner);
-  await banner.waitForHidden({ timeout: 12 * 1000 });
+  // Close only hides the banner; the notification stays in the drawer
+  await banner.close();
+  await banner.waitForHidden();
 
   await drawer.open();
   await drawer.waitForItemCount(1);

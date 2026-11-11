@@ -1,7 +1,6 @@
 const { test, expect } = require("../util/test");
 
 const electron = require("../util/Electron");
-const TestUtil = require("../util/TestUtil");
 
 const App = require("../models/App");
 const WelcomePage = require("../models/WelcomePage");
@@ -13,6 +12,7 @@ const ScheduleEditorPage = require("../models/ScheduleEditorPage");
 const PLAYER_TABLE_ID = 4220;
 const FIRST_EMPTY_PLAYER_ROWS = [373, 374, 375, 376];
 const NEXT_EMPTY_PLAYER_ROW = 427;
+const AUTO_UNEMPTY = { general: { autoUnempty: [true] } };
 
 // A bulk paste should never take longer than this.
 const MAX_BULK_PASTE_MS = 15000;
@@ -32,8 +32,8 @@ test.afterEach(async () => {
   app = null;
 });
 
-async function launchApp() {
-  app = new App(await electron.launchWithDefaultOptions());
+async function launchApp(preferences) {
+  app = new App(await electron.launchWithDefaultOptions({ preferences }));
   const window = await app.getMainWindow();
 
   const welcome = new WelcomePage(window);
@@ -43,8 +43,8 @@ async function launchApp() {
   return { window, welcome };
 }
 
-async function openPlayerTable() {
-  const { window, welcome } = await launchApp();
+async function openPlayerTable(preferences) {
+  const { window, welcome } = await launchApp(preferences);
   await welcome.openTableEditor();
 
   const tableEditor = new TableEditorPage(window);
@@ -65,7 +65,7 @@ async function readPlayerColumn(fieldName) {
 }
 
 async function readEmptyPlayerRows() {
-  const table = await app.readTable(PLAYER_TABLE_ID);
+  const table = await app.readTable(PLAYER_TABLE_ID, ["LastName"]);
   return table.emptyRecordIndices;
 }
 
@@ -75,9 +75,8 @@ function columnOfValues(values) {
 }
 
 test("pasting 2,500 cells stays responsive and shows the loader", async () => {
-  const tableEditor = await openPlayerTable();
   // Pasting into empty rows also un-empties them, which is the most work per cell
-  await TestUtil.setAutoUnempty(app, true);
+  const tableEditor = await openPlayerTable(AUTO_UNEMPTY);
 
   const lastNames = Array.from({ length: 2500 }, (_, i) => `Bulk${i}`);
   await tableEditor.goToCell(0, "LastName");
@@ -95,13 +94,10 @@ test("pasting 2,500 cells stays responsive and shows the loader", async () => {
   // every value made it into the file
   const fileLastNames = await readPlayerColumn("LastName");
   expect(fileLastNames.slice(0, 2500)).toEqual(lastNames);
-
-  await TestUtil.setAutoUnempty(app, false);
 });
 
 test("pasting into empty rows un-empties them and removes the empty styling", async () => {
-  const tableEditor = await openPlayerTable();
-  await TestUtil.setAutoUnempty(app, true);
+  const tableEditor = await openPlayerTable(AUTO_UNEMPTY);
 
   await tableEditor.goToCell(FIRST_EMPTY_PLAYER_ROWS[0], "LastName");
   expect(await tableEditor.isSelectedCellEmpty()).toBe(true);
@@ -126,8 +122,6 @@ test("pasting into empty rows un-empties them and removes the empty styling", as
   expect(emptyRows).toContain(NEXT_EMPTY_PLAYER_ROW);
   await tableEditor.goToCell(NEXT_EMPTY_PLAYER_ROW, "LastName");
   expect(await tableEditor.isSelectedCellEmpty()).toBe(true);
-
-  await TestUtil.setAutoUnempty(app, false);
 });
 
 test("undo and redo after a bulk paste are saved to the file", async () => {

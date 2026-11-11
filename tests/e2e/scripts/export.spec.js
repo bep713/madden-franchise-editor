@@ -14,7 +14,10 @@ const WelcomePage = require("../models/WelcomePage");
 const TableEditorPage = require("../models/TableEditorPage");
 
 test("export table e2e test", async ({ sandbox }) => {
-  const electronApp = await electron.launchWithDefaultOptions();
+  // openExcelAfterImport defaults to on, which would open Excel
+  const electronApp = await electron.launchWithDefaultOptions({
+    preferences: { general: { openExcelAfterImport: [] } },
+  });
   const app = new App(electronApp);
 
   const window = await app.getMainWindow();
@@ -28,7 +31,6 @@ test("export table e2e test", async ({ sandbox }) => {
   // can export a table
   const tableEditor = new TableEditorPage(window);
   await tableEditor._waitForTableToLoad();
-  await TestUtil.setAutoOpenExcel(app, false);
   await fs.rm(sandbox.exportPath, { force: true });
   await tableEditor.exportTable(sandbox.exportPath);
   await waitForFile(sandbox.exportPath);

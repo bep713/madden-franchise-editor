@@ -44,7 +44,6 @@ test("import table e2e test (react)", async () => {
   const tableEditor = new TableEditorPage(window);
 
   await welcome.waitForPageLoad();
-  await TestUtil.setAutoSave(app, false);
   await openTableEditor(electronApp, welcome, tableEditor);
 
   // can import a small table
@@ -101,8 +100,6 @@ test("import table e2e test (react)", async () => {
   expect(await textAtCell(tableEditor, 0, 1)).to.equal("FS");
   expect(await textAtCell(tableEditor, 1, 0)).to.equal("Spline - 11");
 
-  await TestUtil.setAutoSave(app, false);
-
   await electronApp.close();
 
   async function checkImportedFields() {
@@ -142,7 +139,10 @@ test("import table e2e test (react)", async () => {
 
 test("import table with auto un-empty enabled (react)", async () => {
   test.setTimeout(120 * 1000);
-  const electronApp = await electron.launchWithDefaultOptions({ ui: "react" });
+  const electronApp = await electron.launchWithDefaultOptions({
+    ui: "react",
+    preferences: { general: { autoUnempty: [true] } },
+  });
   const app = new App(electronApp);
 
   const window = await app.getMainWindow();
@@ -152,8 +152,6 @@ test("import table with auto un-empty enabled (react)", async () => {
   const tableEditor = new TableEditorPage(window);
 
   await welcome.waitForPageLoad();
-  await TestUtil.setAutoSave(app, false);
-  await TestUtil.setAutoUnempty(app, true);
 
   try {
     await openTableEditor(electronApp, welcome, tableEditor);
@@ -174,7 +172,6 @@ test("import table with auto un-empty enabled (react)", async () => {
       "TEST",
     );
   } finally {
-    await TestUtil.setAutoUnempty(app, false);
     await electronApp.close();
   }
 });

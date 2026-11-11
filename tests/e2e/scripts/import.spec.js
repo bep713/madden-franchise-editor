@@ -27,7 +27,6 @@ test("import table e2e test", async () => {
   const welcome = new WelcomePage(window);
 
   await welcome.waitForPageLoad();
-  await TestUtil.setAutoSave(app, false);
   await welcome.openFranchiseFile(careerPath);
   await welcome.openTableEditor();
 
@@ -91,8 +90,6 @@ test("import table e2e test", async () => {
   text = await tableEditor.getTextAtSelectedCell();
   expect(text).to.equal("Spline - 11");
 
-  await TestUtil.setAutoSave(app, false);
-
   await electronApp.close();
 
   async function checkImportedFields() {
@@ -136,7 +133,9 @@ test("import table e2e test", async () => {
 });
 
 test("import table with auto un-empty enabled", async () => {
-  const electronApp = await electron.launchWithDefaultOptions();
+  const electronApp = await electron.launchWithDefaultOptions({
+    preferences: { general: { autoUnempty: [true] } },
+  });
   const app = new App(electronApp);
 
   const window = await app.getMainWindow();
@@ -145,8 +144,6 @@ test("import table with auto un-empty enabled", async () => {
   const welcome = new WelcomePage(window);
 
   await welcome.waitForPageLoad();
-  await TestUtil.setAutoSave(app, false);
-  await TestUtil.setAutoUnempty(app, true);
 
   try {
     await welcome.openFranchiseFile(careerPath);
@@ -173,7 +170,6 @@ test("import table with auto un-empty enabled", async () => {
     await tableEditor.jumpToColumn("LongName", 5);
     expect(await tableEditor.getTextAtSelectedCell()).to.equal("TEST");
   } finally {
-    await TestUtil.setAutoUnempty(app, false);
     await electronApp.close();
   }
 });
