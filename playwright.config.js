@@ -26,8 +26,16 @@ const config = {
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
 
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : 1,
+  /* Every test launches its own app on its own sandbox copy (util/sandbox.js)
+     and userData dir, so tests in the same file can run in parallel too. */
+  fullyParallel: true,
+
+  /* E2E_WORKERS overrides. CI's windows-latest has 4 vCPU. */
+  workers: process.env.E2E_WORKERS
+    ? Number(process.env.E2E_WORKERS)
+    : process.env.CI
+      ? 2
+      : 3,
 
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [

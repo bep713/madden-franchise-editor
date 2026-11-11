@@ -117,13 +117,27 @@ class App {
     }, text);
   }
 
-  // Reads table data straight from the open file (not from the grid)
+  // Reads table data straight from the open file (not from the grid).
+  // With `fields`, records hold only those fields: main returns every field
+  // the grid has read, and returning all of them from evaluate() takes ~12s
+  // for the player table and can crash the worker.
   async readTable(tableId, fields) {
     const mainWindow = await this.getMainWindow();
     return mainWindow.evaluate(
       async ({ tableId, fields }) => {
         const fileId = await window.franchiseAPI.getActiveFileId();
-        return window.franchiseAPI.readTableData(fileId, tableId, fields);
+        const table = await window.franchiseAPI.readTableData(
+          fileId,
+          tableId,
+          fields,
+        );
+        if (fields && table?.records) {
+          table.records = table.records.map((record) =>
+            Object.fromEntries(fields.map((field) => [field, record[field]])),
+          );
+          delete table.recordMeta;
+        }
+        return table;
       },
       { tableId, fields },
     );

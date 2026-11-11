@@ -55,10 +55,6 @@ class Banner {
     await this.click("Dismiss");
   }
 
-  async hover() {
-    await this.locators.banner.hover();
-  }
-
   // Waits until no banner is mounted (the slide-out has finished)
   async waitForHidden({ timeout } = {}) {
     await poll(

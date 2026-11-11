@@ -309,18 +309,9 @@ test("the banner hides on its own and the notification stays (react)", async () 
   await electronApp.close();
 });
 
-test("hovering keeps the banner up (react)", async () => {
-  test.setTimeout(120 * 1000);
-  const { electronApp, welcome, banner } = await launch();
-
-  await openCareer(electronApp, welcome, { keepBanners: true });
-  await banner.waitForBanner("schema-mismatch");
-  await banner.hover();
-  await wait(9 * 1000);
-  expect(await banner.isVisible()).to.equal(true);
-
-  await electronApp.close();
-});
+// Pausing on hover is covered in BannerContext.test.tsx. An e2e hover can't
+// last 9s with parallel workers: another window opening under the cursor
+// ends it.
 
 test("loading a mismatched schema by hand shows no banner (react)", async () => {
   test.setTimeout(120 * 1000);
