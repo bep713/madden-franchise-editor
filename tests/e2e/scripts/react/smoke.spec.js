@@ -2,8 +2,6 @@ const { expect } = require("chai");
 const { test } = require("../../util/test");
 
 const electron = require("../../util/Electron");
-const FilePaths = require("../../util/FilePaths");
-const TestUtil = require("../../util/TestUtil");
 const { poll } = require("../../util/poll");
 
 const App = require("../../models/App");
@@ -11,8 +9,10 @@ const WelcomePage = require("../../models/react/WelcomePage");
 const NavigationBar = require("../../models/react/NavigationBar");
 const TableEditorPage = require("../../models/react/TableEditorPage");
 
-test.beforeAll(TestUtil.overwriteTestCareer);
-test.afterAll(TestUtil.overwriteTestCareer);
+let careerPath;
+test.beforeEach(({ sandbox }) => {
+  careerPath = sandbox.careerPath;
+});
 
 test("basic test (react)", async () => {
   const electronApp = await electron.launchWithDefaultOptions({ ui: "react" });
@@ -27,7 +27,7 @@ test("basic test (react)", async () => {
   await welcome.waitForPageLoad();
 
   // can open a file
-  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(electronApp, careerPath);
   expect(await welcome.getStartedTitle()).to.equal("CAREER-E2ETEST");
   expect(await nav.tabNames()).to.deep.equal([
     "Home",
@@ -84,7 +84,7 @@ test("basic test (react)", async () => {
     (fileId) => fileId && fileId !== firstFileId,
     { message: "The file was not reopened" },
   );
-  await welcome.waitForOpenFile(FilePaths.m22.career.test);
+  await welcome.waitForOpenFile(careerPath);
 
   await welcome.openTableEditor();
   await tableEditor.waitForTableToLoad();

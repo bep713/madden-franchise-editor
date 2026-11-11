@@ -2,8 +2,6 @@ const { expect } = require("chai");
 const { test } = require("../../util/test");
 
 const electron = require("../../util/Electron");
-const FilePaths = require("../../util/FilePaths");
-const TestUtil = require("../../util/TestUtil");
 const { poll } = require("../../util/poll");
 
 const App = require("../../models/App");
@@ -19,12 +17,14 @@ const AUTO_UNEMPTY = { general: { autoUnempty: [true] } };
 let app;
 let electronApp;
 
-test.beforeEach(TestUtil.overwriteTestCareer);
+let careerPath;
+test.beforeEach(({ sandbox }) => {
+  careerPath = sandbox.careerPath;
+});
 test.afterEach(async () => {
   await electronApp?.close();
   electronApp = null;
 });
-test.afterAll(TestUtil.overwriteTestCareer);
 
 async function openTable(preferences) {
   electronApp = await electron.launchWithDefaultOptions({
@@ -36,7 +36,7 @@ async function openTable(preferences) {
 
   const welcome = new WelcomePage(window);
   await welcome.waitForPageLoad();
-  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(electronApp, careerPath);
   await welcome.openTableEditor();
 
   const tableEditor = new TableEditorPage(window);

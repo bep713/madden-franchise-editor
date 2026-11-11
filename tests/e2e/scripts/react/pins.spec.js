@@ -5,8 +5,6 @@ const { expect } = require("chai");
 const { test } = require("../../util/test");
 
 const electron = require("../../util/Electron");
-const FilePaths = require("../../util/FilePaths");
-const TestUtil = require("../../util/TestUtil");
 const { poll } = require("../../util/poll");
 
 const App = require("../../models/App");
@@ -19,8 +17,10 @@ const OVERALL_PERCENTAGE_UNIQUE_ID = 4079666669;
 // and Franchise (4688) ids are stale for this file, so they are matched by name.
 const DEFAULT_PIN_IDS = [4220, 4272, 4712, 7388];
 
-test.beforeAll(TestUtil.overwriteTestCareer);
-test.afterAll(TestUtil.overwriteTestCareer);
+let careerPath;
+test.beforeEach(({ sandbox }) => {
+  careerPath = sandbox.careerPath;
+});
 
 const readJson = async (file) => {
   try {
@@ -48,7 +48,7 @@ async function openTableEditor(electronApp) {
   const window = await app.getMainWindow();
   const welcome = new WelcomePage(window);
   await welcome.waitForPageLoad();
-  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(electronApp, careerPath);
   await welcome.openTableEditor();
 
   const tableEditor = new TableEditorPage(window);

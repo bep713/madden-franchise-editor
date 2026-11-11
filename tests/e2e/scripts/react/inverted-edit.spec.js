@@ -23,25 +23,21 @@ const OVERALL_PERCENTAGE = 4097;
 const PLAYER = 4220;
 const MAX_BULK_PASTE_MS = 15000; // as in cell-edit.spec.js
 const FILE_POLL_OPTIONS = { timeout: 30000 };
-const IMPORT_FILE = path.join(
-  path.dirname(FilePaths.m22.exports.test),
-  "inverted-import.xlsx",
-);
 
 let app;
 let electronApp;
 let window;
 
-test.beforeAll(async () => {
-  // The output dir is gitignored, so it doesn't exist on a fresh checkout.
-  await fs.mkdir(path.dirname(FilePaths.m22.exports.test), { recursive: true });
+let sandbox;
+let careerPath;
+test.beforeEach(({ sandbox: testSandbox }) => {
+  sandbox = testSandbox;
+  careerPath = sandbox.careerPath;
 });
-test.beforeEach(TestUtil.overwriteTestCareer);
 test.afterEach(async () => {
   await electronApp?.close();
   electronApp = null;
 });
-test.afterAll(TestUtil.overwriteTestCareer);
 
 async function openTableEditor() {
   electronApp = await electron.launchWithDefaultOptions({ ui: "react" });
@@ -50,7 +46,7 @@ async function openTableEditor() {
 
   const welcome = new WelcomePage(window);
   await welcome.waitForPageLoad();
-  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(electronApp, careerPath);
   await welcome.openTableEditor();
 
   const tableEditor = new TableEditorPage(window);
@@ -304,11 +300,11 @@ test("export and import from the inverted view use the normal layout (react)", a
   await TestUtil.setAutoOpenExcel(app, false);
 
   // 1-3. the export is in the normal layout: a row per record
-  await fs.rm(FilePaths.m22.exports.test, { force: true });
-  await tableEditor.exportTable(electronApp, FilePaths.m22.exports.test);
-  await waitForFile(FilePaths.m22.exports.test);
+  await fs.rm(sandbox.exportPath, { force: true });
+  await tableEditor.exportTable(electronApp, sandbox.exportPath);
+  await waitForFile(sandbox.exportPath);
   const team = await app.readTable(TEAM);
-  const workbook = xlsx.readFile(FilePaths.m22.exports.test);
+  const workbook = xlsx.readFile(sandbox.exportPath);
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
   const rows = xlsx.utils.sheet_to_json(sheet, { header: 1 });
   expect(rows[0]).to.deep.equal(team.headers.map((header) => header.name));
@@ -323,11 +319,11 @@ test("export and import from the inverted view use the normal layout (react)", a
     xlsx.utils.aoa_to_sheet(rows),
     workbook.SheetNames[0],
   );
-  await fs.rm(IMPORT_FILE, { force: true });
-  xlsx.writeFile(edited, IMPORT_FILE);
+  const importFile = path.join(sandbox.dir, "inverted-import.xlsx");
+  xlsx.writeFile(edited, importFile);
 
   // 5-6. the import updates the table
-  await tableEditor.importTable(electronApp, IMPORT_FILE);
+  await tableEditor.importTable(electronApp, importFile);
   await waitForFieldValue(TEAM, "LongName", 5, "InvertedImport");
 
   // 7. still inverted, showing the new value

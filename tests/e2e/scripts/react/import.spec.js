@@ -9,8 +9,10 @@ const App = require("../../models/App");
 const WelcomePage = require("../../models/react/WelcomePage");
 const TableEditorPage = require("../../models/react/TableEditorPage");
 
-test.beforeAll(TestUtil.overwriteTestCareer);
-test.afterAll(TestUtil.overwriteTestCareer);
+let careerPath;
+test.beforeEach(({ sandbox }) => {
+  careerPath = sandbox.careerPath;
+});
 
 async function textAt(tableEditor, column, row) {
   await tableEditor.jumpToColumn(column, row);
@@ -24,7 +26,7 @@ async function textAtCell(tableEditor, row, col) {
 
 async function openTableEditor(electronApp, welcome, tableEditor) {
   await welcome.waitForPageLoad();
-  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(electronApp, careerPath);
   await welcome.openTableEditor();
   await tableEditor.waitForTableToLoad();
 }

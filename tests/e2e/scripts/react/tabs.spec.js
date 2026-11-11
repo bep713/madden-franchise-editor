@@ -2,8 +2,6 @@ const { expect } = require("chai");
 const { test } = require("../../util/test");
 
 const electron = require("../../util/Electron");
-const FilePaths = require("../../util/FilePaths");
-const TestUtil = require("../../util/TestUtil");
 const { stubOpenDialog } = require("../../util/dialogStubs");
 const { poll } = require("../../util/poll");
 
@@ -15,8 +13,10 @@ const SchemaManagementPage = require("../../models/react/SchemaManagementPage");
 
 const MAIN_TABS = ["Home", "Schedule", "Schemas"];
 
-test.beforeAll(TestUtil.overwriteTestCareer);
-test.afterAll(TestUtil.overwriteTestCareer);
+let careerPath;
+test.beforeEach(({ sandbox }) => {
+  careerPath = sandbox.careerPath;
+});
 
 // The grid's vertical scroll position
 async function gridScrollTop(window) {
@@ -51,7 +51,7 @@ test("tabs test (react)", async () => {
   expect(await nav.tabNames()).to.deep.equal(["Home", "Schemas"]);
   expect(await nav.hasNewTabButton()).to.equal(false);
 
-  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(electronApp, careerPath);
   expect(await nav.tabNames()).to.deep.equal([...MAIN_TABS, "Open Table..."]);
   expect(await nav.hasNewTabButton()).to.equal(true);
 
@@ -76,7 +76,7 @@ test("tabs test (react)", async () => {
     (names) => names.join() === "Home,Schemas",
     { message: "Closing the file did not reset the tabs" },
   );
-  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(electronApp, careerPath);
   expect(await nav.hasTab("Open Table...")).to.equal(true);
 
   await welcome.openTableEditor();
@@ -231,7 +231,7 @@ test("open tables in new tabs (react)", async () => {
   const tableEditor = new TableEditorPage(window);
 
   await welcome.waitForPageLoad();
-  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(electronApp, careerPath);
   await welcome.openTableEditor();
   await waitForTable(tableEditor, "4096");
 
@@ -322,7 +322,7 @@ test("default editor opens the table editor (react)", async () => {
   });
 
   // Not welcome.openFranchiseFile, which waits on the Welcome page
-  await stubOpenDialog(electronApp, FilePaths.m22.career.test);
+  await stubOpenDialog(electronApp, careerPath);
   await welcome.locators.openFileLink.click();
 
   await nav.waitForActiveTab("4096");

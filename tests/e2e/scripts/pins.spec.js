@@ -4,16 +4,16 @@ const { expect } = require("chai");
 const { test, expect: playwrightExpect } = require("../util/test");
 
 const electron = require("../util/Electron");
-const FilePaths = require("../util/FilePaths");
-const TestUtil = require("../util/TestUtil");
 
 const App = require("../models/App");
 const WelcomePage = require("../models/WelcomePage");
 const TableEditorPage = require("../models/TableEditorPage");
 const ReferenceEditorModal = require("../models/ReferenceEditorModal");
 
-test.beforeAll(TestUtil.overwriteTestCareer);
-test.afterAll(TestUtil.overwriteTestCareer);
+let careerPath;
+test.beforeEach(({ sandbox }) => {
+  careerPath = sandbox.careerPath;
+});
 
 test("pins e2e test", async () => {
   const electronApp = await electron.launchWithDefaultOptions();
@@ -26,7 +26,7 @@ test("pins e2e test", async () => {
   await welcome.waitForPageLoad();
 
   // can open the table editor
-  await welcome.openFranchiseFile(FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(careerPath);
   await welcome.openTableEditor();
 
   const tableEditor = new TableEditorPage(window);
@@ -75,7 +75,7 @@ test("pins are matched by uniqueId and legacy pins are migrated", async () => {
 
   const welcome = new WelcomePage(window);
   await welcome.waitForPageLoad();
-  await welcome.openFranchiseFile(FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(careerPath);
   await welcome.openTableEditor();
 
   const tableEditor = new TableEditorPage(window);

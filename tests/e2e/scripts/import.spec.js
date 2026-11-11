@@ -11,8 +11,10 @@ const WelcomePage = require("../models/WelcomePage");
 const TableEditorPage = require("../models/TableEditorPage");
 const SettingsManager = require("../models/SettingsManager");
 
-test.beforeAll(TestUtil.overwriteTestCareer);
-test.afterAll(TestUtil.overwriteTestCareer);
+let careerPath;
+test.beforeEach(({ sandbox }) => {
+  careerPath = sandbox.careerPath;
+});
 
 test("import table e2e test", async () => {
   const electronApp = await electron.launchWithDefaultOptions();
@@ -26,7 +28,7 @@ test("import table e2e test", async () => {
 
   await welcome.waitForPageLoad();
   await TestUtil.setAutoSave(app, false);
-  await welcome.openFranchiseFile(FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(careerPath);
   await welcome.openTableEditor();
 
   // can import a small table
@@ -49,7 +51,7 @@ test("import table e2e test", async () => {
   await app.saveFile();
   await app.closeFile();
   await welcome.waitForPageLoad();
-  await welcome.openFranchiseFile(FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(careerPath);
   await welcome.openTableEditor();
   await checkImportedFields();
 
@@ -64,7 +66,7 @@ test("import table e2e test", async () => {
 
   await app.closeFile();
   await welcome.waitForPageLoad();
-  await welcome.openFranchiseFile(FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(careerPath);
   await welcome.openTableEditor();
   await tableEditor.openTableById(4712);
   await tableEditor.jumpToColumn("HasFantasyRoster", 0);
@@ -147,7 +149,7 @@ test("import table with auto un-empty enabled", async () => {
   await TestUtil.setAutoUnempty(app, true);
 
   try {
-    await welcome.openFranchiseFile(FilePaths.m22.career.test);
+    await welcome.openFranchiseFile(careerPath);
     await welcome.openTableEditor();
 
     const tableEditor = new TableEditorPage(window);
@@ -165,7 +167,7 @@ test("import table with auto un-empty enabled", async () => {
     await app.saveFile();
     await app.closeFile();
     await welcome.waitForPageLoad();
-    await welcome.openFranchiseFile(FilePaths.m22.career.test);
+    await welcome.openFranchiseFile(careerPath);
     await welcome.openTableEditor();
     await tableEditor.openTableById(7482);
     await tableEditor.jumpToColumn("LongName", 5);

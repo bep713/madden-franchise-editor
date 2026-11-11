@@ -1,7 +1,6 @@
 const { test, expect } = require("../util/test");
 
 const electron = require("../util/Electron");
-const FilePaths = require("../util/FilePaths");
 const TestUtil = require("../util/TestUtil");
 
 const App = require("../models/App");
@@ -24,12 +23,14 @@ const FILE_POLL_OPTIONS = { timeout: 30000 };
 
 let app;
 
-test.beforeEach(TestUtil.overwriteTestCareer);
+let careerPath;
+test.beforeEach(({ sandbox }) => {
+  careerPath = sandbox.careerPath;
+});
 test.afterEach(async () => {
   await app?.close();
   app = null;
 });
-test.afterAll(TestUtil.overwriteTestCareer);
 
 async function launchApp() {
   app = new App(await electron.launchWithDefaultOptions());
@@ -37,7 +38,7 @@ async function launchApp() {
 
   const welcome = new WelcomePage(window);
   await welcome.waitForPageLoad();
-  await welcome.openFranchiseFile(FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(careerPath);
 
   return { window, welcome };
 }

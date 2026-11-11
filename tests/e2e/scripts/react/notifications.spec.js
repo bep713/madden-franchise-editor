@@ -5,7 +5,6 @@ const { test } = require("../../util/test");
 
 const electron = require("../../util/Electron");
 const FilePaths = require("../../util/FilePaths");
-const TestUtil = require("../../util/TestUtil");
 const {
   stubMessageBox,
   messageBoxCalls,
@@ -33,8 +32,10 @@ const BANNER_MESSAGE =
   "We cannot find an exact match for this file's schema. Open the schema management page?";
 const CONFIRM = 0;
 
-test.beforeEach(TestUtil.overwriteTestCareer);
-test.afterAll(TestUtil.overwriteTestCareer);
+let careerPath;
+test.beforeEach(({ sandbox }) => {
+  careerPath = sandbox.careerPath;
+});
 
 function copyBundledTo(name) {
   const target = path.join(electron.userDataDir, "schemas", name);
@@ -63,7 +64,7 @@ async function launch() {
 async function openCareer(electronApp, welcome, options) {
   await welcome.openFranchiseFile(
     electronApp,
-    FilePaths.m22.career.test,
+    careerPath,
     options,
   );
 }
@@ -245,7 +246,7 @@ test("the notification survives a UI switch (react)", async () => {
   const legacyWelcome = new LegacyWelcomePage(window);
   await legacyWelcome.waitForOpenFile();
   await legacyWelcome.switchToNew();
-  await welcome.waitForOpenFile(FilePaths.m22.career.test);
+  await welcome.waitForOpenFile(careerPath);
 
   // Still unread, since the drawer was never opened
   await drawer.waitForBadgeCount(1);

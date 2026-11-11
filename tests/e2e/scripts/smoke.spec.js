@@ -4,8 +4,6 @@ const { expect } = require("chai");
 const { test } = require("../util/test");
 
 const electron = require("../util/Electron");
-const FilePaths = require("../util/FilePaths");
-const TestUtil = require("../util/TestUtil");
 
 const App = require("../models/App");
 const WelcomePage = require("../models/WelcomePage");
@@ -13,8 +11,10 @@ const TableEditorPage = require("../models/TableEditorPage");
 const ColumnJumpModal = require("../models/ColumnJumpModal");
 const ReferenceEditorModal = require("../models/ReferenceEditorModal");
 
-test.beforeAll(TestUtil.overwriteTestCareer);
-test.afterAll(TestUtil.overwriteTestCareer);
+let careerPath;
+test.beforeEach(({ sandbox }) => {
+  careerPath = sandbox.careerPath;
+});
 
 test("basic test", async () => {
   const electronApp = await electron.launchWithDefaultOptions();
@@ -27,7 +27,7 @@ test("basic test", async () => {
   await welcome.waitForPageLoad();
 
   // can open the table editor
-  await welcome.openFranchiseFile(FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(careerPath);
   await welcome.openTableEditor();
 
   const tableEditor = new TableEditorPage(window);
@@ -65,7 +65,7 @@ test("basic test", async () => {
 
   // can re-open it
   await welcome.waitForPageLoad();
-  await welcome.openFranchiseFile(FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(careerPath);
   await welcome.openTableEditor();
 
   // ensure our changes stuck

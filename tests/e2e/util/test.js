@@ -1,5 +1,6 @@
 const base = require("@playwright/test");
 const electron = require("./Electron");
+const { makeSandbox, removeSandbox } = require("./sandbox");
 
 // Playwright's `use.trace` only covers its own browser fixtures, not apps
 // started with _electron.launch(). Electron.js starts tracing on launch; this
@@ -29,6 +30,14 @@ const test = base.test.extend({
     },
     { auto: true },
   ],
+
+  // A per-test copy of the career file and export paths (see sandbox.js).
+  // Lazy: only tests (or hooks) that take `sandbox` create one.
+  sandbox: async ({}, use) => {
+    const sandbox = makeSandbox();
+    await use(sandbox);
+    removeSandbox(sandbox);
+  },
 });
 
 module.exports = { ...base, test };

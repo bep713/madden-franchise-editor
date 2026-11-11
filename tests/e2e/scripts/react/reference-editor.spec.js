@@ -2,8 +2,6 @@ const { expect } = require("chai");
 const { test } = require("../../util/test");
 
 const electron = require("../../util/Electron");
-const FilePaths = require("../../util/FilePaths");
-const TestUtil = require("../../util/TestUtil");
 const { poll } = require("../../util/poll");
 
 const App = require("../../models/App");
@@ -11,8 +9,10 @@ const WelcomePage = require("../../models/react/WelcomePage");
 const TableEditorPage = require("../../models/react/TableEditorPage");
 const ReferenceEditor = require("../../models/react/ReferenceEditor");
 
-test.beforeAll(TestUtil.overwriteTestCareer);
-test.afterAll(TestUtil.overwriteTestCareer);
+let careerPath;
+test.beforeEach(({ sandbox }) => {
+  careerPath = sandbox.careerPath;
+});
 
 const headerNames = (table) => table.headers.map((header) => header.name);
 
@@ -26,7 +26,7 @@ test("follow and edit references (react)", async () => {
   const tableEditor = new TableEditorPage(window);
 
   await welcome.waitForPageLoad();
-  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(electronApp, careerPath);
   await welcome.openTableEditor();
   await tableEditor.waitForTableToLoad();
 

@@ -5,8 +5,6 @@ const { expect } = require("chai");
 const { test } = require("../../util/test");
 
 const electron = require("../../util/Electron");
-const FilePaths = require("../../util/FilePaths");
-const TestUtil = require("../../util/TestUtil");
 const { stubSaveDialog } = require("../../util/dialogStubs");
 const { poll } = require("../../util/poll");
 
@@ -18,8 +16,10 @@ const TableEditorPage = require("../../models/react/TableEditorPage");
 const TEAM_TABLE_ID = 7482;
 const ROW = 52;
 
-test.beforeEach(TestUtil.overwriteTestCareer);
-test.afterAll(TestUtil.overwriteTestCareer);
+let careerPath;
+test.beforeEach(({ sandbox }) => {
+  careerPath = sandbox.careerPath;
+});
 
 async function isMenuItemEnabled(electronApp, id) {
   return electronApp.evaluate(
@@ -32,7 +32,7 @@ async function openTeamTable(electronApp, window) {
   const welcome = new WelcomePage(window);
   const tableEditor = new TableEditorPage(window);
   await welcome.waitForPageLoad();
-  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(electronApp, careerPath);
   await welcome.openTableEditor();
   await tableEditor.waitForTableToLoad();
   await tableEditor.openTableById(TEAM_TABLE_ID);
@@ -93,10 +93,10 @@ test("edit, save, close and reopen (react)", async () => {
 
   // can save through the File menu (Ctrl+S). autoSave is off, so only Save
   // writes the file.
-  const before = await fs.stat(FilePaths.m22.career.test);
+  const before = await fs.stat(careerPath);
   await app._clickMenuItem("Save");
   await poll(
-    async () => (await fs.stat(FilePaths.m22.career.test)).mtimeMs,
+    async () => (await fs.stat(careerPath)).mtimeMs,
     (mtime) => mtime > before.mtimeMs,
     { message: "Save did not write the file", timeout: 30000 },
   );
@@ -116,7 +116,7 @@ test("edit, save, close and reopen (react)", async () => {
   expect(await isMenuItemEnabled(electronApp, "CloseFile")).to.equal(false);
 
   // can reopen it, and the edit was saved
-  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(electronApp, careerPath);
   await welcome.openTableEditor();
   await tableEditor.waitForTableToLoad();
   await tableEditor.openTableById(TEAM_TABLE_ID);
@@ -168,7 +168,7 @@ test("save as writes a copy and leaves the original (react)", async () => {
     return name;
   };
   expect(await readLongNameOf(savePath)).to.equal("Old York");
-  expect(await readLongNameOf(FilePaths.m22.career.test)).to.equal("New York");
+  expect(await readLongNameOf(careerPath)).to.equal("New York");
 
   await fs.rm(path.dirname(savePath), { recursive: true, force: true });
 });

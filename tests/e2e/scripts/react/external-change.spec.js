@@ -5,8 +5,6 @@ const { expect } = require("chai");
 const { test } = require("../../util/test");
 
 const electron = require("../../util/Electron");
-const FilePaths = require("../../util/FilePaths");
-const TestUtil = require("../../util/TestUtil");
 const {
   stubMessageBox,
   stubSaveDialog,
@@ -31,12 +29,14 @@ const AUTO_SAVE = { general: { autoSave: [true] } };
 
 let electronApp;
 
-test.beforeEach(TestUtil.overwriteTestCareer);
+let careerPath;
+test.beforeEach(({ sandbox }) => {
+  careerPath = sandbox.careerPath;
+});
 test.afterEach(async () => {
   await electronApp?.close();
   electronApp = null;
 });
-test.afterAll(TestUtil.overwriteTestCareer);
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -56,7 +56,7 @@ async function launch(options = {}) {
   const window = await app.getMainWindow();
   const welcome = new WelcomePage(window);
   await welcome.waitForPageLoad();
-  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(electronApp, careerPath);
   // Give the watcher time to start before the file is touched
   await wait(1000);
   return {
@@ -89,7 +89,7 @@ async function waitForNoFileChanged(window) {
 
 // Touches the career and waits for the file-changed banner (1s debounce)
 async function changeExternally(banner) {
-  touchExternally(FilePaths.m22.career.test);
+  touchExternally(careerPath);
   await banner.waitForBanner("file-changed", { timeout: 10000 });
 }
 
@@ -258,7 +258,7 @@ test("auto-save pauses on an external change until Dismiss (react)", async () =>
   test.setTimeout(120 * 1000);
   const { app, window, welcome, tableEditor, drawer, banner, nav, strip } =
     await launch({ preferences: AUTO_SAVE });
-  const filePath = FilePaths.m22.career.test;
+  const filePath = careerPath;
 
   await openTeamTable(welcome, tableEditor);
   await changeExternally(banner);

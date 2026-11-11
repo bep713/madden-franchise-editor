@@ -4,8 +4,6 @@ const { expect } = require("chai");
 const { test } = require("../../util/test");
 
 const electron = require("../../util/Electron");
-const FilePaths = require("../../util/FilePaths");
-const TestUtil = require("../../util/TestUtil");
 const { poll } = require("../../util/poll");
 
 const App = require("../../models/App");
@@ -18,8 +16,10 @@ const LegacyTableEditorPage = require("../../models/TableEditorPage");
 const TEAM_TABLE_ID = 7482;
 const ROW = 52;
 
-test.beforeEach(TestUtil.overwriteTestCareer);
-test.afterAll(TestUtil.overwriteTestCareer);
+let careerPath;
+test.beforeEach(({ sandbox }) => {
+  careerPath = sandbox.careerPath;
+});
 
 // general.uiVersion in the test profile's preferences.json
 async function storedUiVersion() {
@@ -75,7 +75,7 @@ test("switches to legacy with the open file (react)", async () => {
 
   const welcome = new WelcomePage(window);
   await welcome.waitForPageLoad();
-  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(electronApp, careerPath);
   await welcome.switchToLegacy();
 
   // v4 comes up on Home with the file still open
@@ -100,12 +100,12 @@ test("keeps a legacy edit when switching to new (react)", async () => {
 
   const legacyWelcome = new LegacyWelcomePage(window);
   await legacyWelcome.waitForPageLoad();
-  await legacyWelcome.openFranchiseFile(FilePaths.m22.career.test);
-  const before = await fs.stat(FilePaths.m22.career.test);
+  await legacyWelcome.openFranchiseFile(careerPath);
+  const before = await fs.stat(careerPath);
   const legacyTableEditor = await openLegacyTeamTable(window);
   await legacyTableEditor.setTextAtSelectedCell("Old York");
   await poll(
-    async () => (await fs.stat(FilePaths.m22.career.test)).mtimeMs,
+    async () => (await fs.stat(careerPath)).mtimeMs,
     (mtime) => mtime > before.mtimeMs,
     { message: "Autosave did not write the file", timeout: 30000 },
   );
@@ -116,7 +116,7 @@ test("keeps a legacy edit when switching to new (react)", async () => {
 
   // React shows the open file, path included
   const welcome = new WelcomePage(window);
-  await welcome.waitForOpenFile(FilePaths.m22.career.test);
+  await welcome.waitForOpenFile(careerPath);
   await welcome.locators.openFileLocationLink.waitFor();
   expect(await storedUiVersion()).to.equal("v5");
 
@@ -131,7 +131,7 @@ test("keeps a legacy edit when switching to new (react)", async () => {
     { message: "The file was not closed" },
   );
   await welcome.waitForPageLoad();
-  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(electronApp, careerPath);
   expect(await readLongName(app)).to.equal("Old York");
 
   await electronApp.close();

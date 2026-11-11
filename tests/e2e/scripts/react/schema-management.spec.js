@@ -4,8 +4,6 @@ const { expect } = require("chai");
 const { test } = require("../../util/test");
 
 const electron = require("../../util/Electron");
-const FilePaths = require("../../util/FilePaths");
-const TestUtil = require("../../util/TestUtil");
 const { messageBoxCalls, stubMessageBox } = require("../../util/dialogStubs");
 const { poll } = require("../../util/poll");
 
@@ -27,8 +25,10 @@ const ROW = 52;
 const CONFIRM = 0;
 const CANCEL = 1;
 
-test.beforeEach(TestUtil.overwriteTestCareer);
-test.afterAll(TestUtil.overwriteTestCareer);
+let careerPath;
+test.beforeEach(({ sandbox }) => {
+  careerPath = sandbox.careerPath;
+});
 
 function customSchemaPath() {
   return path.join(electron.userDataDir, "schemas", "M22_329_1.gz");
@@ -102,7 +102,7 @@ test("loads, then deletes a custom schema (react)", async () => {
   const { electronApp, window, welcome, nav, schemas } = await launch();
   copyBundledToCustom();
 
-  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(electronApp, careerPath);
   await openSchemas(nav, schemas);
 
   expect(await schemas.hasRow(CUSTOM)).to.equal(true);
@@ -168,7 +168,7 @@ test("asks before a load drops unsaved changes (react)", async () => {
   copyBundledToCustom();
   const tableEditor = new TableEditorPage(window);
 
-  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(electronApp, careerPath);
   // The custom copy wins the tie at open
   const before = (await getMetadata(window)).schemaList.path;
   expect(samePath(before, customSchemaPath())).to.equal(true);
@@ -226,7 +226,7 @@ test("the loaded card shows the mismatch and loads the expected schema (react)",
   test.setTimeout(120 * 1000);
   const { electronApp, window, welcome, nav, schemas } = await launch();
 
-  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(electronApp, careerPath);
   await openSchemas(nav, schemas);
 
   // The test career expects v328.1, and only v329.1 is bundled
@@ -290,7 +290,7 @@ test("the top row lines up with the grid and sticks (react)", async () => {
 
   await nav.openTab("Home");
   await welcome.waitForPageLoad();
-  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(electronApp, careerPath);
   await openSchemas(nav, schemas);
   await schemas.locators.loadedCard.waitFor();
 

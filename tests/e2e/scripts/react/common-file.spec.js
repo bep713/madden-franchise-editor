@@ -4,7 +4,6 @@ const { test } = require("../../util/test");
 
 const electron = require("../../util/Electron");
 const FilePaths = require("../../util/FilePaths");
-const TestUtil = require("../../util/TestUtil");
 const { poll } = require("../../util/poll");
 
 const App = require("../../models/App");
@@ -12,8 +11,10 @@ const WelcomePage = require("../../models/react/WelcomePage");
 const NavigationBar = require("../../models/react/NavigationBar");
 const CommonFileModal = require("../../models/react/CommonFileModal");
 
-test.beforeAll(TestUtil.overwriteTestCareer);
-test.afterAll(TestUtil.overwriteTestCareer);
+let careerPath;
+test.beforeEach(({ sandbox }) => {
+  careerPath = sandbox.careerPath;
+});
 
 const getPreference = (window, keyPath) =>
   window.evaluate((k) => window.electronAPI.preferences.getValue(k), keyPath);
@@ -83,14 +84,14 @@ test("cancelling the common-file prompt keeps the open file (react)", async () =
   const { electronApp, window, welcome } = await launch();
   const prompt = new CommonFileModal(window);
 
-  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(electronApp, careerPath);
 
   await welcome.startOpenFile(electronApp, FilePaths.m22.common);
   await prompt.waitForOpen();
   await prompt.cancel();
 
   expect(await welcome.getStartedTitle()).to.equal(
-    path.basename(FilePaths.m22.career.test),
+    path.basename(careerPath),
   );
   // Nothing was remembered
   expect(await getRememberedChoices(window)).to.equal(null);
@@ -110,7 +111,7 @@ test("re-opens a remembered common file without asking (react)", async () => {
   await welcome.waitForOpenFile(FilePaths.m22.common);
 
   // Open a career file, then the common file again: no prompt this time
-  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(electronApp, careerPath);
   await welcome.openFranchiseFile(electronApp, FilePaths.m22.common);
   expect(await prompt.dialog.isVisible()).to.equal(false);
   expect((await getActiveMetadata(window)).gameYear).to.equal(22);

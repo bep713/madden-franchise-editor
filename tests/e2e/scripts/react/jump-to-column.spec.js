@@ -2,15 +2,15 @@ const { expect } = require("chai");
 const { test } = require("../../util/test");
 
 const electron = require("../../util/Electron");
-const FilePaths = require("../../util/FilePaths");
-const TestUtil = require("../../util/TestUtil");
 
 const App = require("../../models/App");
 const WelcomePage = require("../../models/react/WelcomePage");
 const TableEditorPage = require("../../models/react/TableEditorPage");
 
-test.beforeAll(TestUtil.overwriteTestCareer);
-test.afterAll(TestUtil.overwriteTestCareer);
+let careerPath;
+test.beforeEach(({ sandbox }) => {
+  careerPath = sandbox.careerPath;
+});
 
 test("jump to column (react)", async () => {
   const electronApp = await electron.launchWithDefaultOptions({ ui: "react" });
@@ -22,7 +22,7 @@ test("jump to column (react)", async () => {
   const { grid, jumpToColumnModal: modal } = tableEditor;
 
   await welcome.waitForPageLoad();
-  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(electronApp, careerPath);
   await welcome.openTableEditor();
   await tableEditor.waitForTableToLoad();
   await tableEditor.openTableById(7482);

@@ -6,8 +6,6 @@ const { FranchiseFile } = require("madden-franchise");
 const { test } = require("../../util/test");
 
 const electron = require("../../util/Electron");
-const FilePaths = require("../../util/FilePaths");
-const TestUtil = require("../../util/TestUtil");
 const { poll } = require("../../util/poll");
 
 const App = require("../../models/App");
@@ -27,12 +25,14 @@ const AUTO_SAVE = { general: { autoSave: [true] } };
 let app;
 let electronApp;
 
-test.beforeEach(TestUtil.overwriteTestCareer);
+let careerPath;
+test.beforeEach(({ sandbox }) => {
+  careerPath = sandbox.careerPath;
+});
 test.afterEach(async () => {
   await electronApp?.close();
   electronApp = null;
 });
-test.afterAll(TestUtil.overwriteTestCareer);
 
 async function openPlayerTable(preferences) {
   electronApp = await electron.launchWithDefaultOptions({
@@ -44,7 +44,7 @@ async function openPlayerTable(preferences) {
 
   const welcome = new WelcomePage(window);
   await welcome.waitForPageLoad();
-  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(electronApp, careerPath);
   await welcome.openTableEditor();
 
   const tableEditor = new TableEditorPage(window);
@@ -74,7 +74,7 @@ async function readPlayerColumn(fieldName) {
 async function readPlayerFieldFromDisk(fieldName, row) {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "mfe-disk-read-"));
   try {
-    const file = await FranchiseFile.create(FilePaths.m22.career.test, {
+    const file = await FranchiseFile.create(careerPath, {
       schemaDirectory: tmpDir,
       saveOnChange: false,
     });

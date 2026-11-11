@@ -4,8 +4,6 @@ const { expect } = require("chai");
 const { test } = require("../../util/test");
 
 const electron = require("../../util/Electron");
-const FilePaths = require("../../util/FilePaths");
-const TestUtil = require("../../util/TestUtil");
 const { stubMessageBox } = require("../../util/dialogStubs");
 const { poll } = require("../../util/poll");
 
@@ -24,8 +22,10 @@ const CUSTOM = "M22 v329.1 (Custom)";
 // Button indexes in the page's confirm boxes
 const CONFIRM = 0;
 
-test.beforeEach(TestUtil.overwriteTestCareer);
-test.afterAll(TestUtil.overwriteTestCareer);
+let careerPath;
+test.beforeEach(({ sandbox }) => {
+  careerPath = sandbox.careerPath;
+});
 
 function customSchemaPath() {
   return path.join(electron.userDataDir, "schemas", "M22_329_1.gz");
@@ -226,7 +226,7 @@ test("views the loaded schema and stays on it after a load (react)", async () =>
   copyBundledToCustom();
 
   // 6. The custom copy wins the tie at open
-  await welcome.openFranchiseFile(electronApp, FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(electronApp, careerPath);
   await openSchemas(nav, schemas);
   expect(await schemas.hasViewLoadedLink()).to.equal(true);
   const loaded = await schemas.loadedLabel();
