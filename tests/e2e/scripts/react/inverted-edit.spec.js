@@ -150,9 +150,8 @@ test("undo and redo work across an orientation switch (react)", async () => {
   /** a two-cell paste in normal, undone inverted */
   await tableEditor.switchOrientation();
   await tableEditor.jumpToColumn("LongName", 10);
-  await app.copyToClipboard("Paste10\nPaste11");
   await tableEditor.watchForLoader();
-  await tableEditor.grid.paste();
+  await app.pasteText(tableEditor.window, "Paste10\nPaste11");
   await tableEditor.waitForLoaderToShowAndHide();
   await waitForFieldValue(TEAM, "LongName", 11, "Paste11");
 
@@ -180,8 +179,7 @@ test("an invalid inverted value is reverted and never replayed (react)", async (
   await waitForFieldValue(TEAM, "LongName", 5, "BeforeInvalid");
 
   await tableEditor.jumpToColumn(enumField, 5);
-  await app.copyToClipboard("NotAMember");
-  await tableEditor.grid.paste();
+  await app.pasteText(tableEditor.window, "NotAMember");
   await waitForGridText(tableEditor, enumField, 5, String(originalEnum));
   expect((await readField(TEAM, enumField))[5]).to.equal(originalEnum);
 
@@ -237,10 +235,9 @@ test("pasting 2,500 records of one field inverted stays responsive (react)", asy
 
   await tableEditor.jumpToColumn("LastName", 0);
   // One line of tab-separated values pastes across the record columns
-  await app.copyToClipboard(lastNames.join("\t"));
   await tableEditor.watchForLoader();
   const start = Date.now();
-  await tableEditor.grid.paste();
+  await app.pasteText(tableEditor.window, lastNames.join("\t"));
   await tableEditor.waitForLoaderToShowAndHide();
   expect(Date.now() - start).to.be.below(MAX_BULK_PASTE_MS);
 
@@ -353,9 +350,8 @@ test("a paste past the grid's edge is clipped in both views (react)", async () =
 
   // normal: four rows pasted onto the last two records
   await tableEditor.jumpToColumn("LongName", recordCount - 2);
-  await app.copyToClipboard(["N1", "N2", "N3", "N4"].join("\n"));
   await tableEditor.watchForLoader();
-  await tableEditor.grid.paste();
+  await app.pasteText(tableEditor.window, ["N1", "N2", "N3", "N4"].join("\n"));
   await tableEditor.waitForLoaderToShowAndHide();
   const names = await readField(TEAM, "LongName");
   expect(names.length).to.equal(recordCount);
@@ -372,9 +368,8 @@ test("a paste past the grid's edge is clipped in both views (react)", async () =
 
   // inverted: four records pasted onto the last two
   await tableEditor.jumpToColumn("ShortName", recordCount - 2);
-  await app.copyToClipboard("I1\tI2\tI3\tI4");
   await tableEditor.watchForLoader();
-  await tableEditor.grid.paste();
+  await app.pasteText(tableEditor.window, "I1\tI2\tI3\tI4");
   await tableEditor.waitForLoaderToShowAndHide();
   const shortNames = await readField(TEAM, "ShortName");
   expect(shortNames.length).to.equal(recordCount);

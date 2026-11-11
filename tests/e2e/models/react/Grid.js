@@ -71,10 +71,6 @@ class Grid {
       .click();
   }
 
-  async paste() {
-    await util.sendPasteKeyboardShortcut(this.window);
-  }
-
   async undo() {
     await util.sendUndoKeyboardShortcut(this.window);
   }

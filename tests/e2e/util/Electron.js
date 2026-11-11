@@ -85,6 +85,11 @@ class Electron {
             args: [
                 'main.js',
                 `--user-data-dir=${this.userDataDir}`,
+                // Parallel workers' windows cover each other, and Chromium
+                // would throttle the hidden ones' timers and rAF.
+                '--disable-renderer-backgrounding',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-features=CalculateNativeWinOcclusion',
                 // E2E_SCALE=1 mimics the CI display (with E2E_WINDOW_SIZE, see App.js)
                 ...(process.env.E2E_SCALE ? [`--force-device-scale-factor=${process.env.E2E_SCALE}`] : [])
             ],

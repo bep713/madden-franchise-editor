@@ -80,11 +80,10 @@ test("pasting 2,500 cells stays responsive and shows the loader", async () => {
   await TestUtil.setAutoUnempty(app, true);
 
   const lastNames = Array.from({ length: 2500 }, (_, i) => `Bulk${i}`);
-  await app.copyToClipboard(columnOfValues(lastNames));
   await tableEditor.goToCell(0, "LastName");
 
   const start = Date.now();
-  await tableEditor.pasteAtSelectedCell();
+  await tableEditor.pasteAtSelectedCell(app, columnOfValues(lastNames));
   await tableEditor.waitForLoaderToShowAndHide();
   expect(Date.now() - start).toBeLessThan(MAX_BULK_PASTE_MS);
 
@@ -107,8 +106,7 @@ test("pasting into empty rows un-empties them and removes the empty styling", as
   await tableEditor.goToCell(FIRST_EMPTY_PLAYER_ROWS[0], "LastName");
   expect(await tableEditor.isSelectedCellEmpty()).toBe(true);
 
-  await app.copyToClipboard(columnOfValues(["Empty1", "Empty2", "Empty3", "Empty4"]));
-  await tableEditor.pasteAtSelectedCell();
+  await tableEditor.pasteAtSelectedCell(app, columnOfValues(["Empty1", "Empty2", "Empty3", "Empty4"]));
   await tableEditor.waitForLoaderToShowAndHide();
 
   // the pasted rows are no longer empty in the grid...
@@ -142,9 +140,8 @@ test("undo and redo after a bulk paste are saved to the file", async () => {
   let tableEditor = await openPlayerTable();
   const originalNames = (await readPlayerColumn("LastName")).slice(0, rowCount);
 
-  await app.copyToClipboard(columnOfValues(pastedNames));
   await tableEditor.goToCell(0, "LastName");
-  await tableEditor.pasteAtSelectedCell();
+  await tableEditor.pasteAtSelectedCell(app, columnOfValues(pastedNames));
   await tableEditor.waitForLoaderToShowAndHide();
   expect((await readPlayerColumn("LastName")).slice(0, rowCount)).toEqual(pastedNames);
 
@@ -158,9 +155,8 @@ test("undo and redo after a bulk paste are saved to the file", async () => {
   expect((await readPlayerColumn("LastName")).slice(0, rowCount)).toEqual(originalNames);
 
   /** Ctrl+Y puts the pasted names back, in the grid and in the saved file */
-  await app.copyToClipboard(columnOfValues(pastedNames));
   await tableEditor.goToCell(0, "LastName");
-  await tableEditor.pasteAtSelectedCell();
+  await tableEditor.pasteAtSelectedCell(app, columnOfValues(pastedNames));
   await tableEditor.waitForLoaderToShowAndHide();
   await tableEditor.undo();
   await tableEditor.waitForLoaderToShowAndHide();
@@ -178,9 +174,8 @@ test("a paste with one invalid value only reverts that cell", async () => {
   const [originalRow0, originalRow1, originalRow2] = await readPlayerColumn("InjuryStatus");
   expect([originalRow0, originalRow1, originalRow2]).toEqual(["Uninjured", "Uninjured", "Uninjured"]);
 
-  await app.copyToClipboard(columnOfValues(["Injured", "NotAStatus", "EarlyReturn"]));
   await tableEditor.goToCell(0, "InjuryStatus");
-  await tableEditor.pasteAtSelectedCell();
+  await tableEditor.pasteAtSelectedCell(app, columnOfValues(["Injured", "NotAStatus", "EarlyReturn"]));
   await tableEditor.waitForLoaderToShowAndHide();
 
   // the file keeps the valid values and rejects the invalid one

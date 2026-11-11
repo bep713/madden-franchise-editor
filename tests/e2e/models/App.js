@@ -1,4 +1,6 @@
 const { dismissBanners } = require("../util/banners");
+const { withClipboardLock } = require("../util/clipboardLock");
+const util = require("../util/UiTestUtil");
 
 class App {
   constructor(app) {
@@ -83,7 +85,32 @@ class App {
     await dismissBanners(await this.getMainWindow());
   }
 
-  async copyToClipboard(text) {
+  // Copies text and pastes it with a real Ctrl+V into the focused element of
+  // window. Holds the clipboard lock until the page has read the clipboard,
+  // so parallel workers can't paste each other's text. Returns as soon as
+  // the paste event fired, not when the paste has been processed.
+  async pasteText(window, text) {
+    await withClipboardLock(async () => {
+      await window.evaluate(() => {
+        window.e2ePasteSeen = false;
+        window.addEventListener(
+          "paste",
+          () => {
+            window.e2ePasteSeen = true;
+          },
+          { capture: true, once: true },
+        );
+      });
+      await this._copyToClipboard(text);
+      await util.sendPasteKeyboardShortcut(window);
+      await window.waitForFunction(() => window.e2ePasteSeen, null, {
+        timeout: 10000,
+      });
+    });
+  }
+
+  // Only call under the clipboard lock (use pasteText)
+  async _copyToClipboard(text) {
     // The clipboard lives in the main process
     await this.app.evaluate(({ clipboard }, text) => {
       clipboard.writeText(text);

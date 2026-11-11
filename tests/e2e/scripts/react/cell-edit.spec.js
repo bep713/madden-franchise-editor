@@ -95,9 +95,8 @@ async function readEmptyPlayerRows() {
 
 // One value per line pastes down a single column
 async function pasteColumn(tableEditor, values) {
-  await app.copyToClipboard(values.join("\n"));
   await tableEditor.watchForLoader();
-  await tableEditor.grid.paste();
+  await app.pasteText(tableEditor.window, values.join("\n"));
 }
 
 test("the context menu can set a record as empty (react)", async () => {
