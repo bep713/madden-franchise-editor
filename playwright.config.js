@@ -2,6 +2,8 @@
 const { devices } = require("@playwright/test");
 const path = require("path");
 
+const quick = !!process.env.E2E_QUICK;
+
 /**
  * @see https://playwright.dev/docs/test-configuration
  * @type {import('@playwright/test').PlaywrightTestConfig}
@@ -57,10 +59,19 @@ const config = {
   },
 
   /* `npx playwright test` runs both; `--project=react` runs only the React UI
-     specs (needs `npm run build:react` first). */
+     specs (needs `npm run build:react` first). E2E_QUICK=1 (`npm run
+     e2eTest:quick`) skips React tests tagged @slow and runs only the v4 smoke. */
   projects: [
-    { name: "v4", testIgnore: "**/react/**" },
-    { name: "react", testMatch: "**/react/**/*.spec.js" },
+    {
+      name: "v4",
+      testIgnore: "**/react/**",
+      ...(quick ? { testMatch: "**/smoke.spec.js" } : {}),
+    },
+    {
+      name: "react",
+      testMatch: "**/react/**/*.spec.js",
+      ...(quick ? { grepInvert: /@slow/ } : {}),
+    },
   ],
 
   /* Configure projects for major browsers */

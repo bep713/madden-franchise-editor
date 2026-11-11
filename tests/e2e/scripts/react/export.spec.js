@@ -14,7 +14,7 @@ const App = require("../../models/App");
 const WelcomePage = require("../../models/react/WelcomePage");
 const TableEditorPage = require("../../models/react/TableEditorPage");
 
-test("export table e2e test (react)", async ({ sandbox }) => {
+test("export table e2e test (react) @slow", async ({ sandbox }) => {
   // openExcelAfterImport defaults to on, which would open Excel
   const electronApp = await electron.launchWithDefaultOptions({
     ui: "react",

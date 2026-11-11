@@ -10,7 +10,8 @@ Follows `.claude/plans/e2e-speedup.md` (steps 1–3 done: sandbox, clipboard loc
 | 2 | Done, committed (8ad812f). 101 tests, 989 s, all passing. |
 | 3 | Done, committed ("e2e trim phase 3"). Edited specs −71 s; 5 tests under the 40% bar (see Phase 3 result). |
 | 4 | Done, committed (3a24f97). Tracing only on retry (−20%), CI retries 1, 5 local workers (wall 441 → 323 s for the suite ×2). See Phase 4 result. |
-| 5–6 | Not started. |
+| 5 | Done, uncommitted. `e2eTest:quick`: 78 tests, 112 s wall including `build:react`, green. See Phase 5 result. |
+| 6 | Skipped for now (11 Nov 2026). It would drop ~183 s of v4 test time from PRs (~1.5–2 min CI wall), but a v4 break would only show on the nightly. Revisit if PR runs feel slow. |
 
 ## Goal
 
@@ -151,6 +152,13 @@ Measure first. Each change lands only if the numbers justify it.
 **5e. Docs.** In CLAUDE.md Commands, add `e2eTest:quick`. In Tests, add: the `@slow` tag rule, that the quick run is for local checks and CI always runs the full suite, the `diskReader` helper ("assert saved files with `readTableFromDisk`, don't relaunch"), and "seed preferences with `launchWithDefaultOptions({ preferences })`, don't click through Settings, unless the toggle is what you're testing".
 
 **Gate:** `npm run e2eTest:quick` is green and takes ≤ 2 min wall time. `--list` shows no `@slow` tests and only v4 smoke from v4.
+
+**Result (11 Nov 2026, uncommitted):**
+- Full suite before tagging (5 workers, untraced): 101 tests, 783 s test time, all passing (goal ≤ 850 s met).
+- Tagged `@slow` (9 React tests, ~143 s): react `cell-edit` "pasting 2,500 cells…" (13.2 s), "undo and redo after a bulk paste…" (13.9), "fast edits and a fast double undo…" (25.5); `inverted-edit` "pasting 2,500 records…" (13.7), "export and import from the inverted view…" (8.0); `import` both (14.7, 6.5); `export` (29.9); and `context-menu` "Set as next empty record…" (17.1, over the 15 s bar, not in the original list). The other React tests between 13 and 15 s ("undo doesn't reach into another table", `save` "edit, save, close and reopen", `external-change` "Reload drops…") stay in, because they are under the bar and cover core flows.
+- `E2E_QUICK=1 npx playwright test --list`: 78 tests, no `@slow`, and only `[v4] smoke.spec.js` from v4.
+- `npm run e2eTest:quick`: 78/78 green, 497 s test time, 112 s wall including `build:react`.
+- `@slow` only filters the `react` project. v4 `export` (42 s at 5 workers) is still in the full run, and v4 is out of the quick run anyway.
 
 ## Phase 6: Full v4 project on nightly and release only (approved)
 

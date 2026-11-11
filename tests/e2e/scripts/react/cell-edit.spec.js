@@ -103,7 +103,7 @@ test("single-cell edits are saved to the file (react)", async () => {
   expect(await tableEditor.grid.getTextAtSelectedCell()).to.equal("Single");
 });
 
-test("pasting 2,500 cells stays responsive and shows the loader (react)", async () => {
+test("pasting 2,500 cells stays responsive and shows the loader (react) @slow", async () => {
   // Pasting into empty rows also un-empties them, the most work per cell
   const tableEditor = await openPlayerTable(AUTO_UNEMPTY);
 
@@ -160,7 +160,7 @@ test("pasting into empty rows un-empties them and removes the empty styling (rea
 
 // Also guards against the grid reloading its data when the loader re-renders
 // the page, which would clear the undo stack.
-test("undo and redo after a bulk paste are saved to the file (react)", async () => {
+test("undo and redo after a bulk paste are saved to the file (react) @slow", async () => {
   // Rows before the first empty row, so undo puts back real names
   const rowCount = FIRST_EMPTY_PLAYER_ROWS[0];
   const pastedNames = Array.from({ length: rowCount }, (_, i) => `Undo${i}`);
@@ -280,7 +280,7 @@ test("undo doesn't reach into another table (react)", async () => {
 
 // Regression: a write that arrived during an auto-save was never saved, and
 // its response could land before the earlier write's, flickering the grid
-test("fast edits and a fast double undo with autoSave reach the grid and the disk (react)", async () => {
+test("fast edits and a fast double undo with autoSave reach the grid and the disk (react) @slow", async () => {
   const tableEditor = await openPlayerTable(AUTO_SAVE);
 
   // Once every queued save is done, the grid, main's copy and the file on

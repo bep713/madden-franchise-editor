@@ -31,7 +31,7 @@ async function openTableEditor(electronApp, welcome, tableEditor) {
   await tableEditor.waitForTableToLoad();
 }
 
-test("import table e2e test (react)", async () => {
+test("import table e2e test (react) @slow", async () => {
   test.setTimeout(120 * 1000);
   const electronApp = await electron.launchWithDefaultOptions({ ui: "react" });
   const app = new App(electronApp);
@@ -137,7 +137,7 @@ test("import table e2e test (react)", async () => {
   }
 });
 
-test("import table with auto un-empty enabled (react)", async () => {
+test("import table with auto un-empty enabled (react) @slow", async () => {
   test.setTimeout(120 * 1000);
   const electronApp = await electron.launchWithDefaultOptions({
     ui: "react",

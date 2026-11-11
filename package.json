@@ -12,6 +12,7 @@
     "perf:startup": "node scripts/perf-startup.js",
     "e2eTest": "npm run sass:build && npm run build:renderer && npm run build:react && npx playwright test",
     "e2eTest:react": "npm run build:react && npx playwright test --project=react",
+    "e2eTest:quick": "npm run build:react && cross-env E2E_QUICK=1 npx playwright test",
     "postinstall": "patch-package",
     "prepare": "git config core.hooksPath .githooks",
     "sass:build": "sass renderer/sass/app-manifest.scss renderer/css/app-manifest.css --no-source-map",

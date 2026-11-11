@@ -287,7 +287,7 @@ test("Open this reference in a new tab opens a background tab (react)", async ()
   );
 });
 
-test("Set as next empty record to use moves the chain head (react)", async () => {
+test("Set as next empty record to use moves the chain head (react) @slow", async () => {
   const tableEditor = await openTable(PLAYER);
 
   // not on a record that isn't empty

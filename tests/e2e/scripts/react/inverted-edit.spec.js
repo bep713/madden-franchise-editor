@@ -232,7 +232,7 @@ test("the reference editor works in the inverted view (react)", async () => {
   );
 });
 
-test("pasting 2,500 records of one field inverted stays responsive (react)", async () => {
+test("pasting 2,500 records of one field inverted stays responsive (react) @slow", async () => {
   const tableEditor = await openInverted(PLAYER);
   const lastNames = Array.from({ length: 2500 }, (_, i) => `Inv${i}`);
 
@@ -294,7 +294,7 @@ test("the orientation belongs to the tab's current table (react)", async () => {
   );
 });
 
-test("export and import from the inverted view use the normal layout (react)", async () => {
+test("export and import from the inverted view use the normal layout (react) @slow", async () => {
   test.setTimeout(150 * 1000);
   // openExcelAfterImport defaults to on, which would open Excel
   const tableEditor = await openInverted(TEAM, {
