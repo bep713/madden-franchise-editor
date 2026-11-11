@@ -9,7 +9,7 @@ Follows `.claude/plans/e2e-speedup.md` (steps 1–3 done: sandbox, clipboard loc
 | 1 | Done, committed (cc91e50). Full suite ×2 green, 1,028 s/run (was 1,099). |
 | 2 | Done, committed (8ad812f). 101 tests, 989 s, all passing. |
 | 3 | Done, committed ("e2e trim phase 3"). Edited specs −71 s; 5 tests under the 40% bar (see Phase 3 result). |
-| 4 | Done, uncommitted. Tracing only on retry (−20%), CI retries 1, 5 local workers (wall 441 → 323 s for the suite ×2). See Phase 4 result. |
+| 4 | Done, committed (3a24f97). Tracing only on retry (−20%), CI retries 1, 5 local workers (wall 441 → 323 s for the suite ×2). See Phase 4 result. |
 | 5–6 | Not started. |
 
 ## Goal
@@ -119,7 +119,7 @@ Measure first. Each change lands only if the numbers justify it.
 
 **Gate:** the numbers are recorded in this file. The suite is green twice at the chosen worker count.
 
-**Result (11 Nov 2026, uncommitted):**
+**Result (11 Nov 2026, committed 3a24f97):**
 - **4a tracing:** `react/cell-edit` + `react/context-menu`, `--repeat-each=3` (51 tests): 548.1 s traced → 438.8 s untraced (−20%; cell-edit 14.96 → 12.19 s/test, context-menu 7.00 → 5.42). Over the 5% bar, so implemented: `Electron.js` `shouldTrace()` traces when `test.info().retry > 0` (or `E2E_TRACE=1`, or outside a test), `options.trace` overrides, `electron.tracing` records the choice and the fixture skips `tracing.stop` without it. CI `retries: 1`. Checked with a throwaway failing spec and `--retries=1`: attempt 1 saves only `failure.png`, `-retry1` saves `trace.zip` too.
 - **4b workers** (full suite, `--repeat-each=2`, 202 runs, untraced; 2 skips are the existing `test.skip` in react notifications):
 
