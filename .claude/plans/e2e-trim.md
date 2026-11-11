@@ -9,7 +9,8 @@ Follows `.claude/plans/e2e-speedup.md` (steps 1–3 done: sandbox, clipboard loc
 | 1 | Done, committed (cc91e50). Full suite ×2 green, 1,028 s/run (was 1,099). |
 | 2 | Done, committed (8ad812f). 101 tests, 989 s, all passing. |
 | 3 | Done, committed ("e2e trim phase 3"). Edited specs −71 s; 5 tests under the 40% bar (see Phase 3 result). |
-| 4–6 | Not started. |
+| 4 | Done, uncommitted. Tracing only on retry (−20%), CI retries 1, 5 local workers (wall 441 → 323 s for the suite ×2). See Phase 4 result. |
+| 5–6 | Not started. |
 
 ## Goal
 
@@ -117,6 +118,19 @@ Measure first. Each change lands only if the numbers justify it.
 - Watch `MAX_BULK_PASTE_MS = 15000` (in react `cell-edit` and `inverted-edit` and in v4 `bulk-edit`) under the higher load. If it fails, use the next lower worker count. Don't raise the limit.
 
 **Gate:** the numbers are recorded in this file. The suite is green twice at the chosen worker count.
+
+**Result (11 Nov 2026, uncommitted):**
+- **4a tracing:** `react/cell-edit` + `react/context-menu`, `--repeat-each=3` (51 tests): 548.1 s traced → 438.8 s untraced (−20%; cell-edit 14.96 → 12.19 s/test, context-menu 7.00 → 5.42). Over the 5% bar, so implemented: `Electron.js` `shouldTrace()` traces when `test.info().retry > 0` (or `E2E_TRACE=1`, or outside a test), `options.trace` overrides, `electron.tracing` records the choice and the fixture skips `tracing.stop` without it. CI `retries: 1`. Checked with a throwaway failing spec and `--retries=1`: attempt 1 saves only `failure.png`, `-retry1` saves `trace.zip` too.
+- **4b workers** (full suite, `--repeat-each=2`, 202 runs, untraced; 2 skips are the existing `test.skip` in react notifications):
+
+| Workers | Wall (s) | Test-time sum (s) | Failures |
+|---|---|---|---|
+| 3 | 441 | 1,286 | 0 |
+| 4 | 368 / 392 | 1,416 / 1,510 | 1 / 1 |
+| 5 | 323 / 325 | 1,536 / 1,545 | 0 / 0 |
+| 6 | 322 | 1,809 | 1 |
+
+  Chose **5**: green twice, and 6 is no faster. The v4 `export` test grows with load (32–36 s at 3, 40–43 at 5, 50–68 at 6, where it timed out at 60 s), so it is the first to break if the count goes up. `MAX_BULK_PASTE_MS` never failed. The two 4-worker failures look like hangs, not load: v4 `import` hit 60 s (its other runs took 20–30 s), and react `inverted-edit` "export and import…" hung in `afterEach` `electronApp.close()` (150 s). That is the same close hang as the Phase 1 flake. It is pre-existing, and probably also possible at 5. Follow-up: find why `close()` hangs (maybe the Settings/Excel window `preventDefault` in `main.js`). Also, v4 `export` is now ~40 s of a 60 s timeout at 5 workers, which the Phase 5 `@slow` tag or a raised per-test timeout should cover.
 
 ## Phase 5: Quick local subset
 

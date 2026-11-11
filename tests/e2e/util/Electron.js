@@ -2,6 +2,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { _electron: electron } = require('playwright');
+const { test } = require('@playwright/test');
 const preferencesSchema = require('../../../data/preferencesSchema.json');
 
 // Preferences for a fresh test profile: schema defaults, with every settings
@@ -35,6 +36,20 @@ const buildTestPreferences = () => {
     return preferences;
 };
 
+// Tracing adds about 20% to test time (measured Nov 2026), so by default it
+// only runs on a retry, where a failure gets a trace. E2E_TRACE=1 traces every
+// launch. Outside a test (no test.info()) it stays on.
+const shouldTrace = () => {
+    if (process.env.E2E_TRACE) {
+        return true;
+    }
+    try {
+        return test.info().retry > 0;
+    } catch (e) {
+        return true;
+    }
+};
+
 const REACT_INDEX = path.join(__dirname, '../../../out/renderer/index.html');
 
 // The UI is picked by the seeded general.uiVersion preference (see
@@ -51,12 +66,14 @@ class Electron {
     constructor() {
         this.electron = null;
         this.userDataDir = null;
+        this.tracing = false;
     };
 
     // options.pins: contents to seed pins.json with
     // options.ui: "react" loads the built React UI (out/renderer) instead of v4
     // options.preferences: { <section>: { <key>: value } } merged over the
     // test defaults (e.g. { general: { autoUnempty: [true] } })
+    // options.trace: record a Playwright trace (default: see shouldTrace)
     async launchWithDefaultOptions(options = {}) {
         if (options.ui === 'react' && !fs.existsSync(REACT_INDEX)) {
             throw new Error('out/renderer/index.html missing, run npm run build:react');
@@ -97,7 +114,10 @@ class Electron {
         });
 
         // Saved on failure by the fixture in util/test.js.
-        await this.electron.context().tracing.start({ screenshots: true, snapshots: true });
+        this.tracing = options.trace ?? shouldTrace();
+        if (this.tracing) {
+            await this.electron.context().tracing.start({ screenshots: true, snapshots: true });
+        }
 
         const userDataDir = this.userDataDir;
         this.electron.on('close', () => {
@@ -111,6 +131,7 @@ class Electron {
 
     async launch(options) {
         this.electron = await electron.launch(options);
+        this.tracing = false;
         return this.electron;
     };
 };

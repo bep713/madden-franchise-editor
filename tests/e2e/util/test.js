@@ -3,9 +3,9 @@ const electron = require("./Electron");
 const { makeSandbox, removeSandbox } = require("./sandbox");
 
 // Playwright's `use.trace` only covers its own browser fixtures, not apps
-// started with _electron.launch(). Electron.js starts tracing on launch; this
-// saves the trace and a screenshot when a test fails, so CI failures can be
-// opened in the trace viewer.
+// started with _electron.launch(). Electron.js starts tracing on a retry (or
+// with E2E_TRACE=1); this saves the trace, if any, and a screenshot when a
+// test fails, so CI failures can be opened in the trace viewer.
 const test = base.test.extend({
   failureArtifacts: [
     async ({}, use, testInfo) => {
@@ -21,9 +21,11 @@ const test = base.test.extend({
         if (window) {
           await window.screenshot({ path: testInfo.outputPath("failure.png") });
         }
-        await app
-          .context()
-          .tracing.stop({ path: testInfo.outputPath("trace.zip") });
+        if (electron.tracing) {
+          await app
+            .context()
+            .tracing.stop({ path: testInfo.outputPath("trace.zip") });
+        }
       } catch (e) {
         // the app may already be closed
       }

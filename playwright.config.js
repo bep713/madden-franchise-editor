@@ -23,19 +23,20 @@ const config = {
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
 
-  /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
+  /* Retry on CI only. The retry records a trace (util/Electron.js). */
+  retries: process.env.CI ? 1 : 0,
 
   /* Every test launches its own app on its own sandbox copy (util/sandbox.js)
      and userData dir, so tests in the same file can run in parallel too. */
   fullyParallel: true,
 
-  /* E2E_WORKERS overrides. CI's windows-latest has 4 vCPU. */
+  /* E2E_WORKERS overrides. CI's windows-latest has 4 vCPU. Locally 5 was the
+     fastest clean count on 12 logical cores (6 was no faster, Nov 2026). */
   workers: process.env.E2E_WORKERS
     ? Number(process.env.E2E_WORKERS)
     : process.env.CI
       ? 2
-      : 3,
+      : 5,
 
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
