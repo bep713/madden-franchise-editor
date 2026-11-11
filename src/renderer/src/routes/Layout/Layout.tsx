@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 
 import styles from './Layout.module.scss';
 
+import AutoSavePaused from './AutoSavePaused';
 import Navigation from '../../components/Navigation/Navigation';
 import { BannerProvider } from '@renderer/banners/BannerContext';
 import { ExternalChangeProvider } from '@renderer/context/ExternalChangeContext';
@@ -52,7 +53,10 @@ const Layout: React.FC = () => {
                                 isClosable: tab.kind === 'table'
                             }))}
                         />
-                        <Outlet />
+                        <AutoSavePaused />
+                        <div className={styles.page}>
+                            <Outlet />
+                        </div>
                     </div>
                 </EditorTabsContext.Provider>
             </ExternalChangeProvider>

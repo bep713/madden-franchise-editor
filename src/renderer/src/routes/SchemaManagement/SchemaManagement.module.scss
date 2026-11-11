@@ -1,13 +1,12 @@
-@use '@assets/vars' as v;
 @import '@assets/colors.css';
 @import '@assets/spacing.css';
 
-/* The app's grid row grows with its content, so bound the page to the window
-   for <main> to scroll (Welcome gets this from Allotment) */
+/* Fills the app's page row (below the tab bar and any auto-save strip), so
+   <main> scrolls */
 .page {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - v.$navbar-height);
+    height: 100%;
 }
 
 /* Holds the Allotment, which fills its parent's height */

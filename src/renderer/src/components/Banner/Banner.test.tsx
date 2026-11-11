@@ -37,7 +37,7 @@ describe('Banner', () => {
         expect(onClose).toHaveBeenCalledTimes(1);
     });
 
-    it('runs an action then closes, and renders at most two actions', async () => {
+    it('runs an action then closes, and renders at most three actions', async () => {
         const onClose = vi.fn();
         const onClick = vi.fn();
         render(
@@ -45,7 +45,8 @@ describe('Banner', () => {
                 actions={[
                     { label: 'A', onClick },
                     { label: 'B', onClick: vi.fn() },
-                    { label: 'C', onClick: vi.fn() }
+                    { label: 'C', onClick: vi.fn() },
+                    { label: 'D', onClick: vi.fn() }
                 ]}
                 message='m'
                 onClose={onClose}
@@ -53,7 +54,7 @@ describe('Banner', () => {
                 visible
             />
         );
-        expect(screen.getAllByRole('button')).toHaveLength(3); // 2 + close
+        expect(screen.getAllByRole('button')).toHaveLength(4); // 3 + close
         await userEvent.click(screen.getByRole('button', { name: 'A' }));
         expect(onClick).toHaveBeenCalledTimes(1);
         expect(onClose).toHaveBeenCalledTimes(1);

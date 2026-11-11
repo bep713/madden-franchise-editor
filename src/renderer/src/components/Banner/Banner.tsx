@@ -23,7 +23,8 @@ interface Props {
     visible: boolean;
 }
 
-const MAX_ACTIONS = 2;
+// file-changed has three: Dismiss, Branch and save new, Reload
+const MAX_ACTIONS = 3;
 
 const Banner: React.FC<Props> = ({
     actions = [],

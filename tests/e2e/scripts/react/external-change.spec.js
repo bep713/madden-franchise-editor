@@ -19,6 +19,7 @@ const WelcomePage = require("../../models/react/WelcomePage");
 const TableEditorPage = require("../../models/react/TableEditorPage");
 const NotificationDrawer = require("../../models/react/NotificationDrawer");
 const Banner = require("../../models/react/Banner");
+const NavigationBar = require("../../models/react/NavigationBar");
 
 const BANNER_MESSAGE =
   "This save file has been modified outside of this program. Do you want to reload the file?";
@@ -26,6 +27,7 @@ const TEAM_TABLE_ID = 7482;
 const ROW = 52;
 const CONFIRM = 0;
 const CANCEL = 1;
+const AUTO_SAVE = { general: { autoSave: [true] } };
 
 let electronApp;
 
@@ -45,8 +47,11 @@ function touchExternally(filePath) {
 }
 
 // Opens the career (dismissing the mismatch banner)
-async function launch() {
-  electronApp = await electron.launchWithDefaultOptions({ ui: "react" });
+async function launch(options = {}) {
+  electronApp = await electron.launchWithDefaultOptions({
+    ui: "react",
+    ...options,
+  });
   const app = new App(electronApp);
   const window = await app.getMainWindow();
   const welcome = new WelcomePage(window);
@@ -61,6 +66,8 @@ async function launch() {
     tableEditor: new TableEditorPage(window),
     drawer: new NotificationDrawer(window),
     banner: new Banner(window),
+    nav: new NavigationBar(window),
+    strip: window.getByTestId("auto-save-paused"),
   };
 }
 
@@ -86,6 +93,14 @@ async function changeExternally(banner) {
   await banner.waitForBanner("file-changed", { timeout: 10000 });
 }
 
+async function waitForNoStrip(strip) {
+  await poll(
+    () => strip.count(),
+    (count) => count === 0,
+    { message: "The auto-save paused strip is still shown" },
+  );
+}
+
 async function headerNames(app) {
   const team = await app.readTable(TEAM_TABLE_ID);
   return team.headers.map((header) => header.name);
@@ -96,11 +111,14 @@ async function readLongName(app) {
   return team.records[ROW].LongName;
 }
 
-// Edits Team LongName in memory (auto-save is off, nothing is saved)
-async function editLongName(app, welcome, tableEditor) {
+async function openTeamTable(welcome, tableEditor) {
   await welcome.openTableEditor();
   await tableEditor.waitForTableToLoad();
   await tableEditor.openTableById(TEAM_TABLE_ID);
+}
+
+// Edits Team LongName in the open Team table
+async function setLongName(app, tableEditor) {
   await tableEditor.grid.selectCell(ROW, "LongName", await headerNames(app));
   await tableEditor.grid.setTextAtSelectedCell("Old York");
   await poll(
@@ -108,6 +126,12 @@ async function editLongName(app, welcome, tableEditor) {
     (name) => name === "Old York",
     { message: "The edit never reached the file" },
   );
+}
+
+// Edits Team LongName in memory (auto-save is off, nothing is saved)
+async function editLongName(app, welcome, tableEditor) {
+  await openTeamTable(welcome, tableEditor);
+  await setLongName(app, tableEditor);
 }
 
 async function windowTitle() {
@@ -228,4 +252,63 @@ test("the banner's Dismiss removes the drawer entry (react)", async () => {
 
   await drawer.open();
   expect(await drawer.item(stored.id).count()).to.equal(0);
+});
+
+test("auto-save pauses on an external change until Dismiss (react)", async () => {
+  test.setTimeout(120 * 1000);
+  const { app, window, welcome, tableEditor, drawer, banner, nav, strip } =
+    await launch({ preferences: AUTO_SAVE });
+  const filePath = FilePaths.m22.career.test;
+
+  await openTeamTable(welcome, tableEditor);
+  await changeExternally(banner);
+  await strip.waitFor();
+  expect(await strip.innerText()).to.include(
+    "Auto-save is paused: CAREER-E2ETEST was changed outside the editor.",
+  );
+  const external = fs.readFileSync(filePath);
+
+  await setLongName(app, tableEditor);
+  await wait(1000);
+  expect(fs.readFileSync(filePath).equals(external)).to.equal(true);
+
+  // The banner may have timed out during the edit; the drawer X also dismisses
+  if (await banner.isVisible()) {
+    await banner.dismiss();
+  } else {
+    const [stored] = await fileChangedNotifications(window);
+    await nav.openTab("Home");
+    await drawer.open();
+    await drawer.dismiss(stored.id);
+  }
+  await waitForNoStrip(strip);
+  await poll(
+    () => fs.readFileSync(filePath).equals(external),
+    (same) => !same,
+    { message: "The paused edit was never auto-saved", timeout: 30000 },
+  );
+});
+
+test("Reload from the auto-save paused strip clears it (react)", async () => {
+  test.setTimeout(120 * 1000);
+  const { window, banner, strip } = await launch({ preferences: AUTO_SAVE });
+
+  await changeExternally(banner);
+  await strip.waitFor();
+  // Nothing is unsaved, so there is no confirm
+  await stubMessageBox(electronApp, CANCEL);
+  await strip.getByRole("button", { name: "Reload", exact: true }).click();
+
+  await waitForNoStrip(strip);
+  await waitForNoFileChanged(window);
+  expect(await messageBoxCalls(electronApp)).to.have.length(0);
+});
+
+test("no auto-save paused strip with auto-save off (react)", async () => {
+  test.setTimeout(120 * 1000);
+  const { window, banner, strip } = await launch();
+
+  await changeExternally(banner);
+  expect(await fileChangedNotifications(window)).to.have.length(1);
+  expect(await strip.count()).to.equal(0);
 });

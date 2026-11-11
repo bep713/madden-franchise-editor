@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { act, render } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -43,15 +43,21 @@ const franchiseAPI = {
 let actions: ExternalChange;
 let current: OpenFranchiseFile | undefined;
 
+// Captured in a layout effect, which runs before render() returns
 const Probe: React.FC = () => {
-    actions = useExternalChange();
+    const value = useExternalChange();
+    useLayoutEffect(() => {
+        actions = value;
+    });
     return null;
 };
 
 // A real state, so the tests see what the provider sets
 const Harness: React.FC = () => {
     const [file, setFile] = useState<OpenFranchiseFile | undefined>(makeFile);
-    current = file;
+    useLayoutEffect(() => {
+        current = file;
+    });
     return (
         <FranchiseFileContext.Provider value={[file, setFile]}>
             <ExternalChangeProvider>

@@ -35,11 +35,11 @@ How v4 works:
 
 | Step | Scope | Plan | Status |
 |---|---|---|---|
-| 04r1 | Main: `fileWatcher.js` module (debounce, `file-changed` notification), `main.js` wiring, the `file-changed` type | [04r1-file-watcher.md](04r1-file-watcher.md) | Not started |
-| 04r2 | Main + preload: `franchise:reload-file`, removal hooks, auto-save pause, `onDismissed` | [04r2-reload-ipc.md](04r2-reload-ipc.md) | Done (unverified) |
-| 04r3 | Renderer refactor: `describe.ts` `links[]`, drawer renders several links. No visible change | [04r3-notification-links.md](04r3-notification-links.md) | Not started |
-| 04r4 | Renderer: `ExternalChangeContext` (reload, branch), banner and drawer actions for file-changed, e2e | [04r4-reload-actions.md](04r4-reload-actions.md) | Done (unverified) |
-| 04r5 | Renderer: auto-save paused strip, e2e | [04r5-auto-save-strip.md](04r5-auto-save-strip.md) | Not started |
+| 04r1 | Main: `fileWatcher.js` module (debounce, `file-changed` notification), `main.js` wiring, the `file-changed` type | [04r1-file-watcher.md](04r1-file-watcher.md) | Done |
+| 04r2 | Main + preload: `franchise:reload-file`, removal hooks, auto-save pause, `onDismissed` | [04r2-reload-ipc.md](04r2-reload-ipc.md) | Done |
+| 04r3 | Renderer refactor: `describe.ts` `links[]`, drawer renders several links. No visible change | [04r3-notification-links.md](04r3-notification-links.md) | Done |
+| 04r4 | Renderer: `ExternalChangeContext` (reload, branch), banner and drawer actions for file-changed, e2e | [04r4-reload-actions.md](04r4-reload-actions.md) | Done |
+| 04r5 | Renderer: auto-save paused strip, e2e | [04r5-auto-save-strip.md](04r5-auto-save-strip.md) | Done (uncommitted) |
 
 ## Order
 - 04r1 and 04r3 are independent and can run in parallel (main vs renderer, no shared files).
