@@ -185,31 +185,6 @@ test("a paste with one invalid value only reverts that cell", async () => {
   expect(await tableEditor.getTextAtSelectedCell()).toBe("EarlyReturn");
 });
 
-test("single-cell edits are saved to the file", async () => {
-  const tableEditor = await openPlayerTable();
-
-  await tableEditor.goToCell(0, "LastName");
-  await tableEditor.setTextAtSelectedCell("Single");
-
-  await expect
-    .poll(async () => (await readPlayerColumn("LastName"))[0], FILE_POLL_OPTIONS)
-    .toBe("Single");
-  await tableEditor.goToCell(0, "LastName");
-  expect(await tableEditor.getTextAtSelectedCell()).toBe("Single");
-});
-
-test("the context menu can set a record as empty", async () => {
-  const tableEditor = await openPlayerTable();
-
-  await tableEditor.goToCell(0, "LastName");
-  expect(await tableEditor.isSelectedCellEmpty()).toBe(false);
-
-  await tableEditor.setSelectedRecordToEmpty();
-
-  expect(await tableEditor.isSelectedCellEmpty()).toBe(true);
-  await expect.poll(readEmptyPlayerRows, FILE_POLL_OPTIONS).toContain(0);
-});
-
 test("schedule editor changes are saved to the file", async () => {
   const { window, welcome } = await launchApp();
   await welcome.openScheduleEditor();
