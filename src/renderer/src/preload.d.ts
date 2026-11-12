@@ -17,12 +17,14 @@ import type {
     ReadTableDataResult,
     ReloadFileResult,
     SaveFileResult,
+    ScheduleStartTimes,
     SchemaEntry,
     SchemaFieldsResult,
     SchemaFieldsSource,
     SetNextRecordResult,
     SetRecordsEmptyResult,
     TableListItem,
+    TableSummary,
     WriteBulkTableCellsResult
 } from '@shared/types';
 import type { GameSaveResponse } from '@shared/types/files';
@@ -63,6 +65,11 @@ declare global {
                 filePath: string
             ) => Promise<{ format: string | null }>;
             getTableList: (fileId: string) => Promise<TableListItem[]>;
+            // Every table with this name, in file order
+            findTablesByName: (
+                fileId: string,
+                tableName: string
+            ) => Promise<TableSummary[] | ErrorResult>;
             readTableData: (
                 fileId: string,
                 tableId: number,
@@ -116,6 +123,10 @@ declare global {
             ) => Promise<
                 { status: 'successful'; metadata: FileMetadata } | ErrorResult
             >;
+            schedule: {
+                // Rejects when the Scheduler or epoch data can't be read
+                getStartTimes: (fileId: string) => Promise<ScheduleStartTimes>;
+            };
         };
         electronAPI: {
             showOpenDialog: (
