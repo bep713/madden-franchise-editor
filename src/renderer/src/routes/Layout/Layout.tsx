@@ -16,6 +16,7 @@ import {
 } from '@renderer/tabs/EditorTabsContext';
 import { tabName } from '@renderer/tabs/editorTabs';
 import useNotificationBanners from '@renderer/notifications/useNotificationBanners';
+import useUpdateBanners from '@renderer/updates/useUpdateBanners';
 
 interface NotificationBannersProps {
     selectTab: (key: string) => void;
@@ -29,6 +30,12 @@ const NotificationBanners: React.FC<NotificationBannersProps> = ({
     return null;
 };
 
+// Inside BannerProvider, which useUpdateBanners needs
+const UpdateBanners: React.FC = () => {
+    useUpdateBanners();
+    return null;
+};
+
 const Layout: React.FC = () => {
     const [openFile] = useContext(FranchiseFileContext);
     useFileMenuCommands();
@@ -39,6 +46,7 @@ const Layout: React.FC = () => {
         <BannerProvider>
             <ExternalChangeProvider>
                 <NotificationBanners selectTab={editorTabs.selectTab} />
+                <UpdateBanners />
                 <EditorTabsContext.Provider value={editorTabs}>
                     <div className={styles.appWrapper}>
                         <Navigation

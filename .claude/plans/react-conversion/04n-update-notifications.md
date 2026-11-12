@@ -157,6 +157,8 @@ createInstallGuard({ franchiseFileManager, getDialog, getWindow, hasPendingFileC
 
 ### Phase 4 — React UI
 
+**Status: committed.** `isRestored` lives next to `updateBannerFor` in `updateBanner.ts`. Closing a sticky download banner with X only lasts until the next progress event re-shows it.
+
 **New `src/renderer/src/updates/useUpdateBanners.ts`**, mounted from `Layout.tsx` next to `NotificationBanners` (inside `BannerProvider`, as a sibling `<UpdateBanners />` component).
 - Subscribes with `electronAPI.update.onStatus`. Every banner uses one `key: 'update'`, so each state replaces the last one in place (`BannerContext.show` with the same key). `kind: 'update'` for `data-kind`.
 - A pure function `updateBannerFor(status): BannerOptions | null` in `src/renderer/src/updates/updateBanner.ts` maps a status to a banner. That keeps the branching testable.
