@@ -44,6 +44,9 @@ const {
   getReleasePageUrl,
 } = require("./main/services/updateChannelService");
 const autoUpdaterService = require("./main/services/autoUpdaterService");
+const {
+  createUpdateController,
+} = require("./main/services/updateController");
 const { registerWelcomeHandlers } = require("./main/handlers/welcomeHandler");
 const {
   registerNotificationsHandlers,
@@ -152,8 +155,13 @@ registerSchemaMismatchHandlers(loggedIpc, franchiseFileManager);
 registerSchemaSearchHandlers(loggedIpc, franchiseFileManager);
 registerSchemaViewerHandlers(loggedIpc, franchiseFileManager);
 registerScheduleHandlers(loggedIpc, franchiseFileManager);
-registerUpdateHandlers(loggedIpc, getAutoUpdater, () => loggedMain, {
-  runUpdateCheck,
+const updateController = createUpdateController({
+  getAutoUpdater,
+  isUpdaterLoaded: autoUpdaterService.isLoaded,
+  send: (channel, ...args) => loggedMain?.send(channel, ...args),
+  getVersion: () => app.getVersion(),
+});
+registerUpdateHandlers(loggedIpc, updateController, {
   getReleasePageUrl,
   getUpdateChannel,
 });
@@ -335,7 +343,7 @@ function createApplicationMenu() {
         {
           id: "CheckForUpdate",
           label: "Check for Update",
-          click: () => runUpdateCheck(),
+          click: () => updateController.check({ manual: true }),
         },
         {
           id: "ViewReleaseNotes",
@@ -395,7 +403,12 @@ const schemaPage = "renderer/schema-manager.html";
 const settingsPage = "renderer/settings-manager.html";
 
 const baseWindowTitle = "Madden Franchise Editor";
-const STARTUP_UPDATE_CHECK_DELAY_MS = 3000;
+// Tests can shorten the startup check delay.
+const STARTUP_UPDATE_CHECK_DELAY_MS =
+  process.env.NODE_ENV === "testing" &&
+  process.env.MFE_UPDATE_CHECK_DELAY_MS !== undefined
+    ? Number(process.env.MFE_UPDATE_CHECK_DELAY_MS)
+    : 3000;
 let currentFilePath = "";
 let currentFileId = "";
 let waitForFileSaved = false;
@@ -480,7 +493,9 @@ function createWindow() {
     // UI switch reads the last result with app:get-update-status.
     if (firstLoad && checkboxSettingIsEnabled(checkForUpdates)) {
       setTimeout(() => {
-        if (mainWindow) runUpdateCheck();
+        if (!mainWindow) return;
+        startupProfiler.mark("main:update-check");
+        updateController.check({ manual: false });
       }, STARTUP_UPDATE_CHECK_DELAY_MS);
     }
 
@@ -524,7 +539,7 @@ function createWindow() {
       .getPreferencesInstance()
       ?.value("general.checkForUpdates");
     if (checkboxSettingIsEnabled(checkForUpdates)) {
-      runUpdateCheck();
+      updateController.check({ manual: true });
     }
   });
 
@@ -632,7 +647,7 @@ app.on("activate", () => {
 });
 
 addIpcListeners();
-autoUpdaterService.onCreate(addAutoUpdaterListeners);
+autoUpdaterService.onCreate(updateController.attach);
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
@@ -843,7 +858,9 @@ function addIpcListeners() {
     return packageJson.version;
   });
 
-  ipcMain.handle("app:get-update-status", () => lastUpdateEvent);
+  ipcMain.handle("app:get-update-status", () =>
+    updateController.getStatus(),
+  );
 
   ipcMain.handle("app:get-active-file-id", () => {
     // Return the most recently opened fileId from the manager
@@ -1110,91 +1127,8 @@ function checkboxSettingIsEnabled(setting) {
   return setting !== undefined && setting.length === 1 && setting[0] === true;
 }
 
-function runUpdateCheck() {
-  startupProfiler.mark("main:update-check");
-  const reportError = (error) => {
-    console.error("Failed to check for updates:", error);
-    sendUpdateEvent("update-error", {
-      message: error.message,
-    });
-  };
-
-  try {
-    const autoUpdater = getAutoUpdater();
-    const result = isDev
-      ? autoUpdater.checkForUpdates()
-      : autoUpdater.checkForUpdatesAndNotify();
-    if (result && typeof result.catch === "function") {
-      result.catch(reportError);
-    }
-  } catch (error) {
-    reportError(error);
-  }
-}
-
 function getAutoUpdater() {
   return autoUpdaterService.getAutoUpdater();
-}
-
-// Last updater state a user acts on, so a reloaded/switched UI can show it
-// again (app:get-update-status). A new check or "no update" clears it.
-let lastUpdateEvent = null;
-const KEPT_UPDATE_EVENTS = new Set([
-  "update-ready",
-  "update-progress",
-  "update-downloaded",
-  "update-error",
-]);
-
-function sendUpdateEvent(channel, data) {
-  lastUpdateEvent = KEPT_UPDATE_EVENTS.has(channel) ? { channel, data } : null;
-  if (data === undefined) loggedMain.send(channel);
-  else loggedMain.send(channel, data);
-}
-
-function addAutoUpdaterListeners(autoUpdater) {
-  function sendStatusToWindow(text) {
-    // mainWindow.webContents.send('message', text);
-  }
-
-  autoUpdater.on("checking-for-update", () => {
-    sendUpdateEvent("checking-for-updates");
-  });
-
-  autoUpdater.on("update-available", (info) => {
-    sendUpdateEvent("update-ready", {
-      version: info?.version,
-      currentVersion: app.getVersion(),
-      // Channel of the offered build, not the user's preference: nightly users are also offered stable releases.
-      channel: /-nightly\./.test(info?.version || "") ? "nightly" : "stable",
-      releaseName: info?.releaseName,
-    });
-  });
-
-  autoUpdater.on("update-not-available", (info) => {
-    sendUpdateEvent("update-not-available");
-  });
-
-  autoUpdater.on("error", (err) => {
-    sendUpdateEvent("update-error", err);
-  });
-
-  autoUpdater.on("download-progress", (progressObj) => {
-    let log_message = "Download speed: " + progressObj.bytesPerSecond;
-    log_message = log_message + " - Downloaded " + progressObj.percent + "%";
-    log_message =
-      log_message +
-      " (" +
-      progressObj.transferred +
-      "/" +
-      progressObj.total +
-      ")";
-    sendUpdateEvent("update-progress", progressObj);
-  });
-
-  autoUpdater.on("update-downloaded", (info) => {
-    sendUpdateEvent("update-downloaded");
-  });
 }
 
 function setTemporaryWindowTitle(message) {

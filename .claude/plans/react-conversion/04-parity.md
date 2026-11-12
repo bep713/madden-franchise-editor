@@ -12,7 +12,7 @@ The parity checklist items that 03 didn't cover. Each item gets its own plan fil
 | 04h | Schedule page: the Schedule tab (`implemented: false` today) and `general.defaultEditor` = `open-schedule` | Not written | Not started |
 | 04r | External-change reload prompt: `file-changed` and `save-new-file`, plus a "File Changed" notification and an auto-save pause (04r1 watcher, 04r2 reload IPC, 04r3 notification links, 04r4 reload actions, 04r5 auto-save strip) | [04r-external-change.md](04r-external-change.md) | Done (04r1 + 04r3 `d3efa86`, 04r2 `1d477f2`, 04r4 `1a58ff3`, 04r5 uncommitted) |
 | 04u | External delete or rename: chokidar `unlink` on the open file (deleted or renamed on disk) isn't handled by v4 or v5. Decide what to show and whether to stop auto-save | Not written | Not started |
-| 04n | Update notifications: `checking-for-updates`, `update-ready` (with the channel), `update-not-available`, `update-progress`, `update-downloaded`, `update-error`, plus the pending one from `electronAPI.getUpdateStatus()` on mount | Not written | Not started |
+| 04n | Update notifications: `checking-for-updates`, `update-ready` (with the channel), `update-not-available`, `update-progress`, `update-downloaded`, `update-error`, plus the pending one from `electronAPI.getUpdateStatus()` on mount, an unsaved-changes prompt before install, and a Home drawer entry (04n1 controller, 04n2 install guard, 04n3 drawer + preload, 04n4 React, 04n5 e2e) | [04n-update-notifications.md](04n-update-notifications.md) | Planned |
 | 04e | Remaining v4 e2e ports: `releaseNotes.spec.js`, `updateChannel.spec.js`, `import-roundtrip.spec.js`, and the schedule test in `bulk-edit.spec.js` (after 04h), or a written reason one doesn't apply | Not written | Not started |
 
 ## Order

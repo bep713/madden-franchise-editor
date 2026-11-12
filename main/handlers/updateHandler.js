@@ -2,42 +2,21 @@ const { shell } = require("electron");
 
 /**
  * Register IPC handlers for update-related operations.
- * This moves Electron API usage (shell) from renderer to main process.
+ * The update state lives in the update controller (updateController.js).
  */
 function registerUpdateHandlers(
   loggedIpc,
-  getAutoUpdater,
-  getLoggedMain,
-  { runUpdateCheck, getReleasePageUrl, getUpdateChannel },
+  controller,
+  { getReleasePageUrl, getUpdateChannel },
 ) {
-  // Check for updates
+  // Check for updates (always manual: the user asked)
   loggedIpc.on("update:check", () => {
-    runUpdateCheck();
+    controller.check({ manual: true });
   });
 
-  // Install update (download and quit to install)
+  // Install update (prompt for unsaved changes, download, quit to install)
   loggedIpc.on("update:install", () => {
-    const loggedMain = getLoggedMain();
-    try {
-      loggedMain.send("update-downloading");
-      const autoUpdater = getAutoUpdater();
-      autoUpdater
-        .downloadUpdate()
-        .then(() => {
-          autoUpdater.quitAndInstall();
-        })
-        .catch((error) => {
-          console.error("Failed to download update:", error);
-          loggedMain.send("update-error", {
-            message: error.message,
-          });
-        });
-    } catch (error) {
-      console.error("Failed to install update:", error);
-      loggedMain.send("update-error", {
-        message: error.message,
-      });
-    }
+    controller.install();
   });
 
   // Open releases page in external browser
