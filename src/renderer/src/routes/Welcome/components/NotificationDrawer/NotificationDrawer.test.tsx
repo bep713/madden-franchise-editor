@@ -216,6 +216,35 @@ describe('NotificationDrawer', () => {
         expect(screen.getByRole('complementary')).toBeInTheDocument();
     });
 
+    it('installs the update from the update-available link', async () => {
+        const install = vi.fn();
+        Object.assign(window.electronAPI, { update: { install } });
+        items = [
+            {
+                id: 'u',
+                kind: 'update-available',
+                createdAt: NOW,
+                read: false,
+                data: {
+                    version: '5.1.0',
+                    currentVersion: '5.0.0',
+                    channel: 'stable'
+                }
+            }
+        ];
+        render(<Harness />);
+        expect(
+            await screen.findByText(
+                'Version 5.1.0 is available (you have 5.0.0).'
+            )
+        ).toBeInTheDocument();
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Install update' })
+        );
+        expect(install).toHaveBeenCalledOnce();
+        expect(screen.getByRole('complementary')).toBeInTheDocument();
+    });
+
     it('sets the pending file from a schema-missing link', async () => {
         items = [
             {

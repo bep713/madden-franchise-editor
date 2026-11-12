@@ -25,6 +25,13 @@ export interface FileChangedData {
     path: string;
 }
 
+// Kept until a check finds no update; one entry at most
+export interface UpdateAvailableData {
+    version: string;
+    currentVersion: string;
+    channel: 'stable' | 'nightly';
+}
+
 interface NotificationBase {
     id: string;
     createdAt: number; // ms epoch
@@ -35,6 +42,10 @@ interface NotificationBase {
 export type AppNotification =
     | (NotificationBase & { kind: 'schema-mismatch'; data: SchemaMismatchData })
     | (NotificationBase & { kind: 'schema-missing'; data: SchemaMissingData })
-    | (NotificationBase & { kind: 'file-changed'; data: FileChangedData });
+    | (NotificationBase & { kind: 'file-changed'; data: FileChangedData })
+    | (NotificationBase & {
+          kind: 'update-available';
+          data: UpdateAvailableData;
+      });
 
 export type NotificationKind = AppNotification['kind'];

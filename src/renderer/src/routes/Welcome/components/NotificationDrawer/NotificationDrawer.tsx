@@ -55,6 +55,9 @@ const NotificationDrawer: React.FC<Props> = ({
             case 'branch':
                 if (n.fileId) void branch(n.fileId);
                 break;
+            case 'install-update':
+                window.electronAPI.update.install();
+                break;
         }
     }
 

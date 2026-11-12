@@ -62,15 +62,18 @@ function createUpdateController({
     autoUpdater.on("update-available", (info) => {
       offered = info || {};
       if (phase === "checking") phase = "idle";
-      emit("update-ready", {
+      const available = {
         version: info?.version,
         currentVersion: getVersion(),
         // Channel of the offered build, not the user's preference: nightly users are also offered stable releases.
         channel: /-nightly\./.test(info?.version || "") ? "nightly" : "stable",
+      };
+      emit("update-ready", {
+        ...available,
         releaseName: info?.releaseName,
         manual: checkManual,
       });
-      onUpdateAvailable(info);
+      onUpdateAvailable(available);
     });
 
     autoUpdater.on("update-not-available", () => {

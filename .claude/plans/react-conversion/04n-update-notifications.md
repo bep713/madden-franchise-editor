@@ -136,6 +136,8 @@ createInstallGuard({ franchiseFileManager, getDialog, getWindow, hasPendingFileC
 
 ### Phase 3 — Drawer notification and preload subscription (D1)
 
+**Status: done, uncommitted.** The phase 4 "Drawer" bullets (describe case, `useNotificationBanners` skip, the drawer's `install-update` link, and their vitest) were pulled into this phase: adding the union member breaks those exhaustive switches, and main now sends the entry. `onUpdateAvailable` receives `{ version, currentVersion, channel }` (the controller computes the channel), not the raw updater info.
+
 **Notification store**
 - `src/shared/types/notifications.ts`: add `UpdateAvailableData { version: string; currentVersion: string; channel: 'stable' | 'nightly' }` and the union member `kind: 'update-available'` (no `fileId`).
 - `main/services/notificationStore.js` `sameTarget`: kinds with neither a `fileId` nor a `data.path` are singletons, so the same kind is the same target. Today `samePath(undefined, undefined)` is `false`, so a second update check would add a duplicate.
@@ -178,7 +180,7 @@ createInstallGuard({ franchiseFileManager, getDialog, getWindow, hasPendingFileC
 - **Restore on mount:** `getUpdateStatus()` once, then `updateBannerFor` for `update-downloading`, `-progress`, `-downloaded`, `-error`. Skip `update-ready`: the drawer entry carries it, and notifications that exist at mount get no banner (the 04o rule). Ignore the result if an `onStatus` event already arrived (the same `active` pattern as `useNotifications`).
 - StrictMode double mount: the unsubscribe from `onStatus` handles it.
 
-**Drawer**
+**Drawer** (done in phase 3)
 - `src/renderer/src/notifications/describe.ts`: add `'install-update'` to `NotificationLinkId`, and a case `update-available` → title "Update Available", description "{Version|Nightly build} X is available (you have Y).", link `{ id: 'install-update', label: 'Install update' }`. `bannerMessage`/`bannerSeverity` are filled in, but see the next bullet.
 - `useNotificationBanners.ts`: skip `kind === 'update-available'` in `onAdded`, because `useUpdateBanners` already shows its banner from `update-ready`. Without this skip there would be two banners. Its `actionsFor` switch gets an `update-available` case returning `[]` so the switch stays exhaustive.
 - `NotificationDrawer.tsx` `linkAction`: `'install-update'` → `window.electronAPI.update.install()`. The drawer already marks the entry read.

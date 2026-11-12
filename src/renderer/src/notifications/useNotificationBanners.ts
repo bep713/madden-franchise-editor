@@ -54,7 +54,8 @@ function actionsFor(
             return [
                 {
                     label: 'Dismiss',
-                    onClick: () => window.electronAPI.notifications.dismiss(n.id)
+                    onClick: () =>
+                        window.electronAPI.notifications.dismiss(n.id)
                 },
                 {
                     label: 'Branch and save new',
@@ -73,6 +74,9 @@ function actionsFor(
                 }
             ];
         }
+        case 'update-available':
+            // Never shown: useUpdateBanners owns the update banner
+            return [];
     }
 }
 
@@ -110,6 +114,8 @@ export default function useNotificationBanners(selectTab: SelectTab): void {
         const banners = new Map<string, string>();
 
         const unsubscribeAdded = api.onAdded((n) => {
+            // useUpdateBanners already shows it, from update-ready
+            if (n.kind === 'update-available') return;
             const text = describeNotification(n);
             banners.set(
                 n.id,

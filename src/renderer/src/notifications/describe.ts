@@ -8,7 +8,7 @@ import {
 import { basename } from '@renderer/utils/path';
 
 export type NotificationLinkId =
-    'open-schemas' | 'pick-schema' | 'reload' | 'branch';
+    'open-schemas' | 'pick-schema' | 'reload' | 'branch' | 'install-update';
 
 export interface NotificationLink {
     id: NotificationLinkId;
@@ -70,6 +70,18 @@ export function describeNotification(n: AppNotification): NotificationText {
                 ],
                 bannerMessage:
                     'This save file has been modified outside of this program. Do you want to reload the file?',
+                bannerSeverity: 'info'
+            };
+        }
+        case 'update-available': {
+            const { version, currentVersion, channel } = n.data;
+            const available = `${channel === 'nightly' ? 'Nightly build' : 'Version'} ${version} is available (you have ${currentVersion}).`;
+            return {
+                title: 'Update Available',
+                description: available,
+                links: [{ id: 'install-update', label: 'Install update' }],
+                // useUpdateBanners shows the banner, from update-ready
+                bannerMessage: `${available} It will take less than 5 minutes to install.`,
                 bannerSeverity: 'info'
             };
         }

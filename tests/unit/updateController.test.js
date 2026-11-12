@@ -85,6 +85,40 @@ test("a nightly version is reported as the nightly channel", async () => {
   assert.equal(ready.data.manual, false);
 });
 
+test("onUpdateAvailable gets the offered version; onNoUpdate runs when none is found", async () => {
+  const available = [];
+  let noUpdates = 0;
+  const { controller, state } = setup({
+    onUpdateAvailable: (data) => available.push(data),
+    onNoUpdate: () => noUpdates++,
+  });
+  state.next = { version: "2.0.1-nightly.5" };
+  controller.check({ manual: false });
+  await tick();
+  assert.deepEqual(available, [
+    { version: "2.0.1-nightly.5", currentVersion: "1.0.0", channel: "nightly" },
+  ]);
+  assert.equal(noUpdates, 0);
+
+  state.next = null;
+  controller.check({ manual: true });
+  await tick();
+  assert.equal(available.length, 1);
+  assert.equal(noUpdates, 1);
+});
+
+test("a check error calls neither onUpdateAvailable nor onNoUpdate", async () => {
+  let calls = 0;
+  const { controller, state } = setup({
+    onUpdateAvailable: () => calls++,
+    onNoUpdate: () => calls++,
+  });
+  state.next = { error: "offline" };
+  controller.check({ manual: true });
+  await tick();
+  assert.equal(calls, 0);
+});
+
 test("a manual check during an automatic one ORs the manual flag", async () => {
   const { controller, sent, state } = setup();
   controller.check({ manual: false });

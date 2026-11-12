@@ -105,6 +105,35 @@ describe('describeNotification schema-missing', () => {
     });
 });
 
+describe('describeNotification update-available', () => {
+    function update(channel: 'stable' | 'nightly', version: string) {
+        return describeNotification({
+            id: 'n4',
+            kind: 'update-available',
+            createdAt: 0,
+            read: false,
+            data: { version, currentVersion: '5.0.0', channel }
+        });
+    }
+
+    it('names the version and offers the install link', () => {
+        expect(update('stable', '5.1.0')).toEqual({
+            title: 'Update Available',
+            description: 'Version 5.1.0 is available (you have 5.0.0).',
+            links: [{ id: 'install-update', label: 'Install update' }],
+            bannerMessage:
+                'Version 5.1.0 is available (you have 5.0.0). It will take less than 5 minutes to install.',
+            bannerSeverity: 'info'
+        });
+    });
+
+    it('labels a nightly build', () => {
+        expect(update('nightly', '5.1.0-nightly.7').description).toBe(
+            'Nightly build 5.1.0-nightly.7 is available (you have 5.0.0).'
+        );
+    });
+});
+
 describe('describeNotification file-changed', () => {
     it('names the file and offers reload and branch', () => {
         const n: AppNotification = {

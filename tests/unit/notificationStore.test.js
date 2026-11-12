@@ -58,6 +58,23 @@ test("add replaces the same kind and path when there is no fileId", () => {
   assert.notEqual(a2.id, a.id);
 });
 
+test("a kind with neither fileId nor path keeps one entry", () => {
+  const { store } = setup();
+  const update = (version) => ({
+    kind: "update-available",
+    data: { version, currentVersion: "1.0.0", channel: "stable" },
+  });
+  const missing = store.add({ kind: "schema-missing", data: { path: "C:\a" } });
+  const changed = store.add({ kind: "file-changed", fileId: "1", data: { path: "C:\a" } });
+  store.add(update("2.0.0"));
+  const latest = store.add(update("2.1.0"));
+  assert.deepEqual(
+    store.list().map((n) => n.id),
+    [latest.id, changed.id, missing.id],
+  );
+  assert.equal(latest.data.version, "2.1.0");
+});
+
 test("list is newest first", () => {
   const { store } = setup();
   const a = store.add(mismatch("1"));

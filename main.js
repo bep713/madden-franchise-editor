@@ -172,6 +172,11 @@ const updateController = createUpdateController({
   send: (channel, ...args) => loggedMain?.send(channel, ...args),
   getVersion: () => app.getVersion(),
   prepareInstall: installGuard.prepareInstall,
+  // Kept through the install so a failed download can be retried from the drawer
+  onUpdateAvailable: (data) =>
+    notificationStore.add({ kind: "update-available", data }),
+  onNoUpdate: () =>
+    notificationStore.removeWhere((n) => n.kind === "update-available"),
 });
 registerUpdateHandlers(loggedIpc, updateController, {
   getReleasePageUrl,

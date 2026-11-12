@@ -75,6 +75,17 @@ function subscribe(channel, callback) {
   return () => ipcRenderer.removeListener(channel, wrapper);
 }
 
+// Updater events (main/services/updateController.js)
+const UPDATE_CHANNELS = [
+  "checking-for-updates",
+  "update-ready",
+  "update-not-available",
+  "update-error",
+  "update-downloading",
+  "update-progress",
+  "update-downloaded",
+];
+
 // Expose franchise API
 contextBridge.exposeInMainWorld("franchiseAPI", {
   // File operations
@@ -368,6 +379,13 @@ contextBridge.exposeInMainWorld("electronAPI", {
     check: () => ipcRenderer.send("update:check"),
     install: () => ipcRenderer.send("update:install"),
     openReleasePage: () => ipcRenderer.invoke("update:open-release-page"),
+    // Every updater event as { channel, data }. Returns an unsubscribe.
+    onStatus: (callback) => {
+      const unsubscribes = UPDATE_CHANNELS.map((channel) =>
+        subscribe(channel, (data) => callback({ channel, data })),
+      );
+      return () => unsubscribes.forEach((unsubscribe) => unsubscribe());
+    },
   },
 
   // Saves scan and folder opening for the v5 React welcome page

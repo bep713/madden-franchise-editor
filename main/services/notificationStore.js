@@ -7,10 +7,12 @@ function samePath(a, b) {
   return normalize(a) === normalize(b);
 }
 
-// Same kind and fileId, or for kinds without a fileId, the same data.path
+// Same kind and fileId, or for kinds without a fileId, the same data.path.
+// Kinds with neither (update-available) keep one entry.
 function sameTarget(a, b) {
   if (a.kind !== b.kind) return false;
   if (a.fileId || b.fileId) return a.fileId === b.fileId;
+  if (!a.data?.path && !b.data?.path) return true;
   return samePath(a.data?.path, b.data?.path);
 }
 
@@ -29,7 +31,8 @@ function createNotificationStore(send = () => {}) {
 
   /**
    * Add a notification. Replaces the existing one with the same kind and
-   * fileId, or the same kind and data.path when it has no fileId.
+   * fileId, or the same kind and data.path when it has no fileId (or the same
+   * kind when it has neither).
    * @param {{ kind: string, fileId?: string, data: object }} notification
    * @returns {object} The stored notification
    */

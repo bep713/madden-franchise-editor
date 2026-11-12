@@ -309,6 +309,23 @@ describe('useNotificationBanners', () => {
         });
     });
 
+    it('shows no banner for update-available', () => {
+        setup();
+        const n: AppNotification = {
+            id: 'u',
+            kind: 'update-available',
+            createdAt: Date.now(),
+            read: false,
+            data: {
+                version: '5.1.0',
+                currentVersion: '5.0.0',
+                channel: 'stable'
+            }
+        };
+        add(n, [n]);
+        expect(banner()).toBeNull();
+    });
+
     it('unsubscribes on unmount', () => {
         const { unmount } = setup();
         expect(notificationsApi.onAdded).toHaveBeenCalledTimes(1);

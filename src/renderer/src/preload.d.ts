@@ -27,6 +27,7 @@ import type {
 } from '@shared/types';
 import type { GameSaveResponse } from '@shared/types/files';
 import type { AppNotification } from '@shared/types/notifications';
+import type { UpdateStatus } from '@shared/types/update';
 
 // recent-files:* entries (main/handlers/recentFilesHandler.js)
 export interface RecentFileEntry {
@@ -128,10 +129,18 @@ declare global {
             ) => Promise<MessageBoxReturnValue>;
             getVersion: () => Promise<string>;
             // The last updater event a user acts on, or null (app:get-update-status)
-            getUpdateStatus: () => Promise<{
-                channel: string;
-                data: unknown;
-            } | null>;
+            getUpdateStatus: () => Promise<UpdateStatus | null>;
+            update: {
+                // Manual check; results arrive through onStatus
+                check: () => void;
+                // Prompts in main for unsaved edits, then downloads and quits
+                install: () => void;
+                openReleasePage: () => Promise<void>;
+                // Every updater event; returns an unsubscribe
+                onStatus: (
+                    callback: (status: UpdateStatus) => void
+                ) => () => void;
+            };
             // ipcRenderer.send / on / removeAllListeners on any channel. The
             // preload has no per-callback removal.
             send: (channel: string, data?: unknown) => void;
