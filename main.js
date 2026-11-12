@@ -16,6 +16,10 @@ const {
 } = require("electron");
 const preferencesHandler = require("./main/handlers/preferencesHandler");
 const uiSelection = require("./main/utils/uiSelection");
+const {
+  listScheduleFiles,
+  readScheduleFile,
+} = require("./main/utils/scheduleFiles");
 const franchiseFileManager = require("./main/services/FranchiseFileManager");
 const {
   registerExternalDataHandlers,
@@ -963,25 +967,13 @@ function addIpcListeners() {
   });
 
   // Schedule file operations
-  ipcMain.handle("schedules:list", () => {
-    const schedulesDir = path.join(__dirname, "schedules");
-    try {
-      return realFs.readdirSync(schedulesDir).reverse();
-    } catch {
-      return [];
-    }
-  });
+  ipcMain.handle("schedules:list", () =>
+    listScheduleFiles(path.join(__dirname, "schedules")),
+  );
 
-  ipcMain.handle("schedules:read", (event, filename) => {
-    const schedulesDir = path.join(__dirname, "schedules");
-    const filePath = path.join(schedulesDir, filename);
-    try {
-      const content = realFs.readFileSync(filePath, "utf-8");
-      return JSON.parse(content);
-    } catch {
-      return null;
-    }
-  });
+  ipcMain.handle("schedules:read", (event, filename) =>
+    readScheduleFile(path.join(__dirname, "schedules"), filename),
+  );
 
   ipcMain.handle("menu:click-item", (event, menuItemId) => {
     const win = BrowserWindow.fromWebContents(event.sender);

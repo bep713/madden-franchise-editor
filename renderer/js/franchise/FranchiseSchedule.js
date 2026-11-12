@@ -15,7 +15,8 @@ class FranchiseSchedule extends EventEmitter {
     this.fileId = fileId;
     this.games = [];
     this.startTimes = null;
-    this._teamData = teamData;
+    // Per-load copy: parse() sets props on teams and pushes custom ones.
+    this._teamData = { teams: teamData.teams.map((team) => ({ ...team })) };
     this.file = null; // Will be populated when needed
 
     this.parse();
@@ -211,19 +212,34 @@ class FranchiseSchedule extends EventEmitter {
       }
 
       let game = new FranchiseGame(record, index);
+      let badTeamReference = false;
 
       if (record.HomeTeam !== "00000000000000000000000000000000") {
         const recordIndex = utilService.bin2dec(record.HomeTeam.substring(16));
-        game._homeTeam = this._getTeamByFullName(
-          `${teamTableData.records[recordIndex].LongName} ${teamTableData.records[recordIndex].DisplayName}`,
-        );
+        const teamRecord = teamTableData.records[recordIndex];
+        if (teamRecord) {
+          game._homeTeam = this._getTeamByFullName(
+            `${teamRecord.LongName} ${teamRecord.DisplayName}`,
+          );
+        } else {
+          badTeamReference = true;
+        }
       }
 
       if (record.AwayTeam !== "00000000000000000000000000000000") {
         const recordIndex = utilService.bin2dec(record.AwayTeam.substring(16));
-        game._awayTeam = this._getTeamByFullName(
-          `${teamTableData.records[recordIndex].LongName} ${teamTableData.records[recordIndex].DisplayName}`,
-        );
+        const teamRecord = teamTableData.records[recordIndex];
+        if (teamRecord) {
+          game._awayTeam = this._getTeamByFullName(
+            `${teamRecord.LongName} ${teamRecord.DisplayName}`,
+          );
+        } else {
+          badTeamReference = true;
+        }
+      }
+
+      if (badTeamReference) {
+        console.warn(`SeasonGame ${index} references a missing team record`);
       }
 
       game.appointment = appointmentMap[record.index];
@@ -274,8 +290,8 @@ class FranchiseSchedule extends EventEmitter {
       return (
         gameRecord.SeasonWeek === week.weekIndex &&
         gameRecord.SeasonWeekType === week.seasonWeekType &&
-        game.homeTeam !== null &&
-        game.awayTeam !== null
+        game.homeTeam != null &&
+        game.awayTeam != null
       );
     });
   }
