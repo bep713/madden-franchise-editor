@@ -2,6 +2,8 @@
 // the network. Tests drive it through globalThis.__fakeUpdater:
 //   next: null (no update) | { version } | { error }
 //   downloadError: message the next download fails with (optional)
+//   holdDownload: true pauses a download at 50% until releaseDownload() is
+//     called (set by the download while it waits)
 //   checks / downloads / installs: call counts
 // quitAndInstall only counts; it doesn't quit.
 const { EventEmitter } = require("events");
@@ -11,6 +13,7 @@ function getState() {
     globalThis.__fakeUpdater = {
       next: null,
       downloadError: null,
+      holdDownload: false,
       checks: 0,
       downloads: 0,
       installs: 0,
@@ -54,6 +57,17 @@ function createFakeAutoUpdater() {
       const error = new Error(state.downloadError);
       updater.emit("error", error);
       throw error;
+    }
+    if (state.holdDownload) {
+      updater.emit("download-progress", {
+        bytesPerSecond: 1,
+        percent: 50,
+        transferred: 1,
+        total: 2,
+      });
+      await new Promise((resolve) => {
+        state.releaseDownload = resolve;
+      });
     }
     updater.emit("download-progress", {
       bytesPerSecond: 1,

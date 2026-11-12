@@ -55,8 +55,8 @@ const REACT_INDEX = path.join(__dirname, '../../../out/renderer/index.html');
 // The UI is picked by the seeded general.uiVersion preference (see
 // launchWithDefaultOptions). Drop the env overrides a dev shell may have set
 // (see main.js), so they can't switch the UI under test.
-const buildLaunchEnv = () => {
-    const env = { ...process.env, 'NODE_ENV': 'testing' };
+const buildLaunchEnv = (extra = {}) => {
+    const env = { ...process.env, ...extra, 'NODE_ENV': 'testing' };
     delete env.MFE_RENDERER_URL;
     delete env.MFE_UI;
     return env;
@@ -73,6 +73,7 @@ class Electron {
     // options.ui: "react" loads the built React UI (out/renderer) instead of v4
     // options.preferences: { <section>: { <key>: value } } merged over the
     // test defaults (e.g. { general: { autoUnempty: [true] } })
+    // options.env: extra environment variables (e.g. MFE_UPDATE_CHECK_DELAY_MS)
     // options.trace: record a Playwright trace (default: see shouldTrace)
     async launchWithDefaultOptions(options = {}) {
         if (options.ui === 'react' && !fs.existsSync(REACT_INDEX)) {
@@ -110,7 +111,7 @@ class Electron {
                 // E2E_SCALE=1 mimics the CI display (with E2E_WINDOW_SIZE, see App.js)
                 ...(process.env.E2E_SCALE ? [`--force-device-scale-factor=${process.env.E2E_SCALE}`] : [])
             ],
-            env: buildLaunchEnv()
+            env: buildLaunchEnv(options.env)
         });
 
         // Saved on failure by the fixture in util/test.js.

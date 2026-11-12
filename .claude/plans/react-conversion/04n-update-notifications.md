@@ -107,7 +107,7 @@ createUpdateController({
 
 ### Phase 2 — Unsaved-changes prompt before install (D2)
 
-**Status: done, uncommitted.**
+**Status: committed (b261edf).**
 
 **New `main/services/updateInstallGuard.js`**
 
@@ -136,7 +136,7 @@ createInstallGuard({ franchiseFileManager, getDialog, getWindow, hasPendingFileC
 
 ### Phase 3 — Drawer notification and preload subscription (D1)
 
-**Status: done, uncommitted.** The phase 4 "Drawer" bullets (describe case, `useNotificationBanners` skip, the drawer's `install-update` link, and their vitest) were pulled into this phase: adding the union member breaks those exhaustive switches, and main now sends the entry. `onUpdateAvailable` receives `{ version, currentVersion, channel }` (the controller computes the channel), not the raw updater info.
+**Status: committed (4528974).** The phase 4 "Drawer" bullets (describe case, `useNotificationBanners` skip, the drawer's `install-update` link, and their vitest) were pulled into this phase: adding the union member breaks those exhaustive switches, and main now sends the entry. `onUpdateAvailable` receives `{ version, currentVersion, channel }` (the controller computes the channel), not the raw updater info.
 
 **Notification store**
 - `src/shared/types/notifications.ts`: add `UpdateAvailableData { version: string; currentVersion: string; channel: 'stable' | 'nightly' }` and the union member `kind: 'update-available'` (no `fileId`).
@@ -196,6 +196,8 @@ createInstallGuard({ franchiseFileManager, getDialog, getWindow, hasPendingFileC
 ---
 
 ### Phase 5 — E2E and docs
+
+**Status: committed.** The fake updater gained `holdDownload` (pauses at 50% until `releaseDownload()`) for the UI-switch test, and `launchWithDefaultOptions` an `env` option for `MFE_UPDATE_CHECK_DELAY_MS`.
 
 **Test util**: new `tests/e2e/util/updaterStubs.js`:
 - `setNextUpdate(electronApp, { version } | { error } | null)` and `setDownloadError(electronApp, message)`: write `globalThis.__fakeUpdater` through `electronApp.evaluate`.

@@ -20,6 +20,17 @@ class Banner {
     await new Promise((resolve) => setTimeout(resolve, SLIDE_MS));
   }
 
+  // Waits for a banner of `kind` whose message is `text`. Banners with the
+  // same key replace each other in place (update states), so wait on the text.
+  async waitForMessage(kind, text, { timeout } = {}) {
+    const banner = this.window.locator(`[data-testid="banner"][data-kind="${kind}"]`);
+    await poll(
+      async () => ((await banner.count()) > 0 ? banner.locator("p").innerText() : null),
+      (message) => message === text,
+      { timeout, message: `The ${kind} banner never showed "${text}"` },
+    );
+  }
+
   async isVisible() {
     return (await this.locators.banner.count()) > 0;
   }
