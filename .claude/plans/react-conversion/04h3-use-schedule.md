@@ -25,6 +25,7 @@ function useSchedule(fileId: string | undefined, revision: number | undefined): 
 - Runs on mount and whenever `fileId`/`revision` changes. A request counter ignores responses that are out of date, as `useSchemaFields` does. Check that file for the existing pattern and reuse it.
 - Steps:
   1. `getMetadata` → `gameYear` (or use `openFile.metadata` from the caller. Prefer passing `gameYear` in as an argument, to save a round trip, if the page has it).
+     - **Done as:** `useSchedule(fileId, revision, gameYear?)`. `getMetadata` is called only when `gameYear` is not passed.
   2. `findTablesByName` for `SeasonGame` and `Team`, in parallel. If SeasonGame is missing, or there's no Team table with `recordCount > 1`, the result is `missing-table`.
   3. `readTableData(SeasonGame, SEASON_GAME_FIELDS)` and `readTableData(Team, TEAM_FIELDS)`, in parallel. An `{ error }` result means `load`. `usingGenericSchema` on either one means `schema`.
   4. Only when `gameYear < 21`: `schedule.getStartTimes(fileId)`. If it throws, the result is `load`.
@@ -36,6 +37,7 @@ function useSchedule(fileId: string | undefined, revision: number | undefined): 
 - `updateGame`: build the writes with the 04h2 builders, set the new game in state right away, then `await writeBulkTableCells(fileId, writes)`.
 - Failure (`!success`, any `results[i].success === false`, or a throw): set `writeError` to the error text and re-read through the load path (state kept as above). v4 used `showMessageBox`. v5 shows an inline banner on the page instead (04h5).
 - No local queue: main runs writes one at a time per file, and IPC keeps their order.
+- **Done as:** the re-read after a failed write bumps the same counter as `reload()`. A re-read of the same file keeps the `ready` state; a new `fileId`, or a re-read from `error`, goes back to `loading`.
 
 ## Verification
 - `useSchedule.test.tsx` with `window.franchiseAPI` mocked (`renderHook`, small fake records):

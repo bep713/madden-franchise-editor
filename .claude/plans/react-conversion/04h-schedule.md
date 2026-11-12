@@ -58,7 +58,7 @@ Each one is small and isolated in its step, and can be cut without changing the 
 |---|---|---|---|
 | 04h1 | Main + v4 fixes: `schedules:read` path check (+ unit test), v4 per-load team list, v4 bad-reference guard | [04h1-v4-fixes.md](04h1-v4-fixes.md) | Done (`a3e5b7a`) |
 | 04h2 | Pure TS model `routes/Schedule/scheduleModel.ts` (types, team list, game build, week filter, write builders, 12h time) + `preload.d.ts` + vitest | [04h2-schedule-model.md](04h2-schedule-model.md) | Done (`3927888`) |
-| 04h3 | `useSchedule(fileId, revision)` hook: load, states, `updateGame` with re-read on failure + vitest | [04h3-use-schedule.md](04h3-use-schedule.md) | Not started |
+| 04h3 | `useSchedule(fileId, revision)` hook: load, states, `updateGame` with re-read on failure + vitest | [04h3-use-schedule.md](04h3-use-schedule.md) | Done |
 | 04h4 | Components: `WeekBar`, `GameRow`, `TeamSelect`, `TimeInput`, `teamLogos.ts` + vitest | [04h4-components.md](04h4-components.md) | Not started |
 | 04h5 | Page wiring: `ScheduleEditor` route, `implemented: true`, view in table editor, `open-schedule` default editor + vitest | [04h5-page-wiring.md](04h5-page-wiring.md) | Not started |
 | 04h6 | E2E: React page model + `react/schedule.spec.js`, update `react/tabs.spec.js`, port of the bulk-edit schedule test, docs; **full e2e** | [04h6-e2e.md](04h6-e2e.md) | Not started |
