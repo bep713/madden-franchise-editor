@@ -47,6 +47,7 @@ const autoUpdaterService = require("./main/services/autoUpdaterService");
 const {
   createUpdateController,
 } = require("./main/services/updateController");
+const { createInstallGuard } = require("./main/services/updateInstallGuard");
 const { registerWelcomeHandlers } = require("./main/handlers/welcomeHandler");
 const {
   registerNotificationsHandlers,
@@ -155,11 +156,22 @@ registerSchemaMismatchHandlers(loggedIpc, franchiseFileManager);
 registerSchemaSearchHandlers(loggedIpc, franchiseFileManager);
 registerSchemaViewerHandlers(loggedIpc, franchiseFileManager);
 registerScheduleHandlers(loggedIpc, franchiseFileManager);
+const installGuard = createInstallGuard({
+  franchiseFileManager,
+  // looked up at call time so e2e dialog stubs apply
+  getDialog: () => dialog,
+  getWindow: () => mainWindow,
+  hasPendingFileChange: (id) =>
+    notificationStore
+      .list()
+      .some((n) => n.kind === "file-changed" && n.fileId === id),
+});
 const updateController = createUpdateController({
   getAutoUpdater,
   isUpdaterLoaded: autoUpdaterService.isLoaded,
   send: (channel, ...args) => loggedMain?.send(channel, ...args),
   getVersion: () => app.getVersion(),
+  prepareInstall: installGuard.prepareInstall,
 });
 registerUpdateHandlers(loggedIpc, updateController, {
   getReleasePageUrl,

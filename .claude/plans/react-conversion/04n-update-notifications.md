@@ -45,7 +45,7 @@ Phases 1–3 are main/preload only and keep v4 working. Phase 4 is the React UI.
 
 ### Phase 1 — Update controller in main
 
-**Status: done, uncommitted.**
+**Status: committed (42e02de).**
 
 Move the updater state out of `main.js` into a unit-testable module.
 
@@ -106,6 +106,8 @@ createUpdateController({
 ---
 
 ### Phase 2 — Unsaved-changes prompt before install (D2)
+
+**Status: done, uncommitted.**
 
 **New `main/services/updateInstallGuard.js`**
 
