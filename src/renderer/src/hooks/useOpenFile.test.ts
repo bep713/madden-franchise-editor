@@ -9,7 +9,8 @@ import {
     EditorTabsContext,
     EditorTabsValue
 } from '@renderer/tabs/EditorTabsContext';
-import { SCHEMA_MANAGEMENT_KEY } from '@renderer/tabs/editorTabs';
+import { FileType } from '@shared/types/franchise';
+import { SCHEDULE_KEY, SCHEMA_MANAGEMENT_KEY } from '@renderer/tabs/editorTabs';
 import { PendingOpenContext } from '@renderer/context/PendingOpenContext';
 import useOpenFile from './useOpenFile';
 
@@ -274,6 +275,47 @@ describe('useOpenFile', () => {
                 SCHEMA_MANAGEMENT_KEY,
                 expect.objectContaining({ fileId: 'file-1' })
             );
+        });
+
+        describe('schedule', () => {
+            const openWith = (metadata: Record<string, unknown>) =>
+                franchiseAPI.openFile.mockResolvedValueOnce({
+                    fileId: 'file-1',
+                    metadata
+                });
+
+            beforeEach(() => {
+                defaultEditor = 'open-schedule';
+            });
+
+            it('selects the schedule tab for a Madden franchise file', async () => {
+                openWith({ ...METADATA, type: { gameType: 'madden' } });
+                await setup()(PATH);
+                expect(selectTab).toHaveBeenCalledWith(
+                    SCHEDULE_KEY,
+                    expect.objectContaining({ fileId: 'file-1' })
+                );
+            });
+
+            it('stays on Home for a common file', async () => {
+                openWith({
+                    ...METADATA,
+                    format: FileType.COMMON,
+                    type: { gameType: 'madden' }
+                });
+                await setup()(PATH);
+                expect(selectTab).not.toHaveBeenCalled();
+            });
+
+            it('stays on Home for a CFB file', async () => {
+                openWith({
+                    ...METADATA,
+                    gameYear: 27,
+                    type: { gameType: 'cfb' }
+                });
+                await setup()(PATH);
+                expect(selectTab).not.toHaveBeenCalled();
+            });
         });
 
         it('stays on Home', async () => {

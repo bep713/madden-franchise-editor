@@ -88,7 +88,7 @@ describe('useEditorTabsController', () => {
         expect(result.current.tabs.activeTab.key).toBe('home');
     });
 
-    it('goes Home from a table tab, and stays put for a stub tab', () => {
+    it('goes to the selected main tab from a table tab', () => {
         const { result } = setup({ file: makeFile('file-1') });
         act(() => {
             result.current.tabs.openTableEditor();
@@ -98,7 +98,7 @@ describe('useEditorTabsController', () => {
         act(() => {
             result.current.tabs.selectTab('schedule-editor');
         });
-        expect(result.current.pathname).toBe('/table-editor');
+        expect(result.current.pathname).toBe('/schedule-editor');
 
         act(() => {
             result.current.tabs.selectTab('home');

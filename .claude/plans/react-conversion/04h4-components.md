@@ -8,6 +8,7 @@ Index: [04h-schedule.md](04h-schedule.md). Needs 04h2's types only. Presentation
 - `import.meta.glob('../../../../../renderer/img/team-logos/nfl/*.PNG', { eager: true, query: '?url', import: 'default' })` builds a map from lowercased file name to URL. `logoUrl(team): string | undefined` takes the file name from `team.logoPath` (`img/team-logos/nfl/cardinals.PNG`).
 - Custom teams get no URL and render a neutral placeholder: the abbreviation in a circle, styled in CSS. v4 used a 1px base64 PNG.
 - Check that `vite build` emits them under `out/renderer/assets`, and that the dev server can serve a path outside `src/renderer`. Vite's default `server.fs.allow` is the workspace root, which includes `renderer/`. If not, add `renderer/img` to `server.fs.allow` in `vite.config.mts`.
+- **Done as:** nothing imports `teamLogos.ts` until 04h5, so `vite build` tree-shakes the logos. Check `out/renderer/assets` for the team PNGs in 04h5.
 - vitest: `import.meta.glob` works under Vitest. Assert that `logoUrl` returns a string for `cardinals.PNG` and `undefined` for a custom team.
 
 ## `WeekBar`
@@ -30,6 +31,7 @@ Index: [04h-schedule.md](04h-schedule.md). Needs 04h2's types only. Presentation
 - Props: `game`, `teams`, `days`, `onEdit(edit: GameEdit)`, `onViewInTable()`.
 - Layout (v4 order): away `TeamSelect` · "@" · home `TeamSelect` · day `Dropdown` (abbreviations) · `TimeInput` · score/played · view button.
 - `data-record-index={game.recordIndex}` on the row. `onContextMenu` opens a one-item menu, "View in table editor", at the pointer, and closes it on outside click or Escape. Check whether a small menu component already exists before writing one. If none does, keep it local to `GameRow`.
+  - **Done as:** only `HistoryMenu` exists (table-editor specific), so `GameRow` has a local `RowMenu` (portal + underlay, `data-action='view-in-table'`). The view button reuses `jump.svg`.
 - Played: `"Final 24–17"` (away–home, matching the column order), with `data-played`. The inputs stay enabled.
 - Improvement 1: an icon button with `aria-label="View in table editor"`.
 - `day` is missing (an unknown enum value): the dropdown shows an empty first option until the user picks a day.
@@ -41,4 +43,5 @@ Index: [04h-schedule.md](04h-schedule.md). Needs 04h2's types only. Presentation
   - TimeInput: valid entry, invalid entry and revert, Escape, prop change.
   - GameRow: each control calls `onEdit` with the right `GameEdit`, the played text, the context menu item, and the view button.
 - Storybook stories (`doc/*.stories.jsx`) for `GameRow` and `WeekBar`, if the other route components have them. Check `routes/TableEditor/components/*/doc` and match.
+  - **Done as:** no stories. No route component has any.
 - `npm run typecheck && npm run lint && npm run stylelint && npm run test:react`.

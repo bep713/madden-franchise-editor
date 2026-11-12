@@ -50,6 +50,18 @@ function run(
     );
 }
 
+// Every page is implemented, so Schedule stands in for one that isn't
+function withStubSchedule(state: EditorTabsState): EditorTabsState {
+    return {
+        ...state,
+        tabs: state.tabs.map((tab) =>
+            tab.kind === 'main' && tab.key === 'schedule-editor'
+                ? { ...tab, item: { ...tab.item, implemented: false } }
+                : tab
+        )
+    };
+}
+
 const names = (state: EditorTabsState) => state.tabs.map(tabName);
 const activeName = (state: EditorTabsState) => tabName(getActiveTab(state));
 
@@ -360,8 +372,14 @@ describe('editorTabs', () => {
             );
         });
 
+        it('selects Schedule', () => {
+            expect(activeName(run([select('schedule-editor')]))).toBe(
+                'Schedule'
+            );
+        });
+
         it('does nothing for a page React does not have yet', () => {
-            const state = run([]);
+            const state = withStubSchedule(run([]));
             expect(reduceTabs(state, select('schedule-editor'), FILE)).toBe(
                 state
             );
@@ -399,12 +417,12 @@ describe('editorTabs', () => {
         it('skips stub tabs to the left, back to Home', () => {
             let state = run([open]);
             // Home, Schedule (a stub), New Tab
-            state = {
+            state = withStubSchedule({
                 ...state,
                 tabs: state.tabs.filter(
                     (tab) => tab.key !== 'schema-management'
                 )
-            };
+            });
             state = run([close(state.activeKey)], FILE, state);
             expect(activeName(state)).toBe('Home');
         });

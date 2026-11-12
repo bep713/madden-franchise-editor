@@ -1,11 +1,12 @@
 import { useContext } from 'react';
+import { getNavigationItems } from '@data/navigation';
 import { FileType } from '@shared/types/franchise';
 import { FranchiseFileContext } from '@renderer/context/FranchiseFileContext';
 import { usePendingOpen } from '@renderer/context/PendingOpenContext';
 import { buildOpenFranchiseFile } from '@renderer/hooks/useActiveFranchiseFile';
 import type { RecentFileEntry } from '@renderer/preload';
 import { useEditorTabs } from '@renderer/tabs/EditorTabsContext';
-import { SCHEMA_MANAGEMENT_KEY } from '@renderer/tabs/editorTabs';
+import { SCHEDULE_KEY, SCHEMA_MANAGEMENT_KEY } from '@renderer/tabs/editorTabs';
 import { basename } from '@renderer/utils/path';
 import type { CommonFileOverrides } from '@renderer/routes/Welcome/components/CommonFileModal/useCommonFilePrompt';
 import { getRememberedChoice } from '@renderer/routes/Welcome/components/CommonFileModal/commonFileChoices';
@@ -121,9 +122,16 @@ export default function useOpenFile({
             editorTabs.openTableEditor(file);
         } else if (defaultEditor === 'open-schema-viewer') {
             editorTabs.selectTab(SCHEMA_MANAGEMENT_KEY, file);
+        } else if (defaultEditor === 'open-schedule') {
+            // Only Madden franchise files have it; others stay on Home
+            if (
+                getNavigationItems(file.metadata).some(
+                    (item) => item.id === SCHEDULE_KEY
+                )
+            ) {
+                editorTabs.selectTab(SCHEDULE_KEY, file);
+            }
         }
-        // TODO(04+): open-schedule, once React has that page. Until then it
-        // stays on Home.
         // Main sets the title, enables the file menu items and starts
         // watching the file. A restore after a reload or UI switch only sends
         // it if the open was cut off before this (useActiveFranchiseFile).

@@ -1,0 +1,66 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+
+/* Fills the app's page row, so <main> scrolls */
+.page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* Same shell as SchemaManagement's main */
+.main {
+    flex-grow: 1;
+    min-height: 0;
+    padding: 0 var(--spacing-8) var(--spacing-8);
+    overflow: auto;
+    background-color: var(--white-smoke);
+}
+
+.games {
+    margin-top: var(--spacing-4);
+    background-color: var(--white);
+}
+
+.empty {
+    padding: var(--spacing-4);
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.writeError,
+.loadError {
+    display: flex;
+    gap: var(--spacing-3);
+    align-items: center;
+    padding: var(--spacing-3) var(--spacing-4);
+    margin-bottom: var(--spacing-4);
+    background-color: var(--error);
+    border-left: 4px solid var(--danger);
+}
+
+.loadError {
+    flex-wrap: wrap;
+}
+
+.errorText {
+    flex-grow: 1;
+    margin: 0;
+}
+
+.dismiss {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    cursor: pointer;
+    background: none;
+    border: none;
+
+    svg {
+        width: 16px;
+        height: 16px;
+    }
+}

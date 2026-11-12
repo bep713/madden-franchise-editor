@@ -33,6 +33,7 @@ const navigation: Navigation = {
         },
         {
             id: 'schedule-editor',
+            implemented: true,
             href: '/schedule-editor',
             text: 'Schedule',
             longText: 'View/edit the schedule',
