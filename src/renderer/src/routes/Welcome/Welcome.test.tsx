@@ -201,6 +201,36 @@ describe('Welcome schema management', () => {
     });
 });
 
+describe('Welcome schedule editor', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        Object.assign(window, { electronAPI, franchiseAPI });
+    });
+
+    function setupWith(type: { gameType?: string }) {
+        setup({
+            fileId: 'file-1',
+            path: 'C:/saves/CAREER-TEST',
+            metadata: { ...METADATA, type },
+            tables: [],
+            revision: 0
+        } as unknown as OpenFranchiseFile);
+    }
+
+    it('selects the Schedule tab from the Get Started card', async () => {
+        setupWith({ gameType: 'madden' });
+        await userEvent.click(screen.getByText('Open the schedule editor'));
+        expect(selectTab).toHaveBeenCalledExactlyOnceWith('schedule-editor');
+    });
+
+    it('is not offered for a file without a schedule', () => {
+        setupWith({ gameType: 'cfb' });
+        expect(
+            screen.queryByText('Open the schedule editor')
+        ).not.toBeInTheDocument();
+    });
+});
+
 describe('Welcome side nav', () => {
     beforeEach(() => {
         vi.clearAllMocks();

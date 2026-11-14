@@ -13,7 +13,7 @@ import useOpenFile from '@renderer/hooks/useOpenFile';
 import type { RecentFileEntry } from '@renderer/preload';
 import { basename, dirname } from '@renderer/utils/path';
 import { useEditorTabs } from '@renderer/tabs/EditorTabsContext';
-import { SCHEMA_MANAGEMENT_KEY } from '@renderer/tabs/editorTabs';
+import { SCHEDULE_KEY, SCHEMA_MANAGEMENT_KEY } from '@renderer/tabs/editorTabs';
 import SideNav from './SideNav';
 import Card from '@renderer/components/Card/Card';
 import GameGrid from '@renderer/components/GameGrid/GameGrid';
@@ -213,6 +213,11 @@ const Welcome: React.FC = () => {
                                                     break;
                                                 case GetStartedActions.OPEN_TABLE_EDITOR:
                                                     editorTabs.openTableEditor();
+                                                    break;
+                                                case GetStartedActions.OPEN_SCHEDULE_EDITOR:
+                                                    editorTabs.selectTab(
+                                                        SCHEDULE_KEY
+                                                    );
                                                     break;
                                                 case GetStartedActions.OPEN_SCHEMA_MANAGEMENT:
                                                     editorTabs.selectTab(

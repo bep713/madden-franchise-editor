@@ -1,17 +1,16 @@
 @import '@assets/colors.css';
 @import '@assets/spacing.css';
 
+/* v4's layout: the teams on the left, the day and time right-aligned */
 .card {
     display: grid;
     grid-template-areas:
-        'away day view'
-        'home time .'
-        'score score score';
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    gap: var(--spacing-2) var(--spacing-3);
+        'away day'
+        'home time';
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--spacing-2) var(--spacing-2);
     align-items: center;
-    padding: var(--spacing-4) var(--spacing-3) var(--spacing-4) var(--spacing-5);
-    background-color: var(--white);
+    padding: var(--spacing-5) var(--spacing-3) var(--spacing-5) var(--spacing-6);
 }
 
 .away {
@@ -24,20 +23,20 @@
 
 .day {
     grid-area: day;
+    justify-self: end;
     width: 96px;
+}
+
+.day select {
+    text-align: right;
+    text-align-last: right;
 }
 
 .time {
     grid-area: time;
+    justify-self: end;
 }
 
-.view {
-    grid-area: view;
-    align-self: start;
-}
-
-.score {
-    grid-area: score;
-    font-size: 13px;
-    color: var(--text-secondary);
+.time input {
+    text-align: right;
 }

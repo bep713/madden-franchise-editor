@@ -8,6 +8,10 @@
     min-width: 120px;
 }
 
+.input {
+    width: 112px;
+}
+
 .logo,
 .placeholder {
     flex-shrink: 0;

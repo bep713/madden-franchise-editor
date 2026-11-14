@@ -1,11 +1,11 @@
-import { ViewInTableButton, useGameMenu } from '../GameMenu/GameMenu';
-import { DaySelect, finalScore, type GameProps } from '../GameRow/GameRow';
+import { useGameMenu } from '../GameMenu/GameMenu';
+import { DaySelect, type GameProps } from '../GameRow/GameRow';
 import TeamSelect from '../TeamSelect/TeamSelect';
 import TimeInput from '../TimeInput/TimeInput';
 import styles from './GameCard.module.css';
 
 // The default view, like v4's: away team and day above, home team and time
-// below
+// below. The table editor is in the context menu only.
 const GameCard: React.FC<GameProps> = ({
     game,
     teams,
@@ -43,21 +43,21 @@ const GameCard: React.FC<GameProps> = ({
                 />
             </div>
             <div className={styles.day}>
-                <DaySelect days={days} game={game} onEdit={onEdit} />
+                <DaySelect
+                    days={days}
+                    game={game}
+                    onEdit={onEdit}
+                    variant='borderless'
+                />
             </div>
             <div className={styles.time}>
                 <TimeInput
                     aria-label='Time'
+                    variant='borderless'
                     minutes={game.timeOfDay}
                     onChange={(minutes) => onEdit({ kind: 'time', minutes })}
                 />
             </div>
-            <div className={styles.view}>
-                <ViewInTableButton onClick={onViewInTable} />
-            </div>
-            {game.played && (
-                <span className={styles.score}>{finalScore(game)}</span>
-            )}
             {menu}
         </div>
     );

@@ -20,13 +20,14 @@
     min-height: 0;
     padding: var(--spacing-4) var(--spacing-8);
     overflow: hidden;
-    background-color: var(--white-smoke);
+    background-color: var(--white);
 }
 
 .scroll {
     flex-grow: 1;
     min-height: 0;
     margin-top: var(--spacing-4);
+    container-type: inline-size;
     overflow: hidden auto;
 }
 
@@ -34,18 +35,65 @@
     background-color: var(--white);
 }
 
-/* 1px gaps over the divider colour draw the borders between cards */
+/* v4's grid: up to three columns, with the borders collapsed. The list
+   draws the top and left edges, each card its right and bottom ones, so an
+   unfilled last row shows no empty cells. */
 .cards {
+    --card-border: 1px solid var(--platinum);
+    --card-alt: var(--white-smoke);
+
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 1px;
-    background-color: var(--divider-color);
-    border: 1px solid var(--divider-color);
+    grid-template-columns: 1fr;
+    border-top: var(--card-border);
+    border-left: var(--card-border);
+
+    > [role='listitem'] {
+        /* So the card fills its cell, and cards in a row are the same height */
+        display: grid;
+        background-color: var(--white);
+        border-right: var(--card-border);
+        border-bottom: var(--card-border);
+    }
+
+    > .empty {
+        border-right: var(--card-border);
+        border-bottom: var(--card-border);
+    }
+
+    /* A checkerboard: every other card is gray, offset on alternate rows */
+    > [role='listitem']:nth-child(2n) {
+        background-color: var(--card-alt);
+    }
 }
 
-/* So the card fills its cell, and cards in a row are the same height */
-.cards > [role='listitem'] {
-    display: grid;
+@container (min-width: 640px) {
+    .cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+
+        > [role='listitem']:nth-child(4n + 1),
+        > [role='listitem']:nth-child(4n) {
+            background-color: var(--white);
+        }
+
+        > [role='listitem']:nth-child(4n + 2),
+        > [role='listitem']:nth-child(4n + 3) {
+            background-color: var(--card-alt);
+        }
+    }
+}
+
+@container (min-width: 960px) {
+    .cards {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+
+        > [role='listitem']:nth-child(odd) {
+            background-color: var(--white);
+        }
+
+        > [role='listitem']:nth-child(even) {
+            background-color: var(--card-alt);
+        }
+    }
 }
 
 .empty {

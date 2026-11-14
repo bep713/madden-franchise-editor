@@ -319,18 +319,18 @@
       "city": "AFC",
       "nickname": "Pro Bowl",
       "abbreviation": "AFC",
-      "nameMatchList": ["AFC"],
+      "nameMatchList": ["AFC", "Pro Bowl AFC"],
       "scheduleId": 1,
-      "logoPath": "img/team-logos/nfl/redskins.PNG",
+      "logoPath": "img/team-logos/nfl/afc.PNG",
       "isCollege": false
     },
     {
       "city": "NFC",
       "nickname": "Pro Bowl",
       "abbreviation": "NFC",
-      "nameMatchList": ["NFC"],
+      "nameMatchList": ["NFC", "Pro Bowl NFC"],
       "scheduleId": 22,
-      "logoPath": "img/team-logos/nfl/redskins.PNG",
+      "logoPath": "img/team-logos/nfl/nfc.PNG",
       "isCollege": false
     },
     {

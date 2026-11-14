@@ -6,6 +6,8 @@ import List from '@renderer/components/List/List';
 import Sticky from '@renderer/components/Sticky/Sticky';
 import Text from '@renderer/components/Text/Text';
 import { OpenFranchiseFile } from '@renderer/context/FranchiseFileContext';
+import { SCHEDULE_KEY } from '@renderer/tabs/editorTabs';
+import { getNavigationItems } from '@data/navigation';
 import { basename } from '@renderer/utils/path';
 import { FileType } from '@shared/types/franchise';
 import {
@@ -20,6 +22,7 @@ export enum GetStartedActions {
     MAKE_BACKUP_FILE = 'MAKE_BACKUP_FILE',
     OPEN_FILE = 'OPEN_FILE',
     OPEN_FILE_LOCATION = 'OPEN_FILE_LOCATION',
+    OPEN_SCHEDULE_EDITOR = 'OPEN_SCHEDULE_EDITOR',
     OPEN_SCHEMA_MANAGEMENT = 'OPEN_SCHEMA_MANAGEMENT',
     OPEN_TABLE_EDITOR = 'OPEN_TABLE_EDITOR'
 }
@@ -58,6 +61,19 @@ const GetStartedCard: React.FC<GetStartedCardProps> = ({
             onClick={() => onActionClick(GetStartedActions.OPEN_TABLE_EDITOR)}
             text='Open the table editor'
         />,
+        // Only Madden franchise files have a schedule
+        openFile &&
+            getNavigationItems(openFile.metadata).some(
+                (item) => item.id === SCHEDULE_KEY
+            ) && (
+                <Link
+                    key={GetStartedActions.OPEN_SCHEDULE_EDITOR}
+                    onClick={() =>
+                        onActionClick(GetStartedActions.OPEN_SCHEDULE_EDITOR)
+                    }
+                    text='Open the schedule editor'
+                />
+            ),
         <Link
             key={GetStartedActions.OPEN_SCHEMA_MANAGEMENT}
             onClick={() =>

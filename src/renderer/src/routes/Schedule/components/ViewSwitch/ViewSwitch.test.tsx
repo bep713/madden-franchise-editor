@@ -24,7 +24,7 @@ describe('ViewSwitch', () => {
             screen.getByRole('button', { name: 'Default', pressed: true })
         ).toBeTruthy();
         expect(
-            screen.getByRole('button', { name: 'Compact', pressed: false })
+            screen.getByRole('button', { name: 'Table', pressed: false })
         ).toBeTruthy();
     });
 
@@ -32,7 +32,7 @@ describe('ViewSwitch', () => {
         const { onChange } = setup();
         await userEvent.click(screen.getByRole('button', { name: 'Default' }));
         expect(onChange).not.toHaveBeenCalled();
-        await userEvent.click(screen.getByRole('button', { name: 'Compact' }));
+        await userEvent.click(screen.getByRole('button', { name: 'Table' }));
         expect(onChange).toHaveBeenCalledWith('compact');
     });
 });

@@ -26,6 +26,7 @@ const Dropdown: React.FC<Props> = ({
     leftAsset,
     options,
     state = 'default',
+    variant,
     ...props
 }) => {
     return (
@@ -52,6 +53,7 @@ const Dropdown: React.FC<Props> = ({
             label={label}
             leftAsset={leftAsset}
             state={state}
+            variant={variant}
         />
     );
 };

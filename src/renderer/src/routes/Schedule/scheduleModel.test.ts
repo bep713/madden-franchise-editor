@@ -98,6 +98,17 @@ describe('buildTeams', () => {
         expect(result.map((t) => t.key)).toEqual(['ARI#1', 'ARI#2', 'NE']);
     });
 
+    it('matches the Pro Bowl teams, with their logos', () => {
+        const result = buildTeams([
+            { ShortName: 'AFC', LongName: 'Pro Bowl', DisplayName: 'AFC' },
+            { ShortName: 'NFC', LongName: 'Pro Bowl', DisplayName: 'NFC' }
+        ]);
+        expect(result.map((t) => [t.custom, t.logoPath])).toEqual([
+            [false, 'img/team-logos/nfl/afc.PNG'],
+            [false, 'img/team-logos/nfl/nfc.PNG']
+        ]);
+    });
+
     it('leaves the imported teamData unchanged', () => {
         const before = structuredClone(teamData);
         buildTeams(teamRecords);

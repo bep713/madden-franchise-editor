@@ -1,4 +1,11 @@
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import {
+    act,
+    fireEvent,
+    render,
+    screen,
+    waitFor,
+    within
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FileMetadata } from '@shared/types';
@@ -163,10 +170,9 @@ describe('ScheduleEditor', () => {
         const row = document.querySelector<HTMLElement>(
             '[data-record-index="1"]'
         )!;
-        await userEvent.selectOptions(
-            within(row).getByRole('combobox', { name: 'Home team' }),
-            'BAL'
-        );
+        const input = within(row).getByRole('combobox', { name: 'Home team' });
+        await userEvent.clear(input);
+        await userEvent.type(input, 'BAL{Enter}');
         expect(updateGame).toHaveBeenCalledWith(1, {
             kind: 'team',
             side: 'home',
@@ -216,8 +222,9 @@ describe('ScheduleEditor', () => {
         const row = document.querySelector<HTMLElement>(
             '[data-record-index="1"]'
         )!;
+        fireEvent.contextMenu(row, { clientX: 10, clientY: 10 });
         await userEvent.click(
-            within(row).getByRole('button', { name: 'View in table editor' })
+            screen.getByRole('menuitem', { name: 'View in table editor' })
         );
         expect(openTableTab).toHaveBeenCalledWith(
             SEASON_GAME_ID,
@@ -247,7 +254,7 @@ describe('ScheduleEditor', () => {
         ).toBeTruthy();
         expect(rows()).toEqual([0, 1]);
 
-        await userEvent.click(screen.getByRole('button', { name: 'Compact' }));
+        await userEvent.click(screen.getByRole('button', { name: 'Table' }));
         expect(view()).toBe('compact');
         expect(rows()).toEqual([0, 1]);
         expect(setPreference).toHaveBeenCalledWith({

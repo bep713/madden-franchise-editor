@@ -66,7 +66,7 @@ export type ScheduleView = 'default' | 'compact';
 export const SCHEDULE_VIEWS: readonly { value: ScheduleView; label: string }[] =
     [
         { value: 'default', label: 'Default' },
-        { value: 'compact', label: 'Compact' }
+        { value: 'compact', label: 'Table' }
     ];
 
 export type GameSide = 'home' | 'away';

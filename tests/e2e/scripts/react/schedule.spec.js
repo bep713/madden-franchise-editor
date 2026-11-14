@@ -41,7 +41,8 @@ async function openSchedule(preferences) {
 
   await welcome.waitForPageLoad();
   await welcome.openFranchiseFile(electronApp, careerPath);
-  await nav.openTab("Schedule");
+  await welcome.openScheduleEditor();
+  await nav.waitForActiveTab("Schedule");
   await schedule.waitForLoad();
   return { electronApp, app, window, nav, schedule };
 }
@@ -83,6 +84,22 @@ async function waitForSelectedRow(window, row) {
     () => header.first().innerText(),
     (text) => text.trim() === String(row),
     { message: `Row ${row} was not selected` },
+  );
+  // Scrolled into view, not hidden under the column headers
+  await poll(
+    () =>
+      window.evaluate(() => {
+        const cell = document.querySelector(".ht_master td.current");
+        if (!cell) return false;
+        const box = cell.getBoundingClientRect();
+        const hit = document.elementFromPoint(
+          box.left + box.width / 2,
+          box.top + box.height / 2,
+        );
+        return !!hit && cell.contains(hit);
+      }),
+    (visible) => visible,
+    { message: `Row ${row} was not scrolled into view` },
   );
 }
 
@@ -233,14 +250,14 @@ test("a cleared time reverts and is not written (react)", async () => {
   await electronApp.close();
 });
 
-test("the compact view is remembered and edits (react)", async () => {
+test("the table view is remembered and edits (react)", async () => {
   const { electronApp, app, schedule } = await openSchedule();
 
-  await schedule.setView("Compact");
+  await schedule.setView("Table");
   await poll(
     () => schedule.view(),
     (view) => view === "compact",
-    { message: "The compact view was not shown" },
+    { message: "The table view was not shown" },
   );
   const prefsFile = path.join(electron.userDataDir, "preferences.json");
   await poll(
@@ -256,7 +273,7 @@ test("the compact view is remembered and edits (react)", async () => {
   await poll(
     async () => (await readGamesInMemory(app)).records[game.recordIndex],
     (record) => record.DayOfWeek === newDay,
-    { message: "The compact view edit was not written" },
+    { message: "The table view edit was not written" },
   );
 
   await electronApp.close();
@@ -307,16 +324,18 @@ test("view a game in the table editor (react)", async () => {
   await schedule.selectWeek("1");
   const [game] = await schedule.games();
 
-  // the button opens a new active tab at the game's row
+  // the button (table view only) opens a new active tab at the game's row
+  await schedule.setView("Table");
   await schedule.viewInTable(0);
   await nav.waitForActiveTab(SEASON_GAME_TAB);
   await tableEditor.waitForTableToLoad();
   await waitForSelectedRow(window, game.recordIndex);
   expect(await nav.tabNames()).to.deep.equal([...MAIN_TABS, SEASON_GAME_TAB]);
 
-  // so does the right-click menu
+  // so does the right-click menu, in the default view too
   await nav.openTab("Schedule");
   await schedule.waitForLoad();
+  await schedule.setView("Default");
   await schedule.selectWeek("1");
   const second = (await schedule.games())[1];
   await schedule.viewInTableByContextMenu(1);
@@ -369,7 +388,7 @@ test("the schedule re-reads table editor edits (react)", async () => {
   const [game] = await schedule.games();
   const newDay = game.day === "Monday" ? "Tuesday" : "Monday";
 
-  await schedule.viewInTable(0);
+  await schedule.viewInTableByContextMenu(0);
   await nav.waitForActiveTab(SEASON_GAME_TAB);
   await tableEditor.waitForTableToLoad();
   const headers = (await app.readTable(SEASON_GAME_TABLE_ID)).headers.map(

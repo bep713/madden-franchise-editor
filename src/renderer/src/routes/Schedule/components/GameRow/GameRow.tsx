@@ -22,12 +22,14 @@ interface DayProps {
     game: ScheduleGame;
     days: readonly ScheduleDay[];
     onEdit: (edit: GameEdit) => void;
+    variant?: 'default' | 'borderless';
 }
 
 export const DaySelect: React.FC<DayProps> = ({
     game,
     days,
-    onEdit
+    onEdit,
+    variant
 }: DayProps) => {
     const dayOptions = days.map((day) => ({
         label: day.abbreviation,
@@ -49,15 +51,12 @@ export const DaySelect: React.FC<DayProps> = ({
                     : [{ label: '', value: '' }, ...dayOptions]
             }
             value={game.day?.name ?? ''}
+            variant={variant}
         />
     );
 };
 
-// Away score first, like the teams
-export const finalScore = (game: ScheduleGame): string =>
-    `Final ${game.awayScore}–${game.homeScore}`;
-
-// The compact view: one game per row
+// The table view (stored as 'compact'): one game per row
 const GameRow: React.FC<GameProps> = ({
     game,
     teams,
@@ -81,6 +80,7 @@ const GameRow: React.FC<GameProps> = ({
                 }
                 teams={teams}
                 value={game.awayTeam}
+                variant='default'
             />
             <span aria-hidden className={styles.at}>
                 @
@@ -92,6 +92,7 @@ const GameRow: React.FC<GameProps> = ({
                 }
                 teams={teams}
                 value={game.homeTeam}
+                variant='default'
             />
             <div className={styles.day}>
                 <DaySelect days={days} game={game} onEdit={onEdit} />
@@ -101,9 +102,6 @@ const GameRow: React.FC<GameProps> = ({
                 minutes={game.timeOfDay}
                 onChange={(minutes) => onEdit({ kind: 'time', minutes })}
             />
-            <span className={styles.score}>
-                {game.played && finalScore(game)}
-            </span>
             <ViewInTableButton onClick={onViewInTable} />
             {menu}
         </div>

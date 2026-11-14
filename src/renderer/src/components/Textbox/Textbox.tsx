@@ -25,6 +25,7 @@ const Textbox: React.FC<Props> = ({
     placeholder,
     state = 'default',
     text,
+    variant,
     ...props
 }) => {
     return (
@@ -43,6 +44,7 @@ const Textbox: React.FC<Props> = ({
             label={label}
             leftAsset={leftAsset}
             state={state}
+            variant={variant}
         />
     );
 };

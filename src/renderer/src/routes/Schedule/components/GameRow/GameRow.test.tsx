@@ -53,6 +53,13 @@ const setup = (game: ScheduleGame = GAME) => {
 
 const row = () => document.querySelector<HTMLElement>('[data-record-index]')!;
 
+// Types into the team autocomplete and picks the first match
+const pickTeam = async (name: string, abbreviation: string) => {
+    const input = screen.getByRole('combobox', { name });
+    await userEvent.clear(input);
+    await userEvent.type(input, `${abbreviation}{Enter}`);
+};
+
 describe('GameRow', () => {
     it('shows the game, away team first', () => {
         setup();
@@ -68,24 +75,17 @@ describe('GameRow', () => {
         );
         expect(screen.getByLabelText('Time')).toHaveValue('13:00');
         expect(row()).not.toHaveAttribute('data-played');
-        expect(row()).not.toHaveTextContent('Final');
     });
 
     it('edits the away and home teams', async () => {
         const { onEdit } = setup();
-        await userEvent.selectOptions(
-            screen.getByRole('combobox', { name: 'Away team' }),
-            'BAL'
-        );
+        await pickTeam('Away team', 'BAL');
         expect(onEdit).toHaveBeenLastCalledWith({
             kind: 'team',
             side: 'away',
             team: BAL
         });
-        await userEvent.selectOptions(
-            screen.getByRole('combobox', { name: 'Home team' }),
-            'BAL'
-        );
+        await pickTeam('Home team', 'BAL');
         expect(onEdit).toHaveBeenLastCalledWith({
             kind: 'team',
             side: 'home',
@@ -122,10 +122,10 @@ describe('GameRow', () => {
         expect(select.querySelector('option')).toHaveValue('');
     });
 
-    it('shows the final score of a played game, away first', () => {
+    it('marks a played game, still editable', () => {
         setup({ ...GAME, played: true, awayScore: 24, homeScore: 17 });
         expect(row()).toHaveAttribute('data-played', 'true');
-        expect(row()).toHaveTextContent('Final 24–17');
+        expect(row()).not.toHaveTextContent('Final');
         expect(
             screen.getByRole('combobox', { name: 'Away team' })
         ).toBeEnabled();

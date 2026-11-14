@@ -11,6 +11,21 @@
     outline: 1px solid var(--black);
 }
 
+.input.borderless {
+    background-color: transparent;
+    border-color: transparent;
+}
+
+.input.borderless:hover,
+.input.borderless:focus-within {
+    outline: none;
+    border-color: var(--black);
+}
+
+.borderless .inputElement {
+    background-color: transparent;
+}
+
 .input.error {
     border: 1px solid var(--cherry-blossom);
     border-bottom-right-radius: 0;

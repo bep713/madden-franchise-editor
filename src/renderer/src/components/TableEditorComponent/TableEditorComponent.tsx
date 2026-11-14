@@ -133,6 +133,14 @@ function getScrollHolder(hotRef: React.RefObject<HotTableRef>) {
     );
 }
 
+// Scrolls a visual cell to the top of the grid
+function revealCell(
+    hot: Handsontable,
+    { row, col }: { row: number; col: number }
+) {
+    hot.scrollViewportTo({ row, col, verticalSnap: 'top' });
+}
+
 // The clicked link or button, and its cell
 function getActionTarget(
     event: React.MouseEvent,
@@ -231,16 +239,27 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
             }
         }, [table]);
 
+        // The visual cell a new grid scrolls to once it has a height
+        const revealPendingRef = useRef<{ row: number; col: number } | null>(
+            null
+        );
+
         useEffect(() => {
             // Handle window resizing so that the table always takes up the entire remaining space.
             const observer = new ResizeObserver((entries) => {
                 for (const entry of entries) {
                     if (entry.contentBoxSize) {
                         const size = entry.contentBoxSize[0];
-                        hotRef?.current?.hotInstance?.updateSettings({
+                        const hot = hotRef?.current?.hotInstance;
+                        hot?.updateSettings({
                             height: size.blockSize,
                             width: size.inlineSize
                         });
+                        const target = revealPendingRef.current;
+                        if (hot && target && size.blockSize > 0) {
+                            revealPendingRef.current = null;
+                            revealCell(hot, target);
+                        }
                     }
                 }
             });
@@ -620,6 +639,7 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
         // and an empty undo history. A switch keeps the selected record and
         // field, and selectCell scrolls them into view.
         const loadedTableRef = useRef<Props['table'] | null>(null);
+        const loadedInvertedRef = useRef(isInverted);
         useEffect(() => {
             const hot = hotRef.current?.hotInstance;
             const isNewTable = loadedTableRef.current !== table;
@@ -638,10 +658,32 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
                 );
                 // Clamped: an inverted table without records only has the
                 // field-name column
-                hot.selectCell(
-                    Math.max(0, Math.min(row ?? 0, hot.countRows() - 1)),
-                    Math.max(0, Math.min(col, hot.countCols() - 1))
+                const visualRow = Math.max(
+                    0,
+                    Math.min(row ?? 0, hot.countRows() - 1)
                 );
+                const visualCol = Math.max(
+                    0,
+                    Math.min(col, hot.countCols() - 1)
+                );
+                hot.selectCell(visualRow, visualCol);
+                // A new grid (a new tab) has no height until the
+                // ResizeObserver sizes it, so selectCell's scroll leaves the
+                // row just above the top. The observer scrolls it to the top.
+                // Kept through StrictMode's second run of this effect (same
+                // table and orientation), which would otherwise drop it.
+                if (isNewTable || isInverted !== loadedInvertedRef.current) {
+                    revealPendingRef.current = null;
+                }
+                loadedInvertedRef.current = isInverted;
+                if (isNewTable && initialSelection && !initialScroll) {
+                    const target = { row: visualRow, col: visualCol };
+                    if (getScrollHolder(hotRef)?.clientHeight) {
+                        revealCell(hot, target);
+                    } else {
+                        revealPendingRef.current = target;
+                    }
+                }
             }
             const holder = getScrollHolder(hotRef);
             if (initialScroll && holder && isNewTable) {

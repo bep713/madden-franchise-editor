@@ -10,6 +10,9 @@ export interface BaseProps {
     label?: string;
     leftAsset?: React.ReactNode;
     state?: 'default' | 'error';
+    // borderless: no border or background until hovered or focused, for
+    // inputs that sit inline in a layout (v4's Selectr look)
+    variant?: 'default' | 'borderless';
 }
 
 interface Props extends BaseProps {
@@ -24,7 +27,8 @@ const BaseFormInput: React.FC<Props> = ({
     input,
     label,
     leftAsset,
-    state = 'default'
+    state = 'default',
+    variant = 'default'
 }) => {
     const isHorizontal = direction === 'horizontal';
     const element = (
@@ -32,7 +36,8 @@ const BaseFormInput: React.FC<Props> = ({
             <Layout alignItems='stretch' direction='column' rowGap='none'>
                 <div
                     className={cx(styles.input, styles[state], {
-                        [styles.leftAsset]: !!leftAsset
+                        [styles.leftAsset]: !!leftAsset,
+                        [styles.borderless]: variant === 'borderless'
                     })}
                 >
                     <Layout alignItems='center' direction='row' columnGap='2'>

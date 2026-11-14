@@ -28,11 +28,14 @@ interface Props extends BaseFormInputProps {
     placeholder?: string;
     showOptions?: boolean;
     text: string;
+    // The selected option's value. The list opens highlighted on it.
+    value?: string;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [key: string]: any;
 }
 
 const Autocomplete: React.FC<Props> = ({
+    'aria-label': ariaLabel,
     autoFocus,
     direction = 'vertical',
     errorMessage,
@@ -48,7 +51,9 @@ const Autocomplete: React.FC<Props> = ({
     placeholder,
     showOptions = false,
     state = 'default',
-    text = ''
+    text = '',
+    value,
+    variant
 }) => {
     const rootRef = useRef<HTMLDivElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -61,16 +66,21 @@ const Autocomplete: React.FC<Props> = ({
         onShowOptionsChangeRef.current = onShowOptionsChange;
     });
 
-    // The option that Enter picks. Back to the first one whenever the options
-    // change or the list opens, so pass memoized options.
-    const [highlight, setHighlight] = useState(0);
+    // The option that Enter picks. Back to the selected one (else the first)
+    // whenever the options change or the list opens, so pass memoized options.
+    const initialHighlight = (): number =>
+        Math.max(
+            0,
+            options.findIndex((o) => o.value === value)
+        );
+    const [highlight, setHighlight] = useState(initialHighlight);
     const [highlightFor, setHighlightFor] = useState({ options, showOptions });
     if (
         highlightFor.options !== options ||
         highlightFor.showOptions !== showOptions
     ) {
         setHighlightFor({ options, showOptions });
-        setHighlight(0);
+        setHighlight(initialHighlight());
     }
     const activeIndex = Math.min(highlight, options.length - 1);
 
@@ -168,6 +178,8 @@ const Autocomplete: React.FC<Props> = ({
                         onFocus={onFocus}
                     >
                         <input
+                            aria-expanded={showOptions}
+                            aria-label={ariaLabel}
                             autoFocus={autoFocus}
                             className={cx(
                                 baseStyles.inputElement,
@@ -176,6 +188,7 @@ const Autocomplete: React.FC<Props> = ({
                             id={id}
                             placeholder={placeholder}
                             ref={inputRef}
+                            role='combobox'
                             value={text}
                             onChange={(e) => onTextChange?.(e.target.value)}
                             onKeyDown={onInputKeyDown}
@@ -203,6 +216,7 @@ const Autocomplete: React.FC<Props> = ({
                 label={label}
                 leftAsset={leftAsset}
                 state={state}
+                variant={variant}
             />
             {showOptions && (
                 <div className={styles.optionList} ref={optionListRef}>

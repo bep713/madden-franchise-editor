@@ -26,6 +26,11 @@ class WelcomePage {
         "Open the table editor",
         { exact: true },
       ),
+      // Only shown for files with a schedule
+      scheduleEditorLink: this.locators.getStartedCard.getByText(
+        "Open the schedule editor",
+        { exact: true },
+      ),
       // Only shown when the open file's path is known
       openFileLocationLink: this.locators.getStartedCard.getByText(
         "Open file location",
@@ -81,6 +86,10 @@ class WelcomePage {
 
   async openTableEditor() {
     await this.locators.tableEditorLink.click();
+  }
+
+  async openScheduleEditor() {
+    await this.locators.scheduleEditorLink.click();
   }
 
   // The open file's game icon on the Get Started card, by game shortTitle

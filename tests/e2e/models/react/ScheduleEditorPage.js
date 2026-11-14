@@ -12,7 +12,7 @@ class ScheduleEditorPage {
       selectedWeek: this.window.locator(
         'button[data-week][aria-pressed="true"]',
       ),
-      // Cards in the default view, rows in the compact one
+      // Cards in the default view, rows in the table one
       gameRows: this.window.locator("[data-record-index]"),
       gameList: this.window.locator('[role="list"][data-view]'),
       byeTeams: this.window.locator("[data-bye-teams]"),
@@ -42,7 +42,7 @@ class ScheduleEditorPage {
     return this.locators.gameList.getAttribute("data-view");
   }
 
-  // label: "Default" | "Compact"
+  // label: "Default" | "Table"
   async setView(label) {
     await this.window
       .getByRole("group", { name: "View" })
@@ -106,12 +106,13 @@ class ScheduleEditorPage {
     return this._row(i).getByLabel("Time");
   }
 
-  // side: "home" | "away"
+  // side: "home" | "away". Types into the team autocomplete; Enter picks
+  // the exact match, which sorts first.
   async setTeam(i, side, abbreviation) {
     const label = side === "home" ? "Home team" : "Away team";
-    await this._row(i)
-      .getByRole("combobox", { name: label })
-      .selectOption(abbreviation);
+    const input = this._row(i).getByRole("combobox", { name: label });
+    await input.fill(abbreviation);
+    await input.press("Enter");
   }
 
   // day: the DayOfWeek name, e.g. "Monday"

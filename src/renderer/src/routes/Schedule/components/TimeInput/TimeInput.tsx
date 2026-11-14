@@ -8,6 +8,7 @@ interface Props {
     minutes: number;
     onChange: (minutes: number) => void;
     'aria-label': string;
+    variant?: 'default' | 'borderless';
 }
 
 // A native time input, like v4's. Committed on Enter or blur rather than on
@@ -15,7 +16,8 @@ interface Props {
 const TimeInput: React.FC<Props> = ({
     minutes,
     onChange,
-    'aria-label': ariaLabel
+    'aria-label': ariaLabel,
+    variant
 }: Props) => {
     const [value, setValue] = useState(() => minutesToTimeValue(minutes));
     // Changed since it got focus; a re-read then leaves the value alone
@@ -70,6 +72,7 @@ const TimeInput: React.FC<Props> = ({
                 step={60}
                 text={value}
                 type='time'
+                variant={variant}
             />
         </div>
     );
