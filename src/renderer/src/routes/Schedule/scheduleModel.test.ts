@@ -10,11 +10,11 @@ import {
     applyGameEdit,
     buildGames,
     buildTeams,
+    byeTeams,
     editWrites,
-    formatTime12,
     gamesInWeek,
-    parseTime12,
-    weekGameCounts,
+    minutesToTimeValue,
+    timeValueToMinutes,
     type ScheduleGame
 } from './scheduleModel';
 
@@ -235,11 +235,67 @@ describe('weeks', () => {
         expect(gamesInWeek(games, week('N/A'))).toEqual([]);
     });
 
-    it('counts games per week', () => {
-        const counts = weekGameCounts(games, SCHEDULE_WEEKS);
-        expect(counts[week('P1').index]).toBe(1);
-        expect(counts[week('1').index]).toBe(2);
-        expect(counts.reduce((a, b) => a + b, 0)).toBe(3);
+    it('leaves no one on bye when every team plays', () => {
+        expect(byeTeams(games, week('1'))).toEqual([]);
+    });
+});
+
+describe('byeTeams', () => {
+    const week = (abbr: string) =>
+        SCHEDULE_WEEKS.find((w) => w.abbreviation === abbr)!;
+    const four = buildTeams([
+        { ShortName: 'AAA', LongName: 'A', DisplayName: 'A' },
+        { ShortName: 'BBB', LongName: 'B', DisplayName: 'B' },
+        { ShortName: 'CCC', LongName: 'C', DisplayName: 'C' },
+        { ShortName: 'DDD', LongName: 'D', DisplayName: 'D' },
+        // Never plays, like a Pro Bowl team
+        { ShortName: 'EEE', LongName: 'E', DisplayName: 'E' }
+    ]);
+    const match = (
+        home: number,
+        away: number,
+        overrides: Record<string, unknown> = {}
+    ) => game({ HomeTeam: ref(home), AwayTeam: ref(away), ...overrides });
+    const { games } = buildGames({
+        seasonGameRecords: [
+            // Week 1: AAA-BBB only. Week 2: everyone.
+            match(0, 1, { SeasonWeek: 0 }),
+            match(0, 1, { SeasonWeek: 1 }),
+            match(2, 3, { SeasonWeek: 1 }),
+            match(0, 1, {
+                SeasonWeek: 19,
+                SeasonWeekType: 'DivisionalPlayoff'
+            })
+        ],
+        teams: four,
+        teamTableId: TEAM_TABLE_ID,
+        gameYear: 22
+    });
+    const abbrs = (abbr: string) =>
+        byeTeams(games, week(abbr)).map((t) => t.abbreviation);
+
+    it('lists the teams that play this season but not this week', () => {
+        expect(abbrs('1')).toEqual(['CCC', 'DDD']);
+    });
+
+    it('is empty when every team plays', () => {
+        expect(abbrs('2')).toEqual([]);
+    });
+
+    it('is empty for a week without games', () => {
+        expect(abbrs('3')).toEqual([]);
+        expect(abbrs('N/A')).toEqual([]);
+    });
+
+    it('is empty for playoff weeks', () => {
+        expect(
+            byeTeams(
+                games,
+                SCHEDULE_WEEKS.find(
+                    (w) => w.seasonWeekType === 'DivisionalPlayoff'
+                )!
+            )
+        ).toEqual([]);
     });
 });
 
@@ -327,44 +383,32 @@ describe('edits', () => {
     });
 });
 
-describe('12-hour time', () => {
+describe('time input values', () => {
     it('formats', () => {
-        expect(formatTime12(1220)).toBe('8:20 PM');
-        expect(formatTime12(720)).toBe('12:00 PM');
-        expect(formatTime12(5)).toBe('12:05 AM');
-        expect(formatTime12(1440 + 60)).toBe('1:00 AM');
-        expect(formatTime12(-60)).toBe('11:00 PM');
+        expect(minutesToTimeValue(1220)).toBe('20:20');
+        expect(minutesToTimeValue(5)).toBe('00:05');
+        expect(minutesToTimeValue(1440 + 60)).toBe('01:00');
+        expect(minutesToTimeValue(-60)).toBe('23:00');
     });
 
     it.each([
-        ['8:20 PM', 1220],
-        ['8:20pm', 1220],
-        ['8:20 p', 1220],
-        [' 08:20 PM ', 1220],
-        ['12:00 PM', 720],
-        ['12:05 AM', 5],
         ['20:20', 1220],
-        ['0:00', 0]
+        ['00:05', 5],
+        ['20:20:00', 1220],
+        ['23:59', 1439]
     ])('parses %j', (text, minutes) => {
-        expect(parseTime12(text)).toBe(minutes);
+        expect(timeValueToMinutes(text)).toBe(minutes);
     });
 
-    it.each([
-        '13:00 PM',
-        '0:30 AM',
-        '8:60 PM',
-        '24:00',
-        'abc',
-        '',
-        '8 PM',
-        '8:20 xm'
-    ])('rejects %j', (text) => {
-        expect(parseTime12(text)).toBe(null);
+    it.each(['', '24:00', '08:60', '8:20', 'abc'])('rejects %j', (text) => {
+        expect(timeValueToMinutes(text)).toBe(null);
     });
 
-    it('round-trips every 5th minute of the day', () => {
-        for (let minutes = 0; minutes < 1440; minutes += 5) {
-            expect(parseTime12(formatTime12(minutes))).toBe(minutes);
+    it('round-trips every minute of the day', () => {
+        for (let minutes = 0; minutes < 1440; minutes++) {
+            expect(timeValueToMinutes(minutesToTimeValue(minutes))).toBe(
+                minutes
+            );
         }
     });
 });

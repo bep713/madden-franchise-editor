@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import Textbox from '@renderer/components/Textbox/Textbox';
-import { formatTime12, parseTime12 } from '../../scheduleModel';
+import { minutesToTimeValue, timeValueToMinutes } from '../../scheduleModel';
 import styles from './TimeInput.module.css';
 
 interface Props {
@@ -10,56 +10,50 @@ interface Props {
     'aria-label': string;
 }
 
-// A 12-hour time ("8:20 PM"), committed on Enter or blur
+// A native time input, like v4's. Committed on Enter or blur rather than on
+// change, which fires per segment and would write the file each time.
 const TimeInput: React.FC<Props> = ({
     minutes,
     onChange,
     'aria-label': ariaLabel
 }: Props) => {
-    const [text, setText] = useState(() => formatTime12(minutes));
-    const [invalid, setInvalid] = useState(false);
-    // Typed in since it got focus; a re-read then leaves the text alone
+    const [value, setValue] = useState(() => minutesToTimeValue(minutes));
+    // Changed since it got focus; a re-read then leaves the value alone
     const dirtyRef = useRef(false);
     const focusedRef = useRef(false);
 
     useEffect(() => {
         if (focusedRef.current && dirtyRef.current) return;
-        setText(formatTime12(minutes));
-        setInvalid(false);
+        setValue(minutesToTimeValue(minutes));
     }, [minutes]);
 
     const revert = (): void => {
         dirtyRef.current = false;
-        setText(formatTime12(minutes));
-        setInvalid(false);
+        setValue(minutesToTimeValue(minutes));
     };
 
-    // false: the text isn't a time
-    const commit = (): boolean => {
-        const parsed = parseTime12(text);
+    // An empty value (a cleared segment) reverts and writes nothing
+    const commit = (): void => {
+        const parsed = timeValueToMinutes(value);
         if (parsed === null) {
-            setInvalid(true);
-            return false;
+            revert();
+            return;
         }
         dirtyRef.current = false;
-        setInvalid(false);
-        setText(formatTime12(parsed));
         if (parsed !== minutes) onChange(parsed);
-        return true;
     };
 
     return (
         <div className={styles.timeInput}>
             <Textbox
-                aria-invalid={invalid || undefined}
                 aria-label={ariaLabel}
                 onBlur={() => {
                     focusedRef.current = false;
-                    if (!commit()) revert();
+                    commit();
                 }}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                     dirtyRef.current = true;
-                    setText(e.target.value);
+                    setValue(e.target.value);
                 }}
                 onFocus={() => {
                     focusedRef.current = true;
@@ -73,9 +67,9 @@ const TimeInput: React.FC<Props> = ({
                         revert();
                     }
                 }}
-                state={invalid ? 'error' : 'default'}
-                text={text}
-                title='A time like 8:20 PM'
+                step={60}
+                text={value}
+                type='time'
             />
         </div>
     );

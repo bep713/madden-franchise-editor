@@ -66,9 +66,7 @@ describe('GameRow', () => {
         expect(screen.getByRole('combobox', { name: 'Day' })).toHaveValue(
             'Sunday'
         );
-        expect(screen.getByRole('textbox', { name: 'Time' })).toHaveValue(
-            '1:00 PM'
-        );
+        expect(screen.getByLabelText('Time')).toHaveValue('13:00');
         expect(row()).not.toHaveAttribute('data-played');
         expect(row()).not.toHaveTextContent('Final');
     });
@@ -106,9 +104,9 @@ describe('GameRow', () => {
 
     it('edits the time', async () => {
         const { onEdit } = setup();
-        const input = screen.getByRole('textbox', { name: 'Time' });
-        await userEvent.clear(input);
-        await userEvent.type(input, '8:20 PM{Enter}');
+        const input = screen.getByLabelText('Time');
+        fireEvent.change(input, { target: { value: '20:20' } });
+        fireEvent.keyDown(input, { key: 'Enter' });
         expect(onEdit).toHaveBeenCalledWith({
             kind: 'time',
             minutes: 20 * 60 + 20

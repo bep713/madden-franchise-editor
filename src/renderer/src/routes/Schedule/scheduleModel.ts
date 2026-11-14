@@ -61,6 +61,14 @@ export interface Schedule {
     teamTableId: number;
 }
 
+export type ScheduleView = 'default' | 'compact';
+
+export const SCHEDULE_VIEWS: readonly { value: ScheduleView; label: string }[] =
+    [
+        { value: 'default', label: 'Default' },
+        { value: 'compact', label: 'Compact' }
+    ];
+
 export type GameSide = 'home' | 'away';
 
 export type GameEdit =
@@ -263,11 +271,39 @@ export function gamesInWeek(
     );
 }
 
-export function weekGameCounts(
+// Week types where every team is expected to play, so a missing team is on bye
+const BYE_WEEK_TYPES: ReadonlySet<string> = new Set([
+    'PreSeason',
+    'RegularSeason'
+]);
+
+// Teams with a game of this week's type somewhere in the season but none
+// this week. Team rows that never play (Pro Bowl, free agents) aren't listed.
+export function byeTeams(
     games: readonly ScheduleGame[],
-    weeks: readonly ScheduleWeek[]
-): number[] {
-    return weeks.map((week) => gamesInWeek(games, week).length);
+    week: ScheduleWeek
+): ScheduleTeam[] {
+    if (!week.seasonWeekType || !BYE_WEEK_TYPES.has(week.seasonWeekType)) {
+        return [];
+    }
+    const thisWeek = gamesInWeek(games, week);
+    if (thisWeek.length === 0) return [];
+
+    const playing = new Set<string>();
+    for (const game of thisWeek) {
+        playing.add(game.homeTeam.key);
+        playing.add(game.awayTeam.key);
+    }
+    const candidates = new Map<string, ScheduleTeam>();
+    for (const game of games) {
+        if (game.seasonWeekType !== week.seasonWeekType) continue;
+        for (const team of [game.homeTeam, game.awayTeam]) {
+            if (!playing.has(team.key)) candidates.set(team.key, team);
+        }
+    }
+    return [...candidates.values()].sort((a, b) =>
+        a.key < b.key ? -1 : a.key > b.key ? 1 : 0
+    );
 }
 
 export function editWrites(
@@ -316,31 +352,23 @@ export function applyGameEdit(
     }
 }
 
-export function formatTime12(minutes: number): string {
+// Minutes since midnight → an <input type="time"> value ("20:20")
+export function minutesToTimeValue(minutes: number): string {
     const total =
         ((Math.trunc(minutes) % MINUTES_PER_DAY) + MINUTES_PER_DAY) %
         MINUTES_PER_DAY;
     const hours = Math.floor(total / 60);
     const mins = total % 60;
-    const hour12 = hours % 12 === 0 ? 12 : hours % 12;
-    return `${hour12}:${String(mins).padStart(2, '0')} ${hours < 12 ? 'AM' : 'PM'}`;
+    return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
 }
 
-// "8:20 PM", "8:20pm", "8:20 p", " 08:20 PM " or 24-hour "20:20" → minutes
-export function parseTime12(text: string): number | null {
-    const match = /^(\d{1,2}):(\d{2})\s*(?:([ap])\.?(?:m\.?)?)?$/i.exec(
-        text.trim()
-    );
+// An <input type="time"> value ("20:20", or "20:20:00" with seconds) →
+// minutes. null when empty (a segment was cleared) or malformed.
+export function timeValueToMinutes(value: string): number | null {
+    const match = /^(\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?$/.exec(value);
     if (!match) return null;
     const hours = Number(match[1]);
     const mins = Number(match[2]);
-    const meridiem = match[3]?.toLowerCase();
-    if (mins > 59) return null;
-    if (meridiem) {
-        if (hours < 1 || hours > 12) return null;
-        const hours24 = (hours % 12) + (meridiem === 'p' ? 12 : 0);
-        return hours24 * 60 + mins;
-    }
-    if (hours > 23) return null;
+    if (hours > 23 || mins > 59) return null;
     return hours * 60 + mins;
 }

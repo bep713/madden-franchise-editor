@@ -4,19 +4,13 @@ import styles from './WeekBar.module.css';
 
 interface Props {
     weeks: readonly ScheduleWeek[];
-    // Games per week, in the same order as `weeks`
-    counts: readonly number[];
     selected: number;
     onSelect: (index: number) => void;
 }
 
-// Every week from seasonWeekData.json in order, N/A and empty weeks included
-const WeekBar: React.FC<Props> = ({
-    weeks,
-    counts,
-    selected,
-    onSelect
-}: Props) => {
+// Every week from seasonWeekData.json in order, N/A and empty weeks
+// included. One row that scrolls on its own, like v4's.
+const WeekBar: React.FC<Props> = ({ weeks, selected, onSelect }: Props) => {
     const barRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -47,7 +41,6 @@ const WeekBar: React.FC<Props> = ({
             role='toolbar'
         >
             {weeks.map((week) => {
-                const count = counts[week.index] ?? 0;
                 const isSelected = week.index === selected;
                 return (
                     <button
@@ -61,15 +54,6 @@ const WeekBar: React.FC<Props> = ({
                         type='button'
                     >
                         {week.abbreviation}
-                        {count > 0 && (
-                            <span
-                                aria-label={`${count} games`}
-                                className={styles.count}
-                                data-count={count}
-                            >
-                                {count}
-                            </span>
-                        )}
                     </button>
                 );
             })}

@@ -4,13 +4,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { SCHEDULE_WEEKS } from '../../scheduleModel';
 import WeekBar from './WeekBar';
 
-const counts = SCHEDULE_WEEKS.map((week) => (week.index === 4 ? 16 : 0));
-
 const setup = (selected = 0) => {
     const onSelect = vi.fn();
     const view = render(
         <WeekBar
-            counts={counts}
             onSelect={onSelect}
             selected={selected}
             weeks={SCHEDULE_WEEKS}
@@ -45,12 +42,6 @@ describe('WeekBar', () => {
         const { onSelect } = setup();
         await userEvent.click(week(5));
         expect(onSelect).toHaveBeenCalledWith(5);
-    });
-
-    it('shows the game count only when there are games', () => {
-        setup();
-        expect(week(4).querySelector('[data-count]')).toHaveTextContent('16');
-        expect(week(0).querySelector('[data-count]')).toBeNull();
     });
 
     it('moves the selection with the arrow keys', () => {

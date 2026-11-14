@@ -13,7 +13,7 @@ v5 uses the same preload APIs and adds no new IPC channels.
 ## Decisions (confirmed with the user)
 - **Replace all is dropped from v5.** It has never worked in v4: `replaceAllGamesWithFile` takes off the `change` listeners before it sets fields, so nothing is written, and the appointment/epoch code is dead (`appointmentMap` is never filled). v4 keeps it as it is. `scheduleAPI` stays for v4.
 - **Played games** show their final score and a "Final" marker, and stay editable.
-- **Times** are shown and entered in 12-hour format (`8:20 PM`). They are still stored as `TimeOfDay` minutes since midnight.
+- **Times** use a native `<input type="time">` like v4 (OS locale format), committed on Enter/blur (04h7; was a 12-hour text box). They are still stored as `TimeOfDay` minutes since midnight.
 - **Week bar** is the same as v4: all 28 weeks from `seasonWeekData.json` in order, including N/A and empty weeks, with no grouping. P1 is selected when the page mounts (v4 does the same).
 - **Validation** (home = away, a team playing twice in a week) is future work, not this plan.
 - **Undo/redo** is future work, not this plan.
@@ -24,7 +24,7 @@ Each one is small and isolated in its step, and can be cut without changing the 
 1. A visible **"View in table editor" icon button** on every row, in addition to right-click. Right-click alone is hard to discover. (04h4)
 2. **Failed writes re-read the schedule** from the file and show an error banner. v4 shows an error box but leaves the UI on the value that wasn't saved. (04h3)
 3. The schema error links to the Schemas tab. v4 only tells the user to go there. (04h5)
-4. The week bar shows the game count as a small badge on each week button. It changes nothing about which weeks are listed. (04h4)
+4. ~~The week bar shows the game count as a small badge on each week button.~~ Removed in 04h7; replaced by a bye-teams note.
 
 ## Facts that shape the design
 - Team references are 32-bit binary strings: 15 bits of table id + 17 bits of row (`src/renderer/src/utils/references.ts`, `calculateReferenceBinary` / `parseReference`). v4 splits them 16/16 and keeps the old 16-bit prefix on writes. That works for rows < 65536 but never checks that the reference points at the Team table. v5 parses with `parseReference` and writes `calculateReferenceBinary(teamTableId, recordIndex)`.
@@ -58,10 +58,11 @@ Each one is small and isolated in its step, and can be cut without changing the 
 |---|---|---|---|
 | 04h1 | Main + v4 fixes: `schedules:read` path check (+ unit test), v4 per-load team list, v4 bad-reference guard | [04h1-v4-fixes.md](04h1-v4-fixes.md) | Done (`a3e5b7a`) |
 | 04h2 | Pure TS model `routes/Schedule/scheduleModel.ts` (types, team list, game build, week filter, write builders, 12h time) + `preload.d.ts` + vitest | [04h2-schedule-model.md](04h2-schedule-model.md) | Done (`3927888`) |
-| 04h3 | `useSchedule(fileId, revision)` hook: load, states, `updateGame` with re-read on failure + vitest | [04h3-use-schedule.md](04h3-use-schedule.md) | Done |
-| 04h4 | Components: `WeekBar`, `GameRow`, `TeamSelect`, `TimeInput`, `teamLogos.ts` + vitest | [04h4-components.md](04h4-components.md) | Done |
-| 04h5 | Page wiring: `ScheduleEditor` route, `implemented: true`, view in table editor, `open-schedule` default editor + vitest | [04h5-page-wiring.md](04h5-page-wiring.md) | Done |
-| 04h6 | E2E: React page model + `react/schedule.spec.js`, update `react/tabs.spec.js`, port of the bulk-edit schedule test, docs; **full e2e** | [04h6-e2e.md](04h6-e2e.md) | Not started |
+| 04h3 | `useSchedule(fileId, revision)` hook: load, states, `updateGame` with re-read on failure + vitest | [04h3-use-schedule.md](04h3-use-schedule.md) | Done (`2d3365e`) |
+| 04h4 | Components: `WeekBar`, `GameRow`, `TeamSelect`, `TimeInput`, `teamLogos.ts` + vitest | [04h4-components.md](04h4-components.md) | Done (`8c09e8c`) |
+| 04h5 | Page wiring: `ScheduleEditor` route, `implemented: true`, view in table editor, `open-schedule` default editor + vitest | [04h5-page-wiring.md](04h5-page-wiring.md) | Done (`8c09e8c`) |
+| 04h6 | E2E: React page model + `react/schedule.spec.js`, update `react/tabs.spec.js`, port of the bulk-edit schedule test, docs; **full e2e** | [04h6-e2e.md](04h6-e2e.md) | Done (uncommitted) |
+| 04h7 | Full-width header, page doesn't scroll, Default (cards) / Compact (rows) views, native time input, Dropdown arrow padding, bye note | [04h7-schedule-views.md](04h7-schedule-views.md) | Done (uncommitted) |
 
 ## Order
 - 04h1 is independent (JS only: `main.js`, `renderer/js/franchise/`, `tests/unit/`) and can run in parallel with 04h2.
@@ -70,6 +71,7 @@ Each one is small and isolated in its step, and can be cut without changing the 
 - **Tests per step:** each step runs `npm run typecheck && npm run lint && npm run test:react` (plus `npm run test:unit` for 04h1, and `npm run stylelint` once there is CSS). No e2e before 04h6. 04h6 runs `npm run build:react && npm run e2eTest:react`, then the full `npm run e2eTest` (v4 changed in 04h1).
 
 ## Future work (not planned)
+- Team view: a third view showing one team's games for every week (sketch in [04h7-schedule-views.md](04h7-schedule-views.md#future-work-team-view-not-in-this-step)).
 - Validation warnings: home = away, a team playing more than once in a week, a count on the week button.
 - Undo/redo for schedule edits (reuse `TableEditorComponent/undoStack.ts`).
 - Replace all with a bundled real schedule, done properly: one bulk write, plus appointments/epoch, for every supported year.

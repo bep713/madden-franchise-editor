@@ -1,0 +1,36 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+
+.switch {
+    display: flex;
+    overflow: hidden;
+    border: 1px solid var(--white);
+    border-radius: 4px;
+}
+
+.option {
+    padding: var(--spacing-1) var(--spacing-3);
+    font-size: 13px;
+    color: var(--white);
+    cursor: pointer;
+    background: none;
+    border: none;
+}
+
+.option + .option {
+    border-left: 1px solid var(--white);
+}
+
+.option:hover {
+    background-color: rgb(255 255 255 / 15%);
+}
+
+.option[aria-pressed='true'] {
+    color: var(--primary);
+    background-color: var(--white);
+}
+
+.option:focus-visible {
+    outline: 2px solid var(--white);
+    outline-offset: -4px;
+}

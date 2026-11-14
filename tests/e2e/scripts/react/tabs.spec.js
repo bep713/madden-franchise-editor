@@ -10,6 +10,7 @@ const WelcomePage = require("../../models/react/WelcomePage");
 const NavigationBar = require("../../models/react/NavigationBar");
 const TableEditorPage = require("../../models/react/TableEditorPage");
 const SchemaManagementPage = require("../../models/react/SchemaManagementPage");
+const ScheduleEditorPage = require("../../models/react/ScheduleEditorPage");
 
 const MAIN_TABS = ["Home", "Schedule", "Schemas"];
 
@@ -55,10 +56,10 @@ test("tabs test (react)", async () => {
   expect(await nav.tabNames()).to.deep.equal([...MAIN_TABS, "Open Table..."]);
   expect(await nav.hasNewTabButton()).to.equal(true);
 
-  // Schedule is shown but does nothing yet
+  // Schedule opens the schedule, and the tabs stay the same
   await nav.openTab("Schedule");
-  await welcome.waitForPageLoad();
-  expect(await nav.activeTabName()).to.equal("Home");
+  await new ScheduleEditorPage(window).waitForLoad();
+  expect(await nav.activeTabName()).to.equal("Schedule");
   expect(await nav.tabNames()).to.deep.equal([...MAIN_TABS, "Open Table..."]);
 
   // can click on the default tab to load the first table

@@ -96,7 +96,7 @@ New code should call `window.franchiseAPI` / `window.electronAPI` directly.
 
 ### Other features
 
-- **Schedule editor** (`scheduleService.js` with `main/handlers/scheduleHandler.js`): reads the schedule tables and edits them through the library. Historical schedules are in `schedules/*.json`.
+- **Schedule editor** (`scheduleService.js` with `main/handlers/scheduleHandler.js`): reads the schedule tables and edits them through the library. Historical schedules are in `schedules/*.json`. v5's page is the `schedule-editor` route (`src/renderer/src/routes/Schedule/`): same preload calls, no Replace all; e2e in `tests/e2e/scripts/react/schedule.spec.js`.
 - **Schema viewer** (`schemaViewerService.js`, `schemaViewerHandler.js`), **schema manager window** (`schema-manager.html`, `schemaManager.js`), schema search over game CAS files (`schemaSearchHandler.js`, `main/libs/CASBlockParser.js`), and schema mismatch prompts (`schemaMismatchHandler.js`). The schema search doesn't work for some game versions.
 - **Settings manager window** (`settings-manager.html`, `services/settings-manager/`). Preferences are stored by `main/services/preferencesStore.js` (a small JSON store that kept `electron-preferences`' file format and merge rules) with `data/preferencesSchema.json`. The renderer caches them in `preferencesService`, and changes are synced between windows over IPC.
 - Recent files, external-modification reload prompts, and GitHub-release auto-updates are handled by `recentFilesHandler`, `reloadFileHandler` + the chokidar watcher in `main.js`, and `updateHandler` + `electron-updater`.

@@ -5,6 +5,7 @@
     display: flex;
     flex-shrink: 0;
     gap: var(--spacing-1);
+    min-width: 0;
     padding: var(--spacing-1) 0;
     overflow-x: auto;
 }
@@ -29,17 +30,4 @@
     color: var(--white);
     background-color: var(--primary);
     border-color: var(--primary);
-}
-
-.count {
-    position: absolute;
-    top: -1px;
-    right: 1px;
-    font-size: 9px;
-    line-height: 12px;
-    color: var(--text-secondary);
-}
-
-.week[aria-pressed='true'] .count {
-    color: var(--white);
 }

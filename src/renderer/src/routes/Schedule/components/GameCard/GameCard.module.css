@@ -1,0 +1,43 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+
+.card {
+    display: grid;
+    grid-template-areas:
+        'away day view'
+        'home time .'
+        'score score score';
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: var(--spacing-2) var(--spacing-3);
+    align-items: center;
+    padding: var(--spacing-4) var(--spacing-3) var(--spacing-4) var(--spacing-5);
+    background-color: var(--white);
+}
+
+.away {
+    grid-area: away;
+}
+
+.home {
+    grid-area: home;
+}
+
+.day {
+    grid-area: day;
+    width: 96px;
+}
+
+.time {
+    grid-area: time;
+}
+
+.view {
+    grid-area: view;
+    align-self: start;
+}
+
+.score {
+    grid-area: score;
+    font-size: 13px;
+    color: var(--text-secondary);
+}

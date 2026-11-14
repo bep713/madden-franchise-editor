@@ -1,18 +1,23 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import Close from '@assets/icons/close.svg?react';
 import Button from '@renderer/components/Button/Button';
 import Headline from '@renderer/components/Headline/Headline';
 import { FranchiseFileContext } from '@renderer/context/FranchiseFileContext';
 import useLoader from '@renderer/hooks/useLoader';
+import usePreference from '@renderer/hooks/usePreference';
 import { useEditorTabs } from '@renderer/tabs/EditorTabsContext';
 import { SCHEMA_MANAGEMENT_KEY } from '@renderer/tabs/editorTabs';
+import GameCard from './components/GameCard/GameCard';
 import GameRow from './components/GameRow/GameRow';
+import ViewSwitch from './components/ViewSwitch/ViewSwitch';
 import WeekBar from './components/WeekBar/WeekBar';
 import {
     SCHEDULE_DAYS,
+    SCHEDULE_VIEWS,
+    byeTeams,
     gamesInWeek,
-    weekGameCounts,
-    type ScheduleGame
+    type ScheduleGame,
+    type ScheduleView
 } from './scheduleModel';
 import { useSchedule } from './useSchedule';
 
@@ -32,6 +37,15 @@ const ScheduleEditor: React.FC = () => {
         );
     // P1 on mount, kept across re-reads
     const [week, setWeek] = useState(0);
+    const [storedView, setView] = usePreference<ScheduleView>(
+        'schedule.view',
+        'default'
+    );
+    const view: ScheduleView = SCHEDULE_VIEWS.some(
+        (v) => v.value === storedView
+    )
+        ? storedView
+        : 'default';
     const { loader, setOptions: setLoaderOptions } = useLoader({
         initialMessage: 'Loading schedule...'
     });
@@ -50,10 +64,6 @@ const ScheduleEditor: React.FC = () => {
     }, [loading, setLoaderOptions]);
 
     const schedule = state.status === 'ready' ? state.schedule : undefined;
-    const counts = useMemo(
-        () => (schedule ? weekGameCounts(schedule.games, schedule.weeks) : []),
-        [schedule]
-    );
 
     if (!openFile) return null;
 
@@ -73,11 +83,24 @@ const ScheduleEditor: React.FC = () => {
         schedule && selectedWeek
             ? gamesInWeek(schedule.games, selectedWeek)
             : [];
+    const byes =
+        schedule && selectedWeek ? byeTeams(schedule.games, selectedWeek) : [];
+    const Game = view === 'compact' ? GameRow : GameCard;
 
     return (
         <div className={styles.page}>
+            <Headline
+                actions={
+                    <ViewSwitch
+                        onChange={setView}
+                        value={view}
+                        views={SCHEDULE_VIEWS}
+                    />
+                }
+                size='default'
+                text='Schedule'
+            />
             <main className={styles.main}>
-                <Headline size='default' text='Schedule' />
                 {writeError && (
                     <div className={styles.writeError} role='alert'>
                         <p className={styles.errorText}>
@@ -113,41 +136,56 @@ const ScheduleEditor: React.FC = () => {
                 {schedule && (
                     <>
                         <WeekBar
-                            counts={counts}
                             onSelect={setWeek}
                             selected={week}
                             weeks={schedule.weeks}
                         />
-                        <div
-                            aria-label={selectedWeek?.weekName}
-                            className={styles.games}
-                            role='list'
-                        >
-                            {games.length === 0 ? (
-                                <p className={styles.empty}>
-                                    No games this week.
-                                </p>
-                            ) : (
-                                games.map((game) => (
-                                    <div key={game.recordIndex} role='listitem'>
-                                        <GameRow
-                                            days={SCHEDULE_DAYS}
-                                            game={game}
-                                            onEdit={(edit) =>
-                                                void updateGame(
-                                                    game.recordIndex,
-                                                    edit
-                                                )
-                                            }
-                                            onViewInTable={() =>
-                                                viewInTable(game)
-                                            }
-                                            teams={schedule.teams}
-                                        />
-                                    </div>
-                                ))
-                            )}
+                        <div className={styles.scroll}>
+                            <div
+                                aria-label={selectedWeek?.weekName}
+                                className={
+                                    view === 'compact'
+                                        ? styles.rows
+                                        : styles.cards
+                                }
+                                data-view={view}
+                                role='list'
+                            >
+                                {games.length === 0 ? (
+                                    <p className={styles.empty}>
+                                        No games this week.
+                                    </p>
+                                ) : (
+                                    games.map((game) => (
+                                        <div
+                                            key={game.recordIndex}
+                                            role='listitem'
+                                        >
+                                            <Game
+                                                days={SCHEDULE_DAYS}
+                                                game={game}
+                                                onEdit={(edit) =>
+                                                    void updateGame(
+                                                        game.recordIndex,
+                                                        edit
+                                                    )
+                                                }
+                                                onViewInTable={() =>
+                                                    viewInTable(game)
+                                                }
+                                                teams={schedule.teams}
+                                            />
+                                        </div>
+                                    ))
+                                )}
+                            </div>
                         </div>
+                        {byes.length > 0 && (
+                            <p className={styles.byes} data-bye-teams>
+                                Bye:{' '}
+                                {byes.map((t) => t.abbreviation).join(', ')}
+                            </p>
+                        )}
                     </>
                 )}
             </main>

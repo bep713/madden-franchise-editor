@@ -1,4 +1,4 @@
-import { act, render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FileMetadata } from '@shared/types';
@@ -91,6 +91,9 @@ const FILE: OpenFranchiseFile = {
     revision: 2
 };
 
+const getValue = vi.fn();
+const setPreference = vi.fn();
+
 const openTableTab = vi.fn();
 const selectTab = vi.fn();
 
@@ -114,9 +117,16 @@ const rows = () =>
         Number(row.getAttribute('data-record-index'))
     );
 
+const view = () => screen.getByRole('list').getAttribute('data-view') as string;
+
 beforeEach(() => {
     vi.clearAllMocks();
     useScheduleMock.mockReturnValue(hookResult());
+    getValue.mockResolvedValue(undefined);
+    setPreference.mockResolvedValue(undefined);
+    window.electronAPI = {
+        preferences: { getValue, set: setPreference }
+    } as unknown as Window['electronAPI'];
 });
 
 afterEach(() => {
@@ -227,6 +237,46 @@ describe('ScheduleEditor', () => {
             vi.advanceTimersByTime(LOADER_DELAY_MS);
         });
         expect(screen.getByText('Loading schedule...')).toBeTruthy();
+    });
+
+    it('shows cards by default and switches to compact rows', async () => {
+        renderEditor();
+        expect(view()).toBe('default');
+        expect(
+            screen.getByRole('button', { name: 'Default', pressed: true })
+        ).toBeTruthy();
+        expect(rows()).toEqual([0, 1]);
+
+        await userEvent.click(screen.getByRole('button', { name: 'Compact' }));
+        expect(view()).toBe('compact');
+        expect(rows()).toEqual([0, 1]);
+        expect(setPreference).toHaveBeenCalledWith({
+            schedule: { view: 'compact' }
+        });
+    });
+
+    it('opens in the stored view', async () => {
+        getValue.mockResolvedValue('compact');
+        renderEditor();
+        await waitFor(() => expect(view()).toBe('compact'));
+        expect(getValue).toHaveBeenCalledWith('schedule.view');
+    });
+
+    it('falls back to the default view for an unknown stored view', async () => {
+        getValue.mockResolvedValue('nonsense');
+        renderEditor();
+        await act(async () => {});
+        expect(view()).toBe('default');
+    });
+
+    it('lists the teams on bye', async () => {
+        renderEditor();
+        // P1: all three teams play
+        expect(document.querySelector('[data-bye-teams]')).toBeNull();
+        await userEvent.click(screen.getByRole('button', { name: /^P2/ }));
+        expect(document.querySelector('[data-bye-teams]')).toHaveTextContent(
+            'Bye: BAL'
+        );
     });
 
     it('renders nothing without a file', () => {

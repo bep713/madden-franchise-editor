@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import TimeInput from './TimeInput';
@@ -11,7 +11,7 @@ const setup = (minutes = MINUTES) => {
     const view = render(
         <TimeInput aria-label='Time' minutes={minutes} onChange={onChange} />
     );
-    const input = screen.getByRole('textbox', { name: 'Time' });
+    const input = screen.getByLabelText<HTMLInputElement>('Time');
     const rerender = (next: number) =>
         view.rerender(
             <TimeInput aria-label='Time' minutes={next} onChange={onChange} />
@@ -19,55 +19,55 @@ const setup = (minutes = MINUTES) => {
     return { onChange, input, rerender };
 };
 
-const retype = async (input: HTMLElement, text: string) => {
-    await userEvent.clear(input);
-    await userEvent.type(input, text);
+// jsdom has no time picker: set the value as the picker would
+const pick = (input: HTMLInputElement, value: string) => {
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value } });
 };
 
 describe('TimeInput', () => {
-    it('shows the time in 12-hour format', () => {
+    it('is a native time input with the time as HH:mm', () => {
         const { input } = setup();
-        expect(input).toHaveValue('8:20 PM');
+        expect(input.type).toBe('time');
+        expect(input).toHaveValue('20:20');
     });
 
-    it('commits a valid time on Enter', async () => {
+    it('commits on Enter, not on change', async () => {
         const { input, onChange } = setup();
-        await retype(input, '1:05pm{Enter}');
-        expect(onChange).toHaveBeenCalledWith(13 * 60 + 5);
-        expect(input).toHaveValue('1:05 PM');
-    });
-
-    it('commits on blur', async () => {
-        const { input, onChange } = setup();
-        await retype(input, '20:00');
-        await userEvent.tab();
-        expect(onChange).toHaveBeenCalledWith(20 * 60);
-        expect(input).toHaveValue('8:00 PM');
-    });
-
-    it('does not call onChange when the time is the same', async () => {
-        const { input, onChange } = setup();
-        await retype(input, '8:20 p{Enter}');
+        pick(input, '13:05');
         expect(onChange).not.toHaveBeenCalled();
-        expect(input).toHaveValue('8:20 PM');
+        fireEvent.keyDown(input, { key: 'Enter' });
+        expect(onChange).toHaveBeenCalledWith(13 * 60 + 5);
     });
 
-    it('flags an invalid time and reverts it on blur', async () => {
+    it('commits on blur', () => {
         const { input, onChange } = setup();
-        await retype(input, '25:00{Enter}');
-        expect(input).toHaveAttribute('aria-invalid', 'true');
-        expect(input).toHaveValue('25:00');
-        await userEvent.tab();
-        expect(input).toHaveValue('8:20 PM');
-        expect(input).not.toHaveAttribute('aria-invalid');
+        pick(input, '20:00');
+        fireEvent.blur(input);
+        expect(onChange).toHaveBeenCalledWith(20 * 60);
+    });
+
+    it('does not call onChange when the time is the same', () => {
+        const { input, onChange } = setup();
+        pick(input, '20:20');
+        fireEvent.keyDown(input, { key: 'Enter' });
+        fireEvent.blur(input);
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('reverts a cleared time on blur and writes nothing', () => {
+        const { input, onChange } = setup();
+        pick(input, '');
+        fireEvent.blur(input);
+        expect(input).toHaveValue('20:20');
         expect(onChange).not.toHaveBeenCalled();
     });
 
     it('reverts on Escape', async () => {
         const { input, onChange } = setup();
-        await retype(input, 'abc{Escape}');
-        expect(input).toHaveValue('8:20 PM');
-        expect(input).not.toHaveAttribute('aria-invalid');
+        pick(input, '09:00');
+        fireEvent.keyDown(input, { key: 'Escape' });
+        expect(input).toHaveValue('20:20');
         await userEvent.tab();
         expect(onChange).not.toHaveBeenCalled();
     });
@@ -75,13 +75,13 @@ describe('TimeInput', () => {
     it('follows a new value from the parent', () => {
         const { input, rerender } = setup();
         rerender(13 * 60);
-        expect(input).toHaveValue('1:00 PM');
+        expect(input).toHaveValue('13:00');
     });
 
-    it('keeps typed text when the value changes while editing', async () => {
+    it('keeps a changed value when the parent value changes while editing', () => {
         const { input, rerender } = setup();
-        await retype(input, '9:');
+        pick(input, '09:00');
         rerender(13 * 60);
-        expect(input).toHaveValue('9:');
+        expect(input).toHaveValue('09:00');
     });
 });
