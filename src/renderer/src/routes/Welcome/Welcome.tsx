@@ -9,6 +9,7 @@ import Headline from '@renderer/components/Headline/Headline';
 import Layout from '@renderer/components/Layout/Layout';
 
 import { FranchiseFileContext } from '@renderer/context/FranchiseFileContext';
+import useLoader from '@renderer/hooks/useLoader';
 import useOpenFile from '@renderer/hooks/useOpenFile';
 import type { RecentFileEntry } from '@renderer/preload';
 import { basename, dirname } from '@renderer/utils/path';
@@ -46,7 +47,8 @@ const Welcome: React.FC = () => {
     const [openFile] = useContext(FranchiseFileContext);
     const { promptForOverrides, modal: commonFileModal } =
         useCommonFilePrompt();
-    const openFileAt = useOpenFile({ promptForOverrides });
+    const { loader, setOptions: setLoaderOptions } = useLoader();
+    const openFileAt = useOpenFile({ promptForOverrides, setLoaderOptions });
     const { notifications, unreadCount } = useNotifications();
     const [notificationsOpen, setNotificationsOpen] = useState(false);
 
@@ -315,6 +317,7 @@ const Welcome: React.FC = () => {
                 </Allotment.Pane>
             </Allotment>
             {commonFileModal}
+            {loader}
         </Layout>
     );
 };

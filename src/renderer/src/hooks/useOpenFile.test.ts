@@ -1,6 +1,6 @@
 import { createElement, ReactNode } from 'react';
 import { renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     FranchiseFileContext,
     OpenFranchiseFile
@@ -12,7 +12,8 @@ import {
 import { FileType } from '@shared/types/franchise';
 import { SCHEDULE_KEY, SCHEMA_MANAGEMENT_KEY } from '@renderer/tabs/editorTabs';
 import { PendingOpenContext } from '@renderer/context/PendingOpenContext';
-import useOpenFile from './useOpenFile';
+import type { LoaderOptionsSetter } from './useLoader';
+import useOpenFile, { OPEN_LOADER_DELAY_MS } from './useOpenFile';
 
 const METADATA = { gameYear: 22, format: 'franchise', type: {} };
 const PATH = 'C:/saves/CAREER-TEST';
@@ -52,7 +53,10 @@ const selectTab = vi.fn();
 const promptForOverrides = vi.fn();
 
 // `current`: the file already open
-function setup(current?: OpenFranchiseFile) {
+function setup(
+    current?: OpenFranchiseFile,
+    setLoaderOptions?: LoaderOptionsSetter
+) {
     const wrapper = ({ children }: { children: ReactNode }) =>
         createElement(
             FranchiseFileContext.Provider,
@@ -72,8 +76,10 @@ function setup(current?: OpenFranchiseFile) {
                 )
             )
         );
-    return renderHook(() => useOpenFile({ promptForOverrides }), { wrapper })
-        .result.current;
+    return renderHook(
+        () => useOpenFile({ promptForOverrides, setLoaderOptions }),
+        { wrapper }
+    ).result.current;
 }
 
 beforeEach(() => {
@@ -325,6 +331,103 @@ describe('useOpenFile', () => {
 
         expect(franchiseAPI.openFile).toHaveBeenCalledWith(PATH, {
             schemaOverride: { path: 'a.gz' }
+        });
+    });
+
+    describe('loader', () => {
+        const setLoaderOptions = vi.fn();
+        const shown = () =>
+            setLoaderOptions.mock.calls.some(([o]) => o.show === true);
+
+        const setupWithLoader = () => setup(undefined, setLoaderOptions);
+
+        function deferOpen() {
+            let resolve!: (value: unknown) => void;
+            franchiseAPI.openFile.mockImplementationOnce(
+                () => new Promise((r) => (resolve = r))
+            );
+            return () => resolve({ fileId: 'file-1', metadata: METADATA });
+        }
+
+        beforeEach(() => {
+            vi.useFakeTimers();
+        });
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        it('shows after the delay while the file parses, then hides', async () => {
+            const finish = deferOpen();
+            const opening = setupWithLoader()(PATH);
+
+            await vi.advanceTimersByTimeAsync(OPEN_LOADER_DELAY_MS - 1);
+            expect(shown()).toBe(false);
+            await vi.advanceTimersByTimeAsync(1);
+            expect(setLoaderOptions).toHaveBeenLastCalledWith({
+                message: 'Opening file...',
+                show: true
+            });
+
+            finish();
+            expect((await opening).status).toBe('opened');
+            expect(setLoaderOptions).toHaveBeenLastCalledWith({ show: false });
+        });
+
+        it("doesn't show for a quick open", async () => {
+            await setupWithLoader()(PATH);
+            await vi.advanceTimersByTimeAsync(OPEN_LOADER_DELAY_MS);
+            expect(shown()).toBe(false);
+        });
+
+        it("doesn't cover the common file prompt", async () => {
+            franchiseAPI.getMetadataFromFilePath.mockImplementation(
+                async () => ({ format: 'franchise-common' })
+            );
+            let answer!: (value: null) => void;
+            promptForOverrides.mockImplementationOnce(
+                () => new Promise((r) => (answer = r))
+            );
+            const opening = setupWithLoader()(FTC_PATH);
+
+            await vi.advanceTimersByTimeAsync(OPEN_LOADER_DELAY_MS * 2);
+            expect(shown()).toBe(false);
+            answer(null);
+            expect((await opening).status).toBe('cancelled');
+        });
+
+        it('hides before the error box', async () => {
+            let resolve!: (value: unknown) => void;
+            franchiseAPI.openFile.mockImplementationOnce(
+                () => new Promise((r) => (resolve = r))
+            );
+            let loaderAtBox: unknown;
+            electronAPI.showMessageBox.mockImplementationOnce(async () => {
+                loaderAtBox = setLoaderOptions.mock.lastCall?.[0];
+            });
+            const opening = setupWithLoader()(PATH);
+            await vi.advanceTimersByTimeAsync(OPEN_LOADER_DELAY_MS);
+            expect(shown()).toBe(true);
+            resolve({ error: 'Bad file' });
+
+            expect((await opening).status).toBe('error');
+            expect(loaderAtBox).toEqual({ show: false });
+        });
+
+        it('ignores an open while one is running', async () => {
+            const finish = deferOpen();
+            const openFileAt = setupWithLoader();
+            const first = openFileAt(PATH);
+
+            expect(await openFileAt(FTC_PATH)).toEqual({ status: 'busy' });
+            await vi.advanceTimersByTimeAsync(0);
+            finish();
+            expect((await first).status).toBe('opened');
+            expect(franchiseAPI.openFile).toHaveBeenCalledExactlyOnceWith(
+                PATH,
+                undefined
+            );
+
+            expect((await openFileAt(PATH)).status).toBe('opened');
         });
     });
 

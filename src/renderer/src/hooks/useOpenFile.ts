@@ -1,4 +1,5 @@
-import { useContext } from 'react';
+import { useContext, useRef } from 'react';
+import type { LoaderOptionsSetter } from '@renderer/hooks/useLoader';
 import { getNavigationItems } from '@data/navigation';
 import { FileType } from '@shared/types/franchise';
 import { FranchiseFileContext } from '@renderer/context/FranchiseFileContext';
@@ -20,6 +21,8 @@ export type OpenFileOverrides = Partial<CommonFileOverrides> & {
 export type OpenFileResult =
     | { status: 'opened'; recentFiles: RecentFileEntry[] }
     | { status: 'cancelled' }
+    // Another open from this hook hadn't finished
+    | { status: 'busy' }
     | { status: 'missing'; recentFiles: RecentFileEntry[] }
     | { status: 'error'; error: string; code?: string };
 
@@ -44,19 +47,51 @@ function showOpenError(path: string, detail: string): Promise<unknown> {
     });
 }
 
+// A parse quicker than this shows no loader, so it doesn't flash
+export const OPEN_LOADER_DELAY_MS = 300;
+
+// Returns a stop function that is safe to call more than once
+function startLoader(setLoaderOptions?: LoaderOptionsSetter): () => void {
+    if (!setLoaderOptions) return () => undefined;
+    const timer = setTimeout(
+        () => setLoaderOptions({ message: 'Opening file...', show: true }),
+        OPEN_LOADER_DELAY_MS
+    );
+    return () => {
+        clearTimeout(timer);
+        setLoaderOptions({ show: false });
+    };
+}
+
 // Follows v4's welcomeService existence check and navigationService
 // "open-file" flow. `promptForOverrides` is from useCommonFilePrompt, whose
-// modal the caller renders.
+// modal the caller renders, as it renders the loader `setLoaderOptions`
+// drives while the file parses.
 export default function useOpenFile({
-    promptForOverrides
+    promptForOverrides,
+    setLoaderOptions
 }: {
     promptForOverrides: (path: string) => Promise<CommonFileOverrides | null>;
+    setLoaderOptions?: LoaderOptionsSetter;
 }): (path: string, overrides?: OpenFileOverrides) => Promise<OpenFileResult> {
     const editorTabs = useEditorTabs();
     const [openFile, setOpenFile] = useContext(FranchiseFileContext);
     const [, setPending] = usePendingOpen();
+    // A second open started before the first finishes reads a stale
+    // `openFile`, so it wouldn't close the first file and main would hold both
+    const inFlight = useRef(false);
 
-    return async function openFileAt(
+    return async function openFileAt(path, overrides) {
+        if (inFlight.current) return { status: 'busy' };
+        inFlight.current = true;
+        try {
+            return await open(path, overrides);
+        } finally {
+            inFlight.current = false;
+        }
+    };
+
+    async function open(
         path: string,
         overrides?: OpenFileOverrides
     ): Promise<OpenFileResult> {
@@ -110,65 +145,82 @@ export default function useOpenFile({
             }
         }
 
-        // Release the previous file so two parsed files never coexist in main
-        if (openFile) {
-            setOpenFile?.(undefined);
-            await window.franchiseAPI.closeFile(openFile.fileId);
-        }
+        // After the prompts, so the loader never covers the common file modal
+        const stopLoader = startLoader(setLoaderOptions);
+        try {
+            // Release the previous file so two parsed files never coexist in
+            // main
+            if (openFile) {
+                setOpenFile?.(undefined);
+                await window.franchiseAPI.closeFile(openFile.fileId);
+            }
 
-        const result = await window.franchiseAPI.openFile(path, openOptions);
-        if ('error' in result) {
-            // Main added a schema-missing notification, whose banner offers
-            // to pick a schema instead
-            if (result.code === 'schema-not-found') {
+            const result = await window.franchiseAPI.openFile(
+                path,
+                openOptions
+            );
+            if ('error' in result) {
+                stopLoader();
+                // Main added a schema-missing notification, whose banner
+                // offers to pick a schema instead
+                if (result.code === 'schema-not-found') {
+                    return {
+                        status: 'error',
+                        error: result.error,
+                        code: result.code
+                    };
+                }
+                await showOpenError(path, result.error);
                 return {
                     status: 'error',
                     error: result.error,
                     code: result.code
                 };
             }
-            await showOpenError(path, result.error);
-            return { status: 'error', error: result.error, code: result.code };
-        }
 
-        const [tables, defaultEditor] = await Promise.all([
-            window.franchiseAPI.getTableList(result.fileId),
-            readDefaultEditor()
-        ]);
-        const recentFiles = await window.electronAPI.recentFiles.addFile(path);
-        const file = buildOpenFranchiseFile(
-            result.fileId,
-            result.metadata,
-            tables,
-            path
-        );
-        // In the same tick, so the tab bar renders once, already showing the
-        // default editor (v4's navigationService open-file handler)
-        setOpenFile?.(file);
-        // Whichever file it was waiting for, a schema pick is no longer due
-        setPending?.(undefined);
-        if (defaultEditor === 'open-table-editor') {
-            editorTabs.openTableEditor(file);
-        } else if (defaultEditor === 'open-schema-viewer') {
-            editorTabs.selectTab(SCHEMA_MANAGEMENT_KEY, file);
-        } else if (defaultEditor === 'open-schedule') {
-            // Only Madden franchise files have it; others stay on Home
-            if (
-                getNavigationItems(file.metadata).some(
-                    (item) => item.id === SCHEDULE_KEY
-                )
-            ) {
-                editorTabs.selectTab(SCHEDULE_KEY, file);
+            const [tables, defaultEditor] = await Promise.all([
+                window.franchiseAPI.getTableList(result.fileId),
+                readDefaultEditor()
+            ]);
+            const recentFiles =
+                await window.electronAPI.recentFiles.addFile(path);
+            const file = buildOpenFranchiseFile(
+                result.fileId,
+                result.metadata,
+                tables,
+                path
+            );
+            // In the same tick, so the tab bar renders once, already showing
+            // the default editor (v4's navigationService open-file handler)
+            setOpenFile?.(file);
+            // Whichever file it was waiting for, a schema pick is no longer due
+            setPending?.(undefined);
+            if (defaultEditor === 'open-table-editor') {
+                editorTabs.openTableEditor(file);
+            } else if (defaultEditor === 'open-schema-viewer') {
+                editorTabs.selectTab(SCHEMA_MANAGEMENT_KEY, file);
+            } else if (defaultEditor === 'open-schedule') {
+                // Only Madden franchise files have it; others stay on Home
+                if (
+                    getNavigationItems(file.metadata).some(
+                        (item) => item.id === SCHEDULE_KEY
+                    )
+                ) {
+                    editorTabs.selectTab(SCHEDULE_KEY, file);
+                }
             }
+            // Main sets the title, enables the file menu items and starts
+            // watching the file. A restore after a reload or UI switch only
+            // sends it if the open was cut off before this
+            // (useActiveFranchiseFile).
+            window.electronAPI.send('file-loaded', {
+                path,
+                type: result.metadata.type,
+                fileId: result.fileId
+            });
+            return { status: 'opened', recentFiles };
+        } finally {
+            stopLoader();
         }
-        // Main sets the title, enables the file menu items and starts
-        // watching the file. A restore after a reload or UI switch only sends
-        // it if the open was cut off before this (useActiveFranchiseFile).
-        window.electronAPI.send('file-loaded', {
-            path,
-            type: result.metadata.type,
-            fileId: result.fileId
-        });
-        return { status: 'opened', recentFiles };
-    };
+    }
 }

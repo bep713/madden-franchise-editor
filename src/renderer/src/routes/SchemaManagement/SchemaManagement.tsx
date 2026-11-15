@@ -59,7 +59,7 @@ const SchemaManagement: React.FC = () => {
     // A pending common file has its year and type, so this rarely prompts
     const { promptForOverrides, modal: commonFileModal } =
         useCommonFilePrompt();
-    const openFileAt = useOpenFile({ promptForOverrides });
+    const openFileAt = useOpenFile({ promptForOverrides, setLoaderOptions });
     const metadata = openFile?.metadata;
 
     const { groups, other } = useMemo(
@@ -195,7 +195,6 @@ const SchemaManagement: React.FC = () => {
     // on success and shows the error box on failure.
     async function handlePick(entry: SchemaEntry): Promise<void> {
         if (!pending) return;
-        setLoaderOptions({ message: 'Opening file...', show: true });
         try {
             await openFileAt(pending.path, {
                 ...pending.openOptions,
@@ -203,8 +202,6 @@ const SchemaManagement: React.FC = () => {
             });
         } catch (error) {
             await showError('Could not open the file.', error);
-        } finally {
-            setLoaderOptions({ show: false });
         }
     }
 
