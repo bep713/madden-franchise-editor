@@ -23,12 +23,14 @@ const sidenav = [
     {
         id: 'releaseNotes',
         icon: <Document />,
-        text: 'Release Notes'
+        text: 'Release Notes',
+        'data-action': 'release-notes'
     },
     {
         id: 'settings',
         icon: <Settings />,
-        text: 'Settings'
+        text: 'Settings',
+        'data-action': 'settings'
     },
     {
         id: 'switchUi',
@@ -41,6 +43,7 @@ const sidenav = [
 interface Props {
     onOpenFileClick?: () => void;
     onSchemaManagementClick?: () => void;
+    onReleaseNotesClick?: () => void;
     onSettingsClick?: () => void;
     onSwitchUiClick?: () => void;
 }
@@ -48,12 +51,14 @@ interface Props {
 const SideNav: React.FC<Props> = ({
     onOpenFileClick,
     onSchemaManagementClick,
+    onReleaseNotesClick,
     onSettingsClick,
     onSwitchUiClick
 }: Props) => {
     const onClick: Record<string, (() => void) | undefined> = {
         openFile: onOpenFileClick,
         schemaManagement: onSchemaManagementClick,
+        releaseNotes: onReleaseNotesClick,
         settings: onSettingsClick,
         switchUi: onSwitchUiClick
     };

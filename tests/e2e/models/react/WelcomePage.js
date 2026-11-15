@@ -40,6 +40,12 @@ class WelcomePage {
     this.locators.switchUiLink = this.window.locator(
       '[data-action="switch-ui"]',
     );
+    this.locators.releaseNotesLink = this.window.locator(
+      '[data-action="release-notes"]',
+    );
+    this.locators.settingsLink = this.window.locator(
+      '[data-action="settings"]',
+    );
     this.locators.sideNavOpenFileLink = this.window.locator(
       '[data-action="open-file"]',
     );

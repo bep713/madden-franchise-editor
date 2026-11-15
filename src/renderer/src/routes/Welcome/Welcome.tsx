@@ -181,6 +181,9 @@ const Welcome: React.FC = () => {
                         onSchemaManagementClick={() =>
                             editorTabs.selectTab(SCHEMA_MANAGEMENT_KEY)
                         }
+                        onReleaseNotesClick={() =>
+                            window.electronAPI.send('show-settings-manager')
+                        }
                         onSettingsClick={() =>
                             window.electronAPI.send('show-preferences-window')
                         }

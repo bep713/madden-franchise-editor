@@ -249,6 +249,14 @@ describe('Welcome side nav', () => {
         });
     });
 
+    it('opens the release notes from Release Notes', async () => {
+        setup();
+        await userEvent.click(screen.getByText('Release Notes'));
+        expect(electronAPI.send).toHaveBeenCalledExactlyOnceWith(
+            'show-settings-manager'
+        );
+    });
+
     it('opens Preferences from Settings', async () => {
         setup();
         await userEvent.click(screen.getByText('Settings'));
