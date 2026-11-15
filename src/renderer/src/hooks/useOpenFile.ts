@@ -20,6 +20,7 @@ export type OpenFileOverrides = Partial<CommonFileOverrides> & {
 export type OpenFileResult =
     | { status: 'opened'; recentFiles: RecentFileEntry[] }
     | { status: 'cancelled' }
+    | { status: 'missing'; recentFiles: RecentFileEntry[] }
     | { status: 'error'; error: string; code?: string };
 
 // general.defaultEditor: the editor to open after a file loads. A failed
@@ -35,8 +36,17 @@ async function readDefaultEditor(): Promise<unknown> {
     }
 }
 
-// Follows v4's navigationService "open-file" flow. `promptForOverrides` is
-// from useCommonFilePrompt, whose modal the caller renders.
+function showOpenError(path: string, detail: string): Promise<unknown> {
+    return window.electronAPI.showMessageBox({
+        type: 'error',
+        message: `Could not open ${basename(path)}.`,
+        detail
+    });
+}
+
+// Follows v4's welcomeService existence check and navigationService
+// "open-file" flow. `promptForOverrides` is from useCommonFilePrompt, whose
+// modal the caller renders.
 export default function useOpenFile({
     promptForOverrides
 }: {
@@ -50,12 +60,35 @@ export default function useOpenFile({
         path: string,
         overrides?: OpenFileOverrides
     ): Promise<OpenFileResult> {
+        // Before anything closes, so the current file stays open. The entry
+        // goes first, so the list behind the box is already updated.
+        if (!(await window.electronAPI.fs.exists(path))) {
+            const recentFiles =
+                await window.electronAPI.recentFiles.removeFile(path);
+            await window.electronAPI.showMessageBox({
+                type: 'error',
+                title: 'File not found',
+                message:
+                    'Could not find the selected file. You may have renamed or deleted it.'
+            });
+            return { status: 'missing', recentFiles };
+        }
+
         // Common files don't record their year or type, so use the file's
         // remembered choice or ask, as v4 does
         let openOptions = overrides;
         if (!openOptions?.gameYearOverride || !openOptions.gameTypeOverride) {
-            const { format } =
-                await window.franchiseAPI.getMetadataFromFilePath(path);
+            let format: string | null;
+            try {
+                ({ format } =
+                    await window.franchiseAPI.getMetadataFromFilePath(path));
+            } catch (error) {
+                // Locked, unreadable or not a franchise file
+                const message =
+                    error instanceof Error ? error.message : String(error);
+                await showOpenError(path, message);
+                return { status: 'error', error: message };
+            }
             if (format === FileType.COMMON) {
                 const remembered = await getRememberedChoice(path);
                 const chosen = remembered
@@ -94,11 +127,7 @@ export default function useOpenFile({
                     code: result.code
                 };
             }
-            await window.electronAPI.showMessageBox({
-                type: 'error',
-                message: `Could not open ${basename(path)}.`,
-                detail: result.error
-            });
+            await showOpenError(path, result.error);
             return { status: 'error', error: result.error, code: result.code };
         }
 

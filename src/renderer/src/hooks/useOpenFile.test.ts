@@ -24,10 +24,14 @@ let defaultEditor: unknown;
 const electronAPI = {
     showMessageBox: vi.fn(),
     preferences: { getValue: vi.fn(async () => defaultEditor) },
-    recentFiles: { addFile: vi.fn(async () => [{ path: PATH, time: 1 }]) },
+    recentFiles: {
+        addFile: vi.fn(async () => [{ path: PATH, time: 1 }]),
+        removeFile: vi.fn(async () => [{ path: FTC_PATH, time: 2 }])
+    },
     fs: {
         readJson: vi.fn(async () => storedChoices),
-        writeJson: vi.fn()
+        writeJson: vi.fn(),
+        exists: vi.fn(async () => true)
     },
     send: vi.fn()
 };
@@ -143,6 +147,71 @@ describe('useOpenFile', () => {
         });
         expect(electronAPI.showMessageBox).not.toHaveBeenCalled();
         expect(setPending).not.toHaveBeenCalled();
+    });
+
+    describe('missing file', () => {
+        beforeEach(() => {
+            electronAPI.fs.exists.mockResolvedValueOnce(false);
+        });
+
+        it("removes it from recents and shows v4's box", async () => {
+            const result = await setup()(PATH);
+
+            expect(result).toEqual({
+                status: 'missing',
+                recentFiles: [{ path: FTC_PATH, time: 2 }]
+            });
+            expect(electronAPI.fs.exists).toHaveBeenCalledWith(PATH);
+            expect(electronAPI.recentFiles.removeFile).toHaveBeenCalledWith(
+                PATH
+            );
+            expect(electronAPI.showMessageBox).toHaveBeenCalledExactlyOnceWith({
+                type: 'error',
+                title: 'File not found',
+                message:
+                    'Could not find the selected file. You may have renamed or deleted it.'
+            });
+            // Removed before the box shows
+            expect(
+                electronAPI.recentFiles.removeFile.mock.invocationCallOrder[0]
+            ).toBeLessThan(
+                electronAPI.showMessageBox.mock.invocationCallOrder[0]
+            );
+            expect(franchiseAPI.getMetadataFromFilePath).not.toHaveBeenCalled();
+            expect(franchiseAPI.openFile).not.toHaveBeenCalled();
+            expect(electronAPI.send).not.toHaveBeenCalled();
+        });
+
+        it('keeps the current file open', async () => {
+            await setup({ fileId: 'old' } as OpenFranchiseFile)(PATH);
+
+            expect(franchiseAPI.closeFile).not.toHaveBeenCalled();
+            expect(setOpenFile).not.toHaveBeenCalled();
+            expect(setPending).not.toHaveBeenCalled();
+        });
+    });
+
+    it('shows a message box when the header read fails', async () => {
+        franchiseAPI.getMetadataFromFilePath.mockRejectedValueOnce(
+            new Error('EBUSY: resource busy or locked')
+        );
+
+        const result = await setup({ fileId: 'old' } as OpenFranchiseFile)(
+            PATH
+        );
+
+        expect(result).toEqual({
+            status: 'error',
+            error: 'EBUSY: resource busy or locked'
+        });
+        expect(electronAPI.showMessageBox).toHaveBeenCalledExactlyOnceWith({
+            type: 'error',
+            message: 'Could not open CAREER-TEST.',
+            detail: 'EBUSY: resource busy or locked'
+        });
+        expect(electronAPI.recentFiles.removeFile).not.toHaveBeenCalled();
+        expect(franchiseAPI.closeFile).not.toHaveBeenCalled();
+        expect(franchiseAPI.openFile).not.toHaveBeenCalled();
     });
 
     it('clears the pending file on open', async () => {

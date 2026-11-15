@@ -40,6 +40,9 @@ class WelcomePage {
     this.locators.switchUiLink = this.window.locator(
       '[data-action="switch-ui"]',
     );
+    this.locators.sideNavOpenFileLink = this.window.locator(
+      '[data-action="open-file"]',
+    );
   }
 
   async waitForPageLoad() {

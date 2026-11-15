@@ -45,8 +45,9 @@ const electronAPI = {
     files: { getSaves: vi.fn(async () => ({ success: false })) },
     recentFiles: {
         initialize: vi.fn(async () => undefined),
-        getRecentFiles: vi.fn(async () => []),
-        addFile: vi.fn(async () => [])
+        getRecentFiles: vi.fn<() => Promise<unknown[]>>(async () => []),
+        addFile: vi.fn(async () => []),
+        removeFile: vi.fn(async () => [])
     },
     showOpenDialog: vi.fn(async () => ({
         canceled: false,
@@ -58,7 +59,8 @@ const electronAPI = {
         readJson: vi.fn(async () => storedChoices),
         writeJson: vi.fn(async (_name: string, data: unknown) => {
             storedChoices = data;
-        })
+        }),
+        exists: vi.fn(async () => true)
     },
     send: vi.fn(),
     notifications: {
@@ -252,6 +254,85 @@ describe('Welcome side nav', () => {
         await userEvent.click(screen.getByText('Settings'));
         expect(electronAPI.send).toHaveBeenCalledExactlyOnceWith(
             'show-preferences-window'
+        );
+    });
+});
+
+describe('Welcome open flow', () => {
+    const MISSING = 'C:/saves/CAREER-GONE';
+    const KEPT = 'C:/saves/CAREER-KEPT';
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        Object.assign(window, { electronAPI, franchiseAPI });
+        electronAPI.preferences.getValue.mockResolvedValue(undefined);
+    });
+
+    it('drops a missing recent file from the list', async () => {
+        electronAPI.recentFiles.getRecentFiles.mockResolvedValueOnce([
+            { path: MISSING, time: 2 },
+            { path: KEPT, time: 1 }
+        ]);
+        electronAPI.fs.exists.mockResolvedValueOnce(false);
+        electronAPI.recentFiles.removeFile.mockResolvedValueOnce([
+            { path: KEPT, time: 1 }
+        ] as never);
+        setup();
+        const recent = within(screen.getByTestId('recent-files'));
+        await userEvent.click(await recent.findByText('CAREER-GONE'));
+
+        await waitFor(() =>
+            expect(recent.queryByText('CAREER-GONE')).toBeNull()
+        );
+        expect(recent.getByText('CAREER-KEPT')).toBeInTheDocument();
+        expect(electronAPI.recentFiles.removeFile).toHaveBeenCalledWith(
+            MISSING
+        );
+        expect(electronAPI.showMessageBox).toHaveBeenCalledWith(
+            expect.objectContaining({ title: 'File not found' })
+        );
+        expect(franchiseAPI.openFile).not.toHaveBeenCalled();
+        // Once on mount, once after the missing file
+        expect(electronAPI.files.getSaves).toHaveBeenCalledTimes(2);
+    });
+
+    it('starts the Open dialog in general.defaultDirectory', async () => {
+        electronAPI.preferences.getValue.mockImplementation(async (key) =>
+            key === 'general.defaultDirectory' ? 'C:/saves' : undefined
+        );
+        setup();
+        await openFile();
+        expect(electronAPI.showOpenDialog).toHaveBeenCalledWith(
+            expect.objectContaining({ defaultPath: 'C:/saves' })
+        );
+    });
+
+    it.each([undefined, ''])(
+        'passes no defaultPath with defaultDirectory %j',
+        async (value) => {
+            electronAPI.preferences.getValue.mockImplementation(async (key) =>
+                key === 'general.defaultDirectory' ? value : undefined
+            );
+            setup();
+            await openFile();
+            expect(
+                electronAPI.showOpenDialog.mock.calls[0][0]
+            ).not.toHaveProperty('defaultPath');
+        }
+    );
+
+    it('opens a file from the side nav', async () => {
+        setup();
+        const item = within(screen.getByRole('complementary')).getByText(
+            'Open a file...'
+        );
+        expect(item.closest('[data-action="open-file"]')).not.toBeNull();
+        await userEvent.click(item);
+        await waitFor(() =>
+            expect(franchiseAPI.openFile).toHaveBeenCalledWith(
+                'C:/saves/CAREER-TEST',
+                undefined
+            )
         );
     });
 });

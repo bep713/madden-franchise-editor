@@ -12,7 +12,8 @@ const sidenav = [
     {
         id: 'openFile',
         icon: <File />,
-        text: 'Open a file...'
+        text: 'Open a file...',
+        'data-action': 'open-file'
     },
     {
         id: 'schemaManagement',
@@ -38,17 +39,20 @@ const sidenav = [
 ];
 
 interface Props {
+    onOpenFileClick?: () => void;
     onSchemaManagementClick?: () => void;
     onSettingsClick?: () => void;
     onSwitchUiClick?: () => void;
 }
 
 const SideNav: React.FC<Props> = ({
+    onOpenFileClick,
     onSchemaManagementClick,
     onSettingsClick,
     onSwitchUiClick
 }: Props) => {
     const onClick: Record<string, (() => void) | undefined> = {
+        openFile: onOpenFileClick,
         schemaManagement: onSchemaManagementClick,
         settings: onSettingsClick,
         switchUi: onSwitchUiClick

@@ -179,10 +179,11 @@ declare global {
                     prefs: Record<string, Record<string, unknown>>
                 ) => Promise<void>;
             };
-            // JSON files in userData (fs:read-json / fs:write-json)
+            // JSON files in userData (fs:read-json / fs:write-json), and fs:exists
             fs: {
                 readJson: (filename: string) => Promise<unknown | null>;
                 writeJson: (filename: string, data: unknown) => Promise<void>;
+                exists: (filePath: string) => Promise<boolean>;
             };
             recentFiles: {
                 initialize: () => Promise<RecentFileEntry[]>;

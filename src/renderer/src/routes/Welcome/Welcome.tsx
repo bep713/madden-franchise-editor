@@ -56,12 +56,16 @@ const Welcome: React.FC = () => {
         })();
     }, []);
 
+    async function loadSaves(): Promise<void> {
+        const gameSavesResponse = await window.electronAPI.files.getSaves();
+        if (gameSavesResponse.success) {
+            setFilesByGame(gameSavesResponse.filesByGame);
+        }
+    }
+
     useEffect((): void => {
         (async (): Promise<void> => {
-            const gameSavesResponse = await window.electronAPI.files.getSaves();
-            if (gameSavesResponse.success) {
-                setFilesByGame(gameSavesResponse.filesByGame);
-            }
+            await loadSaves();
         })();
     }, []);
 
@@ -78,8 +82,14 @@ const Welcome: React.FC = () => {
     }, []);
 
     async function handleOpenFile(): Promise<void> {
+        // A failed read opens the dialog in Electron's last folder
+        const defaultPath = await window.electronAPI.preferences
+            .getValue('general.defaultDirectory')
+            .catch(() => undefined);
         const result = await window.electronAPI.showOpenDialog({
             title: 'Select franchise file to open',
+            ...(typeof defaultPath === 'string' &&
+                defaultPath && { defaultPath }),
             properties: ['openFile'],
             filters: [
                 {
@@ -100,8 +110,12 @@ const Welcome: React.FC = () => {
         overrides?: CommonFileOverrides
     ): Promise<void> {
         const result = await openFileAt(path, overrides);
-        if (result.status === 'opened') {
+        if (result.status === 'opened' || result.status === 'missing') {
             setRecentFiles(toRecentFiles(result.recentFiles));
+        }
+        // A deleted save drops off its game card too
+        if (result.status === 'missing') {
+            await loadSaves();
         }
     }
 
@@ -161,6 +175,7 @@ const Welcome: React.FC = () => {
             <Allotment defaultSizes={[1, 4]}>
                 <Allotment.Pane minSize={235} snap>
                     <SideNav
+                        onOpenFileClick={handleOpenFile}
                         onSchemaManagementClick={() =>
                             editorTabs.selectTab(SCHEMA_MANAGEMENT_KEY)
                         }
