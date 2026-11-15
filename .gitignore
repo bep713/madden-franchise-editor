@@ -17,3 +17,4 @@ test/perf-results/
 storybook-static
 *storybook.log
 coverage/
+test/verify-evidence/
