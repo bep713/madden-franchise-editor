@@ -74,6 +74,31 @@ function actionsFor(
                 }
             ];
         }
+        case 'file-missing': {
+            const fileId = n.fileId;
+            return [
+                {
+                    label: 'Dismiss',
+                    onClick: () =>
+                        window.electronAPI.notifications.dismiss(n.id)
+                },
+                {
+                    label: 'Save as new',
+                    onClick: () => {
+                        window.electronAPI.notifications.markRead([n.id]);
+                        if (fileId) void externalChange().branch(fileId);
+                    }
+                },
+                {
+                    label: 'Save here',
+                    primary: true,
+                    onClick: () => {
+                        window.electronAPI.notifications.markRead([n.id]);
+                        if (fileId) void externalChange().saveHere(fileId);
+                    }
+                }
+            ];
+        }
         case 'update-available':
             // Never shown: useUpdateBanners owns the update banner
             return [];

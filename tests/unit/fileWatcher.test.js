@@ -7,9 +7,10 @@ function fakeChokidar() {
   const watchers = [];
   return {
     watchers,
-    watch(path) {
+    watch(path, options) {
       const w = new EventEmitter();
       w.path = path;
+      w.options = options;
       w.closed = false;
       w.close = () => {
         w.closed = true;
@@ -24,16 +25,30 @@ function setup(opts = {}) {
   const chokidar = fakeChokidar();
   const sent = [];
   const added = [];
+  // What the store holds now; added is every add
+  let items = [];
   const state = { ignore: false };
+  const store = {
+    add: (n) => {
+      added.push(n);
+      items = items.filter((i) => !(i.kind === n.kind && i.fileId === n.fileId));
+      items.push(n);
+    },
+    removeWhere: (predicate) => {
+      items = items.filter((i) => !predicate(i));
+    },
+    list: () => items.slice(),
+  };
   const watcher = createFileWatcher({
     chokidar,
     send: (channel, payload) => sent.push([channel, payload]),
-    store: { add: (n) => added.push(n) },
+    store,
     shouldIgnore: () => state.ignore,
     debounceMs: 1000,
     ...opts,
   });
-  return { chokidar, sent, added, state, watcher };
+  const kinds = () => items.map((i) => i.kind);
+  return { chokidar, sent, added, store, kinds, state, watcher };
 }
 
 beforeEach(() => mock.timers.enable({ apis: ["setTimeout"] }));
@@ -112,4 +127,75 @@ test("watch again closes the old watcher and its timer", () => {
   mock.timers.tick(1000);
   assert.equal(added.length, 1);
   assert.equal(added[0].data.path, "b");
+});
+
+test("watch skips the initial scan's add", () => {
+  const { chokidar, watcher } = setup();
+  watcher.watch("p", "f1");
+  assert.deepEqual(chokidar.watchers[0].options, { ignoreInitial: true });
+});
+
+test("unlink adds file-missing right away and sends nothing to v4", () => {
+  const { chokidar, sent, added, watcher } = setup();
+  watcher.watch("C:/a.frt", "f1");
+  chokidar.watchers[0].emit("unlink", "C:/a.frt");
+  assert.deepEqual(added, [
+    { kind: "file-missing", fileId: "f1", data: { path: "C:/a.frt" } },
+  ]);
+  assert.equal(sent.length, 0);
+});
+
+test("change then unlink inside the debounce keeps only file-missing", () => {
+  const { chokidar, kinds, watcher } = setup();
+  watcher.watch("p", "f1");
+  const w = chokidar.watchers[0];
+  w.emit("change", "p");
+  mock.timers.tick(500);
+  w.emit("unlink", "p");
+  mock.timers.tick(2000);
+  assert.deepEqual(kinds(), ["file-missing"]);
+});
+
+test("unlink replaces an existing file-changed", () => {
+  const { chokidar, store, kinds, watcher } = setup();
+  watcher.watch("p", "f1");
+  store.add({ kind: "file-changed", fileId: "f1", data: { path: "p" } });
+  store.add({ kind: "file-changed", fileId: "f2", data: { path: "q" } });
+  chokidar.watchers[0].emit("unlink", "p");
+  assert.deepEqual(kinds(), ["file-changed", "file-missing"]);
+  assert.equal(store.list().find((n) => n.kind === "file-changed").fileId, "f2");
+});
+
+test("unlink then add swaps file-missing for file-changed after the debounce", () => {
+  const { chokidar, sent, kinds, watcher } = setup();
+  watcher.watch("p", "f1");
+  const w = chokidar.watchers[0];
+  w.emit("unlink", "p");
+  w.emit("add", "p");
+  assert.equal(sent.length, 0);
+  assert.deepEqual(kinds(), ["file-missing"]);
+  mock.timers.tick(1000);
+  assert.deepEqual(kinds(), ["file-changed"]);
+});
+
+test("unlink and add are ignored during our own save", () => {
+  const { chokidar, added, state, watcher } = setup();
+  watcher.watch("p", "f1");
+  state.ignore = true;
+  const w = chokidar.watchers[0];
+  w.emit("unlink", "p");
+  w.emit("add", "p");
+  mock.timers.tick(2000);
+  assert.equal(added.length, 0);
+});
+
+test("unlink and add after close are ignored", () => {
+  const { chokidar, added, watcher } = setup();
+  watcher.watch("p", "f1");
+  const w = chokidar.watchers[0];
+  watcher.close();
+  w.emit("unlink", "p");
+  w.emit("add", "p");
+  mock.timers.tick(2000);
+  assert.equal(added.length, 0);
 });

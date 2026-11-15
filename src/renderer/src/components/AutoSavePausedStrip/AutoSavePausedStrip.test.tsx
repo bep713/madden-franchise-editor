@@ -12,6 +12,7 @@ describe('AutoSavePausedStrip', () => {
                 fileName='CAREER-TEST'
                 onBranch={onBranch}
                 onReload={onReload}
+                reason='changed'
             />
         );
 
@@ -19,11 +20,39 @@ describe('AutoSavePausedStrip', () => {
             'Auto-save is paused: CAREER-TEST was changed outside the editor.'
         );
         expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Save here' })).toBeNull();
 
         await userEvent.click(screen.getByRole('button', { name: 'Reload' }));
         expect(onReload).toHaveBeenCalledTimes(1);
         await userEvent.click(
             screen.getByRole('button', { name: 'Branch and save new' })
+        );
+        expect(onBranch).toHaveBeenCalledTimes(1);
+    });
+
+    it('says the file is missing and calls onSaveHere and onBranch', async () => {
+        const onSaveHere = vi.fn();
+        const onBranch = vi.fn();
+        render(
+            <AutoSavePausedStrip
+                fileName='CAREER-TEST'
+                onBranch={onBranch}
+                onSaveHere={onSaveHere}
+                reason='missing'
+            />
+        );
+
+        expect(screen.getByRole('status').textContent).toContain(
+            'Auto-save is paused: CAREER-TEST was deleted or moved outside the editor.'
+        );
+        expect(screen.queryByRole('button', { name: 'Reload' })).toBeNull();
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Save here' })
+        );
+        expect(onSaveHere).toHaveBeenCalledTimes(1);
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Save as new' })
         );
         expect(onBranch).toHaveBeenCalledTimes(1);
     });

@@ -593,7 +593,7 @@ class FranchiseFileManager {
     if (savesOwnPath) {
       // a change made during the save keeps the file dirty
       entry.savedCount = changeCount;
-      this._removeFileChanged(fileId);
+      this._removeExternalChange(fileId);
     }
     return file.filePath || entry.path;
   }
@@ -1499,13 +1499,15 @@ class FranchiseFileManager {
   }
 
   /**
-   * Remove the file's file-changed notification.
+   * Remove the file's file-changed and file-missing notifications.
    * @param {string} fileId
    * @private
    */
-  _removeFileChanged(fileId) {
+  _removeExternalChange(fileId) {
     this._notificationStore?.removeWhere(
-      (n) => n.kind === "file-changed" && n.fileId === fileId,
+      (n) =>
+        (n.kind === "file-changed" || n.kind === "file-missing") &&
+        n.fileId === fileId,
     );
   }
 
@@ -1675,7 +1677,7 @@ class FranchiseFileManager {
       async (event, fileId, newPath) => {
         try {
           const path = await this.saveFileAsAndOpen(fileId, newPath);
-          this._removeFileChanged(fileId);
+          this._removeExternalChange(fileId);
           return { path };
         } catch (err) {
           return { error: err.message };
@@ -1686,7 +1688,7 @@ class FranchiseFileManager {
     loggedIpc.handle("franchise:reload-file", async (event, fileId) => {
       try {
         const result = await this.reloadFile(fileId);
-        this._removeFileChanged(fileId);
+        this._removeExternalChange(fileId);
         const file = this.getFile(fileId);
         if (!file?.settings?.schemaOverride) {
           // add replaces an existing mismatch for the file

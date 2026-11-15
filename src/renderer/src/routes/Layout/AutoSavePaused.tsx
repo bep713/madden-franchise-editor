@@ -7,9 +7,9 @@ import useNotifications from '@renderer/notifications/useNotifications';
 import { basename } from '@renderer/utils/path';
 import type { AppNotification } from '@shared/types/notifications';
 
-type FileChangedNotification = Extract<
+type ExternalNotification = Extract<
     AppNotification,
-    { kind: 'file-changed' }
+    { kind: 'file-changed' | 'file-missing' }
 >;
 
 // A settings checkbox is stored as [true] or [] (main's _isPreferenceEnabled)
@@ -17,26 +17,40 @@ function isEnabled(value: unknown): boolean {
     return Array.isArray(value) ? value.includes(true) : Boolean(value);
 }
 
-// Main pauses auto-save while the open file has a File Changed notification.
-// With auto-save off nothing is paused, so the strip stays hidden.
+// Main pauses auto-save while the open file has a File Changed or File
+// Missing notification. With auto-save off nothing is paused, so the strip
+// stays hidden.
 const AutoSavePaused: React.FC = () => {
     const [openFile] = useContext(FranchiseFileContext);
     const { notifications } = useNotifications();
     const [autoSave] = usePreference<unknown>('general.autoSave', false);
-    const { reload, branch } = useExternalChange();
+    const { reload, branch, saveHere } = useExternalChange();
 
-    const changed = notifications.find(
-        (n): n is FileChangedNotification =>
-            n.kind === 'file-changed' && n.fileId === openFile?.fileId
+    const forFile = notifications.filter(
+        (n): n is ExternalNotification =>
+            (n.kind === 'file-changed' || n.kind === 'file-missing') &&
+            n.fileId === openFile?.fileId
     );
-    if (!openFile || !changed || !isEnabled(autoSave)) return null;
+    // Main keeps one or the other; missing wins if somehow both are there
+    const external =
+        forFile.find((n) => n.kind === 'file-missing') ?? forFile[0];
+    if (!openFile || !external || !isEnabled(autoSave)) return null;
 
     const { fileId } = openFile;
-    return (
+    const fileName = basename(openFile.path ?? external.data.path);
+    return external.kind === 'file-missing' ? (
         <AutoSavePausedStrip
-            fileName={basename(openFile.path ?? changed.data.path)}
+            fileName={fileName}
+            onBranch={() => branch(fileId)}
+            onSaveHere={() => saveHere(fileId)}
+            reason='missing'
+        />
+    ) : (
+        <AutoSavePausedStrip
+            fileName={fileName}
             onBranch={() => branch(fileId)}
             onReload={() => reload(fileId)}
+            reason='changed'
         />
     );
 };

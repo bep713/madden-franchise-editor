@@ -9,6 +9,7 @@ function setup({
   response = 0,
   saveError = null,
   pendingChange = () => false,
+  missingFile = () => false,
   window = { isDestroyed: () => false },
 } = {}) {
   const activeFiles = new Map(
@@ -35,6 +36,7 @@ function setup({
     getDialog: () => dialog,
     getWindow: () => window,
     hasPendingFileChange: pendingChange,
+    hasMissingFile: missingFile,
   });
   const options = (i) => boxes[i][boxes[i].length - 1];
   return { guard, saved, boxes, options };
@@ -120,6 +122,17 @@ test("a pending outside change adds the overwrite warning", async () => {
   });
   await guard.prepareInstall();
   assert.match(options(0).detail, /changed outside the editor/);
+  assert.doesNotMatch(options(0).detail, /deleted or moved/);
+});
+
+test("a missing file adds the write-back line", async () => {
+  const { guard, options } = setup({
+    files: { a: { path: "C:/saves/CAREER-A", dirty: true } },
+    response: 2,
+    missingFile: (id) => id === "a",
+  });
+  await guard.prepareInstall();
+  assert.match(options(0).detail, /deleted or moved.*writes it back/);
 });
 
 test("the prompt has a parent window only while one exists", async () => {

@@ -66,6 +66,15 @@ class Banner {
     await this.click("Dismiss");
   }
 
+  // The file-missing banner's actions (Dismiss is shared)
+  async saveHere() {
+    await this.click("Save here");
+  }
+
+  async saveAsNew() {
+    await this.click("Save as new");
+  }
+
   // Waits until no banner is mounted (the slide-out has finished)
   async waitForHidden({ timeout } = {}) {
     await poll(

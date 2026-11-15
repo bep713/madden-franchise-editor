@@ -25,6 +25,11 @@ export interface FileChangedData {
     path: string;
 }
 
+// The open file was deleted or renamed away (chokidar unlink)
+export interface FileMissingData {
+    path: string;
+}
+
 // Kept until a check finds no update; one entry at most
 export interface UpdateAvailableData {
     version: string;
@@ -43,6 +48,7 @@ export type AppNotification =
     | (NotificationBase & { kind: 'schema-mismatch'; data: SchemaMismatchData })
     | (NotificationBase & { kind: 'schema-missing'; data: SchemaMissingData })
     | (NotificationBase & { kind: 'file-changed'; data: FileChangedData })
+    | (NotificationBase & { kind: 'file-missing'; data: FileMissingData })
     | (NotificationBase & {
           kind: 'update-available';
           data: UpdateAvailableData;

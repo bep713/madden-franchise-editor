@@ -75,11 +75,23 @@ function fileChanged(id: string, fileId = 'file-1'): AppNotification {
     };
 }
 
+function fileMissing(id: string, fileId = 'file-1'): AppNotification {
+    return {
+        id,
+        kind: 'file-missing',
+        createdAt: Date.now(),
+        read: false,
+        fileId,
+        data: { path: 'C:/saves/CAREER-TEST' }
+    };
+}
+
 const selectTab = vi.fn();
 const setPending = vi.fn();
 const externalChange = {
     reload: vi.fn(async () => undefined),
-    branch: vi.fn(async () => undefined)
+    branch: vi.fn(async () => undefined),
+    saveHere: vi.fn(async () => undefined)
 };
 
 const Probe: React.FC = () => {
@@ -305,6 +317,55 @@ describe('useNotificationBanners', () => {
             fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
             expect(notificationsApi.dismiss).toHaveBeenCalledWith('c');
             expect(externalChange.reload).not.toHaveBeenCalled();
+            expect(externalChange.branch).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('file-missing', () => {
+        it('shows the missing text with Dismiss, Save as new and Save here', () => {
+            setup();
+            const n = fileMissing('d');
+            add(n, [n]);
+            expect(banner()).toHaveAttribute('data-kind', 'file-missing');
+            expect(banner()).toHaveTextContent(
+                'This save file was deleted or moved outside of this program. Save it again here, or save it to a new location?'
+            );
+            expect(
+                screen.getAllByRole('button').map((b) => b.textContent)
+            ).toEqual(
+                expect.arrayContaining(['Dismiss', 'Save as new', 'Save here'])
+            );
+        });
+
+        it('Save here marks read and saves to the same path', () => {
+            setup();
+            const n = fileMissing('d');
+            add(n, [n]);
+            fireEvent.click(screen.getByRole('button', { name: 'Save here' }));
+            expect(notificationsApi.markRead).toHaveBeenCalledWith(['d']);
+            expect(externalChange.saveHere).toHaveBeenCalledWith('file-1');
+            expect(externalChange.branch).not.toHaveBeenCalled();
+        });
+
+        it('Save as new marks read and branches the file', () => {
+            setup();
+            const n = fileMissing('d');
+            add(n, [n]);
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Save as new' })
+            );
+            expect(notificationsApi.markRead).toHaveBeenCalledWith(['d']);
+            expect(externalChange.branch).toHaveBeenCalledWith('file-1');
+            expect(externalChange.saveHere).not.toHaveBeenCalled();
+        });
+
+        it('Dismiss dismisses the notification', () => {
+            setup();
+            const n = fileMissing('d');
+            add(n, [n]);
+            fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+            expect(notificationsApi.dismiss).toHaveBeenCalledWith('d');
+            expect(externalChange.saveHere).not.toHaveBeenCalled();
             expect(externalChange.branch).not.toHaveBeenCalled();
         });
     });

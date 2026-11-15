@@ -37,7 +37,8 @@ const franchiseAPI = {
     hasUnsavedChanges: vi.fn(),
     reloadFile: vi.fn(),
     getTableList: vi.fn(),
-    saveFileAsAndOpen: vi.fn()
+    saveFileAsAndOpen: vi.fn(),
+    saveFile: vi.fn()
 };
 
 let actions: ExternalChange;
@@ -99,6 +100,7 @@ beforeEach(() => {
     });
     franchiseAPI.getTableList.mockResolvedValue([{ name: 'Player' }]);
     franchiseAPI.saveFileAsAndOpen.mockResolvedValue({ path: NEW_PATH });
+    franchiseAPI.saveFile.mockResolvedValue({ path: PATH });
     render(<Harness />);
 });
 
@@ -205,5 +207,38 @@ describe('branch', () => {
     it('ignores a fileId that is not the open file', async () => {
         await run(() => actions.branch('other'));
         expect(electronAPI.showSaveDialog).not.toHaveBeenCalled();
+    });
+});
+
+describe('saveHere', () => {
+    it('saves the open file to its own path', async () => {
+        await run(() => actions.saveHere(FILE_ID));
+        expect(franchiseAPI.saveFile).toHaveBeenCalledExactlyOnceWith(FILE_ID);
+        expect(errorBoxes()).toHaveLength(0);
+        expect(current?.path).toBe(PATH);
+    });
+
+    it('shows the save error', async () => {
+        franchiseAPI.saveFile.mockResolvedValue({ error: 'no folder' });
+        await run(() => actions.saveHere(FILE_ID));
+        expect(errorBoxes()).toHaveLength(1);
+        expect(errorBoxes()[0][0]).toMatchObject({
+            message: 'Could not save the file.',
+            detail: 'no folder'
+        });
+    });
+
+    it('shows an error when the save throws', async () => {
+        franchiseAPI.saveFile.mockRejectedValue(new Error('boom'));
+        await run(() => actions.saveHere(FILE_ID));
+        expect(errorBoxes()[0][0]).toMatchObject({
+            message: 'Could not save the file.',
+            detail: 'Error: boom'
+        });
+    });
+
+    it('ignores a fileId that is not the open file', async () => {
+        await run(() => actions.saveHere('other'));
+        expect(franchiseAPI.saveFile).not.toHaveBeenCalled();
     });
 });

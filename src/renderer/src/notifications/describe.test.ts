@@ -157,3 +157,27 @@ describe('describeNotification file-changed', () => {
         });
     });
 });
+
+describe('describeNotification file-missing', () => {
+    it('names the file and offers save here and save as new', () => {
+        const n: AppNotification = {
+            id: 'n5',
+            kind: 'file-missing',
+            createdAt: 0,
+            read: false,
+            fileId: 'file-1',
+            data: { path: 'C:\\saves\\CAREER-TEST' }
+        };
+        expect(describeNotification(n)).toEqual({
+            title: 'File Missing',
+            description: 'CAREER-TEST was deleted or moved outside the editor.',
+            links: [
+                { id: 'save-here', label: 'Save here' },
+                { id: 'branch', label: 'Save as new' }
+            ],
+            bannerMessage:
+                'This save file was deleted or moved outside of this program. Save it again here, or save it to a new location?',
+            bannerSeverity: 'error'
+        });
+    });
+});

@@ -8,7 +8,12 @@ import {
 import { basename } from '@renderer/utils/path';
 
 export type NotificationLinkId =
-    'open-schemas' | 'pick-schema' | 'reload' | 'branch' | 'install-update';
+    | 'open-schemas'
+    | 'pick-schema'
+    | 'reload'
+    | 'branch'
+    | 'save-here'
+    | 'install-update';
 
 export interface NotificationLink {
     id: NotificationLinkId;
@@ -71,6 +76,20 @@ export function describeNotification(n: AppNotification): NotificationText {
                 bannerMessage:
                     'This save file has been modified outside of this program. Do you want to reload the file?',
                 bannerSeverity: 'info'
+            };
+        }
+        case 'file-missing': {
+            const name = basename(n.data.path);
+            return {
+                title: 'File Missing',
+                description: `${name} was deleted or moved outside the editor.`,
+                links: [
+                    { id: 'save-here', label: 'Save here' },
+                    { id: 'branch', label: 'Save as new' }
+                ],
+                bannerMessage:
+                    'This save file was deleted or moved outside of this program. Save it again here, or save it to a new location?',
+                bannerSeverity: 'error'
             };
         }
         case 'update-available': {

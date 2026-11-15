@@ -12,6 +12,7 @@ function createInstallGuard({
   getDialog,
   getWindow,
   hasPendingFileChange = () => false,
+  hasMissingFile = () => false,
 }) {
   // A destroyed or missing window shows the box without a parent.
   function showMessageBox(options) {
@@ -44,6 +45,11 @@ function createInstallGuard({
     if (dirty.some((id) => hasPendingFileChange(id))) {
       detail.push(
         "The file was changed outside the editor; saving overwrites those changes.",
+      );
+    }
+    if (dirty.some((id) => hasMissingFile(id))) {
+      detail.push(
+        "The file was deleted or moved outside the editor; saving writes it back to its old path.",
       );
     }
 

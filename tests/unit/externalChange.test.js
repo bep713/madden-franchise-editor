@@ -162,6 +162,28 @@ test("saveFile to its own path removes file-changed", async () => {
   assert.equal(ofKind("file-changed", fileId).length, 0);
 });
 
+test("saveFile to its own path removes file-missing", async () => {
+  const fileId = await open();
+  store.add({ kind: "file-missing", fileId, data: { path: filePath } });
+  fs.rmSync(filePath);
+  const result = await call("franchise:save-file", fileId);
+  assert.ok(!result?.error, result?.error);
+  assert.ok(fs.existsSync(filePath));
+  assert.equal(ofKind("file-missing", fileId).length, 0);
+});
+
+test("saveFileAs to another path keeps file-missing", async () => {
+  const fileId = await open();
+  store.add({ kind: "file-missing", fileId, data: { path: filePath } });
+  const result = await call(
+    "franchise:save-file-as",
+    fileId,
+    path.join(tmpDir, "COPY"),
+  );
+  assert.ok(result.path);
+  assert.equal(ofKind("file-missing", fileId).length, 1);
+});
+
 test("saveFileAs to another path keeps file-changed", async () => {
   const fileId = await open();
   addFileChanged(fileId);

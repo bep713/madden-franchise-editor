@@ -65,7 +65,8 @@ const selectTab = vi.fn();
 const setPending = vi.fn();
 const externalChange = {
     reload: vi.fn(async () => undefined),
-    branch: vi.fn(async () => undefined)
+    branch: vi.fn(async () => undefined),
+    saveHere: vi.fn(async () => undefined)
 };
 
 // Welcome's wiring: the list from main, the drawer mounted while open
@@ -310,6 +311,38 @@ describe('NotificationDrawer', () => {
         );
         expect(externalChange.branch).toHaveBeenCalledExactlyOnceWith('file-f');
         expect(selectTab).not.toHaveBeenCalled();
+    });
+
+    it('the File Missing links save here and branch', async () => {
+        items = [
+            {
+                id: 'm',
+                kind: 'file-missing',
+                createdAt: NOW,
+                read: false,
+                fileId: 'file-m',
+                data: { path: 'C:/saves/FTC' }
+            }
+        ];
+        render(<Harness />);
+        await waitFor(() => expect(item('m')).not.toBeNull());
+        expect(
+            [
+                ...item('m').querySelectorAll(
+                    '[data-action="notification-link"]'
+                )
+            ].map((el) => el.getAttribute('data-link'))
+        ).toEqual(['save-here', 'branch']);
+        await userEvent.click(
+            within(item('m')).getByRole('button', { name: 'Save here' })
+        );
+        expect(externalChange.saveHere).toHaveBeenCalledExactlyOnceWith(
+            'file-m'
+        );
+        await userEvent.click(
+            within(item('m')).getByRole('button', { name: 'Save as new' })
+        );
+        expect(externalChange.branch).toHaveBeenCalledExactlyOnceWith('file-m');
     });
 
     it('closes from the close button', async () => {

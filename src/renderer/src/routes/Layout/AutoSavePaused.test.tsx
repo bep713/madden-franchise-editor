@@ -30,13 +30,27 @@ function fileChanged(fileId: string): AppNotification {
     };
 }
 
+function fileMissing(fileId: string): AppNotification {
+    return {
+        id: `m-${fileId}`,
+        kind: 'file-missing',
+        createdAt: Date.now(),
+        read: false,
+        fileId,
+        data: { path: 'C:/saves/CAREER-TEST' }
+    };
+}
+
 const reload = vi.fn(async () => {});
 const branch = vi.fn(async () => {});
+const saveHere = vi.fn(async () => {});
 
 function renderStrip(file: OpenFranchiseFile | null = openFile) {
     return render(
         <FranchiseFileContext.Provider value={[file ?? undefined, undefined]}>
-            <ExternalChangeContext.Provider value={{ reload, branch }}>
+            <ExternalChangeContext.Provider
+                value={{ reload, branch, saveHere }}
+            >
                 <AutoSavePaused />
             </ExternalChangeContext.Provider>
         </FranchiseFileContext.Provider>
@@ -87,6 +101,32 @@ describe('AutoSavePaused', () => {
             screen.getByRole('button', { name: 'Branch and save new' })
         );
         expect(branch).toHaveBeenCalledWith('file-1');
+    });
+
+    it('shows the missing text for File Missing, and its buttons act on it', async () => {
+        stored = [fileMissing('file-1')];
+        renderStrip();
+        await settle();
+
+        expect(strip()?.textContent).toContain(
+            'CAREER-TEST was deleted or moved outside the editor.'
+        );
+        expect(screen.queryByRole('button', { name: 'Reload' })).toBeNull();
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Save here' })
+        );
+        expect(saveHere).toHaveBeenCalledWith('file-1');
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Save as new' })
+        );
+        expect(branch).toHaveBeenCalledWith('file-1');
+    });
+
+    it('prefers File Missing when both are stored', async () => {
+        stored = [fileChanged('file-1'), fileMissing('file-1')];
+        renderStrip();
+        await settle();
+        expect(strip()?.getAttribute('data-reason')).toBe('missing');
     });
 
     it('follows notifications:changed', async () => {

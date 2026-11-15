@@ -124,20 +124,24 @@ const notificationStore = createNotificationStore((channel, payload) => {
   }
 });
 franchiseFileManager.setNotificationStore(notificationStore);
-// v5 pauses auto-save while the file changed on disk and the user hasn't
-// chosen what to do, so the game's save isn't overwritten. v4 doesn't.
+const EXTERNAL_CHANGE_KINDS = ["file-changed", "file-missing"];
+const hasNotification = (id, kinds) =>
+  notificationStore
+    .list()
+    .some((n) => kinds.includes(n.kind) && n.fileId === id);
+// v5 pauses auto-save while the file changed on disk (or went missing) and the
+// user hasn't chosen what to do, so the game's save isn't overwritten. v4 doesn't.
 franchiseFileManager.setAutoSavePausedCheck(
-  (id) =>
-    currentUi === "v5" &&
-    notificationStore
-      .list()
-      .some((n) => n.kind === "file-changed" && n.fileId === id),
+  (id) => currentUi === "v5" && hasNotification(id, EXTERNAL_CHANGE_KINDS),
 );
 franchiseFileManager.registerIpcHandlers(loggedIpc);
 registerNotificationsHandlers(loggedIpc, notificationStore, {
-  // Dismissing the change resumes auto-save and saves edits made while paused
+  // Dismissing the change resumes auto-save and saves edits made while paused.
+  // For a missing file that save recreates it at the old path.
   onDismissed: (n) => {
-    if (n.kind === "file-changed") franchiseFileManager.requestAutoSave(n.fileId);
+    if (EXTERNAL_CHANGE_KINDS.includes(n.kind)) {
+      franchiseFileManager.requestAutoSave(n.fileId);
+    }
   },
 });
 registerExternalDataHandlers(loggedIpc, franchiseFileManager);
@@ -165,10 +169,8 @@ const installGuard = createInstallGuard({
   // looked up at call time so e2e dialog stubs apply
   getDialog: () => dialog,
   getWindow: () => mainWindow,
-  hasPendingFileChange: (id) =>
-    notificationStore
-      .list()
-      .some((n) => n.kind === "file-changed" && n.fileId === id),
+  hasPendingFileChange: (id) => hasNotification(id, ["file-changed"]),
+  hasMissingFile: (id) => hasNotification(id, ["file-missing"]),
 });
 const updateController = createUpdateController({
   getAutoUpdater,

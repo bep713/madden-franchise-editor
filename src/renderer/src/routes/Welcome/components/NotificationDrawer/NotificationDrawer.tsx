@@ -31,7 +31,7 @@ const NotificationDrawer: React.FC<Props> = ({
 }: Props) => {
     const editorTabs = useEditorTabs();
     const [, setPending] = usePendingOpen();
-    const { reload, branch } = useExternalChange();
+    const { reload, branch, saveHere } = useExternalChange();
     const [now, setNow] = useState(() => Date.now());
     // Ids that were unread when this viewing first saw them
     const seenUnread = useRef(new Set<string>());
@@ -54,6 +54,9 @@ const NotificationDrawer: React.FC<Props> = ({
                 break;
             case 'branch':
                 if (n.fileId) void branch(n.fileId);
+                break;
+            case 'save-here':
+                if (n.fileId) void saveHere(n.fileId);
                 break;
             case 'install-update':
                 window.electronAPI.update.install();

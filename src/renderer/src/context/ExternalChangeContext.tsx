@@ -13,20 +13,23 @@ import useLoader from '@renderer/hooks/useLoader';
 import { confirm } from '@renderer/utils/confirm';
 import { basename } from '@renderer/utils/path';
 
-// The actions for a file changed outside the editor (the file-changed
-// notification's banner and drawer links)
+// The actions for a file changed, deleted or moved outside the editor (the
+// file-changed and file-missing notifications' banner and drawer links)
 export interface ExternalChange {
     // Reopens the file from disk with the same fileId and schema
     reload: (fileId: string) => Promise<void>;
     // Saves to a new path and keeps editing there (v4's Branch and save new)
     branch: (fileId: string) => Promise<void>;
+    // Saves to the file's own path, which recreates a missing file
+    saveHere: (fileId: string) => Promise<void>;
 }
 
 const noop = async (): Promise<void> => {};
 
 export const ExternalChangeContext = createContext<ExternalChange>({
     reload: noop,
-    branch: noop
+    branch: noop,
+    saveHere: noop
 });
 
 export function useExternalChange(): ExternalChange {
@@ -45,7 +48,9 @@ interface Props {
     children: ReactNode;
 }
 
-export const ExternalChangeProvider: React.FC<Props> = ({ children }: Props) => {
+export const ExternalChangeProvider: React.FC<Props> = ({
+    children
+}: Props) => {
     const [openFile, setOpenFile] = useContext(FranchiseFileContext);
     const { loader, setOptions: setLoaderOptions } = useLoader();
 
@@ -118,7 +123,8 @@ export const ExternalChangeProvider: React.FC<Props> = ({ children }: Props) => 
         );
         const dialog = await window.electronAPI.showSaveDialog({
             title: 'Save as...',
-            defaultPath: typeof defaultPath === 'string' ? defaultPath : undefined
+            defaultPath:
+                typeof defaultPath === 'string' ? defaultPath : undefined
         });
         if (dialog.canceled || !dialog.filePath) return;
 
@@ -147,7 +153,23 @@ export const ExternalChangeProvider: React.FC<Props> = ({ children }: Props) => 
         }
     }, []);
 
-    const value = useMemo(() => ({ reload, branch }), [reload, branch]);
+    // Main removes file-missing once the save lands
+    const saveHere = useCallback(async (fileId: string): Promise<void> => {
+        if (latest.current.openFile?.fileId !== fileId) return;
+        try {
+            const result = await window.franchiseAPI.saveFile(fileId);
+            if ('error' in result) {
+                await showError('Could not save the file.', result.error);
+            }
+        } catch (error) {
+            await showError('Could not save the file.', error);
+        }
+    }, []);
+
+    const value = useMemo(
+        () => ({ reload, branch, saveHere }),
+        [reload, branch, saveHere]
+    );
 
     return (
         <ExternalChangeContext.Provider value={value}>
