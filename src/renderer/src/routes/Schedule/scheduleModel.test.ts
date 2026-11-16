@@ -246,6 +246,30 @@ describe('weeks', () => {
         expect(gamesInWeek(games, week('N/A'))).toEqual([]);
     });
 
+    it('orders a week by day, Tuesday to Monday, then by time', () => {
+        const slots: [string, number][] = [
+            ['Monday', 1215],
+            ['Sunday', 1220],
+            ['Invalid_', 0],
+            ['Sunday', 780],
+            ['Saturday', 990],
+            ['Thursday', 1220],
+            ['Sunday', 780],
+            ['Tuesday', 1200]
+        ];
+        const { games: unordered } = buildGames({
+            seasonGameRecords: slots.map(([DayOfWeek, TimeOfDay]) =>
+                game({ DayOfWeek, TimeOfDay })
+            ),
+            teams,
+            teamTableId: TEAM_TABLE_ID,
+            gameYear: 22
+        });
+        expect(
+            gamesInWeek(unordered, week('1')).map((g) => g.recordIndex)
+        ).toEqual([7, 5, 4, 3, 6, 1, 0, 2]);
+    });
+
     it('leaves no one on bye when every team plays', () => {
         expect(byeTeams(games, week('1'))).toEqual([]);
     });

@@ -259,16 +259,40 @@ export function buildGames({
     return { games, skipped };
 }
 
+// A game week runs Tuesday to Monday, so a Monday game ends its week
+const WEEK_DAY_ORDER: readonly string[] = [
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+    'Monday'
+];
+
+function dayRank(game: ScheduleGame): number {
+    const rank = game.day ? WEEK_DAY_ORDER.indexOf(game.day.name) : -1;
+    return rank === -1 ? WEEK_DAY_ORDER.length : rank;
+}
+
+// In kickoff order. Games without a day go last.
 export function gamesInWeek(
     games: readonly ScheduleGame[],
     week: ScheduleWeek
 ): ScheduleGame[] {
     if (!week.seasonWeekType) return [];
-    return games.filter(
-        (game) =>
-            game.seasonWeek === week.weekIndex &&
-            game.seasonWeekType === week.seasonWeekType
-    );
+    return games
+        .filter(
+            (game) =>
+                game.seasonWeek === week.weekIndex &&
+                game.seasonWeekType === week.seasonWeekType
+        )
+        .sort(
+            (a, b) =>
+                dayRank(a) - dayRank(b) ||
+                a.timeOfDay - b.timeOfDay ||
+                a.recordIndex - b.recordIndex
+        );
 }
 
 // Week types where every team is expected to play, so a missing team is on bye

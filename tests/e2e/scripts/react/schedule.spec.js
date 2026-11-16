@@ -141,9 +141,9 @@ test("edits are auto-saved to the file (react)", async () => {
   const newAway = game.away === "SF" ? "CHI" : "SF";
   const newAwayRow = (await teamRows(app)).indexOf(newAway);
 
-  await schedule.setDay(0, newDay);
-  await schedule.setTime(0, newTime);
-  await schedule.setTeam(0, "away", newAway);
+  await schedule.setDay(game.recordIndex, newDay);
+  await schedule.setTime(game.recordIndex, newTime);
+  await schedule.setTeam(game.recordIndex, "away", newAway);
 
   const record = game.recordIndex;
   const changes = await poll(
@@ -173,7 +173,9 @@ test("edits are auto-saved to the file (react)", async () => {
   });
 
   // the page shows the edits
-  const [shown] = await schedule.games();
+  const shown = (await schedule.games()).find(
+    (g) => g.recordIndex === record,
+  );
   expect(shown).to.include({ day: newDay, time: newTime, away: newAway });
 
   await electronApp.close();
@@ -191,7 +193,7 @@ test("edits wait for Save when auto-save is off (react)", async () => {
   await schedule.selectWeek("1");
   const [game] = await schedule.games();
   const newDay = game.day === "Monday" ? "Tuesday" : "Monday";
-  await schedule.setDay(0, newDay);
+  await schedule.setDay(game.recordIndex, newDay);
 
   // in memory, and Save is enabled
   await poll(
@@ -233,7 +235,7 @@ test("a cleared time reverts and is not written (react)", async () => {
 
   await schedule.selectWeek("1");
   const [game] = await schedule.games();
-  const input = schedule.timeInput(0);
+  const input = schedule.timeInput(game.recordIndex);
   await input.fill("");
   await input.blur();
   await poll(
@@ -269,7 +271,7 @@ test("the table view is remembered and edits (react)", async () => {
   await schedule.selectWeek("1");
   const [game] = await schedule.games();
   const newDay = game.day === "Monday" ? "Tuesday" : "Monday";
-  await schedule.setDay(0, newDay);
+  await schedule.setDay(game.recordIndex, newDay);
   await poll(
     async () => (await readGamesInMemory(app)).records[game.recordIndex],
     (record) => record.DayOfWeek === newDay,
@@ -288,6 +290,31 @@ test("opens in the stored view (react)", async () => {
     (view) => view === "compact",
     { message: "The stored view was not used" },
   );
+  await electronApp.close();
+});
+
+// The fixture stores the Divisional games Sunday first
+test("lists a week's games in kickoff order (react)", async () => {
+  const { electronApp, schedule } = await openSchedule();
+
+  await schedule.selectWeek("DV");
+  const games = await schedule.games();
+  expect(games.map((g) => `${g.day} ${g.time}`)).to.deep.equal([
+    "Saturday 16:35",
+    "Saturday 20:15",
+    "Sunday 15:05",
+    "Sunday 18:40",
+  ]);
+
+  // a game moved to Monday moves to the end of the week
+  const first = games[0];
+  await schedule.setDay(first.recordIndex, "Monday");
+  await poll(
+    async () => (await schedule.games()).at(-1),
+    (last) => last.recordIndex === first.recordIndex && last.day === "Monday",
+    { message: "The edited game did not move to the end of the week" },
+  );
+
   await electronApp.close();
 });
 
@@ -326,7 +353,7 @@ test("view a game in the table editor (react)", async () => {
 
   // the button (table view only) opens a new active tab at the game's row
   await schedule.setView("Table");
-  await schedule.viewInTable(0);
+  await schedule.viewInTable(game.recordIndex);
   await nav.waitForActiveTab(SEASON_GAME_TAB);
   await tableEditor.waitForTableToLoad();
   await waitForSelectedRow(window, game.recordIndex);
@@ -338,7 +365,7 @@ test("view a game in the table editor (react)", async () => {
   await schedule.setView("Default");
   await schedule.selectWeek("1");
   const second = (await schedule.games())[1];
-  await schedule.viewInTableByContextMenu(1);
+  await schedule.viewInTableByContextMenu(second.recordIndex);
   await poll(
     () => nav.tabCount(),
     (count) => count === 5,
@@ -388,7 +415,7 @@ test("the schedule re-reads table editor edits (react)", async () => {
   const [game] = await schedule.games();
   const newDay = game.day === "Monday" ? "Tuesday" : "Monday";
 
-  await schedule.viewInTableByContextMenu(0);
+  await schedule.viewInTableByContextMenu(game.recordIndex);
   await nav.waitForActiveTab(SEASON_GAME_TAB);
   await tableEditor.waitForTableToLoad();
   const headers = (await app.readTable(SEASON_GAME_TABLE_ID)).headers.map(
@@ -406,8 +433,9 @@ test("the schedule re-reads table editor edits (react)", async () => {
   await schedule.waitForLoad();
   await schedule.selectWeek("1");
   await poll(
-    async () => (await schedule.games())[0],
-    (shown) => shown.recordIndex === game.recordIndex && shown.day === newDay,
+    async () =>
+      (await schedule.games()).find((g) => g.recordIndex === game.recordIndex),
+    (shown) => shown.day === newDay,
     { message: "The schedule did not show the new day" },
   );
 

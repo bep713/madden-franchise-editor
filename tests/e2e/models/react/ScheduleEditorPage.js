@@ -80,8 +80,9 @@ class ScheduleEditorPage {
     );
   }
 
-  _row(i) {
-    return this.locators.gameRows.nth(i);
+  // By SeasonGame record, which stays put when an edit re-sorts the week
+  _row(recordIndex) {
+    return this.window.locator(`[data-record-index="${recordIndex}"]`);
   }
 
   // The games of the selected week, in the order shown. time is "HH:mm".
@@ -102,39 +103,39 @@ class ScheduleEditorPage {
     );
   }
 
-  timeInput(i) {
-    return this._row(i).getByLabel("Time");
+  timeInput(recordIndex) {
+    return this._row(recordIndex).getByLabel("Time");
   }
 
   // side: "home" | "away". Types into the team autocomplete; Enter picks
   // the exact match, which sorts first.
-  async setTeam(i, side, abbreviation) {
+  async setTeam(recordIndex, side, abbreviation) {
     const label = side === "home" ? "Home team" : "Away team";
-    const input = this._row(i).getByRole("combobox", { name: label });
+    const input = this._row(recordIndex).getByRole("combobox", { name: label });
     await input.fill(abbreviation);
     await input.press("Enter");
   }
 
   // day: the DayOfWeek name, e.g. "Monday"
-  async setDay(i, day) {
-    await this._row(i).getByRole("combobox", { name: "Day" }).selectOption(day);
+  async setDay(recordIndex, day) {
+    await this._row(recordIndex).getByRole("combobox", { name: "Day" }).selectOption(day);
   }
 
   // value: "HH:mm"; committed with Enter
-  async setTime(i, value) {
-    const input = this.timeInput(i);
+  async setTime(recordIndex, value) {
+    const input = this.timeInput(recordIndex);
     await input.fill(value);
     await input.press("Enter");
   }
 
-  async viewInTable(i) {
-    await this._row(i)
+  async viewInTable(recordIndex) {
+    await this._row(recordIndex)
       .getByRole("button", { name: "View in table editor" })
       .click();
   }
 
-  async viewInTableByContextMenu(i) {
-    await this._row(i).click({ button: "right", position: { x: 4, y: 4 } });
+  async viewInTableByContextMenu(recordIndex) {
+    await this._row(recordIndex).click({ button: "right", position: { x: 4, y: 4 } });
     await this.window
       .getByRole("menuitem", { name: "View in table editor" })
       .click();
