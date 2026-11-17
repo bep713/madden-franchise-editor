@@ -1,0 +1,32 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+
+.checkbox {
+    display: inline-flex;
+    column-gap: var(--spacing-2);
+    align-items: flex-start;
+    cursor: pointer;
+
+    &:has(:disabled) {
+        color: var(--text-secondary);
+        cursor: not-allowed;
+    }
+}
+
+.input {
+    flex-shrink: 0;
+    margin: 3px 0 0;
+    accent-color: var(--fulvous);
+    cursor: inherit;
+}
+
+.text {
+    display: flex;
+    flex-direction: column;
+    row-gap: var(--spacing-05);
+}
+
+.description {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+}

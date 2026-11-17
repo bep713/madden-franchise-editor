@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Header (root + Includes) is fine, so inspect accepts it; the body is
+     malformed. VERIFIED against 4.4.1: generateSchemaV2 does NOT reject this
+     (fast-xml-parser's XMLParser doesn't validate; it returns a partial tree),
+     so without our XMLValidator pass it would save a broken schema silently.
+     Expected at add: blocking 'malformed-xml' on this file, line 10. -->
+<FranTkData databaseName="Madden27_Franchise" dataMajorVersion="901" dataMinorVersion="0">
+  <Includes>
+    <IncludeFile fileName="Enums.FTX"/>
+  </Includes>
+  <schemas>
+    <schema name="Oops" assetId="1"
+  </schemas>
+</FranTkData>

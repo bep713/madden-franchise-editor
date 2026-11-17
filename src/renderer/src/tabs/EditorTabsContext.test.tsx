@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { FileMetadata, FileType } from '@shared/types';
@@ -28,7 +28,8 @@ function setup(current: { file: OpenFranchiseFile | undefined }) {
     return renderHook(
         () => ({
             tabs: useEditorTabsController(),
-            pathname: useLocation().pathname
+            pathname: useLocation().pathname,
+            navigate: useNavigate()
         }),
         {
             wrapper: ({ children }: { children: ReactNode }) => (
@@ -207,5 +208,22 @@ describe('useEditorTabsController', () => {
             'Open Table...'
         ]);
         expect(result.current.tabs.activeTab.key).toBe('home');
+    });
+    it('the active tab goes back to its page from a page under it', () => {
+        const current: { file: OpenFranchiseFile | undefined } = {
+            file: undefined
+        };
+        const { result } = setup(current);
+        act(() => {
+            result.current.tabs.selectTab('schema-management');
+        });
+        act(() => {
+            result.current.navigate('/schema-management/add');
+        });
+        expect(result.current.pathname).toBe('/schema-management/add');
+        act(() => {
+            result.current.tabs.selectTab('schema-management');
+        });
+        expect(result.current.pathname).toBe('/schema-management');
     });
 });

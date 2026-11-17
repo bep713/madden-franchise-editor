@@ -32,6 +32,10 @@ const {
 } = require("./main/handlers/reloadFileHandler");
 const { registerSchemaHandlers } = require("./main/handlers/schemaHandler");
 const {
+  registerSchemaImportHandlers,
+} = require("./main/handlers/schemaImportHandler");
+const { SchemaImporter } = require("./main/services/schemaImport");
+const {
   registerSchemaMismatchHandlers,
 } = require("./main/handlers/schemaMismatchHandler");
 const {
@@ -160,6 +164,15 @@ registerReloadFileHandlers(loggedIpc, {
   setTemporaryWindowTitle,
 });
 registerSchemaHandlers(loggedIpc, franchiseFileManager);
+const schemaImporter = new SchemaImporter(
+  franchiseFileManager.schemaImportPort(),
+);
+try {
+  schemaImporter.recover();
+} catch (err) {
+  console.error("Couldn't recover an interrupted schema add:", err);
+}
+registerSchemaImportHandlers(loggedIpc, schemaImporter);
 registerSchemaMismatchHandlers(loggedIpc, franchiseFileManager);
 registerSchemaSearchHandlers(loggedIpc, franchiseFileManager);
 registerSchemaViewerHandlers(loggedIpc, franchiseFileManager);

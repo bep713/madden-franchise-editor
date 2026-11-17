@@ -24,7 +24,11 @@ export default function useMenuState(): void {
     const fileId = openFile?.fileId;
 
     useEffect(() => {
-        const item = navigation.items.find((entry) => entry.href === pathname);
+        // A sub-page such as /schema-management/add has its parent's menu
+        const item = navigation.items.find(
+            (entry) =>
+                entry.href === pathname || pathname.startsWith(`${entry.href}/`)
+        );
         if (!item) {
             return;
         }

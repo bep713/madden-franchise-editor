@@ -1,0 +1,137 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+
+.dropZone {
+    display: flex;
+    flex-direction: column;
+    row-gap: var(--spacing-3);
+    align-items: center;
+    padding: var(--spacing-6) var(--spacing-4);
+    text-align: center;
+    background-color: var(--white-smoke);
+    border: 2px dashed var(--silver);
+    border-radius: 3px;
+
+    &[data-dragging='true'] {
+        background-color: var(--antique-white);
+        border-color: var(--fulvous);
+    }
+}
+
+.hint {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.buttons {
+    display: flex;
+    column-gap: var(--spacing-2);
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.rows {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.row {
+    padding: var(--spacing-2) 0;
+    border-bottom: 1px solid var(--platinum);
+}
+
+.rowLine {
+    display: flex;
+    column-gap: var(--spacing-3);
+    align-items: center;
+    min-width: 0;
+}
+
+.name {
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.badge {
+    flex-shrink: 0;
+    padding: 0 var(--spacing-2);
+    font-size: 0.85em;
+    background-color: var(--platinum);
+    border-radius: 8px;
+
+    &[data-badge='entry'],
+    &[data-badge='schema'] {
+        background-color: var(--antique-white);
+    }
+
+    &[data-badge='invalid'] {
+        background-color: var(--error);
+    }
+}
+
+.folder {
+    /* Basis 0: the folder gets what's left, so the name shrinks last */
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.85em;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.remove {
+    flex-shrink: 0;
+    padding: 0;
+    color: var(--link);
+    cursor: pointer;
+    background: none;
+    border: none;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+.rowProblem {
+    margin: var(--spacing-1) 0 0 var(--spacing-4);
+    font-size: 0.9em;
+    overflow-wrap: anywhere;
+
+    &[data-severity='blocking'] {
+        color: var(--danger);
+    }
+
+    &[data-severity='warning'] {
+        color: var(--fulvous);
+    }
+}
+
+.missing {
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-3);
+    background-color: var(--antique-white);
+    border-radius: 3px;
+
+    ul {
+        padding-left: var(--spacing-6);
+        margin: var(--spacing-1) 0 0;
+    }
+}
+
+.missingTitle {
+    margin: 0;
+    font-weight: 500;
+}

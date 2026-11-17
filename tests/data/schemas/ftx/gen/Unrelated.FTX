@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Not included by anything in gen/: expected role 'unused' -->
+<FranTkData>
+  <schemas>
+    <schema name="Stray" assetId="9004" ownerAssetId="0" numMembers="1" base="Record">
+      <attribute idx="0" name="X" type="bool"/>
+    </schema>
+  </schemas>
+</FranTkData>

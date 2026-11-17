@@ -40,13 +40,14 @@ describe('Navigation', () => {
         );
     });
 
-    it('selects an inactive tab, and ignores clicks on the active one', async () => {
+    // The active one too, so it can leave a page under it
+    it('selects the clicked tab, active or not', async () => {
         const { onSelect } = setup();
         await userEvent.click(screen.getByRole('tab', { name: /7482 - Team/ }));
-        expect(onSelect).not.toHaveBeenCalled();
+        expect(onSelect).toHaveBeenCalledExactlyOnceWith('table-1');
 
         await userEvent.click(screen.getByRole('tab', { name: 'Home' }));
-        expect(onSelect).toHaveBeenCalledExactlyOnceWith('home');
+        expect(onSelect).toHaveBeenLastCalledWith('home');
     });
 
     it('closes a tab with its close button, without selecting it', async () => {

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FranTkData>
+  <schemas>
+    <enum name="Nothing" assetId="9400" isRecordPersistent="false"/>
+  </schemas>
+</FranTkData>

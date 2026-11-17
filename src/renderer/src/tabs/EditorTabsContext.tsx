@@ -20,7 +20,9 @@ import {
     getActiveTab,
     initialTabsState,
     reduceTabs,
-    syncFile
+    returnsToTab,
+    syncFile,
+    tabPath
 } from './editorTabs';
 import { HistoryEntry, HistoryPlace } from './tabHistory';
 
@@ -82,10 +84,6 @@ export function useEditorTabs(): EditorTabsValue {
     return value;
 }
 
-function tabPath(tab: EditorTab): string {
-    return tab.kind === 'table' ? '/table-editor' : tab.item.href;
-}
-
 // The tab state and commands, for Layout to provide. Commands update the
 // tabs, then go to the active tab's page.
 export function useEditorTabsController(): EditorTabsValue {
@@ -115,6 +113,8 @@ export function useEditorTabsController(): EditorTabsValue {
         const target = file ?? latest.current.openFile;
         const next = reduceTabs(stateRef.current, action, target);
         if (next === stateRef.current) {
+            const back = returnsToTab(next, action, latest.current.pathname);
+            if (back) latest.current.navigate(back);
             return next;
         }
         stateRef.current = next;

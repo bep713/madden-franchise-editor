@@ -26,8 +26,11 @@
     background: var(--banner-success);
 }
 
-.message {
+.body {
     align-self: center;
+}
+
+.message {
     margin: 0;
 }
 

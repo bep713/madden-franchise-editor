@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- No databaseName in the whole tree: the library would throw a TypeError.
+     Expected at inspect: blocking 'no-database-name'. -->
+<FranTkData>
+  <Includes>
+    <IncludeFile fileName="Enums.FTX"/>
+  </Includes>
+</FranTkData>

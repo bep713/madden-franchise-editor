@@ -1,3 +1,4 @@
+export * from './types/addSchema';
 export * from './types/franchise';
 export * from './types/navigation';
 export * from './types/notifications';

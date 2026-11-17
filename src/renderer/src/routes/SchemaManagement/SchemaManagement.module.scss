@@ -57,3 +57,8 @@
 .loadedCard {
     grid-column: -2 / -1;
 }
+
+.addedWarnings {
+    padding-left: var(--spacing-5);
+    margin: var(--spacing-2) 0 0;
+}

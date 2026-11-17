@@ -27,6 +27,13 @@ import type {
     TableSummary,
     WriteBulkTableCellsResult
 } from '@shared/types';
+import type {
+    AddSchemaCommit,
+    AddSchemaPlan,
+    AddSchemaRequest,
+    AddSchemaResult,
+    RestoreResult
+} from '@shared/types/addSchema';
 import type { GameSaveResponse } from '@shared/types/files';
 import type { AppNotification } from '@shared/types/notifications';
 import type { UpdateStatus } from '@shared/types/update';
@@ -235,10 +242,20 @@ declare global {
                 getFields: (
                     source: SchemaFieldsSource
                 ) => Promise<SchemaFieldsResult | { error: string }>;
+                // Reads headers only and writes nothing
+                inspectAdd: (
+                    request: AddSchemaRequest
+                ) => Promise<AddSchemaPlan | { error: string }>;
+                // Rescans and replans; blocked when the plan changed
+                add: (commit: AddSchemaCommit) => Promise<AddSchemaResult>;
+                // Undoes the latest replacing add
+                restorePrevious: () => Promise<RestoreResult>;
             };
             files: {
                 getSaves: () => Promise<GameSaveResponse>;
                 openFolder: (folderPath: string) => Promise<void>;
+                // A dropped File's path (webUtils.getPathForFile)
+                getPathForFile: (file: File) => string;
             };
         };
     }

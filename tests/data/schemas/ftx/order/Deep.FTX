@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FranTkData databaseName="Madden25_Franchise" dataMajorVersion="250" dataMinorVersion="3">
+  <schemas>
+    <schema name="OrderDeep" assetId="9503" ownerAssetId="0" numMembers="1" base="Record">
+      <attribute idx="0" name="C" type="bool"/>
+    </schema>
+  </schemas>
+</FranTkData>

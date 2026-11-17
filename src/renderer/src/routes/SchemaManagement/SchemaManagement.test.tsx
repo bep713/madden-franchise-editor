@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { FileMetadata, SchemaEntry } from '@shared/types';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import type { AddedSchema, FileMetadata, SchemaEntry } from '@shared/types';
 import {
     FranchiseFileContext,
     OpenFranchiseFile
@@ -78,6 +79,7 @@ const electronAPI = {
     schema: {
         initialize: vi.fn(async () => DIR),
         delete: vi.fn(async () => ({ success: true })),
+        restorePrevious: vi.fn(),
         getFields: vi.fn(async () => ({
             meta: null,
             fields: [{ name: 'FirstName', table: 'Player', type: 'string' }]
@@ -108,26 +110,49 @@ function PendingHarness({ initial }: { initial?: PendingOpen }) {
     );
 }
 
-function tree(current?: OpenFranchiseFile, pending?: PendingOpen) {
+function tree(
+    current?: OpenFranchiseFile,
+    pending?: PendingOpen,
+    added?: AddedSchema
+) {
     return (
-        <FranchiseFileContext.Provider value={[current, setOpenFile]}>
-            <PendingHarness initial={pending} />
-        </FranchiseFileContext.Provider>
+        <MemoryRouter
+            initialEntries={[
+                {
+                    pathname: '/schema-management',
+                    state: added ? { added } : null
+                }
+            ]}
+        >
+            <FranchiseFileContext.Provider value={[current, setOpenFile]}>
+                <Routes>
+                    <Route
+                        element={<PendingHarness initial={pending} />}
+                        path='/schema-management'
+                    />
+                    <Route
+                        element={<p>Add schema page</p>}
+                        path='/schema-management/add'
+                    />
+                </Routes>
+            </FranchiseFileContext.Provider>
+        </MemoryRouter>
     );
 }
 
 async function setup(
     current?: OpenFranchiseFile,
-    pending?: PendingOpen
+    pending?: PendingOpen,
+    added?: AddedSchema
 ): Promise<(next?: OpenFranchiseFile) => void> {
-    const { rerender } = render(tree(current, pending));
+    const { rerender } = render(tree(current, pending, added));
     await screen.findByText('Madden 22 Schemas');
     // Labels use the schema dir once it arrives
     await waitFor(() =>
         expect(electronAPI.schema.initialize).toHaveBeenCalled()
     );
     // Swaps the open file, as App's state would
-    return (next) => rerender(tree(next, pending));
+    return (next) => rerender(tree(next, pending, added));
 }
 
 function row(name: string): HTMLElement {
@@ -407,8 +432,11 @@ describe('SchemaManagement', () => {
             expect(electronAPI.files.openFolder).toHaveBeenCalledWith(DIR)
         );
         expect(
-            screen.getByText('Add schema').closest('[aria-disabled]')
+            screen.getByText('Scan for schemas').closest('[aria-disabled]')
         ).toBeTruthy();
+        expect(
+            screen.getByText('Add schema').closest('[aria-disabled]')
+        ).toBeNull();
     });
 
     describe('pending file', () => {
@@ -624,6 +652,156 @@ describe('SchemaManagement', () => {
             expect(title()).toBe('M22 v329.1 Schema Viewer');
             expect(row('M22 v329.1').dataset.viewing).toBeDefined();
             expect(row('M22 v329.1').dataset.loaded).toBeUndefined();
+        });
+    });
+    describe('added banner', () => {
+        const ADDED: AddedSchema = {
+            identity: {
+                gameType: 'madden',
+                gameYear: 22,
+                major: 329,
+                minor: 1
+            },
+            fileName: 'M22_329_1.gz',
+            path: CUSTOM.path,
+            replaced: false,
+            loadedBy: [],
+            warnings: []
+        };
+
+        const banner = (): HTMLElement =>
+            document.querySelector<HTMLElement>('[data-kind="schema-added"]')!;
+
+        it('Add schema goes to the Add page', async () => {
+            await setup();
+            await userEvent.click(screen.getByText('Add schema'));
+            expect(await screen.findByText('Add schema page')).toBeTruthy();
+        });
+
+        it('shows no banner without a result', async () => {
+            await setup();
+            expect(banner()).toBeNull();
+        });
+
+        it('says Added and View opens the viewer on it', async () => {
+            await setup(undefined, undefined, ADDED);
+            expect(
+                within(banner()).getByText('Added Madden 22 329.1')
+            ).toBeTruthy();
+            expect(
+                within(banner()).queryByRole('button', { name: 'Undo' })
+            ).toBeNull();
+            await userEvent.click(
+                within(banner()).getByRole('button', { name: 'View' })
+            );
+            await screen.findByRole('complementary', { name: 'Schema viewer' });
+            expect(electronAPI.schema.getFields).toHaveBeenCalledWith({
+                path: CUSTOM.path
+            });
+            expect(banner()).toBeNull();
+        });
+
+        it('lists the result warnings in post-add wording', async () => {
+            await setup(undefined, undefined, {
+                ...ADDED,
+                warnings: [
+                    {
+                        code: 'missing-includes-accepted',
+                        severity: 'warning',
+                        files: ['NESTED.FTX']
+                    },
+                    {
+                        code: 'version-guessed',
+                        severity: 'warning',
+                        files: ['CAREER-TEST']
+                    }
+                ]
+            });
+            const accepted = banner().querySelector(
+                '[data-problem="missing-includes-accepted"]'
+            );
+            expect(accepted?.textContent).toBe('Generated without NESTED.FTX.');
+            const guessed = banner().querySelector(
+                '[data-problem="version-guessed"]'
+            );
+            expect(guessed?.textContent).toBe(
+                'The version was guessed from CAREER-TEST.'
+            );
+            expect(banner().textContent).not.toContain(
+                'Check it before adding'
+            );
+        });
+
+        it('Undo restores the previous copy and refreshes the list', async () => {
+            electronAPI.schema.restorePrevious.mockResolvedValue({
+                status: 'restored',
+                restored: [CUSTOM.path]
+            });
+            await setup(undefined, undefined, { ...ADDED, replaced: true });
+            expect(
+                within(banner()).getByText(
+                    'Replaced your custom Madden 22 329.1'
+                )
+            ).toBeTruthy();
+            const calls = franchiseAPI.getSavedSchemas.mock.calls.length;
+            await userEvent.click(
+                within(banner()).getByRole('button', { name: 'Undo' })
+            );
+            await waitFor(() =>
+                expect(franchiseAPI.getSavedSchemas.mock.calls.length).toBe(
+                    calls + 1
+                )
+            );
+            expect(electronAPI.schema.restorePrevious).toHaveBeenCalledTimes(1);
+            expect(electronAPI.showMessageBox).not.toHaveBeenCalled();
+        });
+
+        it('says so when there is nothing left to undo', async () => {
+            electronAPI.schema.restorePrevious.mockResolvedValue({
+                status: 'gone'
+            });
+            await setup(undefined, undefined, { ...ADDED, replaced: true });
+            await userEvent.click(
+                within(banner()).getByRole('button', { name: 'Undo' })
+            );
+            await waitFor(() =>
+                expect(electronAPI.showMessageBox).toHaveBeenCalledWith(
+                    expect.objectContaining({ message: 'Nothing to undo.' })
+                )
+            );
+        });
+
+        it('Use it in loads the new copy into the open file', async () => {
+            await setup(file(metadata(OLDER.path, 0)), undefined, {
+                ...ADDED,
+                replaced: true,
+                loadedBy: [
+                    { fileId: 'file-1', filePath: 'C:\\saves\\CAREER-TEST' }
+                ]
+            });
+            await userEvent.click(
+                within(banner()).getByRole('button', {
+                    name: 'Use it in CAREER-TEST'
+                })
+            );
+            await waitFor(() =>
+                expect(franchiseAPI.loadSchema).toHaveBeenCalledWith(
+                    'file-1',
+                    CUSTOM.path,
+                    false
+                )
+            );
+        });
+
+        it('offers Use it in only for the open file', async () => {
+            await setup(file(metadata(OLDER.path, 0)), undefined, {
+                ...ADDED,
+                replaced: true,
+                loadedBy: [{ fileId: 'other', filePath: 'C:\\saves\\OTHER' }]
+            });
+            expect(
+                within(banner()).queryByRole('button', { name: /Use it in/ })
+            ).toBeNull();
         });
     });
 });

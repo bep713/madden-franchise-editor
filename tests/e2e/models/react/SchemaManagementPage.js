@@ -141,6 +141,11 @@ class SchemaManagementPage {
     await this.viewLoadedLink().click();
   }
 
+  // Opens the Add schema page
+  async addSchema() {
+    await this.locators.actionBar.locator('[data-action="add-schema"]').click();
+  }
+
   async refresh() {
     await this.locators.actionBar
       .locator('[data-action="refresh-schemas"]')

@@ -925,6 +925,71 @@ class FranchiseFileManager {
   }
 
   /**
+   * Run v5 schema adds and restores one at a time. v4's schema writers don't
+   * go through this queue.
+   * @template T
+   * @param {() => T|Promise<T>} fn
+   * @returns {Promise<T>}
+   */
+  _schemaDirExclusive(fn) {
+    const tail = this._schemaDirQueue || Promise.resolve();
+    const result = tail.then(() => fn());
+    this._schemaDirQueue = result.catch(() => {});
+    return result;
+  }
+
+  /**
+   * What SchemaImporter (main/services/schemaImport) needs from the manager.
+   * Getters, because tests reassign _schemaDirectory.
+   */
+  schemaImportPort() {
+    const manager = this;
+    const sibling = (name) =>
+      path.join(path.dirname(manager._schemaDirectory), name);
+    return {
+      get schemaDir() {
+        return manager._schemaDirectory;
+      },
+      get stagingDir() {
+        return sibling("schema-staging");
+      },
+      get previousDir() {
+        return sibling("schema-previous");
+      },
+      savedSchemas: () => manager.getSavedSchemas(),
+      loadedPaths: () =>
+        [...manager.activeFiles.entries()]
+          .filter(([, entry]) => entry.file.schemaList?.path)
+          .map(([fileId, entry]) => ({
+            schemaPath: entry.file.schemaList.path,
+            fileId,
+            filePath: entry.path,
+          })),
+      // The most recently opened file
+      openFile: () => {
+        const entry = [...manager.activeFiles.values()].pop();
+        const type = entry?.file.type;
+        if (!type?.gameType || !type.year) return null;
+        const expected = entry.file.expectedSchemaVersion;
+        return {
+          path: entry.path,
+          game: { gameType: type.gameType, gameYear: type.year },
+          expected:
+            expected && Number.isInteger(expected.major)
+              ? { major: expected.major, minor: expected.minor }
+              : null,
+        };
+      },
+      exclusive: (fn) => manager._schemaDirExclusive(fn),
+      invalidate: (paths) => {
+        for (const p of paths) {
+          manager._schemaFieldsCache.delete(path.resolve(p).toLowerCase());
+        }
+      },
+    };
+  }
+
+  /**
    * Save schema data
    * @param {Buffer} data
    * @param {object} meta

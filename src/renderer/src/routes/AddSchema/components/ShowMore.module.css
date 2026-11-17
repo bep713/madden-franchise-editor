@@ -1,0 +1,16 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+
+.toggle {
+    align-self: flex-start;
+    padding: var(--spacing-1) 0;
+    color: var(--link);
+    cursor: pointer;
+    background: none;
+    border: none;
+
+    &:hover,
+    &:focus-visible {
+        text-decoration: underline;
+    }
+}

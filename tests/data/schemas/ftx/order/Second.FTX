@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FranTkData databaseName="CollegeFB26_Dynasty" dataMajorVersion="260" dataMinorVersion="7">
+  <schemas>
+    <schema name="OrderSecond" assetId="9504" ownerAssetId="0" numMembers="1" base="Record">
+      <attribute idx="0" name="D" type="bool"/>
+    </schema>
+  </schemas>
+</FranTkData>

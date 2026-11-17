@@ -6,6 +6,7 @@ import Welcome from './routes/Welcome/Welcome';
 import TableEditor from './routes/TableEditor/TableEditor';
 import SchemaManagement from './routes/SchemaManagement/SchemaManagement';
 import ScheduleEditor from './routes/Schedule/ScheduleEditor';
+import AddSchema from './routes/AddSchema/AddSchema';
 
 import { FranchiseFileContext } from './context/FranchiseFileContext';
 import { PendingOpen, PendingOpenContext } from './context/PendingOpenContext';
@@ -33,6 +34,10 @@ function App(): JSX.Element {
                             <Route
                                 path='schema-management'
                                 element={<SchemaManagement />}
+                            />
+                            <Route
+                                path='schema-management/add'
+                                element={<AddSchema />}
                             />
                             <Route path='*' element={<Welcome />} />
                         </Route>

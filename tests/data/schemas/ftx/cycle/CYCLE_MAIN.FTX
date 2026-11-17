@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FranTkData databaseName="Madden27_Franchise" dataMajorVersion="901" dataMinorVersion="0">
+  <Includes><IncludeFile fileName="Rosters.FTX"/></Includes>
+  <schemas><schema name="League" assetId="9101" ownerAssetId="0" numMembers="1" base="Record"><attribute idx="0" name="Name" type="string" maxLen="16" default="NFL"/></schema></schemas>
+</FranTkData>

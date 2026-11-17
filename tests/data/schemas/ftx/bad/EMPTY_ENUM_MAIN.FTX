@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- An enum with no members that an attribute uses: FranchiseEnum's copy
+     constructor would crash at load. Expected: blocking 'empty-enum'. -->
+<FranTkData databaseName="Madden27_Franchise" dataMajorVersion="902" dataMinorVersion="0">
+  <Includes>
+    <IncludeFile fileName="EmptyEnum.FTX"/>
+  </Includes>
+  <schemas>
+    <schema name="UsesEmpty" assetId="9401" ownerAssetId="0" numMembers="1" base="Record">
+      <attribute idx="0" name="Kind" type="Nothing"/>
+    </schema>
+  </schemas>
+</FranTkData>

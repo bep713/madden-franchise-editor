@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Names its include in a different case than the file on disk (Nested.FTX):
+     covers the library's lowercase-key fallback. -->
+<FranTkData>
+  <Includes>
+    <IncludeFile fileName="NESTED.FTX"/>
+  </Includes>
+  <schemas>
+    <schema name="Team" assetId="9002" ownerAssetId="0" numMembers="2" base="Record">
+      <attribute idx="0" name="DisplayName" type="string" maxLen="32"/>
+      <attribute idx="1" name="TeamType" type="TeamType"/>
+    </schema>
+  </schemas>
+</FranTkData>

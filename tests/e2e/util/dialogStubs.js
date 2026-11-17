@@ -3,16 +3,18 @@
 // dialog.showOpenDialog / showSaveDialog at call time, so the stub applies to
 // every later dialog in this app instance.
 
-// Records each dialog's options for openDialogCalls
-async function stubOpenDialog(electronApp, filePath) {
-  await electronApp.evaluate(({ dialog }, p) => {
+// Answers with one path or an array of paths. Records each dialog's options
+// for openDialogCalls.
+async function stubOpenDialog(electronApp, filePaths) {
+  const paths = Array.isArray(filePaths) ? filePaths : [filePaths];
+  await electronApp.evaluate(({ dialog }, ps) => {
     globalThis.__openDialogCalls = globalThis.__openDialogCalls || [];
     // Called as (options) or (parentWindow, options)
     dialog.showOpenDialog = async (...args) => {
       globalThis.__openDialogCalls.push(args[args.length - 1]);
-      return { canceled: false, filePaths: [p] };
+      return { canceled: false, filePaths: ps };
     };
-  }, filePath);
+  }, paths);
 }
 
 async function openDialogCalls(electronApp) {

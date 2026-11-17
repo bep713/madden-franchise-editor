@@ -11,12 +11,14 @@ export interface SchemaGroup {
     schemas: SchemaEntry[];
 }
 
-// Windows paths: no case, either slash
+// Windows paths: no case, either slash. Equal keys are the same path.
+export function pathKey(p: string): string {
+    return p.replace(/\\/g, '/').toLowerCase();
+}
+
 export function samePath(a?: string | null, b?: string | null): boolean {
     if (!a || !b) return false;
-    const normalize = (p: string): string =>
-        p.replace(/\\/g, '/').toLowerCase();
-    return normalize(a) === normalize(b);
+    return pathKey(a) === pathKey(b);
 }
 
 // Files without a gameType are Madden, as in findGame

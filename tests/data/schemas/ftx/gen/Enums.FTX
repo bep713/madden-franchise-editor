@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FranTkData>
+  <schemas>
+    <enum name="TeamType" assetId="9100" isRecordPersistent="false">
+      <attribute name="Pro" idx="0" value="0"/>
+      <attribute name="AllStar" idx="1" value="1"/>
+    </enum>
+  </schemas>
+</FranTkData>

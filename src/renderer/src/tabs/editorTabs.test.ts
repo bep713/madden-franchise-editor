@@ -7,6 +7,7 @@ import {
     getActiveTab,
     initialTabsState,
     reduceTabs,
+    returnsToTab,
     syncFile,
     tabName
 } from './editorTabs';
@@ -563,6 +564,49 @@ describe('editorTabs', () => {
                     (t) => t.kind !== 'table' || t.history === undefined
                 )
             ).toBe(true);
+        });
+    });
+    describe('sub-pages', () => {
+        const onSchemas = () => run([select('schema-management')]);
+
+        it('returns to the active tab from a page under it', () => {
+            expect(
+                returnsToTab(
+                    onSchemas(),
+                    select('schema-management'),
+                    '/schema-management/add'
+                )
+            ).toBe('/schema-management');
+        });
+
+        it('stays put on the tab page itself', () => {
+            expect(
+                returnsToTab(
+                    onSchemas(),
+                    select('schema-management'),
+                    '/schema-management'
+                )
+            ).toBeNull();
+        });
+
+        it('ignores other tabs, other actions and lookalike paths', () => {
+            expect(
+                returnsToTab(
+                    onSchemas(),
+                    select('home'),
+                    '/schema-management/add'
+                )
+            ).toBeNull();
+            expect(
+                returnsToTab(onSchemas(), newTab, '/schema-management/add')
+            ).toBeNull();
+            expect(
+                returnsToTab(
+                    onSchemas(),
+                    select('schema-management'),
+                    '/schema-management-other'
+                )
+            ).toBeNull();
         });
     });
 });

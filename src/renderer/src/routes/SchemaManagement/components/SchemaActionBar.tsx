@@ -3,6 +3,7 @@ import Link from '@renderer/components/Link/Link';
 import List from '@renderer/components/List/List';
 
 interface Props {
+    onAddSchema: () => void;
     onOpenDirectory: () => void;
     onRefresh: () => void;
     onViewLoaded?: () => void;
@@ -10,6 +11,7 @@ interface Props {
 
 // Not sticky itself: the page sticks it together with the loaded card
 const SchemaActionBar: React.FC<Props> = ({
+    onAddSchema,
     onOpenDirectory,
     onRefresh,
     onViewLoaded
@@ -46,8 +48,13 @@ const SchemaActionBar: React.FC<Props> = ({
                     onClick={onRefresh}
                     text='Refresh schema list'
                 />,
-                // TODO: Add schema and Scan for schemas get their own plans
-                <Link disabled key='add-schema' text='Add schema' />,
+                <Link
+                    data-action='add-schema'
+                    key='add-schema'
+                    onClick={onAddSchema}
+                    text='Add schema'
+                />,
+                // TODO: Scan for schemas gets its own plan
                 <Link disabled key='scan-schemas' text='Scan for schemas' />
             ]}
             scrollable

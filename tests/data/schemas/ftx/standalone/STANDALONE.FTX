@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Self-contained, no <Includes>: kind generate, saved as M26_310_0.gz.
+     Tests also copy it under other names to prove the extension is ignored. -->
+<FranTkData databaseName="Madden26_Franchise" dataMajorVersion="310" dataMinorVersion="0">
+  <schemas>
+    <schema name="Player" assetId="9301" ownerAssetId="0" numMembers="1" base="Record">
+      <attribute idx="0" name="FirstName" type="string" maxLen="16"/>
+    </schema>
+  </schemas>
+</FranTkData>

@@ -34,10 +34,9 @@ const NavigationTab: React.FC<NavigationTabProps> = ({
         onClose?.(tab.key);
     }
 
+    // The active tab too: from a page under it, it goes back to its page
     function handleClick(): void {
-        if (!isActive) {
-            onSelect?.(tab.key);
-        }
+        onSelect?.(tab.key);
     }
 
     // No autoscroll on a middle-click close

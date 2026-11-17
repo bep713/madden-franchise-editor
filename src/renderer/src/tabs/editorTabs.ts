@@ -91,6 +91,24 @@ export function tabName(tab: EditorTab): string {
     return tab.kind === 'main' ? tab.item.text : tab.name;
 }
 
+export function tabPath(tab: EditorTab): string {
+    return tab.kind === 'table' ? '/table-editor' : tab.item.href;
+}
+
+// Selecting the active tab from a page under it, such as
+// /schema-management/add, goes back to the tab's own page
+export function returnsToTab(
+    state: EditorTabsState,
+    action: TabAction,
+    pathname: string
+): string | null {
+    if (action.type !== 'selectTab' || action.key !== state.activeKey) {
+        return null;
+    }
+    const path = tabPath(getActiveTab(state));
+    return pathname.startsWith(`${path}/`) ? path : null;
+}
+
 export function isImplemented(tab: EditorTab): boolean {
     return tab.kind === 'table' || !!tab.item.implemented;
 }

@@ -1,13 +1,16 @@
 import { useContext, useMemo, useState } from 'react';
 import { Allotment } from 'allotment';
 import cx from 'classnames';
+import { useLocation, useNavigate } from 'react-router-dom';
 import games from '@data/games.json';
 import type {
+    AddedSchema,
     GameVersion,
     SchemaEntry,
     SchemaFieldsSource
 } from '@shared/types';
 
+import Banner, { type BannerAction } from '@renderer/components/Banner/Banner';
 import GameGrid from '@renderer/components/GameGrid/GameGrid';
 import Headline from '@renderer/components/Headline/Headline';
 import Layout from '@renderer/components/Layout/Layout';
@@ -19,6 +22,9 @@ import useLoader from '@renderer/hooks/useLoader';
 import useOpenFile from '@renderer/hooks/useOpenFile';
 import useCommonFilePrompt from '@renderer/routes/Welcome/components/CommonFileModal/useCommonFilePrompt';
 import { confirm } from '@renderer/utils/confirm';
+import { basename } from '@renderer/utils/path';
+import { gameLabel } from '../AddSchema/addSchemaModel';
+import { describeProblem } from '../AddSchema/describeProblem';
 import LoadedSchemaCard from './components/LoadedSchemaCard';
 import PendingFileCard from './components/PendingFileCard';
 import SchemaActionBar from './components/SchemaActionBar';
@@ -51,8 +57,20 @@ function viewingPathOf(viewing: Viewing | null): string | undefined {
         : undefined;
 }
 
+function addedMessage(added: AddedSchema): string {
+    const { identity } = added;
+    const label = `${gameLabel(identity, games as GameVersion[])} ${identity.major}.${identity.minor}`;
+    return added.replaced ? `Replaced your custom ${label}` : `Added ${label}`;
+}
+
 const SchemaManagement: React.FC = () => {
     const [openFile, setOpenFile] = useContext(FranchiseFileContext);
+    const navigate = useNavigate();
+    const location = useLocation();
+    // The Add schema page's result, for this visit only
+    const [added, setAdded] = useState<AddedSchema | null>(
+        () => (location.state as { added?: AddedSchema } | null)?.added ?? null
+    );
     const { entries, schemaDir, refresh } = useSchemaList();
     const { loader, setOptions: setLoaderOptions } = useLoader();
     const [pending, setPending] = usePendingOpen();
@@ -131,9 +149,8 @@ const SchemaManagement: React.FC = () => {
     }
 
     // Reopens the file from disk with this schema, so unsaved edits are lost
-    async function handleLoad(entry: SchemaEntry): Promise<void> {
+    async function loadSchemaAt(path: string, label: string): Promise<void> {
         if (!openFile) return;
-        const label = labelFor(entry);
 
         let dirty = true;
         try {
@@ -159,7 +176,7 @@ const SchemaManagement: React.FC = () => {
         try {
             const result = await window.franchiseAPI.loadSchema(
                 openFile.fileId,
-                entry.path,
+                path,
                 false
             );
             if ('error' in result) {
@@ -188,6 +205,62 @@ const SchemaManagement: React.FC = () => {
             setLoaderOptions({ show: false });
             await showError(`Could not load schema ${label}.`, error);
         }
+    }
+
+    function handleLoad(entry: SchemaEntry): Promise<void> {
+        return loadSchemaAt(entry.path, labelFor(entry));
+    }
+
+    async function handleUndoAdd(): Promise<void> {
+        try {
+            const result = await window.electronAPI.schema.restorePrevious();
+            if ('error' in result) {
+                await showError('Could not undo the add.', result.error);
+            } else if (result.status === 'gone') {
+                await window.electronAPI.showMessageBox({
+                    type: 'info',
+                    message: 'Nothing to undo.',
+                    detail: 'The added schema changed, or another add replaced it.'
+                });
+            }
+        } catch (error) {
+            await showError('Could not undo the add.', error);
+        }
+        await refresh();
+    }
+
+    function addedActions(result: AddedSchema): BannerAction[] {
+        const entry = entries.find((e) => samePath(e.path, result.path));
+        // Only the open file can take the new copy
+        const user = result.loadedBy.find(
+            (by) => by.fileId === openFile?.fileId
+        );
+        return [
+            ...(entry
+                ? [
+                      {
+                          label: 'View',
+                          onClick: () => viewEntry(entry),
+                          primary: true
+                      }
+                  ]
+                : []),
+            ...(result.replaced
+                ? [{ label: 'Undo', onClick: () => void handleUndoAdd() }]
+                : []),
+            ...(user
+                ? [
+                      {
+                          label: `Use it in ${basename(user.filePath)}`,
+                          onClick: () =>
+                              void loadSchemaAt(
+                                  result.path,
+                                  entry ? labelFor(entry) : result.fileName
+                              )
+                      }
+                  ]
+                : [])
+        ];
     }
 
     // Opens the pending file with this schema. Like an open from Home, this
@@ -276,6 +349,11 @@ const SchemaManagement: React.FC = () => {
                                                 })}
                                             >
                                                 <SchemaActionBar
+                                                    onAddSchema={() =>
+                                                        navigate(
+                                                            '/schema-management/add'
+                                                        )
+                                                    }
                                                     onOpenDirectory={
                                                         handleOpenDirectory
                                                     }
@@ -380,6 +458,29 @@ const SchemaManagement: React.FC = () => {
                     </Allotment.Pane>
                 </Allotment>
             </div>
+            {added && (
+                <Banner
+                    actions={addedActions(added)}
+                    kind='schema-added'
+                    message={addedMessage(added)}
+                    onClose={() => setAdded(null)}
+                    severity='success'
+                    visible
+                >
+                    {added.warnings.length > 0 && (
+                        <ul className={styles.addedWarnings}>
+                            {added.warnings.map((warning, index) => (
+                                <li
+                                    data-problem={warning.code}
+                                    key={`${warning.code}-${index}`}
+                                >
+                                    {describeProblem(warning, 'result')}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </Banner>
+            )}
             {loader}
             {commonFileModal}
         </div>

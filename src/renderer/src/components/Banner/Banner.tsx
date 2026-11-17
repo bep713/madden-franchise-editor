@@ -12,6 +12,8 @@ export interface BannerAction {
 
 interface Props {
     actions?: BannerAction[];
+    // Shown under the message
+    children?: React.ReactNode;
     kind?: string;
     message: string;
     onBlur?: React.FocusEventHandler<HTMLDivElement>;
@@ -28,6 +30,7 @@ const MAX_ACTIONS = 3;
 
 const Banner: React.FC<Props> = ({
     actions = [],
+    children,
     kind,
     message,
     onBlur,
@@ -53,7 +56,10 @@ const Banner: React.FC<Props> = ({
             onPointerLeave={onPointerLeave}
             role={severity === 'error' ? 'alert' : 'status'}
         >
-            <p className={styles.message}>{message}</p>
+            <div className={styles.body}>
+                <p className={styles.message}>{message}</p>
+                {children}
+            </div>
             <div className={styles.actions}>
                 {actions.slice(0, MAX_ACTIONS).map((action) => (
                     <button

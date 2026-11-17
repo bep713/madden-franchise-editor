@@ -1,0 +1,33 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    row-gap: var(--spacing-1);
+}
+
+.problems {
+    display: flex;
+    flex-direction: column;
+    row-gap: var(--spacing-1);
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.problem {
+    padding: var(--spacing-2) var(--spacing-3);
+    background-color: var(--white);
+    border-left: 4px solid var(--vista-blue);
+
+    &[data-severity='blocking'] {
+        background-color: var(--error);
+        border-left-color: var(--danger);
+    }
+
+    &[data-severity='warning'] {
+        background-color: var(--antique-white);
+        border-left-color: var(--fulvous);
+    }
+}

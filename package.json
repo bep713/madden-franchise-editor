@@ -100,6 +100,7 @@
     "chokidar": "^3.5.3",
     "electron-log": "^5.4.3",
     "electron-updater": "^4.6.1",
+    "fast-xml-parser": "5.2.5",
     "madden-franchise": "^4.4.1",
     "moment": "^2.29.4",
     "stream-parser": "^0.3.1",

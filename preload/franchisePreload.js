@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer, webUtils } = require("electron");
 
 const isDev = process.env.NODE_ENV === "development";
 const isTest = process.env.NODE_ENV === "testing";
@@ -338,6 +338,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
     initialize: () => ipcRenderer.invoke("schema:initialize"),
     delete: (schemaPath) => ipcRenderer.invoke("schema:delete", schemaPath),
     getFields: (source) => ipcRenderer.invoke("schema:get-fields", source),
+    // v5 Add schema page (main/services/schemaImport)
+    inspectAdd: (request) => ipcRenderer.invoke("schema:inspect-add", request),
+    add: (commit) => ipcRenderer.invoke("schema:add", commit),
+    restorePrevious: () => ipcRenderer.invoke("schema:restore-previous"),
   },
 
   // Schema search operations
@@ -393,6 +397,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     getSaves: () => ipcRenderer.invoke("files:get-saves"),
     openFolder: (folderPath) =>
       ipcRenderer.invoke("files:open-folder", folderPath),
+    // Electron 41 has no File.path
+    getPathForFile: (file) => webUtils.getPathForFile(file),
   },
 
   // Welcome screen operations

@@ -81,4 +81,15 @@ describe('useMenuState', () => {
             [...REACT_MENU_IDS].sort()
         );
     });
+    it('uses the parent item on a sub-page', () => {
+        setup('/table-editor/sub', file);
+        expect(sent('menu:enable').flat().sort()).toEqual(
+            [...REACT_MENU_IDS].sort()
+        );
+    });
+
+    it('does not treat a lookalike path as a sub-page', () => {
+        setup('/table-editor-x', file);
+        expect(send).not.toHaveBeenCalled();
+    });
 });

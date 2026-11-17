@@ -43,6 +43,19 @@ class Banner {
     return this.locators.banner.locator("p").innerText();
   }
 
+  // The data-problem codes of the warnings listed in the banner
+  async problems() {
+    return this.locators.banner
+      .locator("li[data-problem]")
+      .evaluateAll((els) => els.map((el) => el.getAttribute("data-problem")));
+  }
+
+  async hasButton(label) {
+    return (
+      (await this.locators.banner.getByRole("button", { name: label, exact: true }).count()) > 0
+    );
+  }
+
   async click(label) {
     await this.locators.banner
       .getByRole("button", { name: label, exact: true })
