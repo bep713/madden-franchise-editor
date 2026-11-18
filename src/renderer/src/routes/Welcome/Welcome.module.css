@@ -8,7 +8,7 @@
     container-name: main;
     container-type: inline-size;
     overflow: auto;
-    background-color: var(--white-smoke);
+    background-color: var(--surface-sunken);
 }
 
 .sideNav {
@@ -19,7 +19,7 @@
     position: relative;
     display: inline-flex;
     padding: var(--spacing-2);
-    color: var(--white);
+    color: var(--on-primary);
     cursor: pointer;
     background: transparent;
     border: none;
@@ -28,11 +28,15 @@
     &:hover,
     &:focus-visible,
     &[aria-expanded='true'] {
-        background-color: rgb(255 255 255 / 20%);
+        background-color: color-mix(
+            in srgb,
+            var(--on-primary) 20%,
+            transparent
+        );
     }
 
     &:focus-visible {
-        outline: 2px solid var(--white);
+        outline: 2px solid var(--on-primary);
     }
 
     svg {
@@ -53,6 +57,6 @@
     line-height: 16px;
     color: var(--primary);
     text-align: center;
-    background-color: var(--white);
+    background-color: var(--on-primary);
     border-radius: 8px;
 }

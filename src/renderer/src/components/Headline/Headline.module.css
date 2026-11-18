@@ -7,7 +7,7 @@
     column-gap: var(--spacing-1);
     align-items: baseline;
     padding: var(--spacing-6) var(--spacing-4);
-    color: var(--white);
+    color: var(--on-primary);
     background-color: var(--primary);
 }
 

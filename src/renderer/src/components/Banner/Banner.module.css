@@ -8,7 +8,7 @@
     flex-direction: column;
     justify-content: space-between;
     padding: 20px;
-    color: var(--white);
+    color: var(--on-banner);
     background: var(--banner-info);
     transform: translateY(100%);
     transition: transform 300ms ease-in-out;
@@ -44,7 +44,7 @@
 
 .action {
     padding: 10px;
-    color: var(--white);
+    color: var(--on-banner);
     text-transform: uppercase;
     cursor: pointer;
     background: transparent;
@@ -52,17 +52,17 @@
     border-radius: 4px;
 
     &:focus-visible {
-        outline: 2px solid var(--white);
+        outline: 2px solid var(--on-banner);
     }
 }
 
 .primary {
     color: var(--banner-info);
-    background-color: var(--white);
+    background-color: var(--on-banner);
 
     &:hover,
     &:focus-visible {
-        background-color: var(--platinum);
+        background-color: var(--hover);
     }
 
     &.errorPrimary {
@@ -77,13 +77,13 @@
 .close {
     display: inline-flex;
     padding: 8px;
-    color: var(--white);
+    color: var(--on-banner);
     cursor: pointer;
     background: transparent;
     border: none;
 
     &:focus-visible {
-        outline: 2px solid var(--white);
+        outline: 2px solid var(--on-banner);
     }
 
     svg {

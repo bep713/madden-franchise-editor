@@ -6,7 +6,7 @@
     flex-direction: column;
     gap: var(--spacing-3);
     padding: var(--spacing-4);
-    background-color: var(--white);
+    background-color: var(--surface-raised);
     border-radius: 3px;
 }
 
@@ -15,7 +15,8 @@
 }
 
 .elevation {
-    box-shadow: 0 7px 50px -5px rgb(0 0 0 / calc(5%));
+    box-shadow: 0 7px 50px -5px
+        color-mix(in srgb, var(--shadow-soft) 50%, transparent);
 }
 
 .hover {
@@ -28,9 +29,9 @@
 }
 
 .blackBorder {
-    border: 1px solid var(--black);
+    border: 1px solid var(--text-primary);
 }
 
 .silverBorder {
-    border: 1px solid var(--silver);
+    border: 1px solid var(--border);
 }

@@ -7,7 +7,7 @@ import styles from './TableSidebar.module.scss';
 import Textbox from '@renderer/components/Textbox/Textbox';
 import TableListItem from '@renderer/components/TableListItem/TableListItem';
 import Text from '@renderer/components/Text/Text';
-import searchIconUrl from '@assets/icons/search.svg';
+import Search from '@assets/icons/search.svg?react';
 import Pushpin from '@assets/icons/pushpin.svg?react';
 import Unpin from '@assets/icons/unpin.svg?react';
 import { SidebarRow } from './sidebarRows';
@@ -160,11 +160,10 @@ const TableSidebar: React.FC<TableSidebarProps> = ({
                 <div className={styles.search}>
                     <Textbox
                         leftAsset={
-                            <img
-                                alt={'Search icon'}
+                            <Search
+                                aria-label='Search icon'
                                 height={16}
-                                loading='lazy'
-                                src={searchIconUrl}
+                                role='img'
                                 width={16}
                             />
                         }

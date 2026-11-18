@@ -8,13 +8,17 @@
     padding: 7.5px 10px;
     text-overflow: ellipsis;
     font-size: v.$font-size-small;
-    color: #000;
+    color: var(--text-primary);
     white-space: pre;
     outline: none;
 
     &:hover {
         cursor: pointer;
-        background-color: #fbfbfb;
+        background-color: color-mix(
+            in srgb,
+            var(--surface) 70%,
+            var(--surface-chrome)
+        );
 
         .closeTabButton {
             visibility: visible;
@@ -22,7 +26,7 @@
     }
 
     &:global(.active) {
-        background-color: #fff;
+        background-color: var(--surface);
 
         &:hover {
             cursor: default;
@@ -42,13 +46,13 @@
     width: 20px;
     height: 20px;
     padding: 0;
-    color: #333;
+    color: var(--text-primary);
     cursor: pointer;
     background: none;
     border: none;
     border-radius: 5px;
 
     &:hover {
-        background-color: v.$background-color;
+        background-color: var(--surface-chrome);
     }
 }

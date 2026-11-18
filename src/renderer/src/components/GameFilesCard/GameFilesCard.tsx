@@ -4,7 +4,7 @@ import List from '../List/List';
 import Link from '../Link/Link';
 import styles from './GameFilesCard.module.css';
 import GameIcon from '../GameIcon/GameIcon';
-import folderIconUrl from '@assets/icons/folder.svg';
+import Folder from '@assets/icons/folder.svg?react';
 
 interface GameFileCardProps {
     files: GameFileList;
@@ -27,13 +27,12 @@ const GameFileCard: React.FC<GameFileCardProps> = ({
             header={{
                 leftAsset: <GameIcon game={files.game} />,
                 rightAsset: (
-                    <img
-                        alt={'Directory icon'}
+                    <Folder
+                        aria-label='Directory icon'
                         className={styles.directory}
                         height={16}
-                        loading='lazy'
                         onClick={onDirectoryClick}
-                        src={folderIconUrl}
+                        role='img'
                         width={16}
                     />
                 ),

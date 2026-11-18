@@ -6,7 +6,11 @@ const preferencesSchema = require("../../data/preferencesSchema.json");
 let preferencesInstance = null;
 const changeCallbacks = new Map();
 // Set by registerPreferencesHandlers, used by setPreferences.
-let registered = { franchiseFileManager: null, getLoggedMain: () => null };
+let registered = {
+  franchiseFileManager: null,
+  getLoggedMain: () => null,
+  getActiveUi: () => "v5",
+};
 
 /**
  * Subscribe to changes of a preference made through `preferences:set`.
@@ -76,9 +80,10 @@ function fillMissingKeys(defaults, target) {
 }
 
 /**
- * Build the preference sections config (for the settings UI) from the shared schema.
+ * Build the preference sections config (for the settings UI) from the shared
+ * schema. A field with `ui` shows only while that UI is the active one.
  */
-function buildPreferenceSections() {
+function buildPreferenceSections(activeUi) {
   return preferencesSchema.sections.map((section) => ({
     id: section.id,
     label: section.label,
@@ -86,16 +91,18 @@ function buildPreferenceSections() {
     form: {
       groups: [
         {
-          fields: section.fields.map((field) => {
-            const base = {
-              label: field.label,
-              key: field.key,
-              type: field.type,
-            };
-            if (field.help) base.help = field.help;
-            if (field.options) base.options = field.options;
-            return base;
-          }),
+          fields: section.fields
+            .filter((field) => !field.ui || field.ui === activeUi)
+            .map((field) => {
+              const base = {
+                label: field.label,
+                key: field.key,
+                type: field.type,
+              };
+              if (field.help) base.help = field.help;
+              if (field.options) base.options = field.options;
+              return base;
+            }),
         },
       ],
     },
@@ -162,9 +169,9 @@ function setPreferences(preferences) {
 function registerPreferencesHandlers(
   loggedIpc,
   franchiseFileManager = null,
-  { loggedMain: getLoggedMain },
+  { loggedMain: getLoggedMain, activeUi: getActiveUi = () => "v5" },
 ) {
-  registered = { franchiseFileManager, getLoggedMain };
+  registered = { franchiseFileManager, getLoggedMain, getActiveUi };
 
   loggedIpc.handle("preferences:get", async () => {
     try {
@@ -208,7 +215,7 @@ function registerPreferencesHandlers(
 
   loggedIpc.handle("preferences:get-sections", async () => {
     try {
-      return buildPreferenceSections();
+      return buildPreferenceSections(registered.getActiveUi());
     } catch (error) {
       throw new Error(`Failed to get preference sections: ${error.message}`);
     }

@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useId, useMemo, useState } from 'react';
-import searchIconUrl from '@assets/icons/search.svg';
+import Search from '@assets/icons/search.svg?react';
 import Button from '@renderer/components/Button/Button';
 import Card from '@renderer/components/Card/Card';
 import Textbox from '@renderer/components/Textbox/Textbox';
@@ -175,10 +175,9 @@ const SchemaFilesCard: React.FC<Props> = ({
                                 aria-label='Search files'
                                 data-field='file-search'
                                 leftAsset={
-                                    <img
-                                        alt=''
+                                    <Search
+                                        aria-hidden
                                         height={16}
-                                        src={searchIconUrl}
                                         width={16}
                                     />
                                 }

@@ -37,6 +37,19 @@
           "help": "Legacy is the previous interface. It stays available but doesn't get new features. Switching reloads the window; the open file stays open and unsaved changes are kept."
         },
         {
+          "key": "theme",
+          "label": "Theme (new interface)",
+          "type": "dropdown",
+          "defaultValue": "system",
+          "ui": "v5",
+          "options": [
+            { "label": "Auto (match Windows)", "value": "system" },
+            { "label": "Light", "value": "light" },
+            { "label": "Dark", "value": "dark" }
+          ],
+          "help": "Auto follows your Windows light/dark setting."
+        },
+        {
           "key": "checkForUpdates",
           "label": "Automatically check for application updates",
           "type": "checkbox",

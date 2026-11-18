@@ -3,6 +3,6 @@
 
 .wrapper {
     padding: var(--spacing-4);
-    background-color: var(--antique-white);
-    box-shadow: 1px 1px 10px 0 rgb(0 0 0 / 10%);
+    background-color: var(--primary-soft);
+    box-shadow: 1px 1px 10px 0 var(--shadow-soft);
 }

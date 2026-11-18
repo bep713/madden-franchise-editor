@@ -32,7 +32,7 @@
     flex-direction: column;
     row-gap: var(--spacing-2);
     padding: var(--spacing-2) 0 0 var(--spacing-3);
-    border-left: 2px solid var(--platinum);
+    border-left: 2px solid var(--divider-color);
 }
 
 .gameTypes {

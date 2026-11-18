@@ -1,4 +1,3 @@
-@use 'sass:color';
 @use '@assets/vars' as v;
 
 .tabWrapper {
@@ -7,7 +6,7 @@
     padding-left: 5px;
     overflow: auto hidden;
     list-style-type: none;
-    background-color: v.$background-color;
+    background-color: var(--surface-chrome);
 
     &::-webkit-scrollbar {
         display: none;
@@ -15,19 +14,25 @@
     }
 
     &::-webkit-scrollbar-thumb {
-        background-color: color.adjust(v.$background-color, $lightness: -20%);
+        background-color: color-mix(
+            in srgb,
+            var(--surface-chrome),
+            var(--text-primary) 30%
+        );
 
         &:hover {
-            background-color: color.adjust(
-                v.$background-color,
-                $lightness: -30%
+            background-color: color-mix(
+                in srgb,
+                var(--surface-chrome),
+                var(--text-primary) 45%
             );
         }
 
         &:active {
-            background-color: color.adjust(
-                v.$background-color,
-                $lightness: -40%
+            background-color: color-mix(
+                in srgb,
+                var(--surface-chrome),
+                var(--text-primary) 60%
             );
         }
     }
@@ -43,7 +48,7 @@
 .tabContainer {
     display: flex;
     flex-shrink: 0;
-    border-right: 1px solid #d1d1d1;
+    border-right: 1px solid var(--divider-color);
 }
 
 .addTabButton {
@@ -60,6 +65,10 @@
     border: none;
 
     &:hover {
-        background-color: #fbfbfb;
+        background-color: color-mix(
+            in srgb,
+            var(--surface) 70%,
+            var(--surface-chrome)
+        );
     }
 }

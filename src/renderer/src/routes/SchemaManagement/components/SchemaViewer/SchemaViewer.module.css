@@ -7,7 +7,7 @@
     flex-direction: column;
     height: 100%;
     overflow: hidden;
-    background-color: var(--white);
+    background-color: var(--surface);
     border-left: 1px solid var(--divider-color);
 }
 
@@ -38,7 +38,7 @@
     &:hover,
     &:focus-visible {
         color: var(--text-primary);
-        background-color: var(--white-smoke);
+        background-color: var(--secondary);
     }
 
     svg {
@@ -148,7 +148,7 @@
     box-sizing: border-box;
     align-items: center;
     height: 28px;
-    border-bottom: 1px solid var(--white-smoke);
+    border-bottom: 1px solid var(--secondary);
 }
 
 .cell {

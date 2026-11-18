@@ -1,5 +1,6 @@
 import React from 'react';
 import { Editor } from '@monaco-editor/react';
+import useColorScheme from '@renderer/hooks/useColorScheme';
 
 interface Props {
     language?: string;
@@ -15,6 +16,7 @@ const TextEditor: React.FC<Props> = ({
     isReadOnly,
     value
 }: Props) => {
+    const scheme = useColorScheme();
     return (
         <Editor
             language={language}
@@ -22,6 +24,7 @@ const TextEditor: React.FC<Props> = ({
             options={{
                 readOnly: isReadOnly
             }}
+            theme={scheme === 'dark' ? 'vs-dark' : 'vs'}
             value={value}
         />
     );

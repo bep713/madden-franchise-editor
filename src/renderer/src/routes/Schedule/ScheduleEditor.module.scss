@@ -20,7 +20,7 @@
     min-height: 0;
     padding: var(--spacing-4) var(--spacing-8);
     overflow: hidden;
-    background-color: var(--white);
+    background-color: var(--surface);
 }
 
 .scroll {
@@ -32,15 +32,15 @@
 }
 
 .rows {
-    background-color: var(--white);
+    background-color: var(--surface);
 }
 
 /* v4's grid: up to three columns, with the borders collapsed. The list
    draws the top and left edges, each card its right and bottom ones, so an
    unfilled last row shows no empty cells. */
 .cards {
-    --card-border: 1px solid var(--platinum);
-    --card-alt: var(--white-smoke);
+    --card-border: 1px solid var(--divider-color);
+    --card-alt: var(--secondary);
 
     display: grid;
     grid-template-columns: 1fr;
@@ -50,7 +50,7 @@
     > [role='listitem'] {
         /* So the card fills its cell, and cards in a row are the same height */
         display: grid;
-        background-color: var(--white);
+        background-color: var(--surface);
         border-right: var(--card-border);
         border-bottom: var(--card-border);
     }
@@ -72,7 +72,7 @@
 
         > [role='listitem']:nth-child(4n + 1),
         > [role='listitem']:nth-child(4n) {
-            background-color: var(--white);
+            background-color: var(--surface);
         }
 
         > [role='listitem']:nth-child(4n + 2),
@@ -87,7 +87,7 @@
         grid-template-columns: repeat(3, minmax(0, 1fr));
 
         > [role='listitem']:nth-child(odd) {
-            background-color: var(--white);
+            background-color: var(--surface);
         }
 
         > [role='listitem']:nth-child(even) {
@@ -101,7 +101,7 @@
     padding: var(--spacing-4);
     margin: 0;
     color: var(--text-secondary);
-    background-color: var(--white);
+    background-color: var(--surface);
 }
 
 .byes {

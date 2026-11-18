@@ -43,7 +43,7 @@
     }
 
     &:hover {
-        background-color: var(--platinum);
+        background-color: var(--hover);
     }
 }
 
@@ -65,7 +65,7 @@
         width: 100%;
         margin: 0;
         border: none;
-        border-top: 1px solid var(--timberwolf);
+        border-top: 1px solid var(--divider-color);
     }
 }
 
@@ -91,7 +91,11 @@
         }
 
         &:hover {
-            background-color: var(--timberwolf);
+            background-color: color-mix(
+                in srgb,
+                var(--hover),
+                var(--text-primary) 10%
+            );
         }
     }
 

@@ -6,7 +6,7 @@
 }
 
 .black {
-    color: var(--black);
+    color: var(--text-primary);
 }
 
 .disabled {

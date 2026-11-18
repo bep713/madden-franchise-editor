@@ -7,7 +7,7 @@
     flex-direction: column;
     height: 100%;
     overflow: auto;
-    background-color: var(--white);
+    background-color: var(--surface);
     border-left: 1px solid var(--divider-color);
 }
 
@@ -122,7 +122,7 @@
     &:hover,
     &:focus-visible {
         color: var(--text-primary);
-        background-color: var(--white-smoke);
+        background-color: var(--secondary);
     }
 
     svg {

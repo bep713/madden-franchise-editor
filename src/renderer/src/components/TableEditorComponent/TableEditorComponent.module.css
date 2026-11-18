@@ -3,10 +3,17 @@
     height: 100%;
 }
 
-.wrapper :global(.ht-theme-main) {
+/* The theme's own dark greys are darker than the page and its link blue is
+   low contrast, so the grid takes its surface and text colours from ours */
+.wrapper :global(.ht-theme-main-dark-auto) {
     --ht-cell-horizontal-padding: 20px;
     --ht-cell-vertical-padding: 10px;
     --ht-header-font-weight: 500;
+    --ht-common-background: var(--surface);
+    --ht-common-background-secondary: var(--surface-chrome);
+    --ht-common-foreground: var(--text-primary);
+    --ht-link-color: var(--text-link);
+    --ht-link-hover-color: var(--text-link);
 }
 
 .table th {
@@ -24,12 +31,12 @@
 .wrapper :global(td.table-cell--empty),
 .wrapper :global(td.table-cell--error) {
     font-style: italic;
-    color: #666;
-    background-color: var(--platinum);
+    color: var(--text-secondary);
+    background-color: var(--hover);
 }
 
 .wrapper :global(td.active-row) {
-    background-color: var(--white-smoke);
+    background-color: var(--secondary);
 }
 
 .wrapper :global(.table-cell--with-button) {
@@ -55,13 +62,21 @@
     flex-shrink: 0;
     width: 25px;
     height: 15px;
+    padding: 0;
     cursor: pointer;
     background-color: transparent;
-    background-image: url('@assets/icons/edit.svg');
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: 15px 15px;
     border: none;
+}
+
+.wrapper :global(.table-cell-edit-button)::before {
+    display: block;
+    width: 15px;
+    height: 15px;
+    margin: auto;
+    content: '';
+    background-color: var(--text-link);
+    mask-image: url('@assets/icons/edit.svg');
+    mask-size: 15px 15px;
 }
 
 .wrapper :global(td:hover .table-cell-edit-button),

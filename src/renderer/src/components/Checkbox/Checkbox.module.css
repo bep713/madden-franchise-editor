@@ -16,7 +16,7 @@
 .input {
     flex-shrink: 0;
     margin: 3px 0 0;
-    accent-color: var(--fulvous);
+    accent-color: var(--primary);
     cursor: inherit;
 }
 

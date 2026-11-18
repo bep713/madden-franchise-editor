@@ -18,7 +18,7 @@
     min-height: 0;
     padding: var(--spacing-5) var(--spacing-8) var(--spacing-8);
     overflow: auto;
-    background-color: var(--white-smoke);
+    background-color: var(--surface-sunken);
 }
 
 /* The files card takes the left column next to both option cards */
@@ -31,7 +31,7 @@
 
 .back {
     padding: 0;
-    color: var(--white);
+    color: var(--on-primary);
     cursor: pointer;
     background: none;
     border: none;
@@ -49,8 +49,8 @@
     flex-direction: column;
     row-gap: var(--spacing-3);
     padding: var(--spacing-3) var(--spacing-8);
-    background-color: var(--white-smoke);
-    border-top: 1px solid var(--silver);
+    background-color: var(--surface-sunken);
+    border-top: 1px solid var(--border);
 }
 
 /* A long list can't squeeze the content to nothing */

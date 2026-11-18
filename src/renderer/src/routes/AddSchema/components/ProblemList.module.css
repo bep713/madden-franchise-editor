@@ -18,8 +18,8 @@
 
 .problem {
     padding: var(--spacing-2) var(--spacing-3);
-    background-color: var(--white);
-    border-left: 4px solid var(--vista-blue);
+    background-color: var(--surface-raised);
+    border-left: 4px solid var(--info-strong);
 
     &[data-severity='blocking'] {
         background-color: var(--error);
@@ -27,7 +27,7 @@
     }
 
     &[data-severity='warning'] {
-        background-color: var(--antique-white);
-        border-left-color: var(--fulvous);
+        background-color: var(--primary-soft);
+        border-left-color: var(--primary);
     }
 }

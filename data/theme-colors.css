@@ -1,11 +1,10 @@
 /*
  * Semantic colour tokens for light and dark themes. v5 imports this through
- * @assets/colors.css; main will inject it into the shared windows.
- * color-scheme stays `light` until the theme controller (dark-mode plan,
- * Step 2) drives nativeTheme; then it becomes `light dark`.
+ * @assets/colors.css, and main injects it into the shared windows under v5.
+ * Main's nativeTheme.themeSource decides which half of light-dark() applies.
  */
 :root {
-    color-scheme: light;
+    color-scheme: light dark;
 
     /* Surfaces */
     --surface: light-dark(#fff, #1e1e1e);
@@ -13,8 +12,12 @@
     --surface-sunken: light-dark(#f2f2f2, #171717);
     --hover: light-dark(#e5e5e5, #333);
     --selected: light-dark(#fae7d1, #2f2f2f);
-    --primary-soft: light-dark(#fae7d1, #3a2c1c);
+    --primary-soft: light-dark(#fae7d1, #262626);
+    --primary-muted: light-dark(#f1bc7e, #7a5124);
+    --surface-chrome: light-dark(#f0f0f0, #252525);
     --overlay: light-dark(rgb(0 0 0 / 40%), rgb(0 0 0 / 60%));
+    --shadow: light-dark(rgb(0 0 0 / 25%), rgb(0 0 0 / 60%));
+    --shadow-soft: light-dark(rgb(0 0 0 / 10%), rgb(0 0 0 / 40%));
 
     /* Brand */
     --primary: #f80;
@@ -38,10 +41,14 @@
     /* Status */
     --success: light-dark(#459c48, #5cb85f);
     --danger: light-dark(#b22222, #ef5350);
+    --text-error: light-dark(#b00020, #ff8a80);
+    --error-border: light-dark(#ffadbe, #a04050);
+    --info-strong: light-dark(#72a1e5, #5b8bd0);
     --error: light-dark(#ffd6de, #4a2329);
     --info: light-dark(#b5e2fa, #1d3a4d);
 
-    /* Banners (white text) */
+    /* Banners */
+    --on-banner: #fff;
     --banner-info: light-dark(#06c, #1f5fa8);
     --banner-error: light-dark(#f32617, #c0392b);
     --banner-success: light-dark(#459c48, #2e7d32);

@@ -16,6 +16,7 @@ const {
 } = require("electron");
 const preferencesHandler = require("./main/handlers/preferencesHandler");
 const uiSelection = require("./main/utils/uiSelection");
+const { createThemeController } = require("./main/services/themeController");
 const {
   listScheduleFiles,
   readScheduleFile,
@@ -154,6 +155,7 @@ preferencesHandler.registerPreferencesHandlers(
   franchiseFileManager,
   {
     loggedMain: () => loggedMain,
+    activeUi: () => currentUi ?? "v5",
   },
 );
 registerRecentFilesHandlers(loggedIpc);
@@ -365,16 +367,7 @@ function createApplicationMenu() {
         {
           id: "Credits",
           label: "Credits",
-          click: () => {
-            const creditsWindow = new BrowserWindow({
-              title: "Credits",
-              width: 1000,
-              height: 500,
-              parent: mainWindow,
-            });
-            creditsWindow.loadFile("renderer/credits.html");
-            creditsWindow.on("closed", () => {});
-          },
+          click: () => openCreditsWindow(),
         },
         {
           id: "CheckForUpdate",
@@ -433,6 +426,11 @@ function createApplicationMenu() {
 const reactRendererUrl = process.env.MFE_RENDERER_URL;
 let uiOverride = uiSelection.envUiOverride(process.env);
 let currentUi = null;
+const themeController = createThemeController({
+  getUi: () => currentUi,
+  getTheme: () =>
+    preferencesHandler.getPreferencesInstance()?.value("general.theme"),
+});
 const uiMenuIds = { v5: "UiVersionV5", v4: "UiVersionV4" };
 const creditsPage = "renderer/credits.html";
 const schemaPage = "renderer/schema-manager.html";
@@ -478,6 +476,7 @@ function createWindow() {
     icon: path.join(__dirname, "renderer/img/icon.ico"),
   });
   startupProfiler.trackWindow("main", mainWindow);
+  themeController.track(mainWindow);
   startupProfiler.mark("main:main-window-created");
 
   // Create logged webContents wrapper for this window
@@ -579,6 +578,10 @@ function createWindow() {
     }
   });
 
+  preferencesHandler.onPreferenceChange("general.theme", () =>
+    themeController.apply(),
+  );
+
   preferencesHandler.onPreferenceChange("general.uiVersion", () => {
     // A switch made in this session follows the preference from now on.
     uiOverride = null;
@@ -609,7 +612,18 @@ function loadMainUi() {
     else console.warn(`${message}. Run npm run build:react.`);
   }
 
+  const previousUi = currentUi;
   currentUi = target.ui;
+  themeController.apply();
+  // The Settings form lists the Theme field only on v5. A hidden window
+  // re-renders on reload; a visible one keeps the user's page.
+  if (
+    previousUi &&
+    previousUi !== currentUi &&
+    settingsWindow?.isVisible() === false
+  ) {
+    settingsWindow.reload();
+  }
   // Radio items: checking one unchecks the other (writing false re-checks it).
   mutateMenuIds([uiMenuIds[target.ui]], "checked", true);
 
@@ -794,20 +808,7 @@ function addIpcListeners() {
     loggedMain.send("import-raw-table");
   });
 
-  ipcMain.on("show-credits", function () {
-    let creditsWindow = new BrowserWindow({
-      title: "Credits",
-      width: 1000,
-      height: 500,
-      parent: mainWindow,
-    });
-
-    creditsWindow.loadFile(creditsPage);
-
-    creditsWindow.on("closed", function () {
-      creditsWindow = null;
-    });
-  });
+  ipcMain.on("show-credits", () => openCreditsWindow());
 
   ipcMain.on("show-schema-manager", function (event, arg) {
     createSchemaWindow();
@@ -1013,6 +1014,17 @@ function addIpcListeners() {
   });
 }
 
+function openCreditsWindow() {
+  const creditsWindow = new BrowserWindow({
+    title: "Credits",
+    width: 1000,
+    height: 500,
+    parent: mainWindow,
+  });
+  themeController.track(creditsWindow, { shared: true });
+  creditsWindow.loadFile(creditsPage);
+}
+
 function createSchemaWindow(show) {
   if (schemaWindow) {
     schemaWindow.moveTop();
@@ -1032,6 +1044,7 @@ function createSchemaWindow(show) {
     },
   });
   startupProfiler.trackWindow("schema", schemaWindow);
+  themeController.track(schemaWindow, { shared: true });
   startupProfiler.mark("main:schema-window-created");
 
   // Create logged webContents wrapper for this window
@@ -1078,6 +1091,7 @@ function createSettingsWindow(show) {
     },
   });
   startupProfiler.trackWindow("settings", settingsWindow);
+  themeController.track(settingsWindow, { shared: true });
   startupProfiler.mark("main:settings-window-created");
 
   // Create logged webContents wrapper for this window

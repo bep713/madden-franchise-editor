@@ -56,14 +56,17 @@ test("a real user's file loads and is rewritten with only the missing sections a
     path.join(__dirname, "fixtures/preferences/real-user.json"),
     "utf8",
   );
-  // The fixture predates showPinnedTables and uiVersion, which are filled in
+  // The fixture predates showPinnedTables, uiVersion and theme, which are filled in
   // on load. The store merges general over the defaults, so they land in
   // schema order.
   const saved = JSON.parse(input);
   const general = {};
   for (const [key, value] of Object.entries(saved.general)) {
     general[key] = value;
-    if (key === "defaultEditor") general.uiVersion = "v5";
+    if (key === "defaultEditor") {
+      general.uiVersion = "v5";
+      general.theme = "system";
+    }
     if (key === "autoSave") general.showPinnedTables = [true];
   }
   const expected = {
@@ -279,4 +282,27 @@ test("getUpdateChannel reads the stored channel", () => {
     const { updateChannel } = boot(json({ general: { updateChannel: stored } }));
     assert.equal(updateChannel.getUpdateChannel(), expected, `stored ${stored}`);
   }
+});
+
+test("the Theme field is listed on v5 and hidden on v4", async () => {
+  const fieldKeys = async (ipc) =>
+    (await ipc.invoke("preferences:get-sections")).flatMap((section) =>
+      section.form.groups.flatMap((group) => group.fields.map((f) => f.key)),
+    );
+  const { handler, ipc } = boot();
+  assert.ok((await fieldKeys(ipc)).includes("theme"));
+
+  handler.registerPreferencesHandlers(
+    ipc,
+    { applyPreferenceSettings() {} },
+    { loggedMain: () => ({ send() {} }), activeUi: () => "v4" },
+  );
+  const v4Keys = await fieldKeys(ipc);
+  assert.ok(!v4Keys.includes("theme"));
+  assert.ok(v4Keys.includes("uiVersion"));
+});
+
+test("a file without a theme gets system", async () => {
+  const { ipc } = boot(json({ general: { uiVersion: "v5" } }));
+  assert.equal(await ipc.invoke("preferences:get-value", "general.theme"), "system");
 });

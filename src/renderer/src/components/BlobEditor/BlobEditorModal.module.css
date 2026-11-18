@@ -10,5 +10,5 @@
 
 .error {
     margin-top: var(--spacing-2);
-    color: #b00020;
+    color: var(--text-error);
 }

@@ -18,16 +18,16 @@
     font-size: 13px;
     cursor: pointer;
     background-color: var(--secondary);
-    border: 1px solid var(--timberwolf);
+    border: 1px solid var(--divider-color);
     border-radius: 2px;
 }
 
 .week:hover {
-    background-color: var(--platinum);
+    background-color: var(--hover);
 }
 
 .week[aria-pressed='true'] {
-    color: var(--white);
+    color: var(--on-primary);
     background-color: var(--primary);
     border-color: var(--primary);
 }

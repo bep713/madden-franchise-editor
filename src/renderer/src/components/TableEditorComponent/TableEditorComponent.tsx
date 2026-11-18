@@ -749,7 +749,7 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
                     rowHeaders={
                         isInverted ? false : (index: number) => String(index)
                     }
-                    themeName='ht-theme-main'
+                    themeName='ht-theme-main-dark-auto'
                     undo={false}
                     width='100%'
                 />

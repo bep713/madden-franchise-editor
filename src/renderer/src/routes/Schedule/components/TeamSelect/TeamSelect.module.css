@@ -31,6 +31,6 @@
     font-weight: bold;
     color: var(--text-secondary);
     background-color: var(--secondary);
-    border: 1px solid var(--timberwolf);
+    border: 1px solid var(--divider-color);
     border-radius: 50%;
 }

@@ -10,17 +10,17 @@
 }
 
 .primary {
-    background-color: var(--antique-white);
-    border: 1px solid var(--fawn);
+    background-color: var(--primary-soft);
+    border: 1px solid var(--primary-muted);
 }
 
 .primary:hover {
-    background-color: var(--fawn);
+    background-color: var(--primary-muted);
 }
 
 .secondary {
-    background-color: var(--white);
-    border: 1px solid var(--vista-blue);
+    background-color: var(--surface-raised);
+    border: 1px solid var(--info-strong);
 }
 
 .secondary:hover {
@@ -33,7 +33,7 @@
 }
 
 .ghost:hover {
-    background-color: var(--timberwolf);
+    background-color: color-mix(in srgb, var(--hover), var(--text-primary) 10%);
 }
 
 .stretch {
@@ -42,7 +42,7 @@
 
 .disabled,
 .disabled:hover {
-    color: var(--timberwolf);
+    color: var(--text-disabled);
     cursor: not-allowed;
     background-color: var(--disabled);
     border: 1px solid var(--disabled);

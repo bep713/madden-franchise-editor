@@ -3,7 +3,7 @@
 
 .sideNav {
     padding: var(--spacing-4);
-    background-color: var(--antique-white);
+    background-color: var(--primary-soft);
 }
 
 .item {

@@ -14,6 +14,7 @@ class SettingsManager {
       ),
       updateChannelSelect: this.window.locator("#updateChannel"),
       uiVersionSelect: this.window.locator("#uiVersion"),
+      themeSelect: this.window.locator("#theme"),
     };
   }
 
@@ -54,6 +55,10 @@ class SettingsManager {
 
   async setUiVersion(value) {
     await this.locators.uiVersionSelect.selectOption(value);
+  }
+
+  async setTheme(value) {
+    await this.locators.themeSelect.selectOption(value);
   }
 
   async setAutoUnemptySetting(autoUnempty) {

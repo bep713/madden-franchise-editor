@@ -31,16 +31,16 @@
     color: var(--text-primary);
     text-align: left;
     cursor: pointer;
-    background-color: var(--white);
+    background-color: var(--surface-raised);
     border: none;
 }
 
 .reference:hover {
-    background-color: var(--timberwolf);
+    background-color: color-mix(in srgb, var(--hover), var(--text-primary) 10%);
 }
 
 .reference:active {
-    background-color: var(--fawn);
+    background-color: var(--primary-muted);
 }
 
 .detail {

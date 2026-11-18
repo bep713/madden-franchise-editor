@@ -1,10 +1,3 @@
-@use 'sass:color';
-
-$brand-primary: #e98819;
-$brand-black: #333;
-$brand-link-color: #0079c1;
-$success-primary: #459c48;
-$error-primary: #f32617;
 $breakpoint-sm: 500px;
 $breakpoint-md: 768px;
 $breakpoint-lg: 1024px;
@@ -13,41 +6,4 @@ $font-base-family: 'Roboto Variable', sans-serif;
 $font-base-size: 15px;
 $font-size-small: 13px;
 $font-weight-bold: 600;
-$button-orange: #e9881947;
-$button-orange-hover: #ffd7aa;
-$button-orange-active: color.adjust(#ffd7aa, $lightness: -5%);
-$background-color: #f0f0f0;
-$welcome-link-color: #06c;
-$welcome-bg-color: #e9e9e9;
 $navbar-height: 40px;
-
-%link-item {
-    color: $welcome-link-color;
-    text-decoration: none;
-    cursor: pointer;
-
-    &:hover {
-        color: color.adjust($welcome-link-color, $lightness: -10%);
-        text-decoration: underline;
-    }
-
-    &.disabled {
-        color: $brand-black;
-        cursor: default;
-
-        &:hover {
-            color: $brand-black;
-        }
-    }
-
-    &.unavailable {
-        color: #333;
-        pointer-events: none;
-        cursor: default;
-
-        &::after {
-            margin-left: 15px;
-            content: '<- Not available for the currently opened file';
-        }
-    }
-}

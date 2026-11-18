@@ -8,19 +8,20 @@
     padding: var(--spacing-3);
     text-align: left;
     cursor: pointer;
-    background-color: var(--white-smoke);
-    border: 1px solid var(--timberwolf);
+    background-color: var(--secondary);
+    border: 1px solid var(--divider-color);
 }
 
 .table:hover {
-    background-color: var(--platinum);
+    background-color: var(--hover);
 }
 
 .selected,
 .selected:hover {
     cursor: default;
-    background-color: var(--antique-white);
-    border: 1px solid var(--silver);
+    background-color: var(--selected);
+    border: 1px solid var(--border);
+    box-shadow: inset 3px 0 0 light-dark(transparent, var(--primary));
 }
 
 .tableName {
@@ -47,9 +48,9 @@
 }
 
 .pinned {
-    border-left: 3px solid var(--fawn);
+    border-left: 3px solid var(--primary-muted);
 }
 
 .selected.pinned {
-    border-left: 3px solid var(--fulvous);
+    border-left: 3px solid var(--primary);
 }

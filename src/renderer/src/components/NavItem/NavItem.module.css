@@ -8,7 +8,7 @@
 }
 
 .selected {
-    background-color: var(--platinum);
+    background-color: var(--hover);
 }
 
 .closeButton {
