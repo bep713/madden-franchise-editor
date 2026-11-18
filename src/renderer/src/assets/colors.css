@@ -1,3 +1,7 @@
+@import '@data/theme-colors.css';
+
+/* Raw palette. Prefer the semantic tokens in theme-colors.css: these don't
+   change with the theme. */
 :root {
     --white: #fff;
     --black: #333;
@@ -16,20 +20,5 @@
     --timberwolf: #d1d1d1;
     --silver: #c2c2c2;
     --dim-gray: #6e6e6e;
-    --link: var(--honolulu-blue);
     --fire-brick: #b22222;
-    --success: var(--pigment-green);
-    --danger: var(--fire-brick);
-    --primary: var(--dark-orange);
-    --secondary: var(--white-smoke);
-    --error: var(--mini-pink);
-    --info: var(--uranian-blue);
-    --disabled: var(--white-smoke);
-    --text-primary: var(--black);
-    --text-secondary: var(--dim-gray);
-    --text-link: var(--link);
-    --divider-color: var(--timberwolf);
-    --banner-info: #06c;
-    --banner-error: #f32617;
-    --banner-success: var(--pigment-green);
 }

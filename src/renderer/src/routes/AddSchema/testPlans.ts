@@ -49,6 +49,7 @@ export function generatePlan(
             plannedFile('Teams.FTX', 'include')
         ],
         entry: `${DIR}\\MAIN.FTX`,
+        entryChosen: false,
         missing: [],
         facts: null,
         options: {

@@ -6,8 +6,10 @@ import type {
     GameType,
     OptionSource,
     PlannedOption,
-    Problem
+    Problem,
+    ProblemSeverity
 } from '@shared/types';
+import { dirname } from '@renderer/utils/path';
 import { pathKey, samePath, yearPrefix } from '../SchemaManagement/schemaList';
 
 export interface GameEntry {
@@ -42,8 +44,135 @@ export function addPaths(files: string[], paths: string[]): string[] {
     return next;
 }
 
-export function removePath(files: string[], path: string): string[] {
-    return files.filter((existing) => !samePath(existing, path));
+export function removePaths(files: string[], paths: string[]): string[] {
+    const remove = new Set(paths.map(pathKey));
+    return files.filter((existing) => !remove.has(pathKey(existing)));
+}
+
+// The request with `entry` set, or without the key for undefined
+export function withEntry(
+    request: AddSchemaRequest,
+    entry: string | undefined
+): AddSchemaRequest {
+    const next = { ...request, entry };
+    if (entry === undefined) delete next.entry;
+    return next;
+}
+
+// An FTX of the tree that isn't the entry
+export function canBeEntry(row: FileRow): boolean {
+    return row.role === 'include' || row.role === 'unused';
+}
+
+export interface FileRow {
+    path: string;
+    name: string;
+    // Unset until main has planned the file
+    role?: FileRole;
+    problems: Problem[];
+}
+
+export interface FolderGroup {
+    // The folder key (pathKey of the dirname); also the React key
+    key: string;
+    folder: string;
+    rows: FileRow[];
+}
+
+const SEVERITY_RANK: Record<ProblemSeverity, number> = {
+    blocking: 0,
+    warning: 1,
+    info: 2
+};
+const NO_PROBLEMS = 3;
+
+// 0 for the worst problems, NO_PROBLEMS for none
+function problemRank(rows: FileRow[]): number {
+    let rank = NO_PROBLEMS;
+    for (const row of rows) {
+        for (const problem of row.problems) {
+            rank = Math.min(rank, SEVERITY_RANK[problem.severity]);
+        }
+    }
+    return rank;
+}
+
+// Stable, so rows of the same rank keep their order
+function byProblems<T>(items: T[], rowsOf: (item: T) => FileRow[]): T[] {
+    return items
+        .map((item, index) => ({
+            item,
+            index,
+            rank: problemRank(rowsOf(item))
+        }))
+        .sort((a, b) => a.rank - b.rank || a.index - b.index)
+        .map(({ item }) => item);
+}
+
+// Rows grouped by folder, in the order of each folder's first row. Entries
+// come first as their own groups, so a collapsed folder never hides one.
+// Rows and groups with problems come next, worst first, so a few problems
+// in a folder of thousands are at the top.
+export function groupByFolder(rows: FileRow[]): FolderGroup[] {
+    const entries: FolderGroup[] = [];
+    const groups = new Map<string, FolderGroup>();
+    for (const row of rows) {
+        const folder = dirname(row.path);
+        if (row.role === 'entry') {
+            entries.push({ key: pathKey(row.path), folder, rows: [row] });
+            continue;
+        }
+        const key = pathKey(folder);
+        const group = groups.get(key);
+        if (group) {
+            group.rows.push(row);
+        } else {
+            groups.set(key, { key, folder, rows: [row] });
+        }
+    }
+    const rest = [...groups.values()].map((group) => ({
+        ...group,
+        rows: byProblems(group.rows, (row) => [row])
+    }));
+    return [...entries, ...byProblems(rest, (group) => group.rows)];
+}
+
+export interface FolderProblems {
+    folder: string;
+    problems: Problem[];
+    // Names of the files with problems
+    files: string[];
+}
+
+// Folders (more than one file) whose files have problems: those problems
+// sit inside a collapsed line, so the footer points at them
+export function folderProblems(rows: FileRow[]): FolderProblems[] {
+    return groupByFolder(rows)
+        .filter((group) => group.rows.length > 1)
+        .map((group) => {
+            const withProblems = group.rows.filter((r) => r.problems.length);
+            return {
+                folder: group.folder,
+                problems: withProblems.flatMap((r) => r.problems),
+                files: withProblems.map((r) => r.name)
+            };
+        })
+        .filter((folder) => folder.problems.length > 0);
+}
+
+export function worstSeverity(problems: Problem[]): ProblemSeverity {
+    const order: ProblemSeverity[] = ['blocking', 'warning', 'info'];
+    return (
+        order.find((severity) =>
+            problems.some((p) => p.severity === severity)
+        ) ?? 'info'
+    );
+}
+
+export function filterRows(rows: FileRow[], query: string): FileRow[] {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return rows;
+    return rows.filter((row) => row.name.toLowerCase().includes(needle));
 }
 
 export function sameFiles(a: string[], b: string[]): boolean {
@@ -138,20 +267,25 @@ export interface SplitProblems {
     general: Problem[];
 }
 
-// Row problems go on their row; one whose path has no row stays general
+// Row problems go on their row; one whose path has no row stays general.
+// `planned` is the plan's own files: a problem on one of those that has no
+// row was just removed, and the plan saying so is stale, so it's dropped.
 export function splitProblems(
     problems: Problem[],
-    paths: string[]
+    paths: string[],
+    planned: string[] = []
 ): SplitProblems {
     const byPath = new Map<string, Problem[]>();
     const general: Problem[] = [];
     const rowsByKey = new Map(paths.map((p) => [pathKey(p), p]));
+    const plannedKeys = new Set(planned.map(pathKey));
     for (const problem of problems) {
-        const row = problem.path
-            ? rowsByKey.get(pathKey(problem.path))
-            : undefined;
+        const key = problem.path ? pathKey(problem.path) : undefined;
+        const row = key ? rowsByKey.get(key) : undefined;
         if (row) {
             byPath.set(row, [...(byPath.get(row) ?? []), problem]);
+        } else if (key && plannedKeys.has(key)) {
+            continue;
         } else {
             general.push(problem);
         }

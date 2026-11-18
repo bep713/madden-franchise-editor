@@ -11,8 +11,9 @@ import {
     EMPTY_REQUEST,
     addPaths,
     confirmation,
-    removePath,
-    sameFiles
+    removePaths,
+    sameFiles,
+    withEntry
 } from './addSchemaModel';
 
 // Typing in an option box re-plans after this pause; other changes re-plan now
@@ -35,7 +36,9 @@ export interface UseAddSchema {
     // The last inspect failed
     error: string | null;
     addFiles: (paths: string[]) => void;
-    removeFile: (path: string) => void;
+    removeFiles: (paths: string[]) => void;
+    // undefined goes back to the detected entry
+    setEntry: (path: string | undefined) => void;
     browse: (kind: 'files' | 'folder') => Promise<void>;
     // `typed`: from a Textbox, so it waits for a pause
     setOverrides: (patch: OverridePatch, typed?: boolean) => void;
@@ -153,9 +156,21 @@ export default function useAddSchema(): UseAddSchema {
         [change]
     );
 
-    const removeFile = useCallback(
-        (path: string) =>
-            change((r) => ({ ...r, files: removePath(r.files, path) })),
+    const removeFiles = useCallback(
+        (paths: string[]) =>
+            change((r) => {
+                const files = removePaths(r.files, paths);
+                // Removing the chosen entry goes back to the detected one
+                const kept =
+                    r.entry !== undefined &&
+                    removePaths([r.entry], files).length === 0;
+                return withEntry({ ...r, files }, kept ? r.entry : undefined);
+            }),
+        [change]
+    );
+
+    const setEntry = useCallback(
+        (path: string | undefined) => change((r) => withEntry(r, path)),
         [change]
     );
 
@@ -260,7 +275,8 @@ export default function useAddSchema(): UseAddSchema {
         adding,
         error,
         addFiles,
-        removeFile,
+        removeFiles,
+        setEntry,
         browse,
         setOverrides,
         setIncludeDefaults,

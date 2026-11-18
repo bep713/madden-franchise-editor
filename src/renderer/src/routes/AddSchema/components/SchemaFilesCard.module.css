@@ -75,8 +75,67 @@
         background-color: var(--antique-white);
     }
 
-    &[data-badge='invalid'] {
+    &[data-badge='invalid'],
+    &[data-badge='problems'][data-severity='blocking'] {
         background-color: var(--error);
+    }
+
+    &[data-badge='problems'][data-severity='warning'] {
+        background-color: var(--antique-white);
+    }
+}
+
+.searchRow {
+    display: flex;
+    column-gap: var(--spacing-4);
+    align-items: center;
+    padding-bottom: var(--spacing-2);
+}
+
+.search {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 320px;
+}
+
+.searchRow .link {
+    margin-left: auto;
+}
+
+.noMatches {
+    margin: var(--spacing-2) 0;
+    color: var(--text-secondary);
+}
+
+.folderName {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.count {
+    flex-shrink: 0;
+    font-size: 0.85em;
+    color: var(--text-secondary);
+}
+
+/* Pushes Expand and Remove to the right */
+.toggleFolder {
+    margin-left: auto;
+}
+
+.nested {
+    max-height: 320px;
+    padding: 0 0 0 var(--spacing-5);
+    margin: var(--spacing-2) 0 0;
+    overflow-y: auto;
+    list-style: none;
+
+    .row:last-child {
+        border-bottom: none;
     }
 }
 
@@ -91,7 +150,8 @@
     white-space: nowrap;
 }
 
-.remove {
+.link,
+.toggleFolder {
     flex-shrink: 0;
     padding: 0;
     color: var(--link);

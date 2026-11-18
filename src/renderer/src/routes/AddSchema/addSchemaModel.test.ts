@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { Problem } from '@shared/types';
 import games from '@data/games.json';
 import {
     EMPTY_REQUEST,
@@ -7,12 +8,16 @@ import {
     confirmation,
     currentGame,
     fieldText,
+    filterRows,
+    folderProblems,
     gameOptions,
+    groupByFolder,
     list,
-    removePath,
+    removePaths,
     sourceHint,
     splitProblems,
     summaryLine,
+    type FileRow,
     type GameEntry
 } from './addSchemaModel';
 import { describeChanges, describeProblem } from './describeProblem';
@@ -28,10 +33,115 @@ describe('addSchemaModel', () => {
             ).toEqual(['C:\\a\\MAIN.FTX', 'C:\\a\\B.FTX']);
         });
 
-        it('removes a path ignoring case', () => {
+        it('removes paths ignoring case and separators', () => {
             expect(
-                removePath(['C:\\a\\X.FTX', 'C:\\a\\Y.FTX'], 'c:\\A\\x.ftx')
+                removePaths(
+                    ['C:\\a\\X.FTX', 'C:\\a\\Y.FTX', 'C:\\a\\Z.FTX'],
+                    ['c:\\A\\x.ftx', 'c:/a/z.FTX']
+                )
             ).toEqual(['C:\\a\\Y.FTX']);
+        });
+    });
+
+    describe('groupByFolder', () => {
+        const row = (path: string, role?: FileRow['role']): FileRow => ({
+            path,
+            name: path.split(/[\\/]/).pop() ?? path,
+            role,
+            problems: []
+        });
+        const shape = (rows: FileRow[]) =>
+            groupByFolder(rows).map((g) => [
+                g.folder,
+                g.rows.map((r) => r.name)
+            ]);
+
+        it('groups ignoring case and separators, in first-row order', () => {
+            expect(
+                shape([
+                    row('C:\\b\\B1.FTX'),
+                    row('C:\\a\\A1.FTX'),
+                    row('c:/B/B2.FTX'),
+                    row('C:\\a\\A2.FTX'),
+                    row('C:\\c\\C1.FTX')
+                ])
+            ).toEqual([
+                ['C:\\b', ['B1.FTX', 'B2.FTX']],
+                ['C:\\a', ['A1.FTX', 'A2.FTX']],
+                ['C:\\c', ['C1.FTX']]
+            ]);
+        });
+
+        it('puts the entry first, out of its folder', () => {
+            expect(
+                shape([
+                    row('C:\\a\\A1.FTX', 'include'),
+                    row('C:\\a\\A2.FTX', 'include'),
+                    row('C:\\b\\B1.FTX', 'include'),
+                    row('C:\\b\\MAIN.FTX', 'entry')
+                ])
+            ).toEqual([
+                ['C:\\b', ['MAIN.FTX']],
+                ['C:\\a', ['A1.FTX', 'A2.FTX']],
+                ['C:\\b', ['B1.FTX']]
+            ]);
+        });
+
+        const bad = (
+            path: string,
+            severity: Problem['severity'] = 'blocking'
+        ): FileRow => ({
+            ...row(path, 'invalid'),
+            problems: [{ code: 'malformed-xml', severity, path }]
+        });
+
+        it('puts rows and groups with problems first, worst first, below the entry', () => {
+            expect(
+                shape([
+                    row('C:\\a\\A1.FTX', 'include'),
+                    bad('C:\\a\\A2.FTX', 'warning'),
+                    row('C:\\a\\A3.FTX', 'include'),
+                    bad('C:\\a\\A4.FTX'),
+                    row('C:\\b\\B1.FTX', 'include'),
+                    bad('C:\\c\\C1.FTX'),
+                    row('C:\\b\\MAIN.FTX', 'entry')
+                ])
+            ).toEqual([
+                ['C:\\b', ['MAIN.FTX']],
+                ['C:\\a', ['A4.FTX', 'A2.FTX', 'A1.FTX', 'A3.FTX']],
+                ['C:\\c', ['C1.FTX']],
+                ['C:\\b', ['B1.FTX']]
+            ]);
+        });
+
+        it('folderProblems lists only folders of several files with problems', () => {
+            expect(
+                folderProblems([
+                    row('C:\\a\\A1.FTX', 'include'),
+                    bad('C:\\a\\A2.FTX'),
+                    bad('C:\\c\\C1.FTX'),
+                    row('C:\\b\\B1.FTX', 'include'),
+                    row('C:\\b\\B2.FTX', 'include')
+                ]).map((f) => [f.folder, f.files, f.problems.length])
+            ).toEqual([['C:\\a', ['A2.FTX'], 1]]);
+        });
+    });
+
+    describe('filterRows', () => {
+        const rows: FileRow[] = ['MAIN.FTX', 'Teams.FTX', 'inc01.ftx'].map(
+            (name) => ({ path: `C:\\a\\${name}`, name, problems: [] })
+        );
+        const names = (query: string) =>
+            filterRows(rows, query).map((r) => r.name);
+
+        it('returns every row for an empty query', () => {
+            expect(filterRows(rows, '  ')).toBe(rows);
+        });
+
+        it('matches part of the name, ignoring case and spaces around', () => {
+            expect(names(' team ')).toEqual(['Teams.FTX']);
+            expect(names('FTX')).toHaveLength(3);
+            expect(names('INC0')).toEqual(['inc01.ftx']);
         });
     });
 
@@ -144,6 +254,21 @@ describe('addSchemaModel', () => {
         );
         expect(byPath.get('C:\\ftx\\notes.txt')).toEqual([rowProblem]);
         expect(rest).toEqual([orphan, general]);
+    });
+
+    it('drops problems on a file removed since the plan', () => {
+        const removed = {
+            code: 'not-a-schema',
+            severity: 'blocking',
+            path: 'C:\\ftx\\notes.txt'
+        } as const;
+        const { byPath, general } = splitProblems(
+            [removed],
+            ['C:\\ftx\\a.ftx'],
+            ['C:\\ftx\\a.ftx', 'c:\\ftx\\notes.txt']
+        );
+        expect(byPath.size).toBe(0);
+        expect(general).toEqual([]);
     });
 
     describe('summaryLine', () => {

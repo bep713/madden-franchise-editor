@@ -55,9 +55,9 @@ const PLAN_TEXT: Record<ProblemCode, Describe> = {
     'include-cycle': (p) =>
         `These files include each other: ${(p.files ?? []).join(' → ')}.`,
     'several-entrypoints': (_, names) =>
-        `More than one file could be the entry: ${names}. Remove the ones you don't need.`,
+        `More than one file could be the entry: ${names}. Use Make entry on one, or remove the ones you don't need.`,
     'no-entrypoint': () =>
-        'Every file is included by another one, so there is no entry file.',
+        'Every file is included by another one, so there is no entry file. Use Make entry on one.',
     'no-database-name': () =>
         'No FTX file has a databaseName. Add the entry file that has it.',
     'game-required': () => 'Choose the game.',
@@ -79,8 +79,7 @@ const PLAN_TEXT: Record<ProblemCode, Describe> = {
     'missing-includes-accepted': (_, names) => `Generated without ${names}.`,
     'meta-written': (p) =>
         `Writes the file's meta. ${describeChanges(p.changes ?? [])}.`,
-    'replaces-custom': (_, names) =>
-        `Replaces your custom ${names}. The current copy is kept until your next add, and Undo restores it.`,
+    'replaces-custom': (_, names) => `Replaces your custom ${names}.`,
     'replaces-loaded': (_, names) =>
         `${names} is loaded by an open file. That file keeps its copy until you load the new one.`,
     'defaults-merged-at-load': () =>

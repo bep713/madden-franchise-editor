@@ -196,6 +196,44 @@ test("generate: the nested include resolves through the case fallback, and the p
   assert.deepEqual(userData(), ["schemas/M27_900_1.gz".split("/").join(path.sep)], "no staging left");
 });
 
+test("generate: includes named with a folder (the CFB 27 layout) are all generated", async () => {
+  const write = (rel, xml) => {
+    fs.mkdirSync(path.dirname(path.join(inDir, rel)), { recursive: true });
+    fs.writeFileSync(path.join(inDir, rel), xml);
+  };
+  write("Franchise-Schemas.FTX", `<FranTkData databaseName="CollegeFB27_Franchise" dataMajorVersion="904" dataMinorVersion="0">
+    <Includes><IncludeFile fileName="Core-Schemas.ftx"/><IncludeFile fileName="Franchise-Schemas\\Team.ftx"/></Includes></FranTkData>`);
+  write("Core-Schemas.FTX", `<FranTkData databaseName="CollegeFB27_Franchise" dataMajorVersion="904" dataMinorVersion="0">
+    <Includes><IncludeFile fileName="Core-Schemas\\TeamType.ftx"/></Includes></FranTkData>`);
+  write("core-schemas/teamtype.FTX", `<FranTkData><schemas><enum name="TeamType" assetId="9100" isRecordPersistent="false">
+    <attribute name="Pro" idx="0" value="0"/></enum></schemas></FranTkData>`);
+  write("franchise-schemas/team.FTX", `<FranTkData><schemas><schema name="Team" assetId="9002" ownerAssetId="0" numMembers="1" base="Record">
+    <attribute idx="0" name="TeamType" type="TeamType"/></schema></schemas></FranTkData>`);
+
+  const files = [inDir, path.join(inDir, "core-schemas"), path.join(inDir, "franchise-schemas")];
+  const result = await addAsShown(files, { includeDefaults: false });
+  assert.equal(result.status, "added");
+  assert.deepEqual(readSchemaGz(result.added.path).schemas.map((s) => s.name), ["Team"]);
+  const schema = await loadSchema(result.added.path);
+  assert.deepEqual(schema.schemaMap.Team.attributes[0].enum.members.map((m) => m.name), ["Pro"]);
+});
+
+test("a chosen entry is generated, with its own databaseName", async () => {
+  const files = [...input("gen", GEN), ...input("standalone", ["STANDALONE.FTX"])];
+  const entry = path.join(inDir, "STANDALONE.FTX");
+  const result = await addAsShown(files, { entry });
+  assert.equal(result.status, "added");
+  assert.equal(result.added.fileName, "M26_310_0.gz");
+  const saved = readSchemaGz(result.added.path);
+  assert.equal(saved.meta.databaseName, "Madden26_Franchise");
+  const schema = await loadSchema(result.added.path);
+  assert.ok(schema.schemaMap.Player);
+  assert.ok(!schema.schemaMap.Team, "the detected tree is not generated");
+
+  await assert.rejects(importer.inspect(request(files, { entry: "STANDALONE.FTX" })), /entry/);
+  await assert.rejects(importer.inspect(request(files, { entry: 3 })), /entry/);
+});
+
 test("Add default schemas: on keeps the extras in the file, off leaves them to the load", async () => {
   assert.deepEqual(extraSchemasArg(false), {});
   assert.equal(extraSchemasArg(true), undefined);
@@ -485,13 +523,15 @@ test("library pins (4.4.1)", async (t) => {
     }
   });
 
-  await t.test("includeKey is the key the library resolves an include to", async () => {
-    // Teams.FTX includes "NESTED.FTX"; the file is Nested.FTX
-    const files = input("gen", GEN);
-    const fileMap = { main: files[0] };
-    files.slice(1).forEach((f) => (fileMap[includeKey(f)] = f));
-    const root = await generateSchemaV2({ fileMap, extraSchemas: {} });
-    assert.ok(root.schemas.some((s) => s.name === "Coach"));
+  await t.test("an include is looked up by its name as written, folder included", async () => {
+    const main = path.join(inDir, "MAIN.FTX");
+    const team = path.join(inDir, "Team.FTX");
+    fs.writeFileSync(main, '<FranTkData databaseName="Madden27_Franchise"><Includes><IncludeFile fileName="Sub\\Team.ftx"/></Includes></FranTkData>');
+    fs.writeFileSync(team, '<FranTkData><schemas><schema name="Team" assetId="1" ownerAssetId="0" numMembers="1" base="Record"><attribute idx="0" name="X" type="bool"/></schema></schemas></FranTkData>');
+    const byBasename = await generateSchemaV2({ fileMap: { main, team }, extraSchemas: {} });
+    assert.deepEqual(byBasename.schemas, [], "a basename key is skipped silently");
+    const asWritten = await generateSchemaV2({ fileMap: { main, "sub\\team": team }, extraSchemas: {} });
+    assert.deepEqual(asWritten.schemas.map((s) => s.name), ["Team"]);
   });
 });
 

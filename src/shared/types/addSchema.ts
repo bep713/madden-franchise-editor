@@ -25,6 +25,8 @@ export interface AddSchemaRequest {
     files: string[];
     overrides: AddSchemaOverrides;
     includeDefaults: boolean;
+    // The FTX the user made the entry; absent, main detects it
+    entry?: string;
 }
 
 export interface AddSchemaCommit extends AddSchemaRequest {
@@ -142,6 +144,8 @@ export interface AddSchemaPlan {
     kind: SchemaKind | null;
     files: PlannedFile[];
     entry: string | null;
+    // The entry is request.entry, not the detected one
+    entryChosen: boolean;
     // Missing include names reachable from the entry
     missing: string[];
     facts: GzFacts | null;

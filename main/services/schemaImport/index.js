@@ -19,6 +19,9 @@ function parseRequest(raw) {
   if (!raw.files.every((f) => f && path.isAbsolute(f))) {
     throw new Error("Invalid add-schema request: files must be absolute paths");
   }
+  if (raw.entry !== undefined && !(isString(raw.entry) && raw.entry && path.isAbsolute(raw.entry))) {
+    throw new Error("Invalid add-schema request: entry must be an absolute path");
+  }
   const o = raw.overrides ?? {};
   const validGame =
     o.game === undefined ||
@@ -35,7 +38,12 @@ function parseRequest(raw) {
   if (o.game !== undefined) overrides.game = { gameType: o.game.gameType, year: o.game.year };
   if (o.major !== undefined) overrides.major = o.major;
   if (o.minor !== undefined) overrides.minor = o.minor;
-  return { files: [...raw.files], overrides, includeDefaults: raw.includeDefaults };
+  return {
+    files: [...raw.files],
+    overrides,
+    includeDefaults: raw.includeDefaults,
+    ...(raw.entry !== undefined && { entry: raw.entry }),
+  };
 }
 
 function parseCommit(raw) {

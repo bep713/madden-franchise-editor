@@ -116,6 +116,7 @@ test("generates a schema from an FTX tree (react)", async () => {
 
   await openAddPage(ui);
   await addPage.chooseFiles(electronApp, files);
+  await addPage.expandFolders();
   expect(await addPage.rows()).to.have.deep.members([
     { name: "MAIN.FTX", role: "entry" },
     { name: "Enums.FTX", role: "include" },
@@ -151,6 +152,53 @@ test("generates a schema from an FTX tree (react)", async () => {
   await electronApp.close();
 });
 
+test("a file the user makes the entry is generated instead of the detected one (react)", async () => {
+  const ui = await launch();
+  const { electronApp, addPage, schemas } = ui;
+  const files = [
+    ...copyFtx("gen", ["MAIN.FTX", "Enums.FTX", "Teams.FTX", "Nested.FTX"]),
+    ...copyFtx("standalone", ["STANDALONE.FTX"], "gen"),
+  ];
+
+  await openAddPage(ui);
+  await addPage.chooseFiles(electronApp, files);
+  await addPage.expandFolders();
+  expect(await addPage.rows()).to.deep.include({ name: "MAIN.FTX", role: "entry" });
+  expect(await addPage.rows()).to.deep.include({ name: "STANDALONE.FTX", role: "unused" });
+
+  await addPage.setEntry("STANDALONE.FTX");
+  await addPage.expandFolders();
+  expect(await addPage.rows()).to.have.deep.members([
+    { name: "STANDALONE.FTX", role: "entry" },
+    { name: "MAIN.FTX", role: "unused" },
+    { name: "Enums.FTX", role: "unused" },
+    { name: "Teams.FTX", role: "unused" },
+    { name: "Nested.FTX", role: "unused" },
+  ]);
+  expect(await addPage.selectedGame()).to.equal("madden-26");
+
+  // Back to the detected entry, then choose again
+  await addPage.resetEntry();
+  await addPage.expandFolders();
+  expect(await addPage.rows()).to.deep.include({ name: "MAIN.FTX", role: "entry" });
+  await addPage.setEntry("STANDALONE.FTX");
+
+  await addAndWait(ui, "Added Madden 26 310.0");
+  await poll(
+    () => schemas.hasRow("M26 v310.0"),
+    (has) => has,
+    { message: "The added schema is not listed" },
+  );
+  expect(customFiles()).to.deep.equal(["M26_310_0.gz"]);
+  const saved = path.join(customDir(), "M26_310_0.gz");
+  expect(readSchemaGz(saved).meta.databaseName).to.equal("Madden26_Franchise");
+  const schema = await loadSchema(saved);
+  expect(schema.schemaMap).to.have.property("Player");
+  expect(schema.schemaMap).to.not.have.property("Team");
+
+  await electronApp.close();
+});
+
 test("asks before generating without a missing include (react)", async () => {
   const ui = await launch();
   const { electronApp, addPage, banner } = ui;
@@ -158,6 +206,7 @@ test("asks before generating without a missing include (react)", async () => {
 
   await openAddPage(ui);
   await addPage.chooseFiles(electronApp, files);
+  await addPage.expandFolders();
   expect(await addPage.stillNeeded()).to.deep.equal(["NESTED.FTX"]);
   expect(await addPage.problems()).to.include("missing-include");
   expect(await addPage.isAddEnabled()).to.equal(true);
@@ -329,6 +378,7 @@ test("malformed XML is blocked and writes nothing (react)", async () => {
 
   await openAddPage(ui);
   await addPage.chooseFiles(electronApp, files);
+  await addPage.expandFolders();
   await stubMessageBox(electronApp, CANCEL);
   await addPage.clickAdd();
   await poll(
@@ -351,16 +401,33 @@ test("choosing a folder lists each of its files (react)", async () => {
   copyFtx("gen", names);
 
   await openAddPage(ui);
-  await addPage.chooseFolder(electronApp, path.join(sandbox.dir, "gen"));
+  const dir = path.join(sandbox.dir, "gen");
+  // Sorts last by name, but has a problem
+  fs.writeFileSync(path.join(sandbox.dir, "gen", "Zz.FTX"), "not a schema");
+  await addPage.chooseFolder(electronApp, dir);
+  // The entry is its own line, first; the rest of the folder is one line
+  expect(await addPage.lines()).to.deep.equal([
+    { name: "MAIN.FTX" },
+    { folder: dir, count: names.length },
+  ]);
+  // The footer points at the folder's problem
+  expect(await addPage.folderProblemText(dir)).to.contain("1 problem in Zz.FTX");
+  await addPage.expandFolders();
   const rows = await addPage.rows();
-  expect(rows.map((row) => row.name)).to.deep.equal([...names].sort());
+  // The file with a problem first, below the entry
+  expect(rows.map((row) => row.name)).to.deep.equal([
+    "MAIN.FTX",
+    "Zz.FTX",
+    ...names.filter((n) => n !== "MAIN.FTX").sort(),
+  ]);
   expect(rows).to.deep.include({ name: "MAIN.FTX", role: "entry" });
   expect(rows).to.deep.include({ name: "Unrelated.FTX", role: "unused" });
+  expect(await addPage.rowProblems("Zz.FTX")).to.deep.equal(["not-a-schema"]);
 
   // Each row can be removed on its own
   await addPage.removeFile("Unrelated.FTX");
   await addPage.waitForReplan(
-    async () => (await addPage.rows()).length === names.length - 1,
+    async () => (await addPage.rows()).length === names.length,
   );
 
   await electronApp.close();
@@ -399,12 +466,23 @@ test("long file and still-needed lists collapse, and Options keeps its width (re
   await openAddPage(ui);
   await addPage.chooseFolder(electronApp, dir);
 
-  // 13 files (entry + 12): 10 shown
-  expect(await addPage.rows()).to.have.length(10);
-  await addPage.showMore("files");
+  // 13 files: the entry on its own line, then one collapsed line for the other 12
+  expect(await addPage.lines()).to.deep.equal([{ name: "MAIN.FTX" }, { folder: dir, count: 12 }]);
+  expect(await addPage.rows()).to.have.length(1);
+  await addPage.toggleFolder(dir);
   expect(await addPage.rows()).to.have.length(13);
-  await addPage.showMore("files");
-  expect(await addPage.rows()).to.have.length(10);
+  const nested = await addPage
+    .folder(dir)
+    .locator("ul")
+    .evaluate((ul) => ({ scroll: ul.scrollHeight, client: ul.clientHeight }));
+  expect(nested.scroll).to.be.greaterThan(nested.client);
+  await addPage.toggleFolder(dir);
+  expect(await addPage.rows()).to.have.length(1);
+
+  // The search counts the matches on the collapsed line
+  await addPage.search("Inc0");
+  expect(await addPage.folderText(dir)).to.equal("9 of 12 files");
+  await addPage.search("");
 
   // 18 still needed: 5 shown, with the count
   expect(await addPage.stillNeeded()).to.deep.equal(names.slice(12, 17));
@@ -417,8 +495,8 @@ test("long file and still-needed lists collapse, and Options keeps its width (re
     `${names.slice(12, 17).join(", ")} and 13 more`,
   );
 
-  // The long name (sorted last) is cut off, and Options stays a third
-  await addPage.showMore("files");
+  // The long name is cut off, and Options stays a third
+  await addPage.toggleFolder(dir);
   const layout = await window.evaluate(() => {
     const width = (sel) => document.querySelector(sel).getBoundingClientRect().width;
     const longName = document.querySelector('li[data-name^="VeryLong"] [title^="VeryLong"]');
@@ -430,6 +508,29 @@ test("long file and still-needed lists collapse, and Options keeps its width (re
   });
   expect(layout.clipped).to.equal(true);
   expect(layout.options).to.be.closeTo(layout.files / 2, 2);
+
+  // The footer stays in the window while the content scrolls
+  const footer = await window.evaluate(() => {
+    const main = document.querySelector("main");
+    main.scrollTop = main.scrollHeight;
+    return {
+      addBottom: document.querySelector('[data-action="add"]').getBoundingClientRect().bottom,
+      height: window.innerHeight,
+    };
+  });
+  expect(footer.addBottom).to.be.at.most(footer.height);
+
+  // Remove on the folder line leaves the entry; Remove all empties the list
+  await addPage.removeFolder(dir);
+  await addPage.waitForReplan(async () => (await addPage.rows()).length === 1);
+  expect(await addPage.lines()).to.deep.equal([{ name: "MAIN.FTX" }]);
+  await addPage.removeAll();
+  await poll(
+    () => addPage.summary(),
+    (text) => text === "Add an entry FTX and its include files, or one .gz schema.",
+    { message: "Remove all never emptied the list" },
+  );
+  expect(await addPage.locators.rows.count()).to.equal(0);
 
   await electronApp.close();
 });

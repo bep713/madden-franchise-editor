@@ -142,6 +142,64 @@ test("entry: the unique root; the larger reachable set wins; a tie; no root", ()
   assert.deepEqual(find(loop, "include-cycle").files, ["A.FTX", "B.FTX"]);
 });
 
+test("a chosen entry: settles a tie, narrows the tree, breaks a loop; a stale one is ignored", () => {
+  const TIE = [
+    ftx("A.FTX", { db: "Madden27_X", major: "1", minor: "0", includes: ["X.FTX"] }),
+    ftx("X.FTX"),
+    ftx("B.FTX", { db: "Madden26_Y", major: "2", minor: "0", includes: ["Y.FTX"] }),
+    ftx("Y.FTX"),
+  ];
+  const tie = plan(TIE, { entry: path.join(IN, "B.FTX") });
+  assert.equal(tie.entry, path.join(IN, "B.FTX"));
+  assert.equal(tie.entryChosen, true);
+  assert.ok(!codes(tie).includes("several-entrypoints"));
+  assert.deepEqual(
+    tie.files.map((f) => [f.name, f.role]),
+    [
+      ["A.FTX", "unused"],
+      ["X.FTX", "unused"],
+      ["B.FTX", "entry"],
+      ["Y.FTX", "include"],
+    ],
+  );
+  assert.equal(tie.target.fileName, "M26_2_0.gz");
+  assert.equal(tie.canAdd, true);
+
+  // An include as the entry: its parent and siblings are unused, and so are
+  // the parent's missing includes
+  const sub = plan(
+    [...GEN.map((s) => (s.name === "MAIN.FTX" ? { ...s, header: { ...s.header, includes: [...s.header.includes, "Gone.FTX"] } } : s))],
+    { entry: path.join(IN, "Teams.FTX"), overrides: { game: { gameType: "madden", year: "27" }, major: "1", minor: "0" } },
+  );
+  assert.deepEqual(
+    sub.files.map((f) => [f.name, f.role]),
+    [
+      ["MAIN.FTX", "unused"],
+      ["Enums.FTX", "unused"],
+      ["Teams.FTX", "entry"],
+      ["Nested.FTX", "include"],
+    ],
+  );
+  assert.deepEqual(sub.missing, []);
+  assert.ok(codes(sub).includes("no-database-name"));
+
+  const loop = plan(
+    [ftx("A.FTX", { db: "Madden27_X", major: "1", minor: "0", includes: ["B.FTX"] }), ftx("B.FTX", { includes: ["A.FTX"] })],
+    { entry: path.join(IN, "A.FTX") },
+  );
+  assert.ok(!codes(loop).includes("no-entrypoint"));
+  assert.equal(role(loop, "A.FTX"), "entry");
+  assert.deepEqual(find(loop, "include-cycle").files, ["A.FTX", "B.FTX"]);
+
+  const stale = plan(GEN, { entry: path.join(IN, "Removed.FTX") });
+  assert.equal(stale.entry, path.join(IN, "MAIN.FTX"));
+  assert.equal(stale.entryChosen, false);
+  assert.equal(plan(GEN).entryChosen, false);
+
+  // Case-insensitive, like every other path compare
+  assert.equal(plan(GEN, { entry: path.join(IN, "teams.ftx") }).entry, path.join(IN, "Teams.FTX"));
+});
+
 test("include cycles: a self include, a cycle under one root, a cycle only in unused files", () => {
   const self = plan([ftx("MAIN.FTX", { db: "Madden27_X", major: "1", minor: "0", includes: ["MAIN.FTX"] })]);
   assert.equal(self.entry, path.join(IN, "MAIN.FTX"));

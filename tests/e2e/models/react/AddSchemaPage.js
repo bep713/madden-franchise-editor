@@ -5,12 +5,20 @@ const { stubOpenDialog } = require("../../util/dialogStubs");
 class AddSchemaPage {
   constructor(window) {
     this.window = window;
+    // exact: the expanded folders' lists are "Files in <folder>"
+    const fileList = window.getByRole("list", { name: "Files", exact: true });
     this.locators = {
       headline: window.getByRole("heading", { name: "Add Schema" }),
       back: window.locator('[data-action="back-to-schemas"]'),
       chooseFiles: window.locator('[data-action="choose-files"]'),
       chooseFolder: window.locator('[data-action="choose-folder"]'),
-      rows: window.getByRole("list", { name: "Files" }).locator("li[data-name]"),
+      fileList,
+      search: window.locator('input[data-field="file-search"]'),
+      removeAll: window.locator('[data-action="remove-all"]'),
+      noMatches: window.getByTestId("no-matches"),
+      // File rows, top level or inside an expanded folder
+      rows: fileList.locator("li[data-name]"),
+      folders: fileList.locator("li[data-folder]"),
       stillNeeded: window.getByTestId("still-needed"),
       factsList: window.locator('dl[aria-label="Schema file"]'),
       options: window.getByTestId("schema-options"),
@@ -43,15 +51,15 @@ class AddSchemaPage {
     await this.waitForPlan();
   }
 
-  // Every row has a role once a plan for the current files has arrived
+  // Every row and folder has a role once a plan for the current files has arrived
   async waitForPlan() {
+    const list = this.locators.fileList;
     await poll(
       async () => ({
-        rows: await this.locators.rows.count(),
-        unplanned: await this.window
-          .getByRole("list", { name: "Files" })
-          .locator("li[data-name]:not([data-role])")
-          .count(),
+        rows: await list.locator(":scope > li[data-name], :scope > li[data-folder]").count(),
+        unplanned:
+          (await list.locator("li[data-name]:not([data-role])").count()) +
+          (await list.locator('li[data-folder][data-planned="false"]').count()),
         busy: await this.locators.submit.getAttribute("aria-busy"),
       }),
       ({ rows, unplanned, busy }) => rows > 0 && unplanned === 0 && busy === "false",
@@ -83,6 +91,59 @@ class AddSchemaPage {
     );
   }
 
+  folder(dir) {
+    // JSON quoting escapes the backslashes of a Windows path for CSS
+    return this.locators.folders.and(this.window.locator(`[data-folder=${JSON.stringify(dir)}]`));
+  }
+
+  async toggleFolder(dir) {
+    await this.folder(dir).locator('[data-action="toggle-folder"]').click();
+  }
+
+  async removeFolder(dir) {
+    await this.folder(dir).locator('[data-action="remove-folder"]').click();
+  }
+
+  // Expands every collapsed folder
+  async expandFolders() {
+    const collapsed = this.locators.fileList.locator(
+      '[data-action="toggle-folder"][aria-expanded="false"]',
+    );
+    while ((await collapsed.count()) > 0) {
+      await collapsed.first().click();
+    }
+  }
+
+  async search(text) {
+    await this.locators.search.fill(text);
+  }
+
+  async removeAll() {
+    await this.locators.removeAll.click();
+  }
+
+  // Top-level lines, in order: { folder, count } for a folder, { name } for a file
+  async lines() {
+    return this.locators.fileList.evaluate((list) =>
+      Array.from(list.children).map((li) =>
+        li.hasAttribute("data-folder")
+          ? {
+              folder: li.getAttribute("data-folder"),
+              count: Number(li.getAttribute("data-count")),
+            }
+          : { name: li.getAttribute("data-name") },
+      ),
+    );
+  }
+
+  async folders() {
+    return (await this.lines()).filter((line) => line.folder !== undefined);
+  }
+
+  async folderText(dir) {
+    return this.folder(dir).locator('[data-testid="folder-count"]').innerText();
+  }
+
   async rowProblems(name) {
     return this.row(name)
       .locator("[data-problem]")
@@ -92,6 +153,22 @@ class AddSchemaPage {
   // Expands or collapses a capped list: "files", "missing" or "problems"
   async showMore(what) {
     await this.window.locator(`[data-action="show-more-${what}"]`).click();
+  }
+
+  // Makes the row the entry, then waits for the re-plan to show it
+  async setEntry(name) {
+    await this.row(name).locator('[data-action="set-entry"]').click();
+    await this.waitForReplan(
+      async () => (await this.row(name).getAttribute("data-role")) === "entry",
+    );
+  }
+
+  // "Use detected" on the chosen entry row
+  async resetEntry() {
+    await this.locators.fileList.locator('[data-action="reset-entry"]').click();
+    await this.waitForReplan(
+      async () => (await this.locators.fileList.locator('[data-action="reset-entry"]').count()) === 0,
+    );
   }
 
   async removeFile(name) {
@@ -128,6 +205,14 @@ class AddSchemaPage {
   async problemText(code) {
     return this.locators.problems
       .and(this.window.locator(`[data-problem="${code}"]`))
+      .innerText();
+  }
+
+  // The footer line for a folder whose files have problems
+  async folderProblemText(dir) {
+    return this.window
+      .getByRole("list", { name: "Problems" })
+      .locator(`li[data-folder-problems=${JSON.stringify(dir)}]`)
       .innerText();
   }
 

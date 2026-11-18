@@ -167,7 +167,7 @@ function planAdd(scans, request, env) {
     }
   } else if (ftxs.length) kind = "generate";
 
-  const tree = kind === "generate" ? buildTree(ftxs, files, problems) : null;
+  const tree = kind === "generate" ? buildTree(ftxs, files, problems, request.entry) : null;
   const gz = kind === "copy-gz" && gzs.length === 1 ? gzs[0] : null;
   // The file whose name the file-name source reads
   const named = gz ?? tree?.entry ?? null;
@@ -229,6 +229,7 @@ function planAdd(scans, request, env) {
     kind,
     files,
     entry: tree?.entry?.path ?? null,
+    entryChosen: !!tree?.chosen,
     missing,
     facts: gz ? { tables: gz.tables, fileMeta: gz.meta } : null,
     options,
@@ -244,9 +245,10 @@ function planAdd(scans, request, env) {
  * The include graph from the header scans. Sets roles and per-file missing on
  * `files`, pushes graph problems, and returns the entry, the files it reaches
  * (depth-first pre-order, the library's order), the missing include names and
- * the first reached file with a databaseName.
+ * the first reached file with a databaseName. `entryPath`, when it names one
+ * of the graph's files, is the entry instead of the detected root.
  */
-function buildTree(ftxs, files, problems) {
+function buildTree(ftxs, files, problems, entryPath) {
   const byKey = new Map();
   for (const s of ftxs) {
     const key = includeKey(s.name);
@@ -288,19 +290,23 @@ function buildTree(ftxs, files, problems) {
   const most = Math.max(0, ...reaches.map((r) => r.order.length));
   const best = reaches.filter((r) => r.order.length === most);
 
-  const empty = { entry: null, reached: [], missing: [], header: null };
+  const empty = { entry: null, reached: [], missing: [], header: null, chosen: false };
   const cycles = findCycles(nodes, children);
-  if (roots.length === 0) {
+  // A stale choice (removed, or a duplicate's second file) falls back to detection
+  const chosen = entryPath ? nodes.find((s) => samePath(s.path, entryPath)) : undefined;
+  if (!chosen && roots.length === 0) {
     problems.push(problem("no-entrypoint"));
     cycles.forEach((c) => problems.push(problem("include-cycle", { files: c.map((s) => s.name) })));
     return empty;
   }
-  if (best.length > 1) {
+  if (!chosen && best.length > 1) {
     problems.push(problem("several-entrypoints", { files: best.map((r) => r.root.name) }));
     return empty;
   }
 
-  const [{ root: entry, order: reached }] = best;
+  const { root: entry, order: reached } = chosen
+    ? { root: chosen, order: reach(chosen) }
+    : best[0];
   const reachedSet = new Set(reached);
   const rows = new Map(files.map((f) => [f.path, f]));
   const missing = [];
@@ -328,14 +334,14 @@ function buildTree(ftxs, files, problems) {
   }
   const header = reached.find((s) => s.header.databaseName) ?? null;
   if (!header) problems.push(problem("no-database-name"));
-  return { entry, reached, missing, header };
+  return { entry, reached, missing, header, chosen: !!chosen };
 }
 
 /** The databaseName generateSchemaV2 reads: the first reached file with one. */
-function databaseName(scans) {
+function databaseName(scans, entryPath) {
   const ftxs = scans.filter((s) => s.format === "ftx");
   const rows = ftxs.map((s) => ({ path: s.path, missing: [] }));
-  return buildTree(ftxs, rows, []).header?.header.databaseName ?? null;
+  return buildTree(ftxs, rows, [], entryPath).header?.header.databaseName ?? null;
 }
 
 // Every distinct cycle, as its member files in include order

@@ -113,13 +113,28 @@ describe('AddSchema', () => {
         await choose('MAIN.FTX', 'Teams.FTX', 'notes.txt');
         await waitFor(() => expect(row('MAIN.FTX').dataset.role).toBe('entry'));
         expect(within(row('MAIN.FTX')).getByText('Entry')).toBeTruthy();
+        // The entry is its own line; the rest of its folder is collapsed
+        expect(screen.getByText('1 problem').dataset.severity).toBe('blocking');
+        await userEvent.click(screen.getByRole('button', { name: 'Expand' }));
         expect(row('Teams.FTX').dataset.role).toBe('include');
         expect(
             row('notes.txt').querySelector('[data-problem="not-a-schema"]')
                 ?.textContent
         ).toBe('Not a schema or FTX file.');
-        // Only on its row
-        expect(screen.queryByRole('list', { name: 'Problems' })).toBeNull();
+        // Described on its row; the footer only points at the folder
+        const footer = screen.getByRole('list', { name: 'Problems' });
+        expect(footer.querySelector('[data-problem]')).toBeNull();
+        expect(
+            footer.querySelector('[data-folder-problems]')?.textContent
+        ).toBe(
+            `1 problem in notes.txt in ${DIR}. Expand the folder to see it; files with problems are listed first.`
+        );
+        // Listed first in the folder
+        expect(
+            within(
+                screen.getByRole('list', { name: `Files in ${DIR}` })
+            ).getAllByRole('listitem')[0].dataset.name
+        ).toBe('notes.txt');
         expect(addButton().disabled).toBe(true);
         expect(screen.getByTestId('add-summary').textContent).toBe(
             'Will generate M27_900_1.gz from 1 entry file and 1 include once the problems above are fixed.'

@@ -140,11 +140,35 @@ describe('useAddSchema', () => {
         expect(result.current.plan).toBeNull();
     });
 
+    it('sends a chosen entry, and drops it with its file or on reset', async () => {
+        const { result } = await setupWithFiles();
+        act(() => result.current.setEntry(TEAMS));
+        expect(lastRequest().entry).toBe(TEAMS);
+        expect(result.current.request.entry).toBe(TEAMS);
+
+        act(() => result.current.removeFiles([MAIN]));
+        expect(lastRequest()).toEqual({
+            files: [TEAMS],
+            overrides: {},
+            includeDefaults: true,
+            entry: TEAMS
+        });
+
+        act(() => result.current.setEntry(undefined));
+        expect('entry' in lastRequest()).toBe(false);
+
+        act(() => result.current.setEntry(TEAMS));
+        act(() => result.current.addFiles([MAIN]));
+        act(() => result.current.removeFiles([TEAMS]));
+        expect('entry' in lastRequest()).toBe(false);
+        await waitFor(() => expect(result.current.inspecting).toBe(false));
+    });
+
     it('sends nothing once every file is removed', async () => {
         const { result } = await setupWithFiles();
         electronAPI.schema.inspectAdd.mockClear();
-        act(() => result.current.removeFile(MAIN));
-        act(() => result.current.removeFile(TEAMS));
+        act(() => result.current.removeFiles([MAIN]));
+        act(() => result.current.removeFiles([TEAMS]));
         expect(result.current.plan).toBeNull();
         expect(electronAPI.schema.inspectAdd).toHaveBeenCalledTimes(1);
     });

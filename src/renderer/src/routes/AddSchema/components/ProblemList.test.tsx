@@ -36,6 +36,28 @@ describe('ProblemList', () => {
         expect(shown()).toBe(VISIBLE_PROBLEMS);
     });
 
+    it('names a folder whose files have problems, outside the cap', () => {
+        render(
+            <ProblemList
+                folders={[
+                    {
+                        folder: 'C:\\game',
+                        files: ['F0.FTX', 'F1.FTX'],
+                        problems: problems(2)
+                    }
+                ]}
+                phase='plan'
+                problems={problems(5)}
+            />
+        );
+        expect(shown()).toBe(6);
+        const line = document.querySelector('[data-folder-problems]');
+        expect(line?.getAttribute('data-severity')).toBe('blocking');
+        expect(line?.textContent).toBe(
+            '2 problems in 2 files in C:\\game (F0.FTX and F1.FTX). Expand the folder to see them; files with problems are listed first.'
+        );
+    });
+
     it('has no toggle for five or fewer', () => {
         render(<ProblemList phase='plan' problems={problems(5)} />);
         expect(shown()).toBe(5);

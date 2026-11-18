@@ -9,6 +9,7 @@ import { pathKey } from '../SchemaManagement/schemaList';
 import {
     type GameEntry,
     currentGame,
+    folderProblems,
     isBlocked,
     splitProblems,
     summaryLine
@@ -34,7 +35,8 @@ const AddSchema: React.FC = () => {
         adding,
         error,
         addFiles,
-        removeFile,
+        removeFiles,
+        setEntry,
         browse,
         setOverrides,
         setIncludeDefaults,
@@ -43,7 +45,8 @@ const AddSchema: React.FC = () => {
 
     const { byPath, general } = splitProblems(
         plan?.problems ?? [],
-        request.files
+        request.files,
+        (plan?.files ?? []).map((f) => f.path)
     );
     // A folder can hold thousands of files, so no find() per row
     const plannedByKey = new Map(
@@ -58,6 +61,11 @@ const AddSchema: React.FC = () => {
             problems: byPath.get(path) ?? []
         };
     });
+    const footerProblems = general.filter(
+        // The Advanced options card says it
+        (p) => p.code !== 'defaults-merged-at-load'
+    );
+    const folders = folderProblems(rows);
     const isGz = plan?.kind === 'copy-gz';
     const gzRow = isGz ? rows.find((row) => row.role === 'schema') : undefined;
     const canAdd = !isBlocked(plan) && !inspecting && !adding;
@@ -108,9 +116,11 @@ const AddSchema: React.FC = () => {
                             missing={
                                 plan?.kind === 'generate' ? plan.missing : []
                             }
+                            entryChosen={plan?.entryChosen ?? false}
                             onAddPaths={addFiles}
                             onBrowse={(kind) => void browse(kind)}
-                            onRemove={removeFile}
+                            onRemove={removeFiles}
+                            onSetEntry={setEntry}
                             rows={rows}
                         />
                     </div>
@@ -128,35 +138,37 @@ const AddSchema: React.FC = () => {
                         />
                     )}
                 </GridLayout>
-                <div className={styles.footer}>
-                    {error && (
-                        <p className={styles.error} role='alert'>
-                            Could not read the files: {error}
-                        </p>
-                    )}
-                    <ProblemList
-                        phase='plan'
-                        problems={general.filter(
-                            // The Advanced options card says it
-                            (p) => p.code !== 'defaults-merged-at-load'
-                        )}
-                    />
-                    <div className={styles.submit} aria-busy={inspecting}>
-                        <p className={styles.summary} data-testid='add-summary'>
-                            {summaryLine(plan)}
-                        </p>
-                        <Button
-                            data-action='add'
-                            disabled={!canAdd}
-                            onClick={() => void handleAdd()}
-                            state={canAdd ? 'default' : 'disabled'}
-                            type='primary'
-                        >
-                            Add schema
-                        </Button>
-                    </div>
-                </div>
             </main>
+            <div className={styles.footer}>
+                {error && (
+                    <p className={styles.error} role='alert'>
+                        Could not read the files: {error}
+                    </p>
+                )}
+                {(footerProblems.length > 0 || folders.length > 0) && (
+                    <div className={styles.problems}>
+                        <ProblemList
+                            folders={folders}
+                            phase='plan'
+                            problems={footerProblems}
+                        />
+                    </div>
+                )}
+                <div className={styles.submit} aria-busy={inspecting}>
+                    <p className={styles.summary} data-testid='add-summary'>
+                        {summaryLine(plan)}
+                    </p>
+                    <Button
+                        data-action='add'
+                        disabled={!canAdd}
+                        onClick={() => void handleAdd()}
+                        state={canAdd ? 'default' : 'disabled'}
+                        type='primary'
+                    >
+                        Add schema
+                    </Button>
+                </div>
+            </div>
             {adding && <Loader message='Adding schema...' />}
             {reading && !adding && (
                 <div className={styles.readingLoader}>

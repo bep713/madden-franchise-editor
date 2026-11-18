@@ -92,19 +92,37 @@ async function buildGenerated(plan, scans, includeDefaults, identity) {
   }
   if (problems.length) return { problems };
 
-  const fileMap = { main: plan.entry };
-  for (const f of used) if (f.role === "include") fileMap[includeKey(f.name)] = f.path;
   const root = await generateSchemaV2({
-    fileMap,
+    fileMap: fileMapFor(plan.entry, used),
     extraSchemas: extraSchemasArg(includeDefaults),
   });
   const generated = checkGenerated(root);
   if (generated.length) return { problems: generated };
 
   return {
-    buffer: serialize(root, { ...identity, databaseName: databaseName(scans) }),
+    buffer: serialize(root, { ...identity, databaseName: databaseName(scans, plan.entry) }),
     problems: [],
   };
+}
+
+/**
+ * generateSchemaV2 looks an include up by its fileName as written, folders
+ * included ("Franchise-Schemas\Team.ftx" -> "franchise-schemas\team"), and
+ * silently skips one it can't find. The plan matched includes by basename,
+ * so each name maps to the file the plan resolved it to.
+ * @param {string} entry
+ * @param {{ name: string, path: string, includes: string[] }[]} used  the entry and its includes
+ */
+function fileMapFor(entry, used) {
+  const byKey = new Map(used.map((f) => [includeKey(f.name), f.path]));
+  const fileMap = { main: entry };
+  for (const f of used) {
+    for (const name of f.includes) {
+      const target = byKey.get(includeKey(name));
+      if (target) fileMap[name.replace(/\.FTX$/i, "").toLowerCase()] = target;
+    }
+  }
+  return fileMap;
 }
 
 /**

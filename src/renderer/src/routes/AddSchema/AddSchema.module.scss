@@ -1,10 +1,13 @@
 @import '@assets/colors.css';
 @import '@assets/spacing.css';
 
+/* overflow: without it the layout's grid row grows to the content and the
+   footer scrolls away with it, so only main scrolls */
 .page {
     display: flex;
     flex-direction: column;
     height: 100%;
+    overflow: hidden;
 }
 
 .main {
@@ -39,10 +42,21 @@
     }
 }
 
+/* Out of the scrolling main, so Add stays at the bottom of the window */
 .footer {
     display: flex;
+    flex-shrink: 0;
     flex-direction: column;
     row-gap: var(--spacing-3);
+    padding: var(--spacing-3) var(--spacing-8);
+    background-color: var(--white-smoke);
+    border-top: 1px solid var(--silver);
+}
+
+/* A long list can't squeeze the content to nothing */
+.problems {
+    max-height: 40vh;
+    overflow-y: auto;
 }
 
 .error {

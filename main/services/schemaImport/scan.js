@@ -210,8 +210,8 @@ function decodeEntities(value) {
 }
 
 /**
- * The key generateSchemaV2 resolves an include name to: `.FTX` stripped,
- * then lowercased (its fallback lookup). Files are keyed the same way.
+ * The key the plan matches an include name to a file by: the basename, `.FTX`
+ * stripped, lowercased. Not the library's key (see fileMapFor in commit.js).
  * @param {string} name
  */
 function includeKey(name) {
