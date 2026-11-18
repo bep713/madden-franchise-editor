@@ -17,6 +17,7 @@ const {
 const preferencesHandler = require("./main/handlers/preferencesHandler");
 const uiSelection = require("./main/utils/uiSelection");
 const { createThemeController } = require("./main/services/themeController");
+const { parseThemePreference } = require("./main/utils/theme");
 const {
   listScheduleFiles,
   readScheduleFile,
@@ -289,6 +290,19 @@ function createApplicationMenu() {
             click: () => selectUiFromMenu(value),
           })),
         },
+        {
+          id: "ThemeMenu",
+          label: "Theme",
+          // v5 only; loadMainUi shows it.
+          visible: false,
+          submenu: Object.entries(themeMenuIds).map(([value, id]) => ({
+            id,
+            label: themeMenuLabels[value],
+            type: "radio",
+            click: () =>
+              preferencesHandler.setPreferences({ general: { theme: value } }),
+          })),
+        },
         { type: "separator" },
         {
           id: "RevealInExplorer",
@@ -432,6 +446,16 @@ const themeController = createThemeController({
     preferencesHandler.getPreferencesInstance()?.value("general.theme"),
 });
 const uiMenuIds = { v5: "UiVersionV5", v4: "UiVersionV4" };
+const themeMenuIds = { system: "ThemeSystem", light: "ThemeLight", dark: "ThemeDark" };
+const themeMenuLabels = { system: "Auto", light: "Light", dark: "Dark" };
+
+/** Check the View -> Theme item that matches the stored preference. */
+function syncThemeMenu() {
+  const theme = parseThemePreference(
+    preferencesHandler.getPreferencesInstance()?.value("general.theme"),
+  );
+  mutateMenuIds([themeMenuIds[theme]], "checked", true);
+}
 const creditsPage = "renderer/credits.html";
 const schemaPage = "renderer/schema-manager.html";
 const settingsPage = "renderer/settings-manager.html";
@@ -578,9 +602,10 @@ function createWindow() {
     }
   });
 
-  preferencesHandler.onPreferenceChange("general.theme", () =>
-    themeController.apply(),
-  );
+  preferencesHandler.onPreferenceChange("general.theme", () => {
+    themeController.apply();
+    syncThemeMenu();
+  });
 
   preferencesHandler.onPreferenceChange("general.uiVersion", () => {
     // A switch made in this session follows the preference from now on.
@@ -626,6 +651,8 @@ function loadMainUi() {
   }
   // Radio items: checking one unchecks the other (writing false re-checks it).
   mutateMenuIds([uiMenuIds[target.ui]], "checked", true);
+  mutateMenuIds(["ThemeMenu"], "visible", target.ui === "v5");
+  syncThemeMenu();
 
   if (target.url) {
     mainWindow.loadURL(target.url);

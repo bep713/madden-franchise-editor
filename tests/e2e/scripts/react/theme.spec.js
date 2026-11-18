@@ -102,6 +102,29 @@ test("dark theme reaches the title bar, the main window and the shared windows",
   await electronApp.close();
 });
 
+test("View -> Theme changes and saves the theme", async () => {
+  const electronApp = await electron.launchWithDefaultOptions({ ui: "react" });
+  const app = new App(electronApp);
+  const window = await followNativeTheme(await app.getMainWindow());
+  await new WelcomePage(window).waitForPageLoad();
+
+  expect(await app.isMenuItemVisible("ThemeMenu")).to.equal(true);
+  expect(await app.isMenuItemChecked("ThemeSystem")).to.equal(true);
+
+  await app.clickMenuItem("ThemeDark");
+  expect(await nativeThemeState(electronApp)).to.deep.equal(["dark", true]);
+  await waitForBackground(window, DARK_SURFACE);
+  expect(await app.isMenuItemChecked("ThemeDark")).to.equal(true);
+  expect(await storedTheme()).to.equal("dark");
+
+  await app.clickMenuItem("ThemeLight");
+  expect((await nativeThemeState(electronApp))[0]).to.equal("light");
+  await waitForBackground(window, LIGHT_SURFACE);
+  expect(await storedTheme()).to.equal("light");
+
+  await electronApp.close();
+});
+
 test("the default theme follows Windows", async () => {
   const electronApp = await electron.launchWithDefaultOptions({ ui: "react" });
   const app = new App(electronApp);
@@ -150,6 +173,7 @@ test("v4 keeps the default theme and hides the setting", async () => {
   await app.getMainWindow();
 
   expect((await nativeThemeState(electronApp))[0]).to.equal("system");
+  expect(await app.isMenuItemVisible("ThemeMenu")).to.equal(false);
   const settings = await openSettings(app);
   await waitForBackground(settings.window, LEGACY_SETTINGS_BACKGROUND);
   expect(await settings.locators.themeSelect.count()).to.equal(0);

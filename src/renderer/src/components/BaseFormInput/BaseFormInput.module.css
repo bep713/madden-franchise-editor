@@ -22,10 +22,6 @@
     border-color: var(--text-primary);
 }
 
-.borderless .inputElement {
-    background-color: transparent;
-}
-
 .input.error {
     border: 1px solid var(--error-border);
     border-bottom-right-radius: 0;
@@ -36,6 +32,11 @@
     width: 100%;
     padding: var(--spacing-2) var(--spacing-3);
     font-size: 1em;
+    color: inherit;
+
+    /* the wrapper paints the field; in dark mode the UA's input background
+       differs from --surface and splits the left asset off into a block */
+    background-color: transparent;
     border: none;
 }
 

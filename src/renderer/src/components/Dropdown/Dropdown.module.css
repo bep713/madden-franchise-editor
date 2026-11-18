@@ -1,11 +1,50 @@
+@import '@assets/colors.css';
 @import '@assets/spacing.css';
 
+/* Customizable select (Chromium 135+): the picker and options are styled
+   like Autocomplete's list instead of the OS popup */
+.dropdown,
+.dropdown::picker(select) {
+    appearance: base-select;
+}
+
 .dropdown {
-    /* Room for the arrow: its inset, its width and a gap */
-    padding-right: calc(var(--spacing-3) * 2 + 12px);
-    appearance: none;
-    background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Ctitle%3Edown-arrow%3C%2Ftitle%3E%3Cg%20fill%3D%22%23000000%22%3E%3Cpath%20d%3D%22M10.293%2C3.293%2C6%2C7.586%2C1.707%2C3.293A1%2C1%2C0%2C0%2C0%2C.293%2C4.707l5%2C5a1%2C1%2C0%2C0%2C0%2C1.414%2C0l5-5a1%2C1%2C0%2C1%2C0-1.414-1.414Z%22%20fill%3D%22%23000000%22%3E%3C%2Fpath%3E%3C%2Fg%3E%3C%2Fsvg%3E');
-    background-repeat: no-repeat;
-    background-position: calc(100% - var(--spacing-3)) center;
-    background-size: 12px 12px;
+    display: flex;
+    column-gap: var(--spacing-3);
+    align-items: center;
+    cursor: pointer;
+}
+
+.dropdown::picker-icon {
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+    content: '';
+    background-color: var(--text-primary);
+    mask-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Ctitle%3Edown-arrow%3C%2Ftitle%3E%3Cg%20fill%3D%22%23000000%22%3E%3Cpath%20d%3D%22M10.293%2C3.293%2C6%2C7.586%2C1.707%2C3.293A1%2C1%2C0%2C0%2C0%2C.293%2C4.707l5%2C5a1%2C1%2C0%2C0%2C0%2C1.414%2C0l5-5a1%2C1%2C0%2C1%2C0-1.414-1.414Z%22%20fill%3D%22%23000000%22%3E%3C%2Fpath%3E%3C%2Fg%3E%3C%2Fsvg%3E');
+    transition: none;
+}
+
+.dropdown::picker(select) {
+    max-height: 200px;
+    padding: 0;
+    margin: 0;
+    color: var(--text-primary);
+    background-color: var(--surface-raised);
+    border: 1px solid var(--divider-color);
+}
+
+.dropdown option {
+    padding: var(--spacing-3) var(--spacing-4);
+    cursor: pointer;
+}
+
+.dropdown option::checkmark {
+    display: none;
+}
+
+.dropdown option:hover,
+.dropdown option:focus-visible {
+    outline: none;
+    background-color: color-mix(in srgb, var(--hover), var(--text-primary) 10%);
 }
