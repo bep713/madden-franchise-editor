@@ -18,3 +18,4 @@ storybook-static
 *storybook.log
 coverage/
 test/verify-evidence/
+.claude/worktrees/
