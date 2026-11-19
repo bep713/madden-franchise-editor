@@ -19,7 +19,6 @@ import styles from './GetStartedCard.module.css';
 
 export enum GetStartedActions {
     CHANGE_FILE_PARAMETERS = 'CHANGE_FILE_PARAMETERS',
-    MAKE_BACKUP_FILE = 'MAKE_BACKUP_FILE',
     OPEN_FILE = 'OPEN_FILE',
     OPEN_FILE_LOCATION = 'OPEN_FILE_LOCATION',
     OPEN_SCHEDULE_EDITOR = 'OPEN_SCHEDULE_EDITOR',
@@ -89,12 +88,7 @@ const GetStartedCard: React.FC<GetStartedCardProps> = ({
                 }
                 text='Open file location'
             />
-        ),
-        <Link
-            key={GetStartedActions.MAKE_BACKUP_FILE}
-            onClick={() => onActionClick(GetStartedActions.MAKE_BACKUP_FILE)}
-            text='Make backup file'
-        />
+        )
     ].filter((item) => !!item);
 
     // Common files are opened with a chosen year and type, so show them next
