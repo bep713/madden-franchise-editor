@@ -27,6 +27,9 @@ test("update channel setting e2e test", async () => {
   // defaults to stable
   let settingsManager = await openSettings(app);
   expect(await settingsManager.getUpdateChannel()).to.eql("stable");
+  expect(
+    await settingsManager.locators.showPinnedTablesCheckbox.isChecked(),
+  ).to.eql(true);
 
   // can switch to nightly. Preferences are saved on Continue.
   await settingsManager.setUpdateChannel("nightly");

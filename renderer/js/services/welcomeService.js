@@ -63,6 +63,17 @@ function addListeners() {
   addOpenScheduleListener();
   addOpenTableEditorListener();
   addOpenSchemaViewerListener();
+  addSwitchUiListener();
+}
+
+function addSwitchUiListener() {
+  const switchUiButton = document.querySelector("#switch-ui");
+  if (switchUiButton) {
+    // main reloads the window into v5 when the preference changes
+    switchUiButton.addEventListener("click", () => {
+      window.electronAPI.preferences.set({ general: { uiVersion: "v5" } });
+    });
+  }
 }
 
 function addOpenFileListener() {

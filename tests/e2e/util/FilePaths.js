@@ -1,26 +1,33 @@
 const path = require('path');
 
 const BASE_DIRS = {
-    m22: path.join(__dirname, '../../data/m22')
+    m22: path.join(__dirname, '../../data/m22'),
+    c27: path.join(__dirname, '../../data/c27')
 };
 
 module.exports = {
+    c27: {
+        base: BASE_DIRS.c27,
+        dynasty: {
+            // Only opened, never saved, so tests can share it.
+            test: path.join(BASE_DIRS.c27, 'dynasty/test/DYNASTY-E2ETEST')
+        }
+    },
     m22: {
         base: BASE_DIRS.m22,
+        // A franchise-common file. Only opened, never saved.
+        common: path.join(BASE_DIRS.m22, 'common/FTC-E2ETEST'),
         career: {
-            pristine: path.join(BASE_DIRS.m22, 'career/CAREER-M22TEST'),
-            test: path.join(BASE_DIRS.m22, 'career/test/CAREER-E2ETEST')
+            // Never opened directly: tests open their sandbox's copy (util/sandbox.js).
+            pristine: path.join(BASE_DIRS.m22, 'career/CAREER-M22TEST')
         },
         exports: {
             player: path.join(BASE_DIRS.m22, 'export/4220.xlsx'),
             overallPercentage: path.join(BASE_DIRS.m22, 'export/4097.xlsx'),
-            test: path.join(BASE_DIRS.m22, 'export/test/export.xlsx'),
             rawTable: {
-                test: path.join(BASE_DIRS.m22, 'export/test/raw.dat'),
                 overallPercentage: path.join(BASE_DIRS.m22, 'export/4097_raw.dat')
             },
             frtk: {
-                test: path.join(BASE_DIRS.m22, 'export/test/frtk-test.frt'),
                 compare: path.join(BASE_DIRS.m22, 'export/full-export.frt')
             }
         },

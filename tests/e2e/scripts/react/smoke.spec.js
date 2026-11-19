@@ -1,0 +1,94 @@
+const { expect } = require("chai");
+const { test } = require("../../util/test");
+
+const electron = require("../../util/Electron");
+const { poll } = require("../../util/poll");
+
+const App = require("../../models/App");
+const WelcomePage = require("../../models/react/WelcomePage");
+const NavigationBar = require("../../models/react/NavigationBar");
+const TableEditorPage = require("../../models/react/TableEditorPage");
+
+let careerPath;
+test.beforeEach(({ sandbox }) => {
+  careerPath = sandbox.careerPath;
+});
+
+test("basic test (react)", async () => {
+  const electronApp = await electron.launchWithDefaultOptions({ ui: "react" });
+  const app = new App(electronApp);
+
+  const window = await app.getMainWindow();
+
+  const welcome = new WelcomePage(window);
+  const nav = new NavigationBar(window);
+  const tableEditor = new TableEditorPage(window);
+
+  await welcome.waitForPageLoad();
+
+  // can open a file
+  await welcome.openFranchiseFile(electronApp, careerPath);
+  expect(await welcome.getStartedTitle()).to.equal("CAREER-E2ETEST");
+  expect(await nav.tabNames()).to.deep.equal([
+    "Home",
+    "Schedule",
+    "Schemas",
+    "Open Table...",
+  ]);
+
+  // can open the table editor, which loads the first table. Unlike v4, that
+  // is 4096, not 4097. 4096 is unnamed, so the header shows only its id.
+  await welcome.openTableEditor();
+  await tableEditor.waitForTableToLoad();
+  expect(await tableEditor.getSelectedTableName()).to.equal("4096");
+  expect(
+    await tableEditor.selectedSidebarTable().getAttribute("data-table-id"),
+  ).to.equal("4096");
+
+  // the grid shows the file's data. Compared with IPC data, not a fixed
+  // string, so it holds when reference cells get a display format (03d).
+  const firstTable = await app.readTable(4096);
+  const firstHeader = firstTable.headers[0].name;
+  await tableEditor.grid.selectCellAt(0, 0);
+  expect(await tableEditor.grid.getTextAtSelectedCell()).to.equal(
+    String(firstTable.records[0][firstHeader]),
+  );
+
+  // can open a different table
+  await tableEditor.openTableById(7482);
+  expect(await tableEditor.getSelectedTableName()).to.equal("7482 - Team");
+
+  // can jump to a column, and other table data displays properly
+  await tableEditor.jumpToColumn("LongName", 52);
+  expect(await tableEditor.grid.getTextAtSelectedCell()).to.equal("New York");
+
+  // Home tab goes to the welcome page, which lists the file as recent
+  await nav.openTab("Home");
+  await welcome.waitForPageLoad();
+  await welcome.recentFile("CAREER-E2ETEST").waitFor();
+
+  // the table tab opens the table editor again, on the table it was left on
+  await nav.openTab("7482 - Team");
+  await tableEditor.waitForTableToLoad();
+  expect(await tableEditor.getSelectedTableName()).to.equal("7482 - Team");
+
+  // can reopen the file from Recent Files
+  await nav.openTab("Home");
+  await welcome.waitForPageLoad();
+  const firstFileId = await window.evaluate(() =>
+    window.franchiseAPI.getActiveFileId(),
+  );
+  await welcome.recentFile("CAREER-E2ETEST").click();
+  await poll(
+    () => window.evaluate(() => window.franchiseAPI.getActiveFileId()),
+    (fileId) => fileId && fileId !== firstFileId,
+    { message: "The file was not reopened" },
+  );
+  await welcome.waitForOpenFile(careerPath);
+
+  await welcome.openTableEditor();
+  await tableEditor.waitForTableToLoad();
+  expect(await tableEditor.getSelectedTableName()).to.equal("4096");
+
+  await electronApp.close();
+});

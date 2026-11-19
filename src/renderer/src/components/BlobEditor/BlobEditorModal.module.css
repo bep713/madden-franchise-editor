@@ -1,0 +1,14 @@
+@import '@assets/spacing.css';
+
+.dialog {
+    width: min(900px, 90vw);
+}
+
+.editor {
+    height: 60vh;
+}
+
+.error {
+    margin-top: var(--spacing-2);
+    color: var(--text-error);
+}

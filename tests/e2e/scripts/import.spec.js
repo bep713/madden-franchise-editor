@@ -11,8 +11,10 @@ const WelcomePage = require("../models/WelcomePage");
 const TableEditorPage = require("../models/TableEditorPage");
 const SettingsManager = require("../models/SettingsManager");
 
-test.beforeAll(TestUtil.overwriteTestCareer);
-test.afterAll(TestUtil.overwriteTestCareer);
+let careerPath;
+test.beforeEach(({ sandbox }) => {
+  careerPath = sandbox.careerPath;
+});
 
 test("import table e2e test", async () => {
   const electronApp = await electron.launchWithDefaultOptions();
@@ -25,8 +27,7 @@ test("import table e2e test", async () => {
   const welcome = new WelcomePage(window);
 
   await welcome.waitForPageLoad();
-  await TestUtil.setAutoSave(app, false);
-  await welcome.openFranchiseFile(FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(careerPath);
   await welcome.openTableEditor();
 
   // can import a small table
@@ -49,7 +50,7 @@ test("import table e2e test", async () => {
   await app.saveFile();
   await app.closeFile();
   await welcome.waitForPageLoad();
-  await welcome.openFranchiseFile(FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(careerPath);
   await welcome.openTableEditor();
   await checkImportedFields();
 
@@ -64,7 +65,7 @@ test("import table e2e test", async () => {
 
   await app.closeFile();
   await welcome.waitForPageLoad();
-  await welcome.openFranchiseFile(FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(careerPath);
   await welcome.openTableEditor();
   await tableEditor.openTableById(4712);
   await tableEditor.jumpToColumn("HasFantasyRoster", 0);
@@ -88,8 +89,6 @@ test("import table e2e test", async () => {
   await tableEditor.selectCellAt(1, 0);
   text = await tableEditor.getTextAtSelectedCell();
   expect(text).to.equal("Spline - 11");
-
-  await TestUtil.setAutoSave(app, false);
 
   await electronApp.close();
 
@@ -134,7 +133,9 @@ test("import table e2e test", async () => {
 });
 
 test("import table with auto un-empty enabled", async () => {
-  const electronApp = await electron.launchWithDefaultOptions();
+  const electronApp = await electron.launchWithDefaultOptions({
+    preferences: { general: { autoUnempty: [true] } },
+  });
   const app = new App(electronApp);
 
   const window = await app.getMainWindow();
@@ -143,11 +144,9 @@ test("import table with auto un-empty enabled", async () => {
   const welcome = new WelcomePage(window);
 
   await welcome.waitForPageLoad();
-  await TestUtil.setAutoSave(app, false);
-  await TestUtil.setAutoUnempty(app, true);
 
   try {
-    await welcome.openFranchiseFile(FilePaths.m22.career.test);
+    await welcome.openFranchiseFile(careerPath);
     await welcome.openTableEditor();
 
     const tableEditor = new TableEditorPage(window);
@@ -165,13 +164,12 @@ test("import table with auto un-empty enabled", async () => {
     await app.saveFile();
     await app.closeFile();
     await welcome.waitForPageLoad();
-    await welcome.openFranchiseFile(FilePaths.m22.career.test);
+    await welcome.openFranchiseFile(careerPath);
     await welcome.openTableEditor();
     await tableEditor.openTableById(7482);
     await tableEditor.jumpToColumn("LongName", 5);
     expect(await tableEditor.getTextAtSelectedCell()).to.equal("TEST");
   } finally {
-    await TestUtil.setAutoUnempty(app, false);
     await electronApp.close();
   }
 });

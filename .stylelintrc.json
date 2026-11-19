@@ -1,0 +1,26 @@
+{
+    "extends": [
+        "stylelint-config-standard-scss",
+        "stylelint-config-recess-order",
+        "stylelint-config-css-modules"
+    ],
+    "rules": {
+        "selector-class-pattern": null,
+        "color-no-hex": true,
+        "color-named": "never",
+        "function-disallowed-list": ["rgb", "rgba", "hsl", "hsla"]
+    },
+    "overrides": [
+        {
+            "files": [
+                "src/renderer/src/assets/colors.css",
+                "data/theme-colors.css"
+            ],
+            "rules": {
+                "color-no-hex": null,
+                "color-named": null,
+                "function-disallowed-list": null
+            }
+        }
+    ]
+}

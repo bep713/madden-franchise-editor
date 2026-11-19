@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FranTkData><Includes><IncludeFile fileName="Players.FTX"/></Includes><schemas><schema name="Roster" assetId="9102" ownerAssetId="0" numMembers="1" base="Record"><attribute idx="0" name="Size" type="s_int" bits="8" default="0"/></schema></schemas></FranTkData>

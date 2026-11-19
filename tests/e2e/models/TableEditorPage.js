@@ -183,9 +183,10 @@ class TableEditorPage {
     await this.jumpToColumn(columnName, row);
   }
 
-  async pasteAtSelectedCell() {
+  // app: models/App, which owns the clipboard
+  async pasteAtSelectedCell(app, text) {
     await this._watchForLoader();
-    await util.sendPasteKeyboardShortcut(this.window);
+    await app.pasteText(this.window, text);
   }
 
   async undo() {

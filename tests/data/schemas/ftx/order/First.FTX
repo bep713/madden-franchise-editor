@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FranTkData>
+  <Includes>
+    <IncludeFile fileName="Deep.FTX"/>
+  </Includes>
+  <schemas>
+    <schema name="OrderFirst" assetId="9502" ownerAssetId="0" numMembers="1" base="Record">
+      <attribute idx="0" name="B" type="bool"/>
+    </schema>
+  </schemas>
+</FranTkData>

@@ -1,0 +1,148 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+
+/* Exactly fills the app's page area. Only the games list scrolls: the
+   header, the week bar and the bye note stay put. The layout's grid track
+   grows with its content, so size containment keeps the content (a wide
+   week bar, a long week) from growing it. */
+.page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    contain: size;
+}
+
+.main {
+    display: flex;
+    flex-grow: 1;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    padding: var(--spacing-4) var(--spacing-8);
+    overflow: hidden;
+    background-color: var(--surface);
+}
+
+.scroll {
+    flex-grow: 1;
+    min-height: 0;
+    margin-top: var(--spacing-4);
+    container-type: inline-size;
+    overflow: hidden auto;
+}
+
+.rows {
+    background-color: var(--surface);
+}
+
+/* v4's grid: up to three columns, with the borders collapsed. The list
+   draws the top and left edges, each card its right and bottom ones, so an
+   unfilled last row shows no empty cells. */
+.cards {
+    --card-border: 1px solid var(--divider-color);
+    --card-alt: var(--secondary);
+
+    display: grid;
+    grid-template-columns: 1fr;
+    border-top: var(--card-border);
+    border-left: var(--card-border);
+
+    > [role='listitem'] {
+        /* So the card fills its cell, and cards in a row are the same height */
+        display: grid;
+        background-color: var(--surface);
+        border-right: var(--card-border);
+        border-bottom: var(--card-border);
+    }
+
+    > .empty {
+        border-right: var(--card-border);
+        border-bottom: var(--card-border);
+    }
+
+    /* A checkerboard: every other card is gray, offset on alternate rows */
+    > [role='listitem']:nth-child(2n) {
+        background-color: var(--card-alt);
+    }
+}
+
+@container (min-width: 640px) {
+    .cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+
+        > [role='listitem']:nth-child(4n + 1),
+        > [role='listitem']:nth-child(4n) {
+            background-color: var(--surface);
+        }
+
+        > [role='listitem']:nth-child(4n + 2),
+        > [role='listitem']:nth-child(4n + 3) {
+            background-color: var(--card-alt);
+        }
+    }
+}
+
+@container (min-width: 960px) {
+    .cards {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+
+        > [role='listitem']:nth-child(odd) {
+            background-color: var(--surface);
+        }
+
+        > [role='listitem']:nth-child(even) {
+            background-color: var(--card-alt);
+        }
+    }
+}
+
+.empty {
+    grid-column: 1 / -1;
+    padding: var(--spacing-4);
+    margin: 0;
+    color: var(--text-secondary);
+    background-color: var(--surface);
+}
+
+.byes {
+    flex-shrink: 0;
+    margin: var(--spacing-3) 0 0;
+    color: var(--text-secondary);
+}
+
+.writeError,
+.loadError {
+    display: flex;
+    gap: var(--spacing-3);
+    align-items: center;
+    padding: var(--spacing-3) var(--spacing-4);
+    margin-bottom: var(--spacing-4);
+    background-color: var(--error);
+    border-left: 4px solid var(--danger);
+}
+
+.loadError {
+    flex-wrap: wrap;
+}
+
+.errorText {
+    flex-grow: 1;
+    margin: 0;
+}
+
+.dismiss {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    cursor: pointer;
+    background: none;
+    border: none;
+
+    svg {
+        width: 16px;
+        height: 16px;
+    }
+}

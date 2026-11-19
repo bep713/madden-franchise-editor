@@ -14,9 +14,18 @@ class TabComponent extends BaseComponent {
     };
 
     async closeTabByName(name) {
-        const tab = await this.baseLocator.locator(`.tab[data-name="${name}"]`); 
-        await tab.hover();
-        await tab.locator(`.close-tab-button`).click();
+        const tab = await this.baseLocator.locator(`.tab[data-name="${name}"]`);
+        // The button only shows while the tab is hovered, and click()'s own
+        // retries don't hover again if the tabs moved under a slow window
+        for (let attempt = 1; ; attempt++) {
+            await tab.hover();
+            try {
+                await tab.locator(`.close-tab-button`).click({ timeout: 2000 });
+                return;
+            } catch (err) {
+                if (attempt === 5) throw err;
+            }
+        }
     };
 
     async openTabByName(name) {

@@ -1,5 +1,5 @@
 name: Build and test
-description: npm ci, unit tests, renderer build and Playwright e2e. Leaves node_modules and the built renderer in place for packaging.
+description: npm ci, unit tests, v5 typecheck/lint/tests/build, v4 renderer build and Playwright e2e. Leaves node_modules and the built renderer in place for packaging.
 
 runs:
   using: composite
@@ -12,6 +12,14 @@ runs:
     - run: npm ci
       shell: bash
     - run: npm run test:unit
+      shell: bash
+    - run: npm run typecheck
+      shell: bash
+    - run: npm run lint
+      shell: bash
+    - run: npm run test:react
+      shell: bash
+    - run: npm run build:react
       shell: bash
     - run: npm run sass:build
       shell: bash

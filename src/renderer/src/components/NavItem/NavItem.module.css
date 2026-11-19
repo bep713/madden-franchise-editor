@@ -1,0 +1,25 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+
+.navItem {
+    padding: var(--spacing-3);
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.selected {
+    background-color: var(--hover);
+}
+
+.closeButton {
+    padding: var(--spacing-1);
+    font-size: 0.75em;
+    cursor: pointer;
+    background-color: transparent;
+    border: none;
+    border-radius: 2px;
+}
+
+.closeButton:hover {
+    background-color: var(--secondary);
+}

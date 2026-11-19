@@ -1,0 +1,16 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+
+.sideNav {
+    padding: var(--spacing-4);
+    background-color: var(--primary-soft);
+}
+
+.item {
+    display: inline-flex;
+    padding: var(--spacing-3);
+}
+
+.item[role='button'] {
+    cursor: pointer;
+}

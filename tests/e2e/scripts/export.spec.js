@@ -1,7 +1,6 @@
 const xlsx = require("xlsx");
 const crypto = require("crypto");
 const fs = require("fs/promises");
-const path = require("path");
 const { expect } = require("chai");
 const { test } = require("../util/test");
 
@@ -14,15 +13,11 @@ const SettingsManager = require("../models/SettingsManager");
 const WelcomePage = require("../models/WelcomePage");
 const TableEditorPage = require("../models/TableEditorPage");
 
-test.beforeAll(async () => {
-  // The output dir is gitignored, so it doesn't exist on a fresh checkout.
-  await fs.mkdir(path.dirname(FilePaths.m22.exports.test), { recursive: true });
-  await TestUtil.overwriteTestCareer();
-});
-test.afterAll(TestUtil.overwriteTestCareer);
-
-test("export table e2e test", async () => {
-  const electronApp = await electron.launchWithDefaultOptions();
+test("export table e2e test", async ({ sandbox }) => {
+  // openExcelAfterImport defaults to on, which would open Excel
+  const electronApp = await electron.launchWithDefaultOptions({
+    preferences: { general: { openExcelAfterImport: [] } },
+  });
   const app = new App(electronApp);
 
   const window = await app.getMainWindow();
@@ -30,45 +25,44 @@ test("export table e2e test", async () => {
   const welcome = new WelcomePage(window);
 
   await welcome.waitForPageLoad();
-  await welcome.openFranchiseFile(FilePaths.m22.career.test);
+  await welcome.openFranchiseFile(sandbox.careerPath);
   await welcome.openTableEditor();
 
   // can export a table
   const tableEditor = new TableEditorPage(window);
   await tableEditor._waitForTableToLoad();
-  await TestUtil.setAutoOpenExcel(app, false);
-  await fs.rm(FilePaths.m22.exports.test, { force: true });
-  await tableEditor.exportTable(FilePaths.m22.exports.test);
-  await waitForFile(FilePaths.m22.exports.test);
+  await fs.rm(sandbox.exportPath, { force: true });
+  await tableEditor.exportTable(sandbox.exportPath);
+  await waitForFile(sandbox.exportPath);
   xlsxCompare(
-    FilePaths.m22.exports.test,
+    sandbox.exportPath,
     FilePaths.m22.exports.overallPercentage,
   );
 
   // can export a raw table
-  await fs.rm(FilePaths.m22.exports.rawTable.test, { force: true });
-  await tableEditor.exportRawTable(FilePaths.m22.exports.rawTable.test);
-  await waitForFile(FilePaths.m22.exports.rawTable.test);
+  await fs.rm(sandbox.rawExportPath, { force: true });
+  await tableEditor.exportRawTable(sandbox.rawExportPath);
+  await waitForFile(sandbox.rawExportPath);
   await fileCompare(
-    FilePaths.m22.exports.rawTable.test,
+    sandbox.rawExportPath,
     FilePaths.m22.exports.rawTable.overallPercentage,
   );
 
   // can export the full FRT table
-  await fs.rm(FilePaths.m22.exports.frtk.test, { force: true });
-  await tableEditor.exportRawFrtkFile(FilePaths.m22.exports.frtk.test);
-  await waitForFile(FilePaths.m22.exports.frtk.test);
+  await fs.rm(sandbox.frtkExportPath, { force: true });
+  await tableEditor.exportRawFrtkFile(sandbox.frtkExportPath);
+  await waitForFile(sandbox.frtkExportPath);
   await fileCompare(
-    FilePaths.m22.exports.frtk.test,
+    sandbox.frtkExportPath,
     FilePaths.m22.exports.frtk.compare,
   );
 
   // can export a more complex table
   await tableEditor.openTableById(4220);
-  await fs.rm(FilePaths.m22.exports.test, { force: true });
-  await tableEditor.exportTable(FilePaths.m22.exports.test);
-  await waitForFile(FilePaths.m22.exports.test);
-  xlsxCompare(FilePaths.m22.exports.test, FilePaths.m22.exports.player);
+  await fs.rm(sandbox.exportPath, { force: true });
+  await tableEditor.exportTable(sandbox.exportPath);
+  await waitForFile(sandbox.exportPath);
+  xlsxCompare(sandbox.exportPath, FilePaths.m22.exports.player);
 
   await electronApp.close();
 });

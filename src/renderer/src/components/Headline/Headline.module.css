@@ -1,0 +1,37 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+@import '@assets/typography.css';
+
+.headline {
+    display: flex;
+    column-gap: var(--spacing-1);
+    align-items: baseline;
+    padding: var(--spacing-6) var(--spacing-4);
+    color: var(--on-primary);
+    background-color: var(--primary);
+}
+
+.small {
+    padding: var(--spacing-4);
+}
+
+.header {
+    margin: 0;
+    font: var(--font-2xlarge);
+}
+
+.small .header {
+    font: var(--font-xlarge);
+}
+
+.subtext {
+    font-style: italic;
+}
+
+.actions {
+    display: flex;
+    gap: var(--spacing-2);
+    align-items: center;
+    align-self: center;
+    margin-left: auto;
+}

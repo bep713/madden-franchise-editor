@@ -1,3 +1,7 @@
+const { dismissBanners } = require("../util/banners");
+const { withClipboardLock } = require("../util/clipboardLock");
+const util = require("../util/UiTestUtil");
+
 class App {
   constructor(app) {
     this.app = app;
@@ -76,20 +80,64 @@ class App {
     await this.app.close();
   }
 
-  async copyToClipboard(text) {
+  // Closes React banners until none is left (util/banners.js)
+  async dismissBanners() {
+    await dismissBanners(await this.getMainWindow());
+  }
+
+  // Copies text and pastes it with a real Ctrl+V into the focused element of
+  // window. Holds the clipboard lock until the page has read the clipboard,
+  // so parallel workers can't paste each other's text. Returns as soon as
+  // the paste event fired, not when the paste has been processed.
+  async pasteText(window, text) {
+    await withClipboardLock(async () => {
+      await window.evaluate(() => {
+        window.e2ePasteSeen = false;
+        window.addEventListener(
+          "paste",
+          () => {
+            window.e2ePasteSeen = true;
+          },
+          { capture: true, once: true },
+        );
+      });
+      await this._copyToClipboard(text);
+      await util.sendPasteKeyboardShortcut(window);
+      await window.waitForFunction(() => window.e2ePasteSeen, null, {
+        timeout: 10000,
+      });
+    });
+  }
+
+  // Only call under the clipboard lock (use pasteText)
+  async _copyToClipboard(text) {
     // The clipboard lives in the main process
     await this.app.evaluate(({ clipboard }, text) => {
       clipboard.writeText(text);
     }, text);
   }
 
-  // Reads table data straight from the open file (not from the grid)
+  // Reads table data straight from the open file (not from the grid).
+  // With `fields`, records hold only those fields: main returns every field
+  // the grid has read, and returning all of them from evaluate() takes ~12s
+  // for the player table and can crash the worker.
   async readTable(tableId, fields) {
     const mainWindow = await this.getMainWindow();
     return mainWindow.evaluate(
       async ({ tableId, fields }) => {
         const fileId = await window.franchiseAPI.getActiveFileId();
-        return window.franchiseAPI.readTableData(fileId, tableId, fields);
+        const table = await window.franchiseAPI.readTableData(
+          fileId,
+          tableId,
+          fields,
+        );
+        if (fields && table?.records) {
+          table.records = table.records.map((record) =>
+            Object.fromEntries(fields.map((field) => [field, record[field]])),
+          );
+          delete table.recordMeta;
+        }
+        return table;
       },
       { tableId, fields },
     );
@@ -105,6 +153,35 @@ class App {
       );
       return tables[0].id;
     }, tableName);
+  }
+
+  async isMenuItemEnabled(id) {
+    return this.app.evaluate(
+      ({ Menu }, id) => Menu.getApplicationMenu().getMenuItemById(id).enabled,
+      id,
+    );
+  }
+
+  // Clicks the item from main, so it works while the main window is reloading
+  async clickMenuItem(id) {
+    await this.app.evaluate(
+      ({ Menu }, id) => Menu.getApplicationMenu().getMenuItemById(id).click(),
+      id,
+    );
+  }
+
+  async isMenuItemChecked(id) {
+    return this.app.evaluate(
+      ({ Menu }, id) => Menu.getApplicationMenu().getMenuItemById(id).checked,
+      id,
+    );
+  }
+
+  async isMenuItemVisible(id) {
+    return this.app.evaluate(
+      ({ Menu }, id) => Menu.getApplicationMenu().getMenuItemById(id).visible,
+      id,
+    );
   }
 
   async _clickMenuItem(menuItemId) {

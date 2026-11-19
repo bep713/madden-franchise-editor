@@ -14,6 +14,8 @@ const { Readable } = require("stream");
 const { decodeBlock } = require("../libs/lz4Block");
 const startupProfiler = require("./startupProfiler");
 const { detectFormat } = require("../utils/detectFormat");
+const { checkSchemaMismatch } = require("../handlers/schemaMismatchHandler");
+const { samePath } = require("./notificationStore");
 
 /**
  * Manages FranchiseFile instances in the main process.
@@ -21,13 +23,44 @@ const { detectFormat } = require("../utils/detectFormat");
  */
 class FranchiseFileManager {
   constructor() {
-    /** @type {Map<string, { file: FranchiseFile, path: string }>} */
+    // changeCount/savedCount: change events seen, and the count at the last
+    // save to the entry's own path (see hasUnsavedChanges)
+    /** @type {Map<string, { file: FranchiseFile, path: string, autoSave: boolean, changeCount: number, savedCount: number }>} */
     this.activeFiles = new Map();
+    // fileId -> tail of that file's task queue (see _runExclusive). Keyed by
+    // fileId because loadSchema replaces the activeFiles entry.
+    /** @type {Map<string, Promise<void>>} */
+    this._fileQueues = new Map();
+    // fileId -> { pending } where pending is a queued auto-save that hasn't started
+    /** @type {Map<string, { pending: Promise<void>|null }>} */
+    this._autoSaves = new Map();
     this._nextFileId = 1;
     this._schemaDirectory = path.join(app.getPath("userData"), "schemas");
     this._preferencesProvider = null;
     this._ensureSchemaDirectory();
     this._loggedIpc = {};
+    this._notificationStore = null;
+    this._autoSavePausedCheck = null;
+    // Resolved lowercase schema path -> built { meta, fields }, oldest first
+    // (see getSchemaFields); capped at 3 since a big schema is ~21k rows
+    this._schemaFieldsCache = new Map();
+  }
+
+  /**
+   * Set the notification store the open/load/close hooks write to.
+   * @param {object|null} store
+   */
+  setNotificationStore(store) {
+    this._notificationStore = store || null;
+  }
+
+  /**
+   * Set a check that pauses auto-save for a file while it returns true.
+   * Edits made while paused still count as unsaved changes.
+   * @param {((fileId: string) => boolean)|null} fn
+   */
+  setAutoSavePausedCheck(fn) {
+    this._autoSavePausedCheck = fn || null;
   }
 
   /**
@@ -78,9 +111,6 @@ class FranchiseFileManager {
    */
   _buildFileSettings(options = {}) {
     const preferences = this._getPreferences();
-    const autoSave =
-      options.autoSave ??
-      this._isPreferenceEnabled(preferences?.general?.autoSave);
     const autoUnempty =
       options.autoUnempty ??
       this._isPreferenceEnabled(preferences?.general?.autoUnempty);
@@ -88,7 +118,8 @@ class FranchiseFileManager {
     const settings = {
       autoParse: true,
       autoUnempty,
-      saveOnChange: autoSave,
+      // The library's saveOnChange is always off; requestAutoSave saves instead
+      saveOnChange: false,
       schemaDirectory: options.schemaDirectory || this._schemaDirectory,
     };
 
@@ -114,6 +145,19 @@ class FranchiseFileManager {
   }
 
   /**
+   * Resolve whether a file auto-saves: the open option wins over the preference.
+   * @param {object} options
+   * @returns {boolean}
+   * @private
+   */
+  _resolveAutoSave(options = {}) {
+    return (
+      options.autoSave ??
+      this._isPreferenceEnabled(this._getPreferences()?.general?.autoSave)
+    );
+  }
+
+  /**
    * Apply managed editor preferences to a loaded file instance.
    * @param {FranchiseFile} file
    * @param {object} preferences
@@ -132,9 +176,7 @@ class FranchiseFileManager {
       autoUnempty: this._isPreferenceEnabled(
         resolvedPreferences?.general?.autoUnempty,
       ),
-      saveOnChange: this._isPreferenceEnabled(
-        resolvedPreferences?.general?.autoSave,
-      ),
+      saveOnChange: false,
     };
   }
 
@@ -144,8 +186,13 @@ class FranchiseFileManager {
    * @returns {{ updatedFileCount: number }}
    */
   applyPreferenceSettings(preferences = null) {
-    this.activeFiles.forEach(({ file }) => {
-      this._applyPreferencesToFile(file, preferences);
+    const resolvedPreferences = preferences || this._getPreferences();
+    const autoSave = this._isPreferenceEnabled(
+      resolvedPreferences?.general?.autoSave,
+    );
+    this.activeFiles.forEach((entry) => {
+      this._applyPreferencesToFile(entry.file, resolvedPreferences);
+      entry.autoSave = autoSave;
     });
 
     return { updatedFileCount: this.activeFiles.size };
@@ -309,6 +356,7 @@ class FranchiseFileManager {
    */
   async openFile(filePath, options = {}, metaOptions = {}) {
     const settings = this._buildFileSettings(options);
+    const autoSave = this._resolveAutoSave(options);
 
     return new Promise((resolve, reject) => {
       startupProfiler.mark("open:parse-start");
@@ -336,12 +384,18 @@ class FranchiseFileManager {
         this.activeFiles.set(fileId, {
           file,
           path: filePath,
+          autoSave,
+          changeCount: 0,
+          savedCount: 0,
         });
 
         // Set up change event forwarding
         file.on("change", (table) => {
           const current = this.activeFiles.get(fileId);
-          if (current?.suppressChangeEvents) return;
+          if (current?.file !== file) return; // closed or replaced by a reload
+          current.changeCount++; // quiet writes count too
+          this.requestAutoSave(fileId);
+          if (current.suppressChangeEvents) return;
           this._emitToFileWindows(fileId, "franchise:table-changed", {
             fileId,
             tableId: table.header.tableId,
@@ -350,8 +404,8 @@ class FranchiseFileManager {
         });
 
         // forward the saving and saved events to main
-        file.on("saving", () => this._loggedIpc?.emit("saving"));
-        file.on("saved", () => this._loggedIpc?.emit("saved"));
+        file.on("saving", () => this._loggedIpc?.emit?.("saving"));
+        file.on("saved", () => this._loggedIpc?.emit?.("saved"));
 
         // Back up the original bytes on user-initiated opens only
         // (internal reopens pass an existing fileId)
@@ -393,7 +447,57 @@ class FranchiseFileManager {
    * @returns {boolean}
    */
   closeFile(fileId) {
+    // Queued tasks keep their own file reference and finish
+    this._fileQueues.delete(fileId);
+    this._autoSaves.delete(fileId);
     return this.activeFiles.delete(fileId);
+  }
+
+  /**
+   * Run fn after every earlier task for this file has settled. File writes,
+   * saves and reloads go through here so they never interleave.
+   * @template T
+   * @param {string} fileId
+   * @param {() => T|Promise<T>} fn
+   * @returns {Promise<T>}
+   */
+  _runExclusive(fileId, fn) {
+    const tail = this._fileQueues.get(fileId) || Promise.resolve();
+    const result = tail.then(() => fn());
+    // the stored tail never rejects, so one failure doesn't block the queue
+    this._fileQueues.set(fileId, result.catch(() => {}));
+    return result;
+  }
+
+  /**
+   * Queue a save if the file auto-saves. Requests made before the queued save
+   * starts share it. Save errors are logged, never thrown.
+   * @param {string} fileId
+   * @returns {Promise<void>}
+   */
+  requestAutoSave(fileId) {
+    const entry = this.activeFiles.get(fileId);
+    if (!entry?.autoSave) return Promise.resolve();
+    if (this._autoSavePausedCheck?.(fileId)) return Promise.resolve();
+
+    let state = this._autoSaves.get(fileId);
+    if (!state) {
+      state = { pending: null };
+      this._autoSaves.set(fileId, state);
+    }
+    if (state.pending) return state.pending;
+
+    const pending = this._runExclusive(fileId, async () => {
+      // requests from now on need a new save
+      state.pending = null;
+      const current = this.activeFiles.get(fileId);
+      if (!current?.autoSave) return;
+      await this._saveFileUnlocked(fileId);
+    }).catch((error) => {
+      console.error(`Auto-save failed for ${fileId}:`, error);
+    });
+    state.pending = pending;
+    return pending;
   }
 
   /**
@@ -466,24 +570,44 @@ class FranchiseFileManager {
    * @returns {Promise<string>}
    */
   async saveFile(fileId, options = {}) {
+    return this._runExclusive(fileId, () =>
+      this._saveFileUnlocked(fileId, options),
+    );
+  }
+
+  async _saveFileUnlocked(fileId, options = {}) {
     const entry = this.activeFiles.get(fileId);
     if (!entry) {
       throw new Error(`File not found: ${fileId}`);
     }
 
     const { file } = entry;
-    const { path } = options;
+    const savePath = options.path;
+    // a copy to another path leaves the file on disk unchanged
+    const savesOwnPath = !savePath || savePath === entry.path;
+    const changeCount = entry.changeCount;
 
-    return new Promise((resolve, reject) => {
-      const savePromise = options.sync
-        ? Promise.resolve(file.save(path, { sync: true }))
-        : file.save(path);
+    await (options.sync
+      ? file.save(savePath, { sync: true })
+      : file.save(savePath));
+    if (savesOwnPath) {
+      // a change made during the save keeps the file dirty
+      entry.savedCount = changeCount;
+      this._removeExternalChange(fileId);
+    }
+    return file.filePath || entry.path;
+  }
 
-      savePromise
-        .then(() => {
-          resolve(file.filePath || entry.path);
-        })
-        .catch(reject);
+  /**
+   * Whether the file has changes since it was opened or last saved to its own
+   * path. Waits for queued writes and saves first. Undos count as changes.
+   * @param {string} fileId
+   * @returns {Promise<boolean>}
+   */
+  async hasUnsavedChanges(fileId) {
+    return this._runExclusive(fileId, () => {
+      const entry = this.activeFiles.get(fileId);
+      return !!entry && entry.changeCount !== entry.savedCount;
     });
   }
 
@@ -509,14 +633,16 @@ class FranchiseFileManager {
    * @returns {Promise<string>}
    */
   async saveFileAsAndOpen(fileId, newPath) {
-    const entry = this.activeFiles.get(fileId);
-    if (!entry) {
-      throw new Error(`File not found: ${fileId}`);
-    }
+    return this._runExclusive(fileId, () => {
+      const entry = this.activeFiles.get(fileId);
+      if (!entry) {
+        throw new Error(`File not found: ${fileId}`);
+      }
 
-    entry.file.filePath = newPath;
-    entry.path = newPath;
-    return this.saveFile(fileId, {});
+      entry.file.filePath = newPath;
+      entry.path = newPath;
+      return this._saveFileUnlocked(fileId, {});
+    });
   }
 
   /**
@@ -527,6 +653,12 @@ class FranchiseFileManager {
    * @returns {Promise<object>}
    */
   async loadSchema(fileId, schemaPath, saveSchema = false) {
+    return this._runExclusive(fileId, () =>
+      this._loadSchemaUnlocked(fileId, schemaPath, saveSchema),
+    );
+  }
+
+  async _loadSchemaUnlocked(fileId, schemaPath, saveSchema) {
     const entry = this.activeFiles.get(fileId);
     if (!entry) {
       throw new Error(`File not found: ${fileId}`);
@@ -537,6 +669,7 @@ class FranchiseFileManager {
       entry.path,
       {
         ...file.settings,
+        autoSave: entry.autoSave,
         schemaDirectory: this._schemaDirectory,
         schemaOverride: { path: schemaPath },
       },
@@ -558,6 +691,33 @@ class FranchiseFileManager {
   }
 
   /**
+   * Reopen the file from disk with its current settings, keeping its fileId,
+   * schema override and year/type overrides. Unsaved edits are lost. If the
+   * reopen fails, the old in-memory file stays.
+   * @param {string} fileId
+   * @returns {Promise<{ fileId: string, metadata: object }>}
+   */
+  async reloadFile(fileId) {
+    return this._runExclusive(fileId, async () => {
+      const entry = this.activeFiles.get(fileId);
+      if (!entry) {
+        throw new Error(`File not found: ${fileId}`);
+      }
+
+      const { file } = entry;
+      return this.openFile(
+        entry.path,
+        {
+          ...file.settings,
+          autoSave: entry.autoSave,
+          schemaDirectory: this._schemaDirectory,
+        },
+        { fileId },
+      );
+    });
+  }
+
+  /**
    * Save a schema file to the schema directory without loading it into the
    * open file. Also reports whether it exactly matches the schema version
    * the open file expects.
@@ -566,16 +726,7 @@ class FranchiseFileManager {
    * @returns {Promise<{meta: {gameYear: number, major: number, minor: number}, savedPath: string, matchesExpected: boolean}>}
    */
   async addSchema(fileId, schemaPath) {
-    const schema = new FranchiseSchema(schemaPath);
-    await new Promise((resolve, reject) => {
-      // Listen before evaluate(); the .gz path emits synchronously
-      schema.once("schemas:done", resolve);
-      try {
-        schema.evaluate();
-      } catch (err) {
-        reject(err);
-      }
-    });
+    const schema = await this._parseSchemaFile(schemaPath);
 
     if (!schema.meta) {
       throw new Error("Schema file has no version information");
@@ -596,6 +747,105 @@ class FranchiseFileManager {
         expected.gameYear === gameYear);
 
     return { meta: { gameYear, major, minor }, savedPath, matchesExpected };
+  }
+
+  /**
+   * Read a schema file into a FranchiseSchema, without a franchise file
+   * @param {string} schemaPath
+   * @returns {Promise<FranchiseSchema>}
+   * @private
+   */
+  async _parseSchemaFile(schemaPath) {
+    const schema = new FranchiseSchema(schemaPath);
+    await new Promise((resolve, reject) => {
+      // Listen before evaluate(); the .gz path emits synchronously
+      schema.once("schemas:done", resolve);
+      try {
+        schema.evaluate();
+      } catch (err) {
+        reject(err);
+      }
+    });
+    return schema;
+  }
+
+  /**
+   * List every field of a schema as { name, table, type } rows, tables sorted
+   * by name. A path must be one of the known schemas (so the renderer can't
+   * make main parse arbitrary files); a fileId reads the open file's schema,
+   * which is the only way to reach an embedded one.
+   * @param {{path: string}|{fileId: string}} source
+   * @returns {Promise<{meta: {gameYear: number, major: number, minor: number}|null, fields: Array<{name: string, table: string, type: string}>}>}
+   */
+  async getSchemaFields(source) {
+    const keys =
+      source && typeof source === "object" ? Object.keys(source) : [];
+    const hasPath = keys.length === 1 && typeof source.path === "string";
+    const hasFileId = keys.length === 1 && typeof source.fileId === "string";
+    if (!hasPath && !hasFileId) {
+      throw new Error("Invalid schema source");
+    }
+
+    let schema;
+    let cacheKey = null;
+    if (hasPath) {
+      cacheKey = path.resolve(source.path).toLowerCase();
+      const known = this.getSavedSchemas().some(
+        (s) => path.resolve(s.path).toLowerCase() === cacheKey,
+      );
+      if (!known) {
+        throw new Error(`Not a known schema: ${source.path}`);
+      }
+      const hit = this._schemaFieldsCache.get(cacheKey);
+      if (hit) {
+        // Move to newest
+        this._schemaFieldsCache.delete(cacheKey);
+        this._schemaFieldsCache.set(cacheKey, hit);
+        return hit;
+      }
+      schema = await this._parseSchemaFile(source.path);
+    } else {
+      const entry = this.activeFiles.get(source.fileId);
+      if (!entry) {
+        throw new Error("File not found");
+      }
+      schema = entry.file.schemaList;
+      if (!schema) {
+        throw new Error("File has no schema");
+      }
+    }
+
+    const meta = schema.meta
+      ? {
+          gameYear: schema.meta.gameYear,
+          major: schema.meta.major,
+          minor: schema.meta.minor,
+        }
+      : null;
+    const tables = [...(schema.schemas ?? [])].sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+    );
+    const fields = [];
+    for (const table of tables) {
+      for (const attr of table.attributes ?? []) {
+        // The M19 schema has a hole in one attributes array
+        if (!attr) continue;
+        fields.push({
+          name: attr.name,
+          table: table.name,
+          type: attr.type ?? "",
+        });
+      }
+    }
+    const result = { meta, fields };
+
+    if (cacheKey) {
+      this._schemaFieldsCache.set(cacheKey, result);
+      while (this._schemaFieldsCache.size > 3) {
+        this._schemaFieldsCache.delete(this._schemaFieldsCache.keys().next().value);
+      }
+    }
+    return result;
   }
 
   /**
@@ -620,12 +870,123 @@ class FranchiseFileManager {
   }
 
   /**
-   * Get saved schemas
-   * @returns {Array<object>}
+   * Whether a path is inside the custom schema directory (not the directory itself)
+   * @param {string} p
+   * @returns {boolean}
+   * @private
+   */
+  _isInSchemaDirectory(p) {
+    const rel = path.relative(this._schemaDirectory, path.resolve(p));
+    // path.relative returns an absolute path for another drive
+    return rel !== "" && !rel.startsWith("..") && !path.isAbsolute(rel);
+  }
+
+  /**
+   * Get the bundled and custom schemas, each tagged with its source
+   * @returns {Array<{gameType: string|null, gameYear: number|null, major: number, minor: number, path: string, source: "bundled"|"custom"}>}
    */
   getSavedSchemas() {
-    console.log(`Saved schemas: ${this._schemaDirectory}`);
-    return schemaPicker.retrieveSchemas(this._schemaDirectory);
+    // retrieveSchemas throws if the custom dir is missing
+    this._ensureSchemaDirectory();
+    return schemaPicker
+      .retrieveSchemas(this._schemaDirectory)
+      .map((schema) => ({
+        ...schema,
+        source: this._isInSchemaDirectory(schema.path) ? "custom" : "bundled",
+      }));
+  }
+
+  /**
+   * Delete a custom schema file. Refuses bundled schemas, anything outside the
+   * schema directory, folders, and a schema an open file has loaded.
+   * @param {string} schemaPath
+   * @returns {Promise<void>}
+   */
+  async deleteSchema(schemaPath) {
+    const resolved = path.resolve(schemaPath);
+    if (!this._isInSchemaDirectory(resolved)) {
+      throw new Error(`Not a custom schema: ${schemaPath}`);
+    }
+    const stats = await fs.promises.stat(resolved);
+    if (!stats.isFile()) {
+      throw new Error(`Not a schema file: ${schemaPath}`);
+    }
+
+    const key = resolved.toLowerCase();
+    for (const { file } of this.activeFiles.values()) {
+      const loadedPath = file.schemaList?.path;
+      if (loadedPath && path.resolve(loadedPath).toLowerCase() === key) {
+        throw new Error(`Schema is loaded by an open file: ${schemaPath}`);
+      }
+    }
+
+    await fs.promises.unlink(resolved);
+    this._schemaFieldsCache.delete(key);
+  }
+
+  /**
+   * Run v5 schema adds and restores one at a time. v4's schema writers don't
+   * go through this queue.
+   * @template T
+   * @param {() => T|Promise<T>} fn
+   * @returns {Promise<T>}
+   */
+  _schemaDirExclusive(fn) {
+    const tail = this._schemaDirQueue || Promise.resolve();
+    const result = tail.then(() => fn());
+    this._schemaDirQueue = result.catch(() => {});
+    return result;
+  }
+
+  /**
+   * What SchemaImporter (main/services/schemaImport) needs from the manager.
+   * Getters, because tests reassign _schemaDirectory.
+   */
+  schemaImportPort() {
+    const manager = this;
+    const sibling = (name) =>
+      path.join(path.dirname(manager._schemaDirectory), name);
+    return {
+      get schemaDir() {
+        return manager._schemaDirectory;
+      },
+      get stagingDir() {
+        return sibling("schema-staging");
+      },
+      get previousDir() {
+        return sibling("schema-previous");
+      },
+      savedSchemas: () => manager.getSavedSchemas(),
+      loadedPaths: () =>
+        [...manager.activeFiles.entries()]
+          .filter(([, entry]) => entry.file.schemaList?.path)
+          .map(([fileId, entry]) => ({
+            schemaPath: entry.file.schemaList.path,
+            fileId,
+            filePath: entry.path,
+          })),
+      // The most recently opened file
+      openFile: () => {
+        const entry = [...manager.activeFiles.values()].pop();
+        const type = entry?.file.type;
+        if (!type?.gameType || !type.year) return null;
+        const expected = entry.file.expectedSchemaVersion;
+        return {
+          path: entry.path,
+          game: { gameType: type.gameType, gameYear: type.year },
+          expected:
+            expected && Number.isInteger(expected.major)
+              ? { major: expected.major, minor: expected.minor }
+              : null,
+        };
+      },
+      exclusive: (fn) => manager._schemaDirExclusive(fn),
+      invalidate: (paths) => {
+        for (const p of paths) {
+          manager._schemaFieldsCache.delete(path.resolve(p).toLowerCase());
+        }
+      },
+    };
   }
 
   /**
@@ -822,14 +1183,17 @@ class FranchiseFileManager {
    * @returns {Promise<{results: Array<object>, records: Array<object>, emptyStates: Array<object>}>}
    */
   async writeBulkTableCells(fileId, changes) {
+    return this._runExclusive(fileId, () =>
+      this._writeBulkTableCellsUnlocked(fileId, changes),
+    );
+  }
+
+  async _writeBulkTableCellsUnlocked(fileId, changes) {
     const entry = this.activeFiles.get(fileId);
     if (!entry) {
       throw new Error(`File not found: ${fileId}`);
     }
 
-    const file = entry.file;
-    const originalSaveOnChange = file.settings.saveOnChange;
-    file.settings.saveOnChange = false;
     entry.suppressChangeEvents = true; // coalesced table-changed events are sent below
 
     const results = [];
@@ -867,7 +1231,6 @@ class FranchiseFileManager {
         }
       }
     } finally {
-      file.settings.saveOnChange = originalSaveOnChange;
       entry.suppressChangeEvents = false;
     }
 
@@ -913,10 +1276,8 @@ class FranchiseFileManager {
       });
     }
 
-    if (originalSaveOnChange && changedTables.size > 0) {
-      await file.save();
-    }
-
+    // The library's change events already queued an auto-save behind this
+    // write; the response doesn't wait for it
     return { results, records, emptyStates };
   }
 
@@ -928,6 +1289,12 @@ class FranchiseFileManager {
    * @returns {Promise<object>}
    */
   async setTableRecordsEmpty(fileId, tableId, recordIndices = []) {
+    return this._runExclusive(fileId, () =>
+      this._setTableRecordsEmptyUnlocked(fileId, tableId, recordIndices),
+    );
+  }
+
+  async _setTableRecordsEmptyUnlocked(fileId, tableId, recordIndices) {
     const entry = this.activeFiles.get(fileId);
     if (!entry) {
       throw new Error(`File not found: ${fileId}`);
@@ -965,6 +1332,58 @@ class FranchiseFileManager {
 
     return {
       affectedCount: uniqueIndices.length,
+      ...this._serializeEmptyState(table),
+    };
+  }
+
+  /**
+   * Point a table's empty-record chain at an already-empty record. Records
+   * before it drop out of the chain. A non-empty record would make the
+   * library read its first 4 bytes as the next pointer, so it is rejected.
+   * @param {string} fileId
+   * @param {number} tableId
+   * @param {number} recordIndex
+   * @returns {Promise<object>}
+   */
+  async setTableNextRecordToUse(fileId, tableId, recordIndex) {
+    return this._runExclusive(fileId, () =>
+      this._setTableNextRecordToUseUnlocked(fileId, tableId, recordIndex),
+    );
+  }
+
+  async _setTableNextRecordToUseUnlocked(fileId, tableId, recordIndex) {
+    const entry = this.activeFiles.get(fileId);
+    if (!entry) {
+      throw new Error(`File not found: ${fileId}`);
+    }
+
+    const table = entry.file.getTableById(tableId);
+    if (!table) {
+      throw new Error(`Table not found: ${tableId}`);
+    }
+
+    await table.readRecords();
+
+    const index = Number(recordIndex);
+    const record = Number.isInteger(index) ? table.records[index] : undefined;
+    if (!record) {
+      throw new Error(`Record not found: ${recordIndex}`);
+    }
+    if (!record.isEmpty) {
+      throw new Error(`Record ${index} is not empty`);
+    }
+
+    table.setNextRecordToUse(index, true);
+    // The library re-parses the chain but leaves isEmpty set on records that
+    // dropped out of it
+    table.records.forEach((r, i) => {
+      if (r.isEmpty && !table.emptyRecords.has(i)) {
+        r.isEmpty = false;
+      }
+    });
+
+    return {
+      nextRecordToUse: table.header.nextRecordToUse,
       ...this._serializeEmptyState(table),
     };
   }
@@ -1010,12 +1429,12 @@ class FranchiseFileManager {
   }
 
   /**
-   * Get all records that reference a specific record.
-   * Falls back to a manual scan when the library helper is unavailable.
+   * Get all records that reference a specific record, one per referencing
+   * record and field.
    * @param {string} fileId
    * @param {number} tableId
    * @param {number} recordIndex
-   * @returns {Promise<Array<{tableId: number, name: string, recordIndex: number, fieldName?: string}>>}
+   * @returns {Promise<Array<{tableId: number, name: string, recordIndex: number, fieldName?: string, fieldIndex?: number}>>}
    */
   async getReferencesToRecord(fileId, tableId, recordIndex) {
     const entry = this.activeFiles.get(fileId);
@@ -1023,39 +1442,38 @@ class FranchiseFileManager {
       throw new Error(`File not found: ${fileId}`);
     }
 
+    // The library's FranchiseFile.getReferencesToRecord only finds the
+    // tables whose schema can reference the record and whose data holds its
+    // reference bytes, with no record index. Scan those for the records.
     const file = entry.file;
-    if (typeof file.getReferencesToRecord === "function") {
-      const result = file.getReferencesToRecord(tableId, recordIndex);
-      // Ensure the result is a plain array of plain objects
-      if (Array.isArray(result)) {
-        return result.map((ref) => ({
-          tableId: Number(ref.tableId),
-          name: String(ref.name),
-          recordIndex: Number(ref.recordIndex),
-          fieldName: ref.fieldName ? String(ref.fieldName) : undefined,
-        }));
-      }
-      return [];
-    }
-
     const targetTableId = Number(tableId);
     const targetRecordIndex = Number(recordIndex);
     const references = [];
     const seen = new Set();
 
-    for (const table of file.tables || []) {
-      const referenceHeaders = (table.offsetTable || []).filter(
-        (header) => header && header.isReference,
-      );
+    const candidates =
+      typeof file.getReferencesToRecord === "function"
+        ? (file.getReferencesToRecord(targetTableId, targetRecordIndex) || [])
+            .map((ref) => ref.table)
+            .filter(Boolean)
+        : file.tables || [];
 
-      if (referenceHeaders.length === 0) {
-        continue;
-      }
-
+    for (const table of candidates) {
+      // offsetTable is only filled in once the records are read
       try {
         await table.readRecords();
       } catch (error) {
         console.warn(`Failed to read records for table ${table.name}:`, error);
+        continue;
+      }
+
+      // With their offsetTable index, which is the field's column in
+      // readTableData's headers
+      const referenceHeaders = (table.offsetTable || [])
+        .map((header, index) => ({ header, index }))
+        .filter(({ header }) => header && header.isReference);
+
+      if (referenceHeaders.length === 0) {
         continue;
       }
 
@@ -1066,7 +1484,7 @@ class FranchiseFileManager {
       table.records.forEach((record, sourceRecordIndex) => {
         if (!record) return;
 
-        for (const header of referenceHeaders) {
+        for (const { header, index: fieldIndex } of referenceHeaders) {
           let referenceData;
 
           try {
@@ -1080,7 +1498,8 @@ class FranchiseFileManager {
           }
 
           const referencedTableId = Number(referenceData.tableId);
-          const referencedRecordIndex = Number(referenceData.recordIndex);
+          // The library calls the record index rowNumber
+          const referencedRecordIndex = Number(referenceData.rowNumber);
 
           if (
             referencedTableId === targetTableId &&
@@ -1095,6 +1514,7 @@ class FranchiseFileManager {
                 name: String(table.name),
                 recordIndex: Number(sourceRecordIndex),
                 fieldName: String(header.name),
+                fieldIndex,
               });
             }
             break;
@@ -1121,6 +1541,120 @@ class FranchiseFileManager {
   }
 
   /**
+   * Add a schema-mismatch notification if the file's loaded schema is not the
+   * one it expects.
+   * @param {string} fileId
+   * @private
+   */
+  _notifyIfSchemaMismatch(fileId) {
+    if (!this._notificationStore) return;
+    const file = this.activeFiles.get(fileId)?.file;
+    if (!file) return;
+    const { hasMismatch, expected, used } = checkSchemaMismatch(file);
+    if (!hasMismatch) return;
+    this._notificationStore.add({
+      kind: "schema-mismatch",
+      fileId,
+      data: {
+        expected,
+        loaded: used,
+        gameType: file.type?.gameType || "madden",
+      },
+    });
+  }
+
+  /**
+   * Remove the file's file-changed and file-missing notifications.
+   * @param {string} fileId
+   * @private
+   */
+  _removeExternalChange(fileId) {
+    this._notificationStore?.removeWhere(
+      (n) =>
+        (n.kind === "file-changed" || n.kind === "file-missing") &&
+        n.fileId === fileId,
+    );
+  }
+
+  /**
+   * Add a schema-missing notification for a file that could not be opened.
+   * Keeps only the year/type overrides, so a retry doesn't ask for them again.
+   * @param {string} filePath
+   * @param {object} [options] - The open-file options
+   * @param {{ gameYear: number, gameType: string }} [game]
+   * @private
+   */
+  _notifySchemaMissing(filePath, options, game) {
+    if (!this._notificationStore) return;
+    const openOptions = {};
+    if (options?.gameYearOverride != null) {
+      openOptions.gameYearOverride = options.gameYearOverride;
+    }
+    if (options?.gameTypeOverride != null) {
+      openOptions.gameTypeOverride = options.gameTypeOverride;
+    }
+    this._notificationStore.add({
+      kind: "schema-missing",
+      data: { path: filePath, openOptions, game },
+    });
+  }
+
+  /**
+   * Build the open-file error result. Adds code "schema-not-found" when the
+   * file's expected schema version has no schema in the bundled or custom
+   * directory, the lookup the library's parse() does.
+   * @param {Error} err
+   * @param {string} filePath
+   * @param {object} [options]
+   * With the code, `game` is the year and type read from the file.
+   * @returns {Promise<{ error: string, code?: "schema-not-found", game?: { gameYear: number, gameType: string } }>}
+   * @private
+   */
+  async _openError(err, filePath, options) {
+    try {
+      const probe = await FranchiseFile.create(filePath, {
+        autoParse: false,
+        gameYearOverride: options?.gameYearOverride ?? undefined,
+        gameTypeOverride: options?.gameTypeOverride ?? undefined,
+      });
+      const expected = probe.expectedSchemaVersion;
+      if (expected) {
+        let picked = null;
+        try {
+          picked = schemaPicker.pick(
+            probe._gameYear,
+            expected.major,
+            expected.minor,
+            {
+              schemaDirectory:
+                options?.schemaDirectory || this._schemaDirectory,
+            },
+            probe._gameType,
+          );
+        } catch (pickError) {
+          // pick throws a TypeError (reduce of an empty list) when no schema
+          // exists for the game year. Anything else, like an unreadable
+          // schema directory, is not a missing schema.
+          if (!(pickError instanceof TypeError)) return { error: err.message };
+        }
+        if (!picked) {
+          return {
+            error: err.message,
+            code: "schema-not-found",
+            game: {
+              gameYear: probe._gameYear,
+              gameType: probe._gameType || "madden",
+            },
+          };
+        }
+      }
+    } catch {
+      // unreadable file: fall through to the plain error
+    }
+    return { error: err.message };
+  }
+
+  /**
    * Set up IPC handlers for the franchise manager
    * @param {Object} loggedIpc - Wrapped IPC with dev logging
    */
@@ -1132,14 +1666,32 @@ class FranchiseFileManager {
       "franchise:open-file",
       async (event, filePath, options) => {
         try {
-          return await this.openFile(filePath, options);
+          const result = await this.openFile(filePath, options);
+          this._notificationStore?.removeWhere(
+            (n) =>
+              n.kind === "schema-missing" && samePath(n.data?.path, filePath),
+          );
+          if (!options?.schemaOverride) {
+            this._notifyIfSchemaMismatch(result.fileId);
+          }
+          return result;
         } catch (err) {
-          return { error: err.message };
+          if (options?.schemaOverride) return { error: err.message };
+          const { game, ...result } = await this._openError(
+            err,
+            filePath,
+            options,
+          );
+          if (result.code === "schema-not-found") {
+            this._notifySchemaMissing(filePath, options, game);
+          }
+          return result;
         }
       },
     );
 
     loggedIpc.handle("franchise:close-file", async (event, fileId) => {
+      this._notificationStore?.removeWhere((n) => n.fileId === fileId);
       return this.closeFile(fileId);
     });
 
@@ -1190,6 +1742,7 @@ class FranchiseFileManager {
       async (event, fileId, newPath) => {
         try {
           const path = await this.saveFileAsAndOpen(fileId, newPath);
+          this._removeExternalChange(fileId);
           return { path };
         } catch (err) {
           return { error: err.message };
@@ -1197,11 +1750,36 @@ class FranchiseFileManager {
       },
     );
 
+    loggedIpc.handle("franchise:reload-file", async (event, fileId) => {
+      try {
+        const result = await this.reloadFile(fileId);
+        this._removeExternalChange(fileId);
+        const file = this.getFile(fileId);
+        if (!file?.settings?.schemaOverride) {
+          // add replaces an existing mismatch for the file
+          if (checkSchemaMismatch(file).hasMismatch) {
+            this._notifyIfSchemaMismatch(fileId);
+          } else {
+            this._notificationStore?.removeWhere(
+              (n) => n.kind === "schema-mismatch" && n.fileId === fileId,
+            );
+          }
+        }
+        return result;
+      } catch (err) {
+        return { error: err.message };
+      }
+    });
+
     loggedIpc.handle(
       "franchise:load-schema",
       async (event, fileId, schemaPath, saveSchema) => {
         try {
-          return await this.loadSchema(fileId, schemaPath, saveSchema);
+          const result = await this.loadSchema(fileId, schemaPath, saveSchema);
+          this._notificationStore?.removeWhere(
+            (n) => n.kind === "schema-mismatch" && n.fileId === fileId,
+          );
+          return result;
         } catch (err) {
           return { error: err.message };
         }
@@ -1219,9 +1797,24 @@ class FranchiseFileManager {
       },
     );
 
+    loggedIpc.handle(
+      "franchise:has-unsaved-changes",
+      async (event, fileId) => {
+        return this.hasUnsavedChanges(fileId);
+      },
+    );
+
     // Schema operations
     loggedIpc.handle("franchise:get-saved-schemas", async () => {
       return this.getSavedSchemas();
+    });
+
+    loggedIpc.handle("schema:get-fields", async (event, source) => {
+      try {
+        return await this.getSchemaFields(source);
+      } catch (e) {
+        return { error: e.message };
+      }
     });
 
     loggedIpc.handle(
@@ -1277,6 +1870,22 @@ class FranchiseFileManager {
             fileId,
             tableId,
             recordIndices,
+          );
+          return { success: true, ...result };
+        } catch (err) {
+          return { error: err.message };
+        }
+      },
+    );
+
+    loggedIpc.handle(
+      "franchise:set-table-next-record-to-use",
+      async (event, fileId, tableId, recordIndex) => {
+        try {
+          const result = await this.setTableNextRecordToUse(
+            fileId,
+            tableId,
+            recordIndex,
           );
           return { success: true, ...result };
         } catch (err) {

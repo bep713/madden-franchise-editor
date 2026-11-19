@@ -1,0 +1,115 @@
+/*
+ * Dark styles for the v4 pages that v5 also shows (Settings, Schema Manager,
+ * Credits). Main injects this after data/theme-colors.css, only while v5 is
+ * the active UI. Every rule is inside the media query, so Light and Auto on a
+ * light Windows look exactly like the v4 stylesheet. Inserted CSS comes
+ * before the page's sheets, so `:root` lifts each rule above its v4 match.
+ */
+@media (prefers-color-scheme: dark) {
+    :root body,
+    :root .settings-manager,
+    :root .settings-container-content,
+    :root .welcome {
+        color: var(--text-primary);
+        background: var(--surface);
+    }
+
+    :root a {
+        color: var(--text-link);
+    }
+
+    :root input,
+    :root select,
+    :root textarea {
+        color: var(--text-primary);
+        background-color: var(--surface-sunken);
+        border: 1px solid var(--border);
+    }
+
+    :root :focus {
+        outline-color: var(--primary);
+    }
+
+    :root .btn {
+        color: var(--text-primary);
+        background-color: var(--primary-soft);
+        border-color: var(--primary);
+    }
+
+    :root .btn:hover,
+    :root .btn:active {
+        background-color: var(--primary-muted);
+    }
+
+    /* Settings */
+    :root .fields-wrapper,
+    :root .continue-wrapper {
+        background-color: var(--surface-raised);
+    }
+
+    :root .continue-wrapper .btn {
+        background: var(--surface-sunken);
+        border-color: var(--text-link);
+    }
+
+    :root .continue-wrapper .btn:hover {
+        background: var(--hover);
+    }
+
+    :root .settings-container-content .version-separator {
+        color: var(--text-secondary);
+    }
+
+    :root .directory-field-wrapper .directory-btn {
+        border-color: var(--border);
+        filter: invert(0.9);
+    }
+
+    /* Schema Manager */
+    :root .schema-list-item {
+        border-color: var(--divider-color);
+    }
+
+    :root .schema-list-item:hover {
+        background-color: var(--hover);
+    }
+
+    :root .schema-list-item.loaded-schema {
+        background-color: var(--selected);
+        box-shadow: inset 3px 0 0 var(--primary);
+    }
+
+    :root .schema-list-item.expected-schema::before {
+        color: var(--success);
+    }
+
+    :root .schema-manager-wrapper .action-button {
+        color: var(--text-link);
+    }
+
+    :root .loader--filled-bg {
+        background: var(--surface);
+    }
+
+    :root .loader {
+        border-top-color: var(--divider-color);
+        border-right-color: var(--divider-color);
+        border-bottom-color: var(--divider-color);
+    }
+
+    /* Credits */
+    :root .welcome .app-title {
+        color: var(--on-primary);
+    }
+
+    :root .welcome .link-item {
+        color: var(--text-link);
+    }
+
+    :root .welcome .link-item.disabled,
+    :root .welcome .link-item.unavailable,
+    :root .welcome .file-path,
+    :root .welcome .time {
+        color: var(--text-primary);
+    }
+}

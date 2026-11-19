@@ -1,0 +1,43 @@
+@import '@assets/colors.css';
+
+.divider {
+    --divider-border: 0.5px solid var(--divider-color);
+    --divider-dashed-border: 0.5px dashed var(--divider-color);
+
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 1px;
+}
+
+.divider::after {
+    position: absolute;
+    content: '';
+}
+
+.horizontal,
+.horizontal::after {
+    width: 100%;
+}
+
+.vertical,
+.vertical::after {
+    height: 100%;
+}
+
+.solid.horizontal::after {
+    border-top: var(--divider-border);
+}
+
+.solid.vertical::after {
+    border-left: var(--divider-border);
+}
+
+.dashed.horizontal::after {
+    border-top: var(--divider-dashed-border);
+}
+
+.dashed.vertical::after {
+    border-left: var(--divider-dashed-border);
+}

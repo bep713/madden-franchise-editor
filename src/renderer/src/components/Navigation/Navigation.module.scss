@@ -1,0 +1,74 @@
+@use '@assets/vars' as v;
+
+.tabWrapper {
+    display: flex;
+    flex-wrap: nowrap;
+    padding-left: 5px;
+    overflow: auto hidden;
+    list-style-type: none;
+    background-color: var(--surface-chrome);
+
+    &::-webkit-scrollbar {
+        display: none;
+        height: 5px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background-color: color-mix(
+            in srgb,
+            var(--surface-chrome),
+            var(--text-primary) 30%
+        );
+
+        &:hover {
+            background-color: color-mix(
+                in srgb,
+                var(--surface-chrome),
+                var(--text-primary) 45%
+            );
+        }
+
+        &:active {
+            background-color: color-mix(
+                in srgb,
+                var(--surface-chrome),
+                var(--text-primary) 60%
+            );
+        }
+    }
+
+    &:hover,
+    &.showScrollbar {
+        &::-webkit-scrollbar {
+            display: inherit;
+        }
+    }
+}
+
+.tabContainer {
+    display: flex;
+    flex-shrink: 0;
+    border-right: 1px solid var(--divider-color);
+}
+
+.addTabButton {
+    display: flex;
+    flex-shrink: 0;
+    flex-basis: 40px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-size: v.$font-size-small;
+    cursor: pointer;
+    outline: none;
+    background: none;
+    border: none;
+
+    &:hover {
+        background-color: color-mix(
+            in srgb,
+            var(--surface) 70%,
+            var(--surface-chrome)
+        );
+    }
+}

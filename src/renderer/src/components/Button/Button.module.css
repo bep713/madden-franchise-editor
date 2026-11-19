@@ -1,0 +1,61 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+
+.button {
+    padding: var(--spacing-3);
+    color: var(--text-primary);
+    cursor: pointer;
+    border: none;
+    border-radius: 2px;
+}
+
+.primary {
+    background-color: var(--primary-soft);
+    border: 1px solid var(--primary-muted);
+}
+
+.primary:hover {
+    background-color: var(--primary-muted);
+}
+
+.secondary {
+    background-color: var(--surface-raised);
+    border: 1px solid var(--info-strong);
+}
+
+.secondary:hover {
+    background-color: var(--info);
+}
+
+.ghost {
+    background-color: inherit;
+    border: none;
+}
+
+.ghost:hover {
+    background-color: color-mix(in srgb, var(--hover), var(--text-primary) 10%);
+}
+
+.stretch {
+    width: 100%;
+}
+
+.disabled,
+.disabled:hover {
+    color: var(--text-disabled);
+    cursor: not-allowed;
+    background-color: var(--disabled);
+    border: 1px solid var(--disabled);
+}
+
+.center {
+    text-align: center;
+}
+
+.left {
+    text-align: left;
+}
+
+.right {
+    text-align: right;
+}

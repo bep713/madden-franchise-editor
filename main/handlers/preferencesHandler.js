@@ -5,6 +5,12 @@ const preferencesSchema = require("../../data/preferencesSchema.json");
 
 let preferencesInstance = null;
 const changeCallbacks = new Map();
+// Set by registerPreferencesHandlers, used by setPreferences.
+let registered = {
+  franchiseFileManager: null,
+  getLoggedMain: () => null,
+  getActiveUi: () => "v5",
+};
 
 /**
  * Subscribe to changes of a preference made through `preferences:set`.
@@ -74,9 +80,10 @@ function fillMissingKeys(defaults, target) {
 }
 
 /**
- * Build the preference sections config (for the settings UI) from the shared schema.
+ * Build the preference sections config (for the settings UI) from the shared
+ * schema. A field with `ui` shows only while that UI is the active one.
  */
-function buildPreferenceSections() {
+function buildPreferenceSections(activeUi) {
   return preferencesSchema.sections.map((section) => ({
     id: section.id,
     label: section.label,
@@ -84,20 +91,76 @@ function buildPreferenceSections() {
     form: {
       groups: [
         {
-          fields: section.fields.map((field) => {
-            const base = {
-              label: field.label,
-              key: field.key,
-              type: field.type,
-            };
-            if (field.help) base.help = field.help;
-            if (field.options) base.options = field.options;
-            return base;
-          }),
+          fields: section.fields
+            .filter((field) => !field.ui || field.ui === activeUi)
+            .map((field) => {
+              const base = {
+                label: field.label,
+                key: field.key,
+                type: field.type,
+              };
+              if (field.help) base.help = field.help;
+              if (field.options) base.options = field.options;
+              return base;
+            }),
         },
       ],
     },
   }));
+}
+
+/**
+ * Write preferences ({ <section>: { <key>: value } }, per key), apply them to
+ * the file manager, run the change callbacks and broadcast
+ * `preferences:update`. Backs `preferences:set`; main calls it directly too.
+ */
+function setPreferences(preferences) {
+  if (!preferencesInstance) {
+    throw new Error("Preferences not initialized");
+  }
+  if (!preferences || typeof preferences !== "object") {
+    throw new Error("Invalid preferences object");
+  }
+  const { franchiseFileManager, getLoggedMain } = registered;
+  const watchedBefore = new Map();
+  for (const keyPath of changeCallbacks.keys()) {
+    watchedBefore.set(keyPath, preferencesInstance.value(keyPath));
+  }
+
+  // Write each top-level section, saving once
+  const entries = [];
+  for (const [section, values] of Object.entries(preferences)) {
+    if (typeof values === "object" && !Array.isArray(values)) {
+      for (const [key, value] of Object.entries(values)) {
+        entries.push([`${section}.${key}`, value]);
+      }
+    }
+  }
+  if (entries.length > 0) {
+    preferencesInstance.setMany(entries);
+  }
+
+  if (franchiseFileManager?.applyPreferenceSettings) {
+    franchiseFileManager.applyPreferenceSettings(preferencesInstance.value());
+  }
+
+  for (const [keyPath, before] of watchedBefore) {
+    const after = preferencesInstance.value(keyPath);
+    if (JSON.stringify(before) !== JSON.stringify(after)) {
+      for (const cb of changeCallbacks.get(keyPath)) {
+        try {
+          cb(after, before);
+        } catch (err) {
+          console.error(`Preference change callback failed (${keyPath}):`, err);
+        }
+      }
+    }
+  }
+
+  const loggedMain = getLoggedMain();
+  loggedMain.send("preferences:update", preferencesInstance.value(undefined, ""));
+
+  return true;
 }
 
 /**
@@ -106,8 +169,10 @@ function buildPreferenceSections() {
 function registerPreferencesHandlers(
   loggedIpc,
   franchiseFileManager = null,
-  { loggedMain: getLoggedMain },
+  { loggedMain: getLoggedMain, activeUi: getActiveUi = () => "v5" },
 ) {
+  registered = { franchiseFileManager, getLoggedMain, getActiveUi };
+
   loggedIpc.handle("preferences:get", async () => {
     try {
       if (!preferencesInstance) {
@@ -121,56 +186,7 @@ function registerPreferencesHandlers(
 
   loggedIpc.handle("preferences:set", async (event, preferences) => {
     try {
-      if (!preferencesInstance) {
-        throw new Error("Preferences not initialized");
-      }
-      if (!preferences || typeof preferences !== "object") {
-        throw new Error("Invalid preferences object");
-      }
-      const watchedBefore = new Map();
-      for (const keyPath of changeCallbacks.keys()) {
-        watchedBefore.set(keyPath, preferencesInstance.value(keyPath));
-      }
-
-      // Write each top-level section, saving once
-      const entries = [];
-      for (const [section, values] of Object.entries(preferences)) {
-        if (typeof values === "object" && !Array.isArray(values)) {
-          for (const [key, value] of Object.entries(values)) {
-            entries.push([`${section}.${key}`, value]);
-          }
-        }
-      }
-      if (entries.length > 0) {
-        preferencesInstance.setMany(entries);
-      }
-
-      if (franchiseFileManager?.applyPreferenceSettings) {
-        franchiseFileManager.applyPreferenceSettings(
-          preferencesInstance.value(),
-        );
-      }
-
-      for (const [keyPath, before] of watchedBefore) {
-        const after = preferencesInstance.value(keyPath);
-        if (JSON.stringify(before) !== JSON.stringify(after)) {
-          for (const cb of changeCallbacks.get(keyPath)) {
-            try {
-              cb(after, before);
-            } catch (err) {
-              console.error(`Preference change callback failed (${keyPath}):`, err);
-            }
-          }
-        }
-      }
-
-      const loggedMain = getLoggedMain();
-      loggedMain.send(
-        "preferences:update",
-        preferencesInstance.value(undefined, ""),
-      );
-
-      return true;
+      return setPreferences(preferences);
     } catch (error) {
       throw new Error(`Failed to set preferences: ${error.message}`);
     }
@@ -199,7 +215,7 @@ function registerPreferencesHandlers(
 
   loggedIpc.handle("preferences:get-sections", async () => {
     try {
-      return buildPreferenceSections();
+      return buildPreferenceSections(registered.getActiveUi());
     } catch (error) {
       throw new Error(`Failed to get preference sections: ${error.message}`);
     }
@@ -227,7 +243,7 @@ function getPreferenceDefaults() {
       defaults[section.id][field.key] = value;
     }
   }
-  // Include settingsManager section (not part of the settings form)
+  // Include the sections that are not part of the settings form
   defaults.settingsManager = preferencesSchema.settingsManager;
   return defaults;
 }
@@ -245,4 +261,5 @@ module.exports = {
   getPreferenceDefaults,
   getPreferencesInstance,
   onPreferenceChange,
+  setPreferences,
 };

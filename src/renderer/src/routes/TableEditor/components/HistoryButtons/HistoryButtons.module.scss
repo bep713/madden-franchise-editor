@@ -1,0 +1,89 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+
+.buttons {
+    display: flex;
+    flex-shrink: 0;
+    gap: var(--spacing-05);
+}
+
+// The same box as the sidebar's pin toggle
+.button {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    cursor: pointer;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 4px;
+
+    svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    &:hover:not(:disabled) {
+        background-color: var(--hover);
+    }
+
+    &:disabled {
+        cursor: default;
+
+        svg {
+            opacity: 0.35;
+        }
+    }
+}
+
+.underlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+}
+
+// The same surface as the reference editor's popover
+.menu {
+    position: fixed;
+    z-index: 1002;
+    display: flex;
+    flex-direction: column;
+    min-width: 160px;
+    max-width: 320px;
+    max-height: 60vh;
+    padding: var(--spacing-05) 0;
+    overflow-y: auto;
+    background-color: var(--surface-raised);
+    border: 1px solid var(--divider-color);
+    border-radius: var(--spacing-1);
+    box-shadow: 0 4px 16px var(--shadow);
+}
+
+.menuItem {
+    display: flex;
+    gap: var(--spacing-2);
+    align-items: baseline;
+    padding: 6px var(--spacing-4);
+    text-align: left;
+    cursor: pointer;
+    background: none;
+    border: none;
+
+    &:hover,
+    &:focus-visible {
+        outline: none;
+        background-color: var(--hover);
+    }
+}
+
+.menuName {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 13px;
+    line-height: 18px;
+    white-space: nowrap;
+}

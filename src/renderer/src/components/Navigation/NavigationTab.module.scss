@@ -1,0 +1,58 @@
+@use '@assets/vars' as v;
+
+.tab {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7.5px 10px;
+    text-overflow: ellipsis;
+    font-size: v.$font-size-small;
+    color: var(--text-primary);
+    white-space: pre;
+    outline: none;
+
+    &:hover {
+        cursor: pointer;
+        background-color: color-mix(
+            in srgb,
+            var(--surface) 70%,
+            var(--surface-chrome)
+        );
+
+        .closeTabButton {
+            visibility: visible;
+        }
+    }
+
+    &:global(.active) {
+        background-color: var(--surface);
+
+        &:hover {
+            cursor: default;
+        }
+
+        .closeTabButton {
+            visibility: visible;
+        }
+    }
+}
+
+.closeTabButton {
+    display: flex;
+    visibility: hidden;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    color: var(--text-primary);
+    cursor: pointer;
+    background: none;
+    border: none;
+    border-radius: 5px;
+
+    &:hover {
+        background-color: var(--surface-chrome);
+    }
+}

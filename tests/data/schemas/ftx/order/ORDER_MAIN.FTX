@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pins the header order. No databaseName here, so this file's version is
+     ignored. Depth-first pre-order reaches Deep.FTX (Madden25 250.3) before
+     Second.FTX (CollegeFB26 260.7); a breadth-first reader would pick Second. -->
+<FranTkData dataMajorVersion="111" dataMinorVersion="1">
+  <Includes>
+    <IncludeFile fileName="First.FTX"/>
+    <IncludeFile fileName="Second.FTX"/>
+  </Includes>
+  <schemas>
+    <schema name="OrderMain" assetId="9501" ownerAssetId="0" numMembers="1" base="Record">
+      <attribute idx="0" name="A" type="bool"/>
+    </schema>
+  </schemas>
+</FranTkData>

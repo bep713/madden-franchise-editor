@@ -1,0 +1,78 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+
+.input {
+    background-color: var(--surface);
+    border: 1px solid var(--divider-color);
+    border-radius: 2px;
+}
+
+.input:focus-within {
+    outline: 1px solid var(--text-primary);
+}
+
+.input.borderless {
+    background-color: transparent;
+    border-color: transparent;
+}
+
+.input.borderless:hover,
+.input.borderless:focus-within {
+    outline: none;
+    border-color: var(--text-primary);
+}
+
+.input.error {
+    border: 1px solid var(--error-border);
+    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.inputElement {
+    width: 100%;
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: 1em;
+    color: inherit;
+
+    /* the wrapper paints the field; in dark mode the UA's input background
+       differs from --surface and splits the left asset off into a block */
+    background-color: transparent;
+    border: none;
+}
+
+.inputElement:focus-visible {
+    outline: none;
+}
+
+.inputElement::placeholder {
+    font-style: italic;
+}
+
+.input.leftAsset {
+    padding-left: var(--spacing-3);
+}
+
+.leftAsset .inputElement {
+    padding-left: 0;
+}
+
+.errorMessage {
+    --textbox-error-border: 1px solid var(--error-border);
+
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: 0.875em;
+    background-color: var(--error);
+    border-right: var(--textbox-error-border);
+    border-bottom: var(--textbox-error-border);
+    border-left: var(--textbox-error-border);
+    border-bottom-right-radius: 2px;
+    border-bottom-left-radius: 2px;
+}
+
+.horizontal .label {
+    padding-top: calc(var(--spacing-3) + 1px);
+}
+
+.horizontal .inputWrapper {
+    flex-grow: 1;
+}

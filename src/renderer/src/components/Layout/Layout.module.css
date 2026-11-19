@@ -1,0 +1,169 @@
+@import '@assets/spacing.css';
+
+.base {
+    display: flex;
+    flex-direction: var(--flex-direction);
+    gap: var(--row-gap) var(--column-gap);
+    align-items: var(--flex-align);
+    justify-content: var(--flex-justify);
+}
+
+.fullHeight {
+    height: 100%;
+}
+
+.fullWidth {
+    width: 100%;
+}
+
+.inline {
+    display: inline-flex;
+}
+
+.flexColumn {
+    --flex-direction: column;
+}
+
+.flexColumnReverse {
+    --flex-direction: column-reverse;
+}
+
+.flexRow {
+    --flex-direction: row;
+}
+
+.flexRowReverse {
+    --flex-direction: row-reverse;
+}
+
+.alignEnd {
+    --flex-align: end;
+}
+
+.alignCenter {
+    --flex-align: center;
+}
+
+.alignStart {
+    --flex-align: start;
+}
+
+.alignStretch {
+    --flex-align: stretch;
+}
+
+.justifyEnd {
+    --flex-justify: end;
+}
+
+.justifyCenter {
+    --flex-justify: center;
+}
+
+.justifySpaceBetween {
+    --flex-justify: space-between;
+}
+
+.justifySpaceAround {
+    --flex-justify: space-around;
+}
+
+.justifySpaceEvenly {
+    --flex-justify: space-evenly;
+}
+
+.justifyStart {
+    --flex-justify: start;
+}
+
+.columnGapNone {
+    --column-gap: 0;
+}
+
+.columnGap05 {
+    --column-gap: var(--spacing-05);
+}
+
+.columnGap1 {
+    --column-gap: var(--spacing-1);
+}
+
+.columnGap2 {
+    --column-gap: var(--spacing-2);
+}
+
+.columnGap3 {
+    --column-gap: var(--spacing-3);
+}
+
+.columnGap4 {
+    --column-gap: var(--spacing-4);
+}
+
+.columnGap5 {
+    --column-gap: var(--spacing-5);
+}
+
+.columnGap6 {
+    --column-gap: var(--spacing-6);
+}
+
+.columnGap8 {
+    --column-gap: var(--spacing-8);
+}
+
+.columnGap12 {
+    --column-gap: var(--spacing-12);
+}
+
+.columnGap16 {
+    --column-gap: var(--spacing-16);
+}
+
+.rowGapNone {
+    --row-gap: 0;
+}
+
+.rowGap05 {
+    --row-gap: var(--spacing-05);
+}
+
+.rowGap1 {
+    --row-gap: var(--spacing-1);
+}
+
+.rowGap2 {
+    --row-gap: var(--spacing-2);
+}
+
+.rowGap3 {
+    --row-gap: var(--spacing-3);
+}
+
+.rowGap4 {
+    --row-gap: var(--spacing-4);
+}
+
+.rowGap5 {
+    --row-gap: var(--spacing-5);
+}
+
+.rowGap6 {
+    --row-gap: var(--spacing-6);
+}
+
+.rowGap8 {
+    --row-gap: var(--spacing-8);
+}
+
+.rowGap12 {
+    --row-gap: var(--spacing-12);
+}
+
+.rowGap16 {
+    --row-gap: var(--spacing-16);
+}
+
+.wrap {
+    flex-wrap: wrap;
+}

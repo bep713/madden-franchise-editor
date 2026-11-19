@@ -1,0 +1,56 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+
+.table {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-05);
+    padding: var(--spacing-3);
+    text-align: left;
+    cursor: pointer;
+    background-color: var(--secondary);
+    border: 1px solid var(--divider-color);
+}
+
+.table:hover {
+    background-color: var(--hover);
+}
+
+.selected,
+.selected:hover {
+    cursor: default;
+    background-color: var(--selected);
+    border: 1px solid var(--border);
+    box-shadow: inset 3px 0 0 light-dark(transparent, var(--primary));
+}
+
+.tableName {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 1em;
+}
+
+.selected .tableName {
+    font-weight: 500;
+}
+
+.idLabel {
+    display: flex;
+    gap: var(--spacing-05);
+    align-items: center;
+}
+
+.pinIcon {
+    flex-shrink: 0;
+    width: 10px;
+    height: 10px;
+}
+
+.pinned {
+    border-left: 3px solid var(--primary-muted);
+}
+
+.selected.pinned {
+    border-left: 3px solid var(--primary);
+}

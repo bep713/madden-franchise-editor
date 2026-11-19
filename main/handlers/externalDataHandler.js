@@ -186,40 +186,37 @@ function registerExternalDataHandlers(loggedIpc, franchiseFileManager) {
     "external-data:import-bulk",
     async (event, fileId, tableId, rows) => {
       try {
-        console.time("import-bulk");
-        const entry = franchiseFileManager.activeFiles.get(fileId);
-        if (!entry) throw new Error(`File not found: ${fileId}`);
+        return await franchiseFileManager._runExclusive(fileId, () => {
+          console.time("import-bulk");
+          const entry = franchiseFileManager.activeFiles.get(fileId);
+          if (!entry) throw new Error(`File not found: ${fileId}`);
 
-        const table = entry.file.getTableById(tableId);
-        if (!table) throw new Error(`Table not found: ${tableId}`);
+          const table = entry.file.getTableById(tableId);
+          if (!table) throw new Error(`Table not found: ${tableId}`);
 
-        const flipSaveOnChange = entry.file.settings.saveOnChange;
-        entry.file.settings.saveOnChange = false;
+          // Follow the renderer's original logic: only update existing records
+          // up to the current record count, ignoring any extra rows.
+          console.time("set");
+          applyImportedRows(table, rows);
+          console.timeEnd("set");
 
-        // Follow the renderer's original logic: only update existing records
-        // up to the current record count, ignoring any extra rows.
-        console.time("set");
-        applyImportedRows(table, rows);
-        console.timeEnd("set");
+          console.time("recalc");
+          try {
+            table.recalculateEmptyRecordReferences();
+          } catch (recalcError) {
+            console.warn(
+              `Could not recalculate empty record references for table ${tableId}: ${recalcError.message}`,
+            );
+          }
+          console.timeEnd("recalc");
 
-        console.time("recalc");
-        try {
-          table.recalculateEmptyRecordReferences();
-        } catch (recalcError) {
-          console.warn(
-            `Could not recalculate empty record references for table ${tableId}: ${recalcError.message}`,
-          );
-        }
-        console.timeEnd("recalc");
+          // queued behind this task, so it saves the whole import once
+          franchiseFileManager.requestAutoSave(fileId);
 
-        if (flipSaveOnChange) {
-          entry.file.save();
-          entry.file.settings.saveOnChange = true;
-        }
+          console.timeEnd("import-bulk");
 
-        console.timeEnd("import-bulk");
-
-        return { success: true };
+          return { success: true };
+        });
       } catch (error) {
         throw new Error(`Failed to bulk import rows: ${error.message}`);
       }

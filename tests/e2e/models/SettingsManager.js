@@ -8,10 +8,13 @@ class SettingsManager {
       continueButton: this.window.locator(".continue-btn"),
       autoSaveCheckbox: this.window.locator("#autoSave"),
       autoUnemptyCheckbox: this.window.locator("#autoUnempty"),
+      showPinnedTablesCheckbox: this.window.locator("#showPinnedTables"),
       openExcelAfterExportCheckbox: this.window.locator(
         "#openExcelAfterImport",
       ),
       updateChannelSelect: this.window.locator("#updateChannel"),
+      uiVersionSelect: this.window.locator("#uiVersion"),
+      themeSelect: this.window.locator("#theme"),
     };
   }
 
@@ -48,6 +51,14 @@ class SettingsManager {
 
   async getUpdateChannel() {
     return await this.locators.updateChannelSelect.inputValue();
+  }
+
+  async setUiVersion(value) {
+    await this.locators.uiVersionSelect.selectOption(value);
+  }
+
+  async setTheme(value) {
+    await this.locators.themeSelect.selectOption(value);
   }
 
   async setAutoUnemptySetting(autoUnempty) {

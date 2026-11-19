@@ -16,4 +16,6 @@ preferencesService
 perfService.mark("renderer:editors-load-start");
 const navigationService = require("./services/navigationService.js");
 perfService.mark("renderer:editors-load-end");
-navigationService.onHomeClicked();
+navigationService
+  .restoreOpenFile()
+  .then(() => navigationService.onHomeClicked());

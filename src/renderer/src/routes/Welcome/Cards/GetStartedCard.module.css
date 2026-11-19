@@ -1,0 +1,14 @@
+.card {
+    padding-top: 20px;
+    padding-bottom: 20px;
+    margin-bottom: -20px;
+    background-color: var(--surface-sunken);
+}
+
+.fileParameters {
+    color: var(--text-secondary);
+}
+
+.verticalList {
+    display: none;
+}

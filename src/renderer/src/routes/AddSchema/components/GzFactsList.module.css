@@ -1,0 +1,26 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+
+.facts {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: var(--spacing-1) var(--spacing-4);
+    padding: var(--spacing-3);
+    margin: 0;
+    background-color: var(--secondary);
+    border-radius: 3px;
+}
+
+/* Each pair is one row of the parent grid */
+.fact {
+    display: contents;
+
+    dt {
+        color: var(--text-secondary);
+    }
+
+    dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+    }
+}

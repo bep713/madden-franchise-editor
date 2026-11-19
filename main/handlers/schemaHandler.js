@@ -26,6 +26,18 @@ function registerSchemaHandlers(loggedIpc, franchiseFileManager) {
   });
 
   /**
+   * Delete a custom schema file. Bundled and loaded schemas are refused.
+   */
+  loggedIpc.handle("schema:delete", async (event, schemaPath) => {
+    try {
+      await franchiseFileManager.deleteSchema(schemaPath);
+      return { success: true };
+    } catch (err) {
+      return { error: err.message };
+    }
+  });
+
+  /**
    * Generate schema and write to XML file.
    * Handles file existence check, path renaming, and file writing in main process.
    */

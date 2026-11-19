@@ -4,6 +4,7 @@ if (startupProfiler.enabled) {
   startupProfiler.startEventLoopMonitor();
   startupProfiler.mark("main:module-start");
 }
+const fs = require("fs");
 const path = require("path");
 const {
   app,
@@ -14,6 +15,13 @@ const {
   dialog,
 } = require("electron");
 const preferencesHandler = require("./main/handlers/preferencesHandler");
+const uiSelection = require("./main/utils/uiSelection");
+const { createThemeController } = require("./main/services/themeController");
+const { parseThemePreference } = require("./main/utils/theme");
+const {
+  listScheduleFiles,
+  readScheduleFile,
+} = require("./main/utils/scheduleFiles");
 const franchiseFileManager = require("./main/services/FranchiseFileManager");
 const {
   registerExternalDataHandlers,
@@ -25,6 +33,10 @@ const {
   registerReloadFileHandlers,
 } = require("./main/handlers/reloadFileHandler");
 const { registerSchemaHandlers } = require("./main/handlers/schemaHandler");
+const {
+  registerSchemaImportHandlers,
+} = require("./main/handlers/schemaImportHandler");
+const { SchemaImporter } = require("./main/services/schemaImport");
 const {
   registerSchemaMismatchHandlers,
 } = require("./main/handlers/schemaMismatchHandler");
@@ -42,7 +54,19 @@ const {
   getReleasePageUrl,
 } = require("./main/services/updateChannelService");
 const autoUpdaterService = require("./main/services/autoUpdaterService");
+const {
+  createUpdateController,
+} = require("./main/services/updateController");
+const { createInstallGuard } = require("./main/services/updateInstallGuard");
 const { registerWelcomeHandlers } = require("./main/handlers/welcomeHandler");
+const {
+  registerNotificationsHandlers,
+} = require("./main/handlers/notificationsHandler");
+const {
+  createNotificationStore,
+} = require("./main/services/notificationStore");
+const { createFileWatcher } = require("./main/services/fileWatcher");
+const { registerFilesHandlers } = require("./main/handlers/filesHandler");
 const {
   createLoggedIpcMain,
   createLoggedWebContents,
@@ -100,28 +124,83 @@ const loggedIpc = createLoggedIpcMain(ipcMain);
 franchiseFileManager.setPreferencesProvider(() =>
   preferencesHandler.getPreferencesInstance()?.value(undefined, ""),
 );
+const notificationStore = createNotificationStore((channel, payload) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send(channel, payload);
+  }
+});
+franchiseFileManager.setNotificationStore(notificationStore);
+const EXTERNAL_CHANGE_KINDS = ["file-changed", "file-missing"];
+const hasNotification = (id, kinds) =>
+  notificationStore
+    .list()
+    .some((n) => kinds.includes(n.kind) && n.fileId === id);
+// v5 pauses auto-save while the file changed on disk (or went missing) and the
+// user hasn't chosen what to do, so the game's save isn't overwritten. v4 doesn't.
+franchiseFileManager.setAutoSavePausedCheck(
+  (id) => currentUi === "v5" && hasNotification(id, EXTERNAL_CHANGE_KINDS),
+);
 franchiseFileManager.registerIpcHandlers(loggedIpc);
+registerNotificationsHandlers(loggedIpc, notificationStore, {
+  // Dismissing the change resumes auto-save and saves edits made while paused.
+  // For a missing file that save recreates it at the old path.
+  onDismissed: (n) => {
+    if (EXTERNAL_CHANGE_KINDS.includes(n.kind)) {
+      franchiseFileManager.requestAutoSave(n.fileId);
+    }
+  },
+});
 registerExternalDataHandlers(loggedIpc, franchiseFileManager);
 preferencesHandler.registerPreferencesHandlers(
   loggedIpc,
   franchiseFileManager,
   {
     loggedMain: () => loggedMain,
+    activeUi: () => currentUi ?? "v5",
   },
 );
 registerRecentFilesHandlers(loggedIpc);
+registerFilesHandlers(loggedIpc);
 registerWelcomeHandlers(loggedIpc, franchiseFileManager);
 registerReloadFileHandlers(loggedIpc, {
   loggedMain: () => loggedMain,
   setTemporaryWindowTitle,
 });
 registerSchemaHandlers(loggedIpc, franchiseFileManager);
+const schemaImporter = new SchemaImporter(
+  franchiseFileManager.schemaImportPort(),
+);
+try {
+  schemaImporter.recover();
+} catch (err) {
+  console.error("Couldn't recover an interrupted schema add:", err);
+}
+registerSchemaImportHandlers(loggedIpc, schemaImporter);
 registerSchemaMismatchHandlers(loggedIpc, franchiseFileManager);
 registerSchemaSearchHandlers(loggedIpc, franchiseFileManager);
 registerSchemaViewerHandlers(loggedIpc, franchiseFileManager);
 registerScheduleHandlers(loggedIpc, franchiseFileManager);
-registerUpdateHandlers(loggedIpc, getAutoUpdater, () => loggedMain, {
-  runUpdateCheck,
+const installGuard = createInstallGuard({
+  franchiseFileManager,
+  // looked up at call time so e2e dialog stubs apply
+  getDialog: () => dialog,
+  getWindow: () => mainWindow,
+  hasPendingFileChange: (id) => hasNotification(id, ["file-changed"]),
+  hasMissingFile: (id) => hasNotification(id, ["file-missing"]),
+});
+const updateController = createUpdateController({
+  getAutoUpdater,
+  isUpdaterLoaded: autoUpdaterService.isLoaded,
+  send: (channel, ...args) => loggedMain?.send(channel, ...args),
+  getVersion: () => app.getVersion(),
+  prepareInstall: installGuard.prepareInstall,
+  // Kept through the install so a failed download can be retried from the drawer
+  onUpdateAvailable: (data) =>
+    notificationStore.add({ kind: "update-available", data }),
+  onNoUpdate: () =>
+    notificationStore.removeWhere((n) => n.kind === "update-available"),
+});
+registerUpdateHandlers(loggedIpc, updateController, {
   getReleasePageUrl,
   getUpdateChannel,
 });
@@ -197,6 +276,33 @@ function createApplicationMenu() {
         { role: "resetzoom" },
         { role: "zoomin" },
         { role: "zoomout" },
+        { type: "separator" },
+        {
+          label: "Interface",
+          // Not in navigation.json, so neither UI enables/disables these.
+          submenu: [
+            ["v5", "UiVersionV5", "New"],
+            ["v4", "UiVersionV4", "Legacy"],
+          ].map(([value, id, label]) => ({
+            id,
+            label,
+            type: "radio",
+            click: () => selectUiFromMenu(value),
+          })),
+        },
+        {
+          id: "ThemeMenu",
+          label: "Theme",
+          // v5 only; loadMainUi shows it.
+          visible: false,
+          submenu: Object.entries(themeMenuIds).map(([value, id]) => ({
+            id,
+            label: themeMenuLabels[value],
+            type: "radio",
+            click: () =>
+              preferencesHandler.setPreferences({ general: { theme: value } }),
+          })),
+        },
         { type: "separator" },
         {
           id: "RevealInExplorer",
@@ -275,21 +381,12 @@ function createApplicationMenu() {
         {
           id: "Credits",
           label: "Credits",
-          click: () => {
-            const creditsWindow = new BrowserWindow({
-              title: "Credits",
-              width: 1000,
-              height: 500,
-              parent: mainWindow,
-            });
-            creditsWindow.loadFile("renderer/credits.html");
-            creditsWindow.on("closed", () => {});
-          },
+          click: () => openCreditsWindow(),
         },
         {
           id: "CheckForUpdate",
           label: "Check for Update",
-          click: () => runUpdateCheck(),
+          click: () => updateController.check({ manual: true }),
         },
         {
           id: "ViewReleaseNotes",
@@ -336,18 +433,49 @@ function createApplicationMenu() {
   Menu.setApplicationMenu(menu);
 }
 
-const homePage = "renderer/index.html";
+// The main window loads v5 (React, src/renderer) or v4 (legacy, renderer/).
+// The general.uiVersion preference picks it (v5 is the default), and changing
+// it switches live (switchMainUi). MFE_RENDERER_URL (Vite dev server) /
+// MFE_UI=react|v4 override the preference until the first switch.
+const reactRendererUrl = process.env.MFE_RENDERER_URL;
+let uiOverride = uiSelection.envUiOverride(process.env);
+let currentUi = null;
+const themeController = createThemeController({
+  getUi: () => currentUi,
+  getTheme: () =>
+    preferencesHandler.getPreferencesInstance()?.value("general.theme"),
+});
+const uiMenuIds = { v5: "UiVersionV5", v4: "UiVersionV4" };
+const themeMenuIds = { system: "ThemeSystem", light: "ThemeLight", dark: "ThemeDark" };
+const themeMenuLabels = { system: "Auto", light: "Light", dark: "Dark" };
+
+/** Check the View -> Theme item that matches the stored preference. */
+function syncThemeMenu() {
+  const theme = parseThemePreference(
+    preferencesHandler.getPreferencesInstance()?.value("general.theme"),
+  );
+  mutateMenuIds([themeMenuIds[theme]], "checked", true);
+}
 const creditsPage = "renderer/credits.html";
 const schemaPage = "renderer/schema-manager.html";
 const settingsPage = "renderer/settings-manager.html";
 
 const baseWindowTitle = "Madden Franchise Editor";
-const STARTUP_UPDATE_CHECK_DELAY_MS = 3000;
+// Tests can shorten the startup check delay.
+const STARTUP_UPDATE_CHECK_DELAY_MS =
+  process.env.NODE_ENV === "testing" &&
+  process.env.MFE_UPDATE_CHECK_DELAY_MS !== undefined
+    ? Number(process.env.MFE_UPDATE_CHECK_DELAY_MS)
+    : 3000;
 let currentFilePath = "";
 let currentFileId = "";
 let waitForFileSaved = false;
 let pendingSaves = [];
-let baseFileWatcher;
+const fileWatcher = createFileWatcher({
+  send: (channel, payload) => loggedMain?.send(channel, payload),
+  store: notificationStore,
+  shouldIgnore: () => waitForFileSaved || pendingSaves.length > 0,
+});
 
 function createWindow() {
   startupProfiler.mark("main:create-window-start");
@@ -372,18 +500,24 @@ function createWindow() {
     icon: path.join(__dirname, "renderer/img/icon.ico"),
   });
   startupProfiler.trackWindow("main", mainWindow);
+  themeController.track(mainWindow);
   startupProfiler.mark("main:main-window-created");
 
   // Create logged webContents wrapper for this window
   loggedMain = createLoggedWebContents(mainWindow.webContents);
 
-  // and load the index.html of the app.
-  mainWindow.loadFile(homePage);
+  loadMainUi();
 
   if (isDev) {
     // Open the DevTools.
     mainWindow.webContents.openDevTools();
   }
+
+  // A UI switch reloads the page, whose <title> would replace the file path
+  // main put in the title. Main owns the title while a file is open.
+  mainWindow.on("page-title-updated", (event) => {
+    if (currentFilePath) event.preventDefault();
+  });
 
   // Emitted when the window is closed.
   mainWindow.on("closed", () => {
@@ -399,24 +533,28 @@ function createWindow() {
     if (settingsWindow) settingsWindow.destroy();
     settingsWindow = null;
 
-    if (baseFileWatcher) {
-      baseFileWatcher.close();
-    }
+    fileWatcher.close();
 
     app.quit();
   });
 
+  let mainUiLoadedOnce = false;
   mainWindow.webContents.on("did-finish-load", () => {
+    const firstLoad = !mainUiLoadedOnce;
+    mainUiLoadedOnce = true;
     const preferencesInstance = preferencesHandler.getPreferencesInstance();
     const checkForUpdates = preferencesInstance
       ? preferencesInstance.value("general.checkForUpdates")
       : undefined;
 
     // Deferred so the check (and loading electron-updater) doesn't compete
-    // with the renderer's startup work.
-    if (checkboxSettingIsEnabled(checkForUpdates)) {
+    // with the renderer's startup work. Only on the first load: a reload or
+    // UI switch reads the last result with app:get-update-status.
+    if (firstLoad && checkboxSettingIsEnabled(checkForUpdates)) {
       setTimeout(() => {
-        if (mainWindow) runUpdateCheck();
+        if (!mainWindow) return;
+        startupProfiler.mark("main:update-check");
+        updateController.check({ manual: false });
       }, STARTUP_UPDATE_CHECK_DELAY_MS);
     }
 
@@ -460,11 +598,101 @@ function createWindow() {
       .getPreferencesInstance()
       ?.value("general.checkForUpdates");
     if (checkboxSettingIsEnabled(checkForUpdates)) {
-      runUpdateCheck();
+      updateController.check({ manual: true });
     }
   });
 
+  preferencesHandler.onPreferenceChange("general.theme", () => {
+    themeController.apply();
+    syncThemeMenu();
+  });
+
+  preferencesHandler.onPreferenceChange("general.uiVersion", () => {
+    // A switch made in this session follows the preference from now on.
+    uiOverride = null;
+    // Let preferences:set reply before the renderer that sent it goes away.
+    setImmediate(switchMainUi);
+  });
+
   startupProfiler.mark("main:create-window-end");
+}
+
+/** Load the UI picked by the env override / preference into mainWindow. */
+function loadMainUi() {
+  const preference = preferencesHandler
+    .getPreferencesInstance()
+    ?.value("general.uiVersion");
+  const target = uiSelection.uiTarget({
+    ui: uiSelection.resolveUi({ override: uiOverride, preference }),
+    rendererUrl: reactRendererUrl,
+    reactBuildExists: fs.existsSync(
+      path.join(__dirname, uiSelection.V5_PAGE),
+    ),
+  });
+
+  if (target.fallback) {
+    const message = `${uiSelection.V5_PAGE} is missing, loading the legacy (v4) UI`;
+    // In a packaged build a missing out/renderer means a broken installer.
+    if (app.isPackaged) console.error(message);
+    else console.warn(`${message}. Run npm run build:react.`);
+  }
+
+  const previousUi = currentUi;
+  currentUi = target.ui;
+  themeController.apply();
+  // The Settings form lists the Theme field only on v5. A hidden window
+  // re-renders on reload; a visible one keeps the user's page.
+  if (
+    previousUi &&
+    previousUi !== currentUi &&
+    settingsWindow?.isVisible() === false
+  ) {
+    settingsWindow.reload();
+  }
+  // Radio items: checking one unchecks the other (writing false re-checks it).
+  mutateMenuIds([uiMenuIds[target.ui]], "checked", true);
+  mutateMenuIds(["ThemeMenu"], "visible", target.ui === "v5");
+  syncThemeMenu();
+
+  if (target.url) {
+    mainWindow.loadURL(target.url);
+  } else {
+    mainWindow.loadFile(target.file);
+  }
+}
+
+/**
+ * View -> Interface. A changed preference switches through its callback.
+ * Under an env override the stored value can already be the one picked;
+ * that's still a switch, so drop the override here too.
+ */
+function selectUiFromMenu(ui) {
+  uiOverride = null;
+  preferencesHandler.setPreferences({ general: { uiVersion: ui } });
+  setImmediate(switchMainUi);
+}
+
+/**
+ * Reload the main window into the UI the preference now picks. The open file,
+ * its unsaved edits, the watcher and the other windows live in main and stay.
+ */
+function switchMainUi() {
+  if (!mainWindow) return;
+  const preference = preferencesHandler
+    .getPreferencesInstance()
+    ?.value("general.uiVersion");
+  if (uiSelection.resolveUi({ override: uiOverride, preference }) === currentUi) {
+    return;
+  }
+
+  if (currentFilePath) {
+    // Each UI narrows the file menu again on its first page.
+    enableFileMenuItems();
+    // A saving -> saved pair cut off by the reload would leave "Saving..."
+    setCurrentWindowTitle(`${baseWindowTitle} - ${currentFilePath}`);
+  }
+  pendingSaves = [];
+  loadMainUi();
 }
 
 // This method will be called when Electron has finished
@@ -496,7 +724,7 @@ app.on("activate", () => {
 });
 
 addIpcListeners();
-autoUpdaterService.onCreate(addAutoUpdaterListeners);
+autoUpdaterService.onCreate(updateController.attach);
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
@@ -515,9 +743,7 @@ function addIpcListeners() {
       schemaWindow.close();
     }
 
-    if (baseFileWatcher) {
-      baseFileWatcher.close();
-    }
+    fileWatcher.close();
   });
 
   ipcMain.on("file-loaded", function (event, file) {
@@ -529,7 +755,7 @@ function addIpcListeners() {
     setCurrentWindowTitle(`${baseWindowTitle} - ${currentFilePath}`);
     enableFileMenuItems();
     startupProfiler.mark("open:watch-start");
-    watchFile(currentFilePath);
+    fileWatcher.watch(currentFilePath, currentFileId);
     startupProfiler.mark("open:watch-end");
   });
 
@@ -609,20 +835,7 @@ function addIpcListeners() {
     loggedMain.send("import-raw-table");
   });
 
-  ipcMain.on("show-credits", function () {
-    let creditsWindow = new BrowserWindow({
-      title: "Credits",
-      width: 1000,
-      height: 500,
-      parent: mainWindow,
-    });
-
-    creditsWindow.loadFile(creditsPage);
-
-    creditsWindow.on("closed", function () {
-      creditsWindow = null;
-    });
-  });
+  ipcMain.on("show-credits", () => openCreditsWindow());
 
   ipcMain.on("show-schema-manager", function (event, arg) {
     createSchemaWindow();
@@ -709,10 +922,29 @@ function addIpcListeners() {
     return packageJson.version;
   });
 
+  ipcMain.handle("app:get-update-status", () =>
+    updateController.getStatus(),
+  );
+
   ipcMain.handle("app:get-active-file-id", () => {
     // Return the most recently opened fileId from the manager
     const ids = [...franchiseFileManager.activeFiles.keys()];
     return ids.length > 0 ? ids[ids.length - 1] : null;
+  });
+
+  // The file a reloaded/switched UI should adopt. `loaded` is false when the
+  // previous page was cut off between openFile and file-loaded.
+  ipcMain.handle("app:get-active-file", () => {
+    const { activeFiles } = franchiseFileManager;
+    if (activeFiles.size === 0) return null;
+    const fileId = activeFiles.has(currentFileId)
+      ? currentFileId
+      : [...activeFiles.keys()].pop();
+    return {
+      fileId,
+      path: activeFiles.get(fileId).path,
+      loaded: fileId === currentFileId,
+    };
   });
 
   // --- File system IPC handlers (replaces fs in renderer) ---
@@ -778,25 +1010,13 @@ function addIpcListeners() {
   });
 
   // Schedule file operations
-  ipcMain.handle("schedules:list", () => {
-    const schedulesDir = path.join(__dirname, "schedules");
-    try {
-      return realFs.readdirSync(schedulesDir).reverse();
-    } catch {
-      return [];
-    }
-  });
+  ipcMain.handle("schedules:list", () =>
+    listScheduleFiles(path.join(__dirname, "schedules")),
+  );
 
-  ipcMain.handle("schedules:read", (event, filename) => {
-    const schedulesDir = path.join(__dirname, "schedules");
-    const filePath = path.join(schedulesDir, filename);
-    try {
-      const content = realFs.readFileSync(filePath, "utf-8");
-      return JSON.parse(content);
-    } catch {
-      return null;
-    }
-  });
+  ipcMain.handle("schedules:read", (event, filename) =>
+    readScheduleFile(path.join(__dirname, "schedules"), filename),
+  );
 
   ipcMain.handle("menu:click-item", (event, menuItemId) => {
     const win = BrowserWindow.fromWebContents(event.sender);
@@ -821,6 +1041,17 @@ function addIpcListeners() {
   });
 }
 
+function openCreditsWindow() {
+  const creditsWindow = new BrowserWindow({
+    title: "Credits",
+    width: 1000,
+    height: 500,
+    parent: mainWindow,
+  });
+  themeController.track(creditsWindow, { shared: true });
+  creditsWindow.loadFile(creditsPage);
+}
+
 function createSchemaWindow(show) {
   if (schemaWindow) {
     schemaWindow.moveTop();
@@ -840,6 +1071,7 @@ function createSchemaWindow(show) {
     },
   });
   startupProfiler.trackWindow("schema", schemaWindow);
+  themeController.track(schemaWindow, { shared: true });
   startupProfiler.mark("main:schema-window-created");
 
   // Create logged webContents wrapper for this window
@@ -886,6 +1118,7 @@ function createSettingsWindow(show) {
     },
   });
   startupProfiler.trackWindow("settings", settingsWindow);
+  themeController.track(settingsWindow, { shared: true });
   startupProfiler.mark("main:settings-window-created");
 
   // Create logged webContents wrapper for this window
@@ -959,75 +1192,8 @@ function checkboxSettingIsEnabled(setting) {
   return setting !== undefined && setting.length === 1 && setting[0] === true;
 }
 
-function runUpdateCheck() {
-  startupProfiler.mark("main:update-check");
-  const reportError = (error) => {
-    console.error("Failed to check for updates:", error);
-    loggedMain.send("update-error", {
-      message: error.message,
-    });
-  };
-
-  try {
-    const autoUpdater = getAutoUpdater();
-    const result = isDev
-      ? autoUpdater.checkForUpdates()
-      : autoUpdater.checkForUpdatesAndNotify();
-    if (result && typeof result.catch === "function") {
-      result.catch(reportError);
-    }
-  } catch (error) {
-    reportError(error);
-  }
-}
-
 function getAutoUpdater() {
   return autoUpdaterService.getAutoUpdater();
-}
-
-function addAutoUpdaterListeners(autoUpdater) {
-  function sendStatusToWindow(text) {
-    // mainWindow.webContents.send('message', text);
-  }
-
-  autoUpdater.on("checking-for-update", () => {
-    loggedMain.send("checking-for-updates");
-  });
-
-  autoUpdater.on("update-available", (info) => {
-    loggedMain.send("update-ready", {
-      version: info?.version,
-      currentVersion: app.getVersion(),
-      // Channel of the offered build, not the user's preference: nightly users are also offered stable releases.
-      channel: /-nightly\./.test(info?.version || "") ? "nightly" : "stable",
-      releaseName: info?.releaseName,
-    });
-  });
-
-  autoUpdater.on("update-not-available", (info) => {
-    loggedMain.send("update-not-available");
-  });
-
-  autoUpdater.on("error", (err) => {
-    loggedMain.send("update-error", err);
-  });
-
-  autoUpdater.on("download-progress", (progressObj) => {
-    let log_message = "Download speed: " + progressObj.bytesPerSecond;
-    log_message = log_message + " - Downloaded " + progressObj.percent + "%";
-    log_message =
-      log_message +
-      " (" +
-      progressObj.transferred +
-      "/" +
-      progressObj.total +
-      ")";
-    loggedMain.send("update-progress", progressObj);
-  });
-
-  autoUpdater.on("update-downloaded", (info) => {
-    loggedMain.send("update-downloaded");
-  });
 }
 
 function setTemporaryWindowTitle(message) {
@@ -1082,16 +1248,3 @@ ipcMain.on("menu:disable", (event, ids) => {
   if (Array.isArray(ids)) disableMenuIds(ids);
 });
 
-function watchFile(filePath) {
-  if (baseFileWatcher) {
-    baseFileWatcher.close();
-  }
-
-  // chokidar is required here, not at startup, to keep it off the boot path.
-  const chokidar = require("chokidar");
-  baseFileWatcher = chokidar.watch(filePath).on("change", (path) => {
-    if (!waitForFileSaved && pendingSaves.length === 0) {
-      loggedMain.send("file-changed", path);
-    }
-  });
-}

@@ -2,6 +2,8 @@
 const { devices } = require("@playwright/test");
 const path = require("path");
 
+const quick = !!process.env.E2E_QUICK;
+
 /**
  * @see https://playwright.dev/docs/test-configuration
  * @type {import('@playwright/test').PlaywrightTestConfig}
@@ -23,11 +25,20 @@ const config = {
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
 
-  /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
+  /* Retry on CI only. The retry records a trace (util/Electron.js). */
+  retries: process.env.CI ? 1 : 0,
 
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : 1,
+  /* Every test launches its own app on its own sandbox copy (util/sandbox.js)
+     and userData dir, so tests in the same file can run in parallel too. */
+  fullyParallel: true,
+
+  /* E2E_WORKERS overrides. CI's windows-latest has 4 vCPU. Locally 5 was the
+     fastest clean count on 12 logical cores (6 was no faster, Nov 2026). */
+  workers: process.env.E2E_WORKERS
+    ? Number(process.env.E2E_WORKERS)
+    : process.env.CI
+      ? 2
+      : 5,
 
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
@@ -46,6 +57,22 @@ const config = {
     /* No `trace` option: it only covers Playwright's own browser fixtures. Electron
        traces and failure screenshots come from tests/e2e/util/test.js. */
   },
+
+  /* `npx playwright test` runs both; `--project=react` runs only the React UI
+     specs (needs `npm run build:react` first). E2E_QUICK=1 (`npm run
+     e2eTest:quick`) skips React tests tagged @slow and runs only the v4 smoke. */
+  projects: [
+    {
+      name: "v4",
+      testIgnore: "**/react/**",
+      ...(quick ? { testMatch: "**/smoke.spec.js" } : {}),
+    },
+    {
+      name: "react",
+      testMatch: "**/react/**/*.spec.js",
+      ...(quick ? { grepInvert: /@slow/ } : {}),
+    },
+  ],
 
   /* Configure projects for major browsers */
   // projects: [

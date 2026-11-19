@@ -1,5 +1,5 @@
 const Selectr = require("../../libs/selectr/selectr");
-const { default: Handsontable } = require("handsontable");
+const { default: Handsontable } = require("handsontable-v11");
 
 const utilService = require("../utilService");
 const perfService = require("../perfService");

@@ -1,0 +1,85 @@
+.wrapper {
+    width: 100%;
+    height: 100%;
+}
+
+/* The theme's own dark greys are darker than the page and its link blue is
+   low contrast, so the grid takes its surface and text colours from ours */
+.wrapper :global(.ht-theme-main-dark-auto) {
+    --ht-cell-horizontal-padding: 20px;
+    --ht-cell-vertical-padding: 10px;
+    --ht-header-font-weight: 500;
+    --ht-common-background: var(--surface);
+    --ht-common-background-secondary: var(--surface-chrome);
+    --ht-common-foreground: var(--text-primary);
+    --ht-link-color: var(--text-link);
+    --ht-link-hover-color: var(--text-link);
+}
+
+.table th {
+    text-align: left;
+}
+
+/* The inverted view's read-only field-name column, set by cells() */
+.wrapper :global(td.table-cell--field-name) {
+    font-weight: 500;
+    background-color: var(--ht-header-background-color);
+}
+
+/* Handsontable td classes, set by cells() (also checked by e2e). Same look as
+   v4's _table-editor.scss. */
+.wrapper :global(td.table-cell--empty),
+.wrapper :global(td.table-cell--error) {
+    font-style: italic;
+    color: var(--text-secondary);
+    background-color: var(--hover);
+}
+
+.wrapper :global(td.active-row) {
+    background-color: var(--secondary);
+}
+
+.wrapper :global(.table-cell--with-button) {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.wrapper :global(.table-cell--with-button) > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.wrapper :global(.table-cell--with-button) a:hover {
+    color: var(--text-link);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.wrapper :global(.table-cell-edit-button) {
+    display: none;
+    flex-shrink: 0;
+    width: 25px;
+    height: 15px;
+    padding: 0;
+    cursor: pointer;
+    background-color: transparent;
+    border: none;
+}
+
+.wrapper :global(.table-cell-edit-button)::before {
+    display: block;
+    width: 15px;
+    height: 15px;
+    margin: auto;
+    content: '';
+    background-color: var(--text-link);
+    mask-image: url('@assets/icons/edit.svg');
+    mask-size: 15px 15px;
+}
+
+.wrapper :global(td:hover .table-cell-edit-button),
+.wrapper :global(.table-cell-edit-button:focus-visible) {
+    display: block;
+}

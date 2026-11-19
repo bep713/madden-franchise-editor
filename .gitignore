@@ -14,3 +14,8 @@ renderer/css/app-manifest.css.map
 renderer/css/vendor/
 test/playwright-test-results/
 test/perf-results/
+storybook-static
+*storybook.log
+coverage/
+test/verify-evidence/
+.claude/worktrees/

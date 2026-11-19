@@ -1,0 +1,24 @@
+@import '@data/theme-colors.css';
+
+/* Raw palette. Prefer the semantic tokens in theme-colors.css: these don't
+   change with the theme. */
+:root {
+    --white: #fff;
+    --black: #333;
+    --dark-orange: #f80;
+    --fulvous: #e98819;
+    --fawn: #f1bc7e;
+    --antique-white: #fae7d1;
+    --honolulu-blue: #0079c1;
+    --vista-blue: #72a1e5;
+    --uranian-blue: #b5e2fa;
+    --cherry-blossom: #ffadbe;
+    --mini-pink: #ffd6de;
+    --white-smoke: #f2f2f2;
+    --pigment-green: #459c48;
+    --platinum: #e5e5e5;
+    --timberwolf: #d1d1d1;
+    --silver: #c2c2c2;
+    --dim-gray: #6e6e6e;
+    --fire-brick: #b22222;
+}

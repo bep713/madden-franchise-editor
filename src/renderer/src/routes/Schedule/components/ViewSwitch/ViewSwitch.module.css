@@ -1,0 +1,36 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+
+.switch {
+    display: flex;
+    overflow: hidden;
+    border: 1px solid var(--on-primary);
+    border-radius: 4px;
+}
+
+.option {
+    padding: var(--spacing-1) var(--spacing-3);
+    font-size: 13px;
+    color: var(--on-primary);
+    cursor: pointer;
+    background: none;
+    border: none;
+}
+
+.option + .option {
+    border-left: 1px solid var(--on-primary);
+}
+
+.option:hover {
+    background-color: color-mix(in srgb, var(--on-primary) 15%, transparent);
+}
+
+.option[aria-pressed='true'] {
+    color: var(--primary);
+    background-color: var(--on-primary);
+}
+
+.option:focus-visible {
+    outline: 2px solid var(--on-primary);
+    outline-offset: -4px;
+}

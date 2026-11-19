@@ -1,0 +1,23 @@
+{
+  "extends": "@electron-toolkit/tsconfig/tsconfig.web.json",
+  "include": [
+    "src/renderer/src/**/*",
+    "src/shared/**/*",
+    "data/**/*.ts",
+    "data/**/*.json",
+    "declaration.d.ts"
+  ],
+  "exclude": ["src/renderer/src/**/*.stories.*", "src/renderer/src/**/*.test.*"],
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.web.tsbuildinfo",
+    "jsx": "react-jsx",
+    "paths": {
+      "@shared/*": ["./src/shared/*"],
+      "@renderer/*": ["./src/renderer/src/*"],
+      "@data/*": ["./data/*"],
+      "@assets/*": ["./src/renderer/src/assets/*"]
+    }
+  }
+}

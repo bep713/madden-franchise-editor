@@ -1,0 +1,55 @@
+/*
+ * Semantic colour tokens for light and dark themes. v5 imports this through
+ * @assets/colors.css, and main injects it into the shared windows under v5.
+ * Main's nativeTheme.themeSource decides which half of light-dark() applies.
+ */
+:root {
+    color-scheme: light dark;
+
+    /* Surfaces */
+    --surface: light-dark(#fff, #1e1e1e);
+    --surface-raised: light-dark(#fff, #2a2a2a);
+    --surface-sunken: light-dark(#f2f2f2, #171717);
+    --hover: light-dark(#e5e5e5, #333);
+    --selected: light-dark(#fae7d1, #2f2f2f);
+    --primary-soft: light-dark(#fae7d1, #262626);
+    --primary-muted: light-dark(#f1bc7e, #7a5124);
+    --surface-chrome: light-dark(#f0f0f0, #252525);
+    --overlay: light-dark(rgb(0 0 0 / 40%), rgb(0 0 0 / 60%));
+    --shadow: light-dark(rgb(0 0 0 / 25%), rgb(0 0 0 / 60%));
+    --shadow-soft: light-dark(rgb(0 0 0 / 10%), rgb(0 0 0 / 40%));
+
+    /* Brand */
+    --primary: #f80;
+    --primary-hover: light-dark(#e98819, #ffa033);
+    --on-primary: light-dark(#fff, #1e1e1e);
+
+    /* Text */
+    --text-primary: light-dark(#333, #e6e6e6);
+    --text-secondary: light-dark(#6e6e6e, #a0a0a0);
+    --text-disabled: light-dark(#c2c2c2, #6e6e6e);
+    --text-link: light-dark(#0079c1, #72a1e5);
+    --link: var(--text-link);
+
+    /* Lines and controls */
+    --divider-color: light-dark(#d1d1d1, #3d3d3d);
+    --border: light-dark(#c2c2c2, #4a4a4a);
+    --secondary: light-dark(#f2f2f2, #2e2e2e);
+    --disabled: light-dark(#f2f2f2, #262626);
+    --focus-ring: light-dark(#0079c1, #72a1e5);
+
+    /* Status */
+    --success: light-dark(#459c48, #5cb85f);
+    --danger: light-dark(#b22222, #ef5350);
+    --text-error: light-dark(#b00020, #ff8a80);
+    --error-border: light-dark(#ffadbe, #a04050);
+    --info-strong: light-dark(#72a1e5, #5b8bd0);
+    --error: light-dark(#ffd6de, #4a2329);
+    --info: light-dark(#b5e2fa, #1d3a4d);
+
+    /* Banners */
+    --on-banner: #fff;
+    --banner-info: light-dark(#06c, #1f5fa8);
+    --banner-error: light-dark(#f32617, #c0392b);
+    --banner-success: light-dark(#459c48, #2e7d32);
+}

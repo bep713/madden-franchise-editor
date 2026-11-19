@@ -17,7 +17,11 @@ function onCreate(cb) {
 
 function getAutoUpdater() {
   if (!autoUpdater) {
-    autoUpdater = require("electron-updater").autoUpdater;
+    // Tests get a fake that never touches the network (fakeAutoUpdater.js).
+    autoUpdater =
+      process.env.NODE_ENV === "testing"
+        ? require("./fakeAutoUpdater").createFakeAutoUpdater()
+        : require("electron-updater").autoUpdater;
     autoUpdater.autoInstallOnAppQuit = false;
     autoUpdater.autoDownload = false;
     applyUpdateChannel(autoUpdater, getUpdateChannel());

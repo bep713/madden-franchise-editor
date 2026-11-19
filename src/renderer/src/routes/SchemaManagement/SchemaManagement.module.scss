@@ -1,0 +1,66 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+
+/* Fills the app's page row (below the tab bar and any auto-save strip), so
+   <main> scrolls */
+.page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* Holds the Allotment, which fills its parent's height */
+.panes {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+/* Same shell as Welcome's main, without the side nav */
+.main {
+    height: 100%;
+    padding: 0 var(--spacing-8) var(--spacing-8);
+    container-name: main;
+    container-type: inline-size;
+    overflow: auto;
+    background-color: var(--surface-sunken);
+}
+
+/* GetStartedCard's backdrop, so cards scroll under the sticky row */
+.topRow {
+    position: relative;
+    z-index: 1;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    margin-bottom: -20px;
+    background-color: var(--surface-sunken);
+}
+
+.topGrid {
+    align-items: stretch;
+}
+
+/* The card inside fills the cell, so both items are the same height */
+.cell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+}
+
+/* Collapses to one cell in the 1-column layout, so the two stack */
+.actionsWithCard {
+    grid-column: 1 / -2;
+}
+
+.actionsFull {
+    grid-column: 1 / -1;
+}
+
+/* Exactly one column, as wide as a schema card below it */
+.loadedCard {
+    grid-column: -2 / -1;
+}
+
+.addedWarnings {
+    padding-left: var(--spacing-5);
+    margin: var(--spacing-2) 0 0;
+}

@@ -1,0 +1,19 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-2) var(--spacing-3);
+    align-items: center;
+    padding: var(--spacing-2) var(--spacing-3);
+    border-bottom: 1px solid var(--divider-color);
+}
+
+.at {
+    color: var(--text-secondary);
+}
+
+.day {
+    width: 96px;
+}

@@ -1,0 +1,8 @@
+@import '@assets/colors.css';
+
+.sideNav {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: var(--primary-soft);
+}

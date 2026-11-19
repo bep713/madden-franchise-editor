@@ -1,0 +1,18 @@
+@use '@assets/vars' as v;
+
+// Tab bar, the optional auto-save strip, then the page in what is left of the
+// window. The page scrolls itself, so the bars stay put.
+.appWrapper {
+    display: grid;
+    grid-template-rows: v.$navbar-height auto minmax(0, 1fr);
+    height: 100vh;
+}
+
+// A grid too, so the route's root stretches to at least the page height (its
+// percentage heights resolve) and grows past it when taller
+.page {
+    display: grid;
+    grid-row: 3;
+    min-height: 0;
+    overflow: auto;
+}

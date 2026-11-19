@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FranTkData databaseName="CollegeFB27_Dynasty" dataMajorVersion="468" dataMinorVersion="9">
+  <Includes>
+    <IncludeFile fileName="CfbTeams.FTX"/>
+  </Includes>
+  <schemas/>
+</FranTkData>

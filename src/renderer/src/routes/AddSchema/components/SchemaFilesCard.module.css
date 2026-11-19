@@ -1,0 +1,197 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+
+.dropZone {
+    display: flex;
+    flex-direction: column;
+    row-gap: var(--spacing-3);
+    align-items: center;
+    padding: var(--spacing-6) var(--spacing-4);
+    text-align: center;
+    background-color: var(--secondary);
+    border: 2px dashed var(--border);
+    border-radius: 3px;
+
+    &[data-dragging='true'] {
+        background-color: var(--primary-soft);
+        border-color: var(--primary);
+    }
+}
+
+.hint {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.buttons {
+    display: flex;
+    column-gap: var(--spacing-2);
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.rows {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.row {
+    padding: var(--spacing-2) 0;
+    border-bottom: 1px solid var(--divider-color);
+}
+
+.rowLine {
+    display: flex;
+    column-gap: var(--spacing-3);
+    align-items: center;
+    min-width: 0;
+}
+
+.name {
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.badge {
+    flex-shrink: 0;
+    padding: 0 var(--spacing-2);
+    font-size: 0.85em;
+    background-color: var(--hover);
+    border-radius: 8px;
+
+    &[data-badge='entry'],
+    &[data-badge='schema'] {
+        background-color: var(--primary-soft);
+    }
+
+    &[data-badge='invalid'],
+    &[data-badge='problems'][data-severity='blocking'] {
+        background-color: var(--error);
+    }
+
+    &[data-badge='problems'][data-severity='warning'] {
+        background-color: var(--primary-soft);
+    }
+}
+
+.searchRow {
+    display: flex;
+    column-gap: var(--spacing-4);
+    align-items: center;
+    padding-bottom: var(--spacing-2);
+}
+
+.search {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 320px;
+}
+
+.searchRow .link {
+    margin-left: auto;
+}
+
+.noMatches {
+    margin: var(--spacing-2) 0;
+    color: var(--text-secondary);
+}
+
+.folderName {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.count {
+    flex-shrink: 0;
+    font-size: 0.85em;
+    color: var(--text-secondary);
+}
+
+/* Pushes Expand and Remove to the right */
+.toggleFolder {
+    margin-left: auto;
+}
+
+.nested {
+    max-height: 320px;
+    padding: 0 0 0 var(--spacing-5);
+    margin: var(--spacing-2) 0 0;
+    overflow-y: auto;
+    list-style: none;
+
+    .row:last-child {
+        border-bottom: none;
+    }
+}
+
+.folder {
+    /* Basis 0: the folder gets what's left, so the name shrinks last */
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.85em;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.link,
+.toggleFolder {
+    flex-shrink: 0;
+    padding: 0;
+    color: var(--link);
+    cursor: pointer;
+    background: none;
+    border: none;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+.rowProblem {
+    margin: var(--spacing-1) 0 0 var(--spacing-4);
+    font-size: 0.9em;
+    overflow-wrap: anywhere;
+
+    &[data-severity='blocking'] {
+        color: var(--danger);
+    }
+
+    &[data-severity='warning'] {
+        color: var(--primary);
+    }
+}
+
+.missing {
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-3);
+    background-color: var(--primary-soft);
+    border-radius: 3px;
+
+    ul {
+        padding-left: var(--spacing-6);
+        margin: var(--spacing-1) 0 0;
+    }
+}
+
+.missingTitle {
+    margin: 0;
+    font-weight: 500;
+}

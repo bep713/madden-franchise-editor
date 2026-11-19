@@ -1,0 +1,54 @@
+@import '@assets/colors.css';
+
+.row {
+    min-height: 20px;
+}
+
+.delete {
+    display: inline-flex;
+    padding: 2px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    background: none;
+    border: none;
+}
+
+.delete:hover {
+    color: var(--danger);
+}
+
+.icons {
+    display: inline-flex;
+    column-gap: 4px;
+    align-items: center;
+}
+
+.view {
+    display: inline-flex;
+    padding: 2px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    background: none;
+    border: none;
+}
+
+.view:hover,
+.view:focus-visible,
+.viewing {
+    color: var(--text-link);
+}
+
+.bundled {
+    display: inline-flex;
+    padding: 2px;
+    color: var(--text-secondary);
+    cursor: help;
+}
+
+/* check.svg is 10px, so pad it out to the 14px icons' footprint */
+.active {
+    display: inline-flex;
+    padding: 4px;
+    color: var(--text-secondary);
+    cursor: help;
+}

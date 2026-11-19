@@ -1,0 +1,26 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+
+.strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-2);
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-1) var(--spacing-4);
+    color: var(--on-banner);
+    background: var(--banner-info);
+}
+
+.message {
+    margin: 0;
+}
+
+.actions {
+    display: flex;
+    gap: var(--spacing-2);
+}
+
+.action {
+    padding: var(--spacing-1) var(--spacing-3);
+}

@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer, webUtils } = require("electron");
 
 const isDev = process.env.NODE_ENV === "development";
 const isTest = process.env.NODE_ENV === "testing";
@@ -65,6 +65,27 @@ function removeListener(channel, callback) {
   }
 }
 
+/**
+ * Subscribe to a main-process event. Returns a function that removes only
+ * this listener.
+ */
+function subscribe(channel, callback) {
+  const wrapper = (event, payload) => callback(payload);
+  ipcRenderer.on(channel, wrapper);
+  return () => ipcRenderer.removeListener(channel, wrapper);
+}
+
+// Updater events (main/services/updateController.js)
+const UPDATE_CHANNELS = [
+  "checking-for-updates",
+  "update-ready",
+  "update-not-available",
+  "update-error",
+  "update-downloading",
+  "update-progress",
+  "update-downloaded",
+];
+
 // Expose franchise API
 contextBridge.exposeInMainWorld("franchiseAPI", {
   // File operations
@@ -80,11 +101,15 @@ contextBridge.exposeInMainWorld("franchiseAPI", {
     ipcRenderer.invoke("franchise:save-file-as", fileId, options),
   saveFileAsAndOpen: (fileId, newPath) =>
     ipcRenderer.invoke("franchise:save-file-as-and-open", fileId, newPath),
+  reloadFile: (fileId) => ipcRenderer.invoke("franchise:reload-file", fileId),
   loadSchema: (fileId, schemaPath, saveSchema) =>
     ipcRenderer.invoke("franchise:load-schema", fileId, schemaPath, saveSchema),
   addSchema: (fileId, schemaPath) =>
     ipcRenderer.invoke("franchise:add-schema", fileId, schemaPath),
+  hasUnsavedChanges: (fileId) =>
+    ipcRenderer.invoke("franchise:has-unsaved-changes", fileId),
   getActiveFileId: () => ipcRenderer.invoke("app:get-active-file-id"),
+  getActiveFile: () => ipcRenderer.invoke("app:get-active-file"),
 
   // Schema operations
   getSavedSchemas: () => ipcRenderer.invoke("franchise:get-saved-schemas"),
@@ -111,6 +136,13 @@ contextBridge.exposeInMainWorld("franchiseAPI", {
       fileId,
       tableId,
       recordIndices,
+    ),
+  setTableNextRecordToUse: (fileId, tableId, recordIndex) =>
+    ipcRenderer.invoke(
+      "franchise:set-table-next-record-to-use",
+      fileId,
+      tableId,
+      recordIndex,
     ),
   getTableList: (fileId) =>
     ipcRenderer.invoke("franchise:get-table-list", fileId),
@@ -205,6 +237,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getUserDataPath: () => ipcRenderer.invoke("app:get-user-data-path"),
   getDocumentsPath: () => ipcRenderer.invoke("app:get-documents-path"),
   getVersion: () => ipcRenderer.invoke("app:get-version"),
+  // Last updater event ({ channel, data }) the user acts on, or null
+  getUpdateStatus: () => ipcRenderer.invoke("app:get-update-status"),
   // IPC send (for existing channels)
   send: (channel, data) => ipcRenderer.send(channel, data),
   sendSync: (channel, data) => ipcRenderer.sendSync(channel, data),
@@ -213,6 +247,16 @@ contextBridge.exposeInMainWorld("electronAPI", {
   },
   removeAllListeners: (channel) => {
     ipcRenderer.removeAllListeners(channel);
+  },
+
+  // Notification store (main/services/notificationStore.js). The subscribe
+  // functions return an unsubscribe that removes only that listener.
+  notifications: {
+    list: () => ipcRenderer.invoke("notifications:list"),
+    dismiss: (id) => ipcRenderer.invoke("notifications:dismiss", id),
+    markRead: (ids) => ipcRenderer.invoke("notifications:mark-read", ids),
+    onChanged: (callback) => subscribe("notifications:changed", callback),
+    onAdded: (callback) => subscribe("notifications:added", callback),
   },
 
   // File system operations (replaces fs in renderer)
@@ -292,6 +336,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // Schema operations
   schema: {
     initialize: () => ipcRenderer.invoke("schema:initialize"),
+    delete: (schemaPath) => ipcRenderer.invoke("schema:delete", schemaPath),
+    getFields: (source) => ipcRenderer.invoke("schema:get-fields", source),
+    // v5 Add schema page (main/services/schemaImport)
+    inspectAdd: (request) => ipcRenderer.invoke("schema:inspect-add", request),
+    add: (commit) => ipcRenderer.invoke("schema:add", commit),
+    restorePrevious: () => ipcRenderer.invoke("schema:restore-previous"),
   },
 
   // Schema search operations
@@ -333,6 +383,22 @@ contextBridge.exposeInMainWorld("electronAPI", {
     check: () => ipcRenderer.send("update:check"),
     install: () => ipcRenderer.send("update:install"),
     openReleasePage: () => ipcRenderer.invoke("update:open-release-page"),
+    // Every updater event as { channel, data }. Returns an unsubscribe.
+    onStatus: (callback) => {
+      const unsubscribes = UPDATE_CHANNELS.map((channel) =>
+        subscribe(channel, (data) => callback({ channel, data })),
+      );
+      return () => unsubscribes.forEach((unsubscribe) => unsubscribe());
+    },
+  },
+
+  // Saves scan and folder opening for the v5 React welcome page
+  files: {
+    getSaves: () => ipcRenderer.invoke("files:get-saves"),
+    openFolder: (folderPath) =>
+      ipcRenderer.invoke("files:open-folder", folderPath),
+    // Electron 41 has no File.path
+    getPathForFile: (file) => webUtils.getPathForFile(file),
   },
 
   // Welcome screen operations

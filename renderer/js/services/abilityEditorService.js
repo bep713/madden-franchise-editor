@@ -1,5 +1,5 @@
 const { ipcRenderer } = require('electron');
-const Handsontable = require('handsontable').default;
+const Handsontable = require('handsontable-v11').default;
 const utilService = require('../services/utilService');
 const franchiseGameYearService = require('../services/franchiseGameYearService');
 const preferencesService = require('../services/preferencesService');

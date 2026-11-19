@@ -1,0 +1,132 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+@import '@assets/typography.css';
+
+.drawer {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: auto;
+    background-color: var(--surface);
+    border-left: 1px solid var(--divider-color);
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-4);
+    border-bottom: 1px solid var(--divider-color);
+}
+
+.title {
+    margin: 0;
+    font: var(--font-large);
+}
+
+.empty {
+    padding: var(--spacing-4);
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.list {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.item {
+    display: flex;
+    gap: var(--spacing-2);
+    align-items: flex-start;
+    padding: var(--spacing-3) var(--spacing-4);
+    border-bottom: 1px solid var(--divider-color);
+}
+
+.dot {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    margin-top: 5px;
+    border-radius: 50%;
+}
+
+.unread {
+    background-color: var(--primary);
+}
+
+.body {
+    display: flex;
+    flex-grow: 1;
+    flex-direction: column;
+    row-gap: var(--spacing-1);
+    min-width: 0;
+}
+
+.itemHeader {
+    display: flex;
+    column-gap: var(--spacing-2);
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+.itemTitle {
+    font: var(--font-body);
+}
+
+.bold {
+    font-weight: 700;
+}
+
+.time {
+    flex-shrink: 0;
+    font: var(--font-small);
+    color: var(--text-secondary);
+}
+
+.description {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-1) var(--spacing-3);
+}
+
+.link {
+    padding: 0;
+    font: inherit;
+    color: var(--link);
+    cursor: pointer;
+    background: none;
+    border: none;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+.iconButton {
+    display: inline-flex;
+    flex-shrink: 0;
+    padding: var(--spacing-1);
+    color: var(--text-secondary);
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+
+    &:hover,
+    &:focus-visible {
+        color: var(--text-primary);
+        background-color: var(--secondary);
+    }
+
+    svg {
+        width: 10px;
+        height: 10px;
+    }
+}

@@ -1,0 +1,92 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+
+/* overflow: without it the layout's grid row grows to the content and the
+   footer scrolls away with it, so only main scrolls */
+.page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.main {
+    display: flex;
+    flex-grow: 1;
+    flex-direction: column;
+    row-gap: var(--spacing-4);
+    min-height: 0;
+    padding: var(--spacing-5) var(--spacing-8) var(--spacing-8);
+    overflow: auto;
+    background-color: var(--surface-sunken);
+}
+
+/* The files card takes the left column next to both option cards */
+.files {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-row: span 2;
+    min-width: 0;
+}
+
+.back {
+    padding: 0;
+    color: var(--on-primary);
+    cursor: pointer;
+    background: none;
+    border: none;
+
+    &:hover,
+    &:focus-visible {
+        text-decoration: underline;
+    }
+}
+
+/* Out of the scrolling main, so Add stays at the bottom of the window */
+.footer {
+    display: flex;
+    flex-shrink: 0;
+    flex-direction: column;
+    row-gap: var(--spacing-3);
+    padding: var(--spacing-3) var(--spacing-8);
+    background-color: var(--surface-sunken);
+    border-top: 1px solid var(--border);
+}
+
+/* A long list can't squeeze the content to nothing */
+.problems {
+    max-height: 40vh;
+    overflow-y: auto;
+}
+
+.error {
+    padding: var(--spacing-2) var(--spacing-3);
+    margin: 0;
+    background-color: var(--error);
+    border-left: 4px solid var(--danger);
+}
+
+.submit {
+    display: flex;
+    column-gap: var(--spacing-4);
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.summary {
+    margin: 0;
+    color: var(--text-secondary);
+    text-align: right;
+}
+
+/* Blocks the page at once, but only shows for a read that takes a while */
+.readingLoader {
+    opacity: 0;
+    animation: appear 0s 200ms forwards;
+}
+
+@keyframes appear {
+    to {
+        opacity: 1;
+    }
+}

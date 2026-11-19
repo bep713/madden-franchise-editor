@@ -51,14 +51,50 @@ function boot(inputText = null) {
   return { handler, ipc, loggedMain, updateChannel: require(UPDATE_CHANNEL) };
 }
 
-test("a real user's file loads and is rewritten unchanged", async () => {
+test("a real user's file loads and is rewritten with only the missing sections added", async () => {
   const input = fs.readFileSync(
     path.join(__dirname, "fixtures/preferences/real-user.json"),
     "utf8",
   );
+  // The fixture predates showPinnedTables, uiVersion and theme, which are filled in
+  // on load. The store merges general over the defaults, so they land in
+  // schema order.
+  const saved = JSON.parse(input);
+  const general = {};
+  for (const [key, value] of Object.entries(saved.general)) {
+    general[key] = value;
+    if (key === "defaultEditor") {
+      general.uiVersion = "v5";
+      general.theme = "system";
+    }
+    if (key === "autoSave") general.showPinnedTables = [true];
+  }
+  const expected = {
+    ...saved,
+    general,
+    settingsManager: {
+      ...saved.settingsManager,
+      general: { ...saved.settingsManager.general, showPinnedTablesSet: false },
+      // Each release adds an appVersions key; ones newer than the fixture are
+      // appended with their default.
+      appVersions: {
+        ...require(path.join(ROOT, "data/preferencesSchema.json")).settingsManager
+          .appVersions,
+        ...saved.settingsManager.appVersions,
+      },
+    },
+  };
   const { ipc } = boot(input);
-  assert.deepStrictEqual(await ipc.invoke("preferences:get"), JSON.parse(input));
-  assert.equal(fs.readFileSync(prefsFile(), "utf8"), input);
+  assert.deepStrictEqual(await ipc.invoke("preferences:get"), expected);
+  assert.equal(fs.readFileSync(prefsFile(), "utf8"), json(expected));
+});
+
+test("defaults show pinned tables, as a new general setting", () => {
+  const { handler } = boot();
+  const defaults = handler.getPreferenceDefaults();
+  assert.deepStrictEqual(defaults.general.showPinnedTables, [true]);
+  assert.equal(defaults.settingsManager.general.showPinnedTablesSet, false);
+  assert.equal("tableEditor" in defaults, false);
 });
 
 test("no file: defaults are returned and written with 4-space indent", async () => {
@@ -217,6 +253,21 @@ test("onPreferenceChange fires once per actual change", async () => {
   assert.deepStrictEqual(calls, [["nightly", "stable"]]);
 });
 
+test("setPreferences runs the change callback once and broadcasts the update", () => {
+  const { handler, loggedMain } = boot();
+  const calls = [];
+  handler.onPreferenceChange("general.uiVersion", (...args) => calls.push(args));
+
+  assert.equal(handler.setPreferences({ general: { uiVersion: "v4" } }), true);
+  assert.deepStrictEqual(calls, [["v4", "v5"]]);
+  assert.equal(handler.getPreferencesInstance().value("general.uiVersion"), "v4");
+  const updates = loggedMain.sent.filter((m) => m.channel === "preferences:update");
+  assert.equal(updates.length, 1);
+  assert.equal(updates[0].args[0].general.uiVersion, "v4");
+  // Only the given key changes.
+  assert.equal(updates[0].args[0].general.updateChannel, "stable");
+});
+
 test("returned values are copies", async () => {
   const { handler, ipc } = boot();
   const store = handler.getPreferencesInstance();
@@ -238,4 +289,27 @@ test("getUpdateChannel reads the stored channel", () => {
     const { updateChannel } = boot(json({ general: { updateChannel: stored } }));
     assert.equal(updateChannel.getUpdateChannel(), expected, `stored ${stored}`);
   }
+});
+
+test("the Theme field is listed on v5 and hidden on v4", async () => {
+  const fieldKeys = async (ipc) =>
+    (await ipc.invoke("preferences:get-sections")).flatMap((section) =>
+      section.form.groups.flatMap((group) => group.fields.map((f) => f.key)),
+    );
+  const { handler, ipc } = boot();
+  assert.ok((await fieldKeys(ipc)).includes("theme"));
+
+  handler.registerPreferencesHandlers(
+    ipc,
+    { applyPreferenceSettings() {} },
+    { loggedMain: () => ({ send() {} }), activeUi: () => "v4" },
+  );
+  const v4Keys = await fieldKeys(ipc);
+  assert.ok(!v4Keys.includes("theme"));
+  assert.ok(v4Keys.includes("uiVersion"));
+});
+
+test("a file without a theme gets system", async () => {
+  const { ipc } = boot(json({ general: { uiVersion: "v5" } }));
+  assert.equal(await ipc.invoke("preferences:get-value", "general.theme"), "system");
 });

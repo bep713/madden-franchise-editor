@@ -1,0 +1,29 @@
+@import '@assets/colors.css';
+
+.match,
+.mismatch {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+}
+
+.match {
+    color: var(--success);
+}
+
+.mismatch {
+    color: var(--danger);
+}
+
+.match svg,
+.mismatch svg {
+    width: 12px;
+    height: 12px;
+}
+
+.label {
+    min-width: 70px;
+    color: var(--text-secondary);
+}

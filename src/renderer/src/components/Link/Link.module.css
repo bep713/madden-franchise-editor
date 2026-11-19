@@ -1,0 +1,15 @@
+@import '@assets/colors.css';
+
+.link {
+    color: var(--link);
+    cursor: pointer;
+}
+
+.black {
+    color: var(--text-primary);
+}
+
+.disabled {
+    color: var(--text-secondary);
+    cursor: default;
+}

@@ -1,0 +1,36 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+
+.teamSelect {
+    display: flex;
+    gap: var(--spacing-2);
+    align-items: center;
+    min-width: 120px;
+}
+
+.input {
+    width: 112px;
+}
+
+.logo,
+.placeholder {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+}
+
+.logo {
+    object-fit: contain;
+}
+
+.placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+    color: var(--text-secondary);
+    background-color: var(--secondary);
+    border: 1px solid var(--divider-color);
+    border-radius: 50%;
+}
