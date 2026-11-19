@@ -75,6 +75,13 @@ test("a real user's file loads and is rewritten with only the missing sections a
     settingsManager: {
       ...saved.settingsManager,
       general: { ...saved.settingsManager.general, showPinnedTablesSet: false },
+      // Each release adds an appVersions key; ones newer than the fixture are
+      // appended with their default.
+      appVersions: {
+        ...require(path.join(ROOT, "data/preferencesSchema.json")).settingsManager
+          .appVersions,
+        ...saved.settingsManager.appVersions,
+      },
     },
   };
   const { ipc } = boot(input);
