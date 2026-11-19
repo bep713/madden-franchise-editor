@@ -271,7 +271,8 @@ const SchemaViewer: React.FC<Props> = ({
             </div>
             {error === null && !firstLoad && (
                 <p className={styles.count} data-testid='field-count'>
-                    {filtering
+                    {/* The deferred filters, so the count matches the rows */}
+                    {hasFilters(deferred)
                         ? `${visible.length.toLocaleString()} of ${fields.length.toLocaleString()} fields`
                         : `${fields.length.toLocaleString()} fields`}
                 </p>

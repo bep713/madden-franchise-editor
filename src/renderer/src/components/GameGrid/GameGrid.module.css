@@ -4,24 +4,24 @@
    and Schema Management's <main> declare. */
 .grid {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--spacing-4);
 }
 
 @container main (width >= 1450px) {
     .grid {
-        grid-template-columns: 1fr 1fr 1fr 1fr;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 }
 
 @container main (width <= 950px) {
     .grid {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
 @container main (width <= 650px) {
     .grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 }

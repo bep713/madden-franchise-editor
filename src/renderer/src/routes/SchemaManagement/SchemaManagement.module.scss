@@ -42,6 +42,8 @@
 /* The card inside fills the cell, so both items are the same height */
 .cell {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
 }
 
 /* Collapses to one cell in the 1-column layout, so the two stack */

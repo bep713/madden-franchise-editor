@@ -666,7 +666,17 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
                     0,
                     Math.min(col, hot.countCols() - 1)
                 );
-                hot.selectCell(visualRow, visualCol);
+                // Not scrolled when a saved position is restored below:
+                // selectCell's scroll queues a scrollIntoView for the next
+                // scroll event, which would move off the restored position
+                const restoresScroll = isNewTable && !!initialScroll;
+                hot.selectCell(
+                    visualRow,
+                    visualCol,
+                    visualRow,
+                    visualCol,
+                    !restoresScroll
+                );
                 // A new grid (a new tab) has no height until the
                 // ResizeObserver sizes it, so selectCell's scroll leaves the
                 // row just above the top. The observer scrolls it to the top.
