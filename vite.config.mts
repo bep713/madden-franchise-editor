@@ -6,6 +6,10 @@ import svgr from 'vite-plugin-svgr';
 
 const dirname = import.meta.dirname;
 
+// Snapshots render local times (e.g. RecentFilesList), so pin the zone the
+// snapshots were recorded in. Workers inherit it; CI runners default to UTC.
+if (process.env.VITEST) process.env.TZ = 'America/New_York';
+
 // Shared with .storybook/main.ts. When main/preload move to TS this becomes
 // the `renderer` block of an electron-vite config.
 export const rendererConfig: UserConfig = {
