@@ -10,9 +10,10 @@ import { basename } from '@renderer/utils/path';
 export type NotificationLinkId =
     | 'open-schemas'
     | 'pick-schema'
-    | 'reload'
-    | 'branch'
-    | 'save-here'
+    | 'load'
+    | 'keep'
+    | 'copy'
+    | 'put-back'
     | 'install-update';
 
 export interface NotificationLink {
@@ -24,6 +25,7 @@ export interface NotificationText {
     title: string;
     description: string;
     links: NotificationLink[];
+    // Unused for file-changed and file-missing: the bar under the tabs shows them
     bannerMessage: string;
     bannerSeverity: BannerSeverity;
 }
@@ -70,8 +72,9 @@ export function describeNotification(n: AppNotification): NotificationText {
                 title: 'File Changed',
                 description: `${name} was changed outside the editor.`,
                 links: [
-                    { id: 'reload', label: 'Reload' },
-                    { id: 'branch', label: 'Branch and save new' }
+                    { id: 'copy', label: 'Save mine as a copy…' },
+                    { id: 'load', label: 'Load the new version' },
+                    { id: 'keep', label: 'Keep my version' }
                 ],
                 bannerMessage:
                     'This save file has been modified outside of this program. Do you want to reload the file?',
@@ -84,8 +87,8 @@ export function describeNotification(n: AppNotification): NotificationText {
                 title: 'File Missing',
                 description: `${name} was deleted or moved outside the editor.`,
                 links: [
-                    { id: 'save-here', label: 'Save here' },
-                    { id: 'branch', label: 'Save as new' }
+                    { id: 'copy', label: 'Save mine as a copy…' },
+                    { id: 'put-back', label: 'Put it back' }
                 ],
                 bannerMessage:
                     'This save file was deleted or moved outside of this program. Save it again here, or save it to a new location?',

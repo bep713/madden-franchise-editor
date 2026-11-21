@@ -1,5 +1,6 @@
-// franchise:reload-file, the file-changed removal hooks, the auto-save pause
-// and notifications:dismiss's onDismissed. Uses a temp copy of the m22 career.
+// franchise:reload-file, the file-changed removal hooks, the auto-save pause,
+// keep-my-version and notifications:dismiss's canDismiss. Uses a temp copy of
+// the m22 career.
 require("./helpers/electronStub");
 const test = require("node:test");
 const assert = require("node:assert/strict");
@@ -226,16 +227,89 @@ test("when not paused, auto-save writes", async () => {
   assert.equal(await manager.hasUnsavedChanges(fileId), false);
 });
 
-test("notifications:dismiss calls onDismissed with the removed notification", async () => {
-  const dismissed = [];
+test("notifications:dismiss refuses file-changed and file-missing", async () => {
+  const kinds = ["file-changed", "file-missing"];
   registerNotificationsHandlers(fakeIpc, store, {
-    onDismissed: (n) => dismissed.push(n),
+    canDismiss: (n) => !kinds.includes(n.kind),
   });
-  const n = addFileChanged("some-file");
-  await call("notifications:dismiss", n.id);
-  assert.equal(store.list().length, 0);
-  assert.deepEqual(dismissed, [n]);
+  const changed = addFileChanged("some-file");
+  const missing = store.add({
+    kind: "file-missing",
+    fileId: "other-file",
+    data: { path: filePath },
+  });
+  const other = store.add({ kind: "schema-mismatch", fileId: "f", data: {} });
 
+  await call("notifications:dismiss", changed.id);
+  await call("notifications:dismiss", missing.id);
+  await call("notifications:dismiss", other.id);
   await call("notifications:dismiss", "unknown");
-  assert.equal(dismissed.length, 1);
+  assert.deepEqual(
+    store.list().map((n) => n.id).sort(),
+    [changed.id, missing.id].sort(),
+  );
+});
+
+// main's pause check: paused while the file has an outside change
+const pauseOnExternalChange = () =>
+  manager.setAutoSavePausedCheck((id) =>
+    store
+      .list()
+      .some(
+        (n) =>
+          (n.kind === "file-changed" || n.kind === "file-missing") &&
+          n.fileId === id,
+      ),
+  );
+
+test("keep-my-version with auto-save on and edits removes the change and saves", async () => {
+  const fileId = await open({ autoSave: true });
+  pauseOnExternalChange();
+  addFileChanged(fileId);
+  await write(fileId, 7);
+  await drain(fileId);
+  assert.equal(await manager.hasUnsavedChanges(fileId), true); // paused
+
+  const result = await call("franchise:keep-my-version", fileId);
+  assert.deepEqual(result, { saved: true });
+  assert.equal(ofKind("file-changed", fileId).length, 0);
+  assert.equal(await manager.hasUnsavedChanges(fileId), false);
+
+  const check = await open({ autoSave: false });
+  assert.equal(await read(check), 7);
+});
+
+test("keep-my-version with auto-save on and no edits writes nothing", async () => {
+  const fileId = await open({ autoSave: true });
+  pauseOnExternalChange();
+  addFileChanged(fileId);
+  const before = fs.readFileSync(filePath);
+  const { mtimeMs } = fs.statSync(filePath);
+
+  const result = await call("franchise:keep-my-version", fileId);
+  await drain(fileId);
+  assert.deepEqual(result, { saved: false });
+  assert.equal(ofKind("file-changed", fileId).length, 0);
+  assert.equal(fs.statSync(filePath).mtimeMs, mtimeMs);
+  assert.ok(fs.readFileSync(filePath).equals(before));
+});
+
+test("keep-my-version with auto-save off writes nothing and stays dirty", async (t) => {
+  const fileId = await open({ autoSave: false });
+  pauseOnExternalChange();
+  addFileChanged(fileId);
+  await write(fileId, 7);
+  const save = t.mock.method(manager.getFile(fileId), "save");
+
+  const result = await call("franchise:keep-my-version", fileId);
+  await drain(fileId);
+  assert.deepEqual(result, { saved: false });
+  assert.equal(save.mock.callCount(), 0);
+  assert.equal(ofKind("file-changed", fileId).length, 0);
+  assert.equal(await manager.hasUnsavedChanges(fileId), true);
+});
+
+test("keep-my-version for an unknown file returns an error", async () => {
+  const result = await call("franchise:keep-my-version", "nope");
+  assert.ok(result.error);
 });

@@ -612,6 +612,28 @@ class FranchiseFileManager {
   }
 
   /**
+   * Keep the open version over an outside change: removes the file's
+   * file-changed/file-missing, then auto-saves if the file auto-saves and has
+   * unsaved edits. Otherwise nothing is written.
+   * @param {string} fileId
+   * @returns {Promise<{ saved: boolean }>}
+   */
+  async keepMyVersion(fileId) {
+    const dirty = await this._runExclusive(fileId, () => {
+      const entry = this.activeFiles.get(fileId);
+      if (!entry) throw new Error(`File not found: ${fileId}`);
+      // removed first so the pause check lets the save through
+      this._removeExternalChange(fileId);
+      return entry.changeCount !== entry.savedCount;
+    });
+    if (!dirty || !this.activeFiles.get(fileId)?.autoSave) {
+      return { saved: false };
+    }
+    await this.requestAutoSave(fileId);
+    return { saved: true };
+  }
+
+  /**
    * Save file to a new path
    * @param {string} fileId
    * @param {string} newPath
@@ -1796,6 +1818,14 @@ class FranchiseFileManager {
         }
       },
     );
+
+    loggedIpc.handle("franchise:keep-my-version", async (event, fileId) => {
+      try {
+        return await this.keepMyVersion(fileId);
+      } catch (err) {
+        return { error: err.message };
+      }
+    });
 
     loggedIpc.handle(
       "franchise:has-unsaved-changes",

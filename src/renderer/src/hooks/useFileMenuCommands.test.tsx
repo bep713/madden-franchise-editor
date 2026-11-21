@@ -6,6 +6,7 @@ import {
     FranchiseFileContext,
     OpenFranchiseFile
 } from '@renderer/context/FranchiseFileContext';
+import { ExternalChangeContext } from '@renderer/context/ExternalChangeContext';
 import useFileMenuCommands from './useFileMenuCommands';
 
 const navigate = vi.fn();
@@ -23,6 +24,15 @@ function makeFile(fileId: string): OpenFranchiseFile {
 const listeners: Record<string, () => void> = {};
 const calls: string[] = [];
 const setOpenFile = vi.fn();
+const confirmSave = vi.fn();
+const noop = async () => {};
+const externalChange = {
+    load: noop,
+    keep: noop,
+    copy: noop,
+    putBack: noop,
+    confirmSave
+};
 
 const electronAPI = {
     on: vi.fn(),
@@ -46,7 +56,9 @@ function setup(current: { file: OpenFranchiseFile | undefined }) {
                 <FranchiseFileContext.Provider
                     value={[current.file, setOpenFile]}
                 >
-                    {children}
+                    <ExternalChangeContext.Provider value={externalChange}>
+                        {children}
+                    </ExternalChangeContext.Provider>
                 </FranchiseFileContext.Provider>
             </MemoryRouter>
         )
@@ -81,6 +93,7 @@ beforeEach(() => {
         calls.push('closeFile');
         return true;
     });
+    confirmSave.mockResolvedValue(true);
     setOpenFile.mockImplementation(() => calls.push('setOpenFile'));
     navigate.mockImplementation(() => calls.push('navigate'));
     Object.assign(window, { electronAPI, franchiseAPI });
@@ -101,6 +114,24 @@ describe('useFileMenuCommands', () => {
         await fire('save-file');
         expect(franchiseAPI.saveFile).toHaveBeenCalledWith('f1');
         expect(electronAPI.showMessageBox).not.toHaveBeenCalled();
+    });
+
+    it('save-file asks confirmSave first and skips the save when declined', async () => {
+        confirmSave.mockResolvedValue(false);
+        setup({ file: makeFile('f1') });
+        await fire('save-file');
+        expect(confirmSave).toHaveBeenCalledWith('f1');
+        expect(franchiseAPI.saveFile).not.toHaveBeenCalled();
+
+        confirmSave.mockResolvedValue(true);
+        await fire('save-file');
+        expect(franchiseAPI.saveFile).toHaveBeenCalledWith('f1');
+    });
+
+    it('save-file-as does not ask confirmSave', async () => {
+        setup({ file: makeFile('f1') });
+        await fire('save-file-as');
+        expect(confirmSave).not.toHaveBeenCalled();
     });
 
     it('save-file shows an error box on an error result', async () => {

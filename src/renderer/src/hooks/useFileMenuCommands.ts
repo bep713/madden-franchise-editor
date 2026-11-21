@@ -1,5 +1,6 @@
 import { useContext, useEffect, useLayoutEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useExternalChange } from '@renderer/context/ExternalChangeContext';
 import { FranchiseFileContext } from '@renderer/context/FranchiseFileContext';
 import { SaveFileResult } from '@shared/types';
 
@@ -16,23 +17,26 @@ async function showSaveError(result: SaveFileResult): Promise<void> {
 }
 
 // The app menu's Save (Ctrl+S), Save As (Ctrl+Shift+S) and Close File
-// (Ctrl+Shift+X), as in v4's navigationService addIpcListeners.
+// (Ctrl+Shift+X), as in v4's navigationService addIpcListeners. Must be
+// inside ExternalChangeProvider: Save asks before replacing an outside change.
 export default function useFileMenuCommands(): void {
     const [openFile, setOpenFile] = useContext(FranchiseFileContext);
     const navigate = useNavigate();
+    const { confirmSave } = useExternalChange();
 
     // Read at event time, so the listeners are only added once
-    const latest = useRef({ openFile, setOpenFile, navigate });
+    const latest = useRef({ openFile, setOpenFile, navigate, confirmSave });
     useLayoutEffect(() => {
-        latest.current = { openFile, setOpenFile, navigate };
+        latest.current = { openFile, setOpenFile, navigate, confirmSave };
     });
 
     useEffect(() => {
         const handlers: Record<(typeof CHANNELS)[number], () => Promise<void>> =
             {
                 'save-file': async () => {
-                    const fileId = latest.current.openFile?.fileId;
-                    if (fileId) {
+                    const { openFile, confirmSave } = latest.current;
+                    const fileId = openFile?.fileId;
+                    if (fileId && (await confirmSave(fileId))) {
                         await showSaveError(
                             await window.franchiseAPI.saveFile(fileId)
                         );

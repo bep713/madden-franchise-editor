@@ -8,20 +8,27 @@ const meta = {
 
 export default meta;
 
-export const Default = {
-    args: {
-        fileName: 'CAREER-FRANCHISE',
-        reason: 'changed',
-        onBranch: () => {},
-        onReload: () => {}
-    }
+const changed = {
+    fileName: 'CAREER-FRANCHISE',
+    reason: 'changed',
+    onCopy: () => {},
+    onHide: () => {},
+    onLoad: () => {},
+    onKeep: () => {}
 };
 
-export const Missing = {
-    args: {
-        fileName: 'CAREER-FRANCHISE',
-        reason: 'missing',
-        onBranch: () => {},
-        onSaveHere: () => {}
-    }
+const missing = {
+    fileName: 'CAREER-FRANCHISE',
+    reason: 'missing',
+    onCopy: () => {},
+    onHide: () => {},
+    onPutBack: () => {}
 };
+
+export const ChangedAutoSaveOn = { args: { ...changed, autoSave: true } };
+
+export const ChangedAutoSaveOff = { args: { ...changed, autoSave: false } };
+
+export const MissingAutoSaveOn = { args: { ...missing, autoSave: true } };
+
+export const MissingAutoSaveOff = { args: { ...missing, autoSave: false } };

@@ -12,6 +12,9 @@ import AutoSavePaused from './AutoSavePaused';
 let changed: ((list: AppNotification[]) => void)[] = [];
 let stored: AppNotification[] = [];
 let autoSave: unknown = [true];
+let prefListeners: ((
+    prefs: Record<string, Record<string, unknown>>
+) => void)[] = [];
 
 const openFile = {
     fileId: 'file-1',
@@ -41,15 +44,17 @@ function fileMissing(fileId: string): AppNotification {
     };
 }
 
-const reload = vi.fn(async () => {});
-const branch = vi.fn(async () => {});
-const saveHere = vi.fn(async () => {});
+const load = vi.fn(async () => {});
+const keep = vi.fn(async () => {});
+const copy = vi.fn(async () => {});
+const putBack = vi.fn(async () => {});
+const confirmSave = vi.fn(async () => true);
 
 function renderStrip(file: OpenFranchiseFile | null = openFile) {
     return render(
         <FranchiseFileContext.Provider value={[file ?? undefined, undefined]}>
             <ExternalChangeContext.Provider
-                value={{ reload, branch, saveHere }}
+                value={{ load, keep, copy, putBack, confirmSave }}
             >
                 <AutoSavePaused />
             </ExternalChangeContext.Provider>
@@ -66,6 +71,7 @@ beforeEach(() => {
     changed = [];
     stored = [];
     autoSave = [true];
+    prefListeners = [];
     window.electronAPI = {
         notifications: {
             list: vi.fn(async () => stored),
@@ -77,7 +83,21 @@ beforeEach(() => {
             })
         },
         preferences: {
-            getValue: vi.fn(async () => autoSave)
+            getValue: vi.fn(async () => autoSave),
+            onChanged: vi.fn(
+                (
+                    callback: (
+                        prefs: Record<string, Record<string, unknown>>
+                    ) => void
+                ) => {
+                    prefListeners.push(callback);
+                    return () => {
+                        prefListeners = prefListeners.filter(
+                            (l) => l !== callback
+                        );
+                    };
+                }
+            )
         }
     } as unknown as typeof window.electronAPI;
 });
@@ -95,12 +115,22 @@ describe('AutoSavePaused', () => {
         await settle();
 
         expect(strip()?.textContent).toContain('CAREER-TEST was changed');
-        await userEvent.click(screen.getByRole('button', { name: 'Reload' }));
-        expect(reload).toHaveBeenCalledWith('file-1');
-        await userEvent.click(
-            screen.getByRole('button', { name: 'Branch and save new' })
+        expect(strip()?.textContent).toContain(
+            'Auto-save is paused until you choose.'
         );
-        expect(branch).toHaveBeenCalledWith('file-1');
+        expect(screen.queryByRole('button', { name: 'Hide' })).toBeNull();
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Load the new version' })
+        );
+        expect(load).toHaveBeenCalledWith('file-1');
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Keep my version' })
+        );
+        expect(keep).toHaveBeenCalledWith('file-1');
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Save mine as a copy…' })
+        );
+        expect(copy).toHaveBeenCalledWith('file-1');
     });
 
     it('shows the missing text for File Missing, and its buttons act on it', async () => {
@@ -111,15 +141,17 @@ describe('AutoSavePaused', () => {
         expect(strip()?.textContent).toContain(
             'CAREER-TEST was deleted or moved outside the editor.'
         );
-        expect(screen.queryByRole('button', { name: 'Reload' })).toBeNull();
+        expect(
+            screen.queryByRole('button', { name: 'Load the new version' })
+        ).toBeNull();
         await userEvent.click(
-            screen.getByRole('button', { name: 'Save here' })
+            screen.getByRole('button', { name: 'Put it back' })
         );
-        expect(saveHere).toHaveBeenCalledWith('file-1');
+        expect(putBack).toHaveBeenCalledWith('file-1');
         await userEvent.click(
-            screen.getByRole('button', { name: 'Save as new' })
+            screen.getByRole('button', { name: 'Save mine as a copy…' })
         );
-        expect(branch).toHaveBeenCalledWith('file-1');
+        expect(copy).toHaveBeenCalledWith('file-1');
     });
 
     it('prefers File Missing when both are stored', async () => {
@@ -141,12 +173,51 @@ describe('AutoSavePaused', () => {
         expect(strip()).toBeNull();
     });
 
-    it('is hidden with auto-save off', async () => {
+    it('shows with auto-save off, and the X hides it', async () => {
         autoSave = [];
         stored = [fileChanged('file-1')];
         renderStrip();
         await settle();
+        expect(strip()?.textContent).not.toContain('Auto-save is paused');
+
+        await userEvent.click(screen.getByRole('button', { name: 'Hide' }));
         expect(strip()).toBeNull();
+    });
+
+    it('a new notification shows a hidden bar again', async () => {
+        autoSave = [];
+        stored = [fileChanged('file-1')];
+        renderStrip();
+        await settle();
+        await userEvent.click(screen.getByRole('button', { name: 'Hide' }));
+
+        // the same one stays hidden
+        act(() => changed.forEach((l) => l([fileChanged('file-1')])));
+        expect(strip()).toBeNull();
+
+        act(() =>
+            changed.forEach((l) =>
+                l([{ ...fileChanged('file-1'), id: 'n-newer' }])
+            )
+        );
+        expect(strip()).not.toBeNull();
+    });
+
+    it('turning auto-save on shows a hidden bar, with no X', async () => {
+        autoSave = [];
+        stored = [fileChanged('file-1')];
+        renderStrip();
+        await settle();
+        await userEvent.click(screen.getByRole('button', { name: 'Hide' }));
+        expect(strip()).toBeNull();
+
+        act(() =>
+            prefListeners.forEach((l) => l({ general: { autoSave: [true] } }))
+        );
+        expect(strip()?.textContent).toContain(
+            'Auto-save is paused until you choose.'
+        );
+        expect(screen.queryByRole('button', { name: 'Hide' })).toBeNull();
     });
 
     it('is hidden for another fileId', async () => {

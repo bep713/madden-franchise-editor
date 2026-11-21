@@ -102,6 +102,8 @@ contextBridge.exposeInMainWorld("franchiseAPI", {
   saveFileAsAndOpen: (fileId, newPath) =>
     ipcRenderer.invoke("franchise:save-file-as-and-open", fileId, newPath),
   reloadFile: (fileId) => ipcRenderer.invoke("franchise:reload-file", fileId),
+  keepMyVersion: (fileId) =>
+    ipcRenderer.invoke("franchise:keep-my-version", fileId),
   loadSchema: (fileId, schemaPath, saveSchema) =>
     ipcRenderer.invoke("franchise:load-schema", fileId, schemaPath, saveSchema),
   addSchema: (fileId, schemaPath) =>
@@ -317,6 +319,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     getSections: () => ipcRenderer.invoke("preferences:get-sections"),
     hideWindow: () => ipcRenderer.invoke("preferences:hide-window"),
     set: (prefs) => ipcRenderer.invoke("preferences:set", prefs),
+    // Returns an unsubscribe
+    onChanged: (callback) => subscribe("preferences:update", callback),
     onPreferencesUpdate: (callback) => {
       addListener("preferences:update", callback, (_event, prefs) => {
         if (typeof callback === "function") callback(prefs);

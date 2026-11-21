@@ -117,6 +117,11 @@ declare global {
             // Reopens the file from disk, keeping its fileId and schema.
             // Unsaved edits are lost.
             reloadFile: (fileId: string) => Promise<ReloadFileResult>;
+            // Removes the outside change; auto-saves now only if auto-save is
+            // on and there are unsaved edits
+            keepMyVersion: (
+                fileId: string
+            ) => Promise<{ saved: boolean } | { error: string }>;
             // Waits for queued writes/saves; undos count as changes
             hasUnsavedChanges: (fileId: string) => Promise<boolean>;
             // Bundled and custom schemas
@@ -181,6 +186,12 @@ declare global {
             };
             preferences: {
                 getValue: (keyPath: string) => Promise<unknown>;
+                // All preferences after any change; returns an unsubscribe
+                onChanged: (
+                    callback: (
+                        prefs: Record<string, Record<string, unknown>>
+                    ) => void
+                ) => () => void;
                 // Writes only the given keys of each section
                 set: (
                     prefs: Record<string, Record<string, unknown>>

@@ -7,10 +7,6 @@ import {
     pendingFromNotification,
     usePendingOpen
 } from '@renderer/context/PendingOpenContext';
-import {
-    type ExternalChange,
-    useExternalChange
-} from '@renderer/context/ExternalChangeContext';
 import { SCHEMA_MANAGEMENT_KEY } from '@renderer/tabs/editorTabs';
 import { describeNotification } from './describe';
 
@@ -20,8 +16,7 @@ type SetPending = (pending: PendingOpen) => void;
 function actionsFor(
     n: AppNotification,
     selectTab: SelectTab,
-    setPending: SetPending,
-    externalChange: () => ExternalChange
+    setPending: SetPending
 ): BannerAction[] {
     switch (n.kind) {
         case 'schema-mismatch':
@@ -49,58 +44,11 @@ function actionsFor(
                     }
                 }
             ];
-        case 'file-changed': {
-            const fileId = n.fileId;
-            return [
-                {
-                    label: 'Dismiss',
-                    onClick: () =>
-                        window.electronAPI.notifications.dismiss(n.id)
-                },
-                {
-                    label: 'Branch and save new',
-                    onClick: () => {
-                        window.electronAPI.notifications.markRead([n.id]);
-                        if (fileId) void externalChange().branch(fileId);
-                    }
-                },
-                {
-                    label: 'Reload',
-                    primary: true,
-                    onClick: () => {
-                        window.electronAPI.notifications.markRead([n.id]);
-                        if (fileId) void externalChange().reload(fileId);
-                    }
-                }
-            ];
-        }
-        case 'file-missing': {
-            const fileId = n.fileId;
-            return [
-                {
-                    label: 'Dismiss',
-                    onClick: () =>
-                        window.electronAPI.notifications.dismiss(n.id)
-                },
-                {
-                    label: 'Save as new',
-                    onClick: () => {
-                        window.electronAPI.notifications.markRead([n.id]);
-                        if (fileId) void externalChange().branch(fileId);
-                    }
-                },
-                {
-                    label: 'Save here',
-                    primary: true,
-                    onClick: () => {
-                        window.electronAPI.notifications.markRead([n.id]);
-                        if (fileId) void externalChange().saveHere(fileId);
-                    }
-                }
-            ];
-        }
+        case 'file-changed':
+        case 'file-missing':
         case 'update-available':
-            // Never shown: useUpdateBanners owns the update banner
+            // Never shown: the bar under the tabs (AutoSavePaused) and
+            // useUpdateBanners own these
             return [];
     }
 }
@@ -122,16 +70,13 @@ function bannerKey(n: AppNotification): string {
 export default function useNotificationBanners(selectTab: SelectTab): void {
     const { show, hide } = useBanner();
     const [, setPending] = usePendingOpen();
-    const externalChange = useExternalChange();
     // read at click time, so a new selectTab doesn't resubscribe
     const selectTabRef = useRef(selectTab);
     const setPendingRef = useRef(setPending);
-    const externalChangeRef = useRef(externalChange);
     useEffect(() => {
         selectTabRef.current = selectTab;
         setPendingRef.current = setPending;
-        externalChangeRef.current = externalChange;
-    }, [selectTab, setPending, externalChange]);
+    }, [selectTab, setPending]);
 
     useEffect(() => {
         const api = window.electronAPI.notifications;
@@ -139,8 +84,15 @@ export default function useNotificationBanners(selectTab: SelectTab): void {
         const banners = new Map<string, string>();
 
         const unsubscribeAdded = api.onAdded((n) => {
-            // useUpdateBanners already shows it, from update-ready
-            if (n.kind === 'update-available') return;
+            // useUpdateBanners shows the update banner, from update-ready;
+            // the bar under the tabs shows an outside change
+            if (
+                n.kind === 'update-available' ||
+                n.kind === 'file-changed' ||
+                n.kind === 'file-missing'
+            ) {
+                return;
+            }
             const text = describeNotification(n);
             banners.set(
                 n.id,
@@ -152,8 +104,7 @@ export default function useNotificationBanners(selectTab: SelectTab): void {
                     actions: actionsFor(
                         n,
                         (key) => selectTabRef.current(key),
-                        (pending) => setPendingRef.current?.(pending),
-                        () => externalChangeRef.current
+                        (pending) => setPendingRef.current?.(pending)
                     )
                 })
             );

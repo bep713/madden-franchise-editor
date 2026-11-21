@@ -14,26 +14,52 @@ import { confirm } from '@renderer/utils/confirm';
 import { basename } from '@renderer/utils/path';
 
 // The actions for a file changed, deleted or moved outside the editor (the
-// file-changed and file-missing notifications' banner and drawer links)
+// file-changed and file-missing notifications' bar and drawer links)
 export interface ExternalChange {
     // Reopens the file from disk with the same fileId and schema
-    reload: (fileId: string) => Promise<void>;
-    // Saves to a new path and keeps editing there (v4's Branch and save new)
-    branch: (fileId: string) => Promise<void>;
+    load: (fileId: string) => Promise<void>;
+    // Keeps the open version; main saves now only with auto-save on and edits
+    keep: (fileId: string) => Promise<void>;
+    // Saves to a new path and keeps editing there
+    copy: (fileId: string) => Promise<void>;
     // Saves to the file's own path, which recreates a missing file
-    saveHere: (fileId: string) => Promise<void>;
+    putBack: (fileId: string) => Promise<void>;
+    // Before a manual Save: true when there is no outside change to replace,
+    // or the user confirmed replacing it
+    confirmSave: (fileId: string) => Promise<boolean>;
 }
 
 const noop = async (): Promise<void> => {};
 
 export const ExternalChangeContext = createContext<ExternalChange>({
-    reload: noop,
-    branch: noop,
-    saveHere: noop
+    load: noop,
+    keep: noop,
+    copy: noop,
+    putBack: noop,
+    confirmSave: async () => true
 });
 
 export function useExternalChange(): ExternalChange {
     return useContext(ExternalChangeContext);
+}
+
+// A settings checkbox is stored as [true] or [] (main's _isPreferenceEnabled)
+export function isEnabled(value: unknown): boolean {
+    return Array.isArray(value) ? value.includes(true) : Boolean(value);
+}
+
+function fileName(path: string | undefined): string {
+    return path ? basename(path) : 'the file';
+}
+
+// Prompts anyway when the check fails
+async function hasUnsavedChanges(fileId: string): Promise<boolean> {
+    try {
+        return await window.franchiseAPI.hasUnsavedChanges(fileId);
+    } catch (error) {
+        console.error('Failed to check for unsaved changes', error);
+        return true;
+    }
 }
 
 async function showError(message: string, error: unknown): Promise<void> {
@@ -60,25 +86,18 @@ export const ExternalChangeProvider: React.FC<Props> = ({
         latest.current = { openFile, setOpenFile };
     });
 
-    const reload = useCallback(
+    const load = useCallback(
         async (fileId: string): Promise<void> => {
             const { openFile, setOpenFile } = latest.current;
             if (openFile?.fileId !== fileId) return;
-            const name = openFile.path ? basename(openFile.path) : 'the file';
+            const name = fileName(openFile.path);
 
-            let dirty = true;
-            try {
-                dirty = await window.franchiseAPI.hasUnsavedChanges(fileId);
-            } catch (error) {
-                // Prompt anyway
-                console.error('Failed to check for unsaved changes', error);
-            }
             if (
-                dirty &&
+                (await hasUnsavedChanges(fileId)) &&
                 !(await confirm(
-                    `Reload ${name}?`,
-                    'The file is reopened from disk. Unsaved changes will be lost.',
-                    'Reload'
+                    `Load the new version of ${name}?`,
+                    'Your unsaved edits will be lost.',
+                    'Load new version'
                 ))
             ) {
                 return;
@@ -114,7 +133,67 @@ export const ExternalChangeProvider: React.FC<Props> = ({
         [setLoaderOptions]
     );
 
-    const branch = useCallback(async (fileId: string): Promise<void> => {
+    const keep = useCallback(async (fileId: string): Promise<void> => {
+        const { openFile } = latest.current;
+        if (openFile?.fileId !== fileId) return;
+        const name = fileName(openFile.path);
+
+        // Read now for the text; main decides at confirm time whether to save
+        const [autoSave, dirty] = await Promise.all([
+            window.electronAPI.preferences.getValue('general.autoSave'),
+            hasUnsavedChanges(fileId)
+        ]);
+        const detail = !isEnabled(autoSave)
+            ? 'Nothing is saved now. When you save, the changes made outside the editor will be lost.'
+            : dirty
+              ? 'Auto-save resumes and saves your edits now. The changes made outside the editor will be lost.'
+              : 'Auto-save resumes. Your next edit replaces the changes made outside the editor.';
+        if (
+            !(await confirm(
+                `Keep your version of ${name}?`,
+                detail,
+                'Keep mine'
+            ))
+        ) {
+            return;
+        }
+
+        try {
+            const result = await window.franchiseAPI.keepMyVersion(fileId);
+            if ('error' in result) {
+                await showError(
+                    `Could not keep your version of ${name}.`,
+                    result.error
+                );
+            }
+        } catch (error) {
+            await showError(`Could not keep your version of ${name}.`, error);
+        }
+    }, []);
+
+    const confirmSave = useCallback(
+        async (fileId: string): Promise<boolean> => {
+            let changed = true;
+            try {
+                const list = await window.electronAPI.notifications.list();
+                changed = list.some(
+                    (n) => n.kind === 'file-changed' && n.fileId === fileId
+                );
+            } catch (error) {
+                // Ask anyway
+                console.error('Failed to list notifications', error);
+            }
+            if (!changed) return true;
+            return confirm(
+                `Replace ${fileName(latest.current.openFile?.path)} with your version?`,
+                'The changes made outside the editor will be lost.',
+                'Replace'
+            );
+        },
+        []
+    );
+
+    const copy = useCallback(async (fileId: string): Promise<void> => {
         const { openFile, setOpenFile } = latest.current;
         if (openFile?.fileId !== fileId) return;
 
@@ -154,7 +233,7 @@ export const ExternalChangeProvider: React.FC<Props> = ({
     }, []);
 
     // Main removes file-missing once the save lands
-    const saveHere = useCallback(async (fileId: string): Promise<void> => {
+    const putBack = useCallback(async (fileId: string): Promise<void> => {
         if (latest.current.openFile?.fileId !== fileId) return;
         try {
             const result = await window.franchiseAPI.saveFile(fileId);
@@ -167,8 +246,8 @@ export const ExternalChangeProvider: React.FC<Props> = ({
     }, []);
 
     const value = useMemo(
-        () => ({ reload, branch, saveHere }),
-        [reload, branch, saveHere]
+        () => ({ load, keep, copy, putBack, confirmSave }),
+        [load, keep, copy, putBack, confirmSave]
     );
 
     return (

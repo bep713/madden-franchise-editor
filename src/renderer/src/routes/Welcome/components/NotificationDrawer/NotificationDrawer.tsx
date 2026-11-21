@@ -31,7 +31,7 @@ const NotificationDrawer: React.FC<Props> = ({
 }: Props) => {
     const editorTabs = useEditorTabs();
     const [, setPending] = usePendingOpen();
-    const { reload, branch, saveHere } = useExternalChange();
+    const { load, keep, copy, putBack } = useExternalChange();
     const [now, setNow] = useState(() => Date.now());
     // Ids that were unread when this viewing first saw them
     const seenUnread = useRef(new Set<string>());
@@ -49,14 +49,17 @@ const NotificationDrawer: React.FC<Props> = ({
             case 'open-schemas':
                 editorTabs.selectTab(SCHEMA_MANAGEMENT_KEY);
                 break;
-            case 'reload':
-                if (n.fileId) void reload(n.fileId);
+            case 'load':
+                if (n.fileId) void load(n.fileId);
                 break;
-            case 'branch':
-                if (n.fileId) void branch(n.fileId);
+            case 'keep':
+                if (n.fileId) void keep(n.fileId);
                 break;
-            case 'save-here':
-                if (n.fileId) void saveHere(n.fileId);
+            case 'copy':
+                if (n.fileId) void copy(n.fileId);
+                break;
+            case 'put-back':
+                if (n.fileId) void putBack(n.fileId);
                 break;
             case 'install-update':
                 window.electronAPI.update.install();
@@ -158,19 +161,23 @@ const NotificationDrawer: React.FC<Props> = ({
                                         ))}
                                     </div>
                                 </div>
-                                <button
-                                    aria-label={`Dismiss ${text.title}`}
-                                    className={styles.iconButton}
-                                    data-action='dismiss-notification'
-                                    onClick={() =>
-                                        window.electronAPI.notifications.dismiss(
-                                            n.id
-                                        )
-                                    }
-                                    type='button'
-                                >
-                                    <Close aria-hidden='true' />
-                                </button>
+                                {/* An outside change is resolved by a choice, not dismissed */}
+                                {n.kind !== 'file-changed' &&
+                                    n.kind !== 'file-missing' && (
+                                        <button
+                                            aria-label={`Dismiss ${text.title}`}
+                                            className={styles.iconButton}
+                                            data-action='dismiss-notification'
+                                            onClick={() =>
+                                                window.electronAPI.notifications.dismiss(
+                                                    n.id
+                                                )
+                                            }
+                                            type='button'
+                                        >
+                                            <Close aria-hidden='true' />
+                                        </button>
+                                    )}
                             </li>
                         );
                     })}

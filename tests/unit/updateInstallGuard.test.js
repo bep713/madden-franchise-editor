@@ -121,7 +121,10 @@ test("a pending outside change adds the overwrite warning", async () => {
     pendingChange: (id) => id === "a",
   });
   await guard.prepareInstall();
-  assert.match(options(0).detail, /changed outside the editor/);
+  assert.match(
+    options(0).detail,
+    /CAREER-A was changed outside the editor\. Saving replaces those changes\./,
+  );
   assert.doesNotMatch(options(0).detail, /deleted or moved/);
 });
 

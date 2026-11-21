@@ -64,9 +64,11 @@ function notification(
 const selectTab = vi.fn();
 const setPending = vi.fn();
 const externalChange = {
-    reload: vi.fn(async () => undefined),
-    branch: vi.fn(async () => undefined),
-    saveHere: vi.fn(async () => undefined)
+    load: vi.fn(async () => undefined),
+    keep: vi.fn(async () => undefined),
+    copy: vi.fn(async () => undefined),
+    putBack: vi.fn(async () => undefined),
+    confirmSave: vi.fn(async () => true)
 };
 
 // Welcome's wiring: the list from main, the drawer mounted while open
@@ -297,23 +299,22 @@ describe('NotificationDrawer', () => {
             ['open-schemas', 'Open Schema Management']
         ]);
         expect(links('f')).toEqual([
-            ['reload', 'Reload'],
-            ['branch', 'Branch and save new']
+            ['copy', 'Save mine as a copy…'],
+            ['load', 'Load the new version'],
+            ['keep', 'Keep my version']
         ]);
-        await userEvent.click(
-            within(item('f')).getByRole('button', { name: 'Reload' })
-        );
-        expect(externalChange.reload).toHaveBeenCalledExactlyOnceWith('file-f');
-        await userEvent.click(
-            within(item('f')).getByRole('button', {
-                name: 'Branch and save new'
-            })
-        );
-        expect(externalChange.branch).toHaveBeenCalledExactlyOnceWith('file-f');
+        const click = (id: string, name: string) =>
+            userEvent.click(within(item(id)).getByRole('button', { name }));
+        await click('f', 'Save mine as a copy…');
+        expect(externalChange.copy).toHaveBeenCalledExactlyOnceWith('file-f');
+        await click('f', 'Load the new version');
+        expect(externalChange.load).toHaveBeenCalledExactlyOnceWith('file-f');
+        await click('f', 'Keep my version');
+        expect(externalChange.keep).toHaveBeenCalledExactlyOnceWith('file-f');
         expect(selectTab).not.toHaveBeenCalled();
     });
 
-    it('the File Missing links save here and branch', async () => {
+    it('the File Missing links copy and put back', async () => {
         items = [
             {
                 id: 'm',
@@ -332,17 +333,43 @@ describe('NotificationDrawer', () => {
                     '[data-action="notification-link"]'
                 )
             ].map((el) => el.getAttribute('data-link'))
-        ).toEqual(['save-here', 'branch']);
+        ).toEqual(['copy', 'put-back']);
         await userEvent.click(
-            within(item('m')).getByRole('button', { name: 'Save here' })
+            within(item('m')).getByRole('button', { name: 'Put it back' })
         );
-        expect(externalChange.saveHere).toHaveBeenCalledExactlyOnceWith(
+        expect(externalChange.putBack).toHaveBeenCalledExactlyOnceWith(
             'file-m'
         );
         await userEvent.click(
-            within(item('m')).getByRole('button', { name: 'Save as new' })
+            within(item('m')).getByRole('button', {
+                name: 'Save mine as a copy…'
+            })
         );
-        expect(externalChange.branch).toHaveBeenCalledExactlyOnceWith('file-m');
+        expect(externalChange.copy).toHaveBeenCalledExactlyOnceWith('file-m');
+    });
+
+    it('has no dismiss button for file-changed or file-missing', async () => {
+        const external = (id: string, kind: 'file-changed' | 'file-missing') =>
+            ({
+                id,
+                kind,
+                createdAt: NOW,
+                read: false,
+                fileId: `file-${id}`,
+                data: { path: 'C:/saves/FTC' }
+            }) as AppNotification;
+        items = [
+            notification('a'),
+            external('f', 'file-changed'),
+            external('m', 'file-missing')
+        ];
+        render(<Harness />);
+        await waitFor(() => expect(item('m')).not.toBeNull());
+        const dismiss = (id: string) =>
+            item(id).querySelector('[data-action="dismiss-notification"]');
+        expect(dismiss('a')).not.toBeNull();
+        expect(dismiss('f')).toBeNull();
+        expect(dismiss('m')).toBeNull();
     });
 
     it('closes from the close button', async () => {
