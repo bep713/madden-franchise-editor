@@ -13,11 +13,9 @@ const App = require("../../models/App");
 const WelcomePage = require("../../models/react/WelcomePage");
 const TableEditorPage = require("../../models/react/TableEditorPage");
 const NotificationDrawer = require("../../models/react/NotificationDrawer");
-const Banner = require("../../models/react/Banner");
-const NavigationBar = require("../../models/react/NavigationBar");
+const ExternalChangeBar = require("../../models/react/ExternalChangeBar");
 
-const BANNER_MESSAGE =
-  "This save file was deleted or moved outside of this program. Save it again here, or save it to a new location?";
+const BAR_TEXT = "CAREER-E2ETEST was deleted or moved outside the editor.";
 const TEAM_TABLE_ID = 7482;
 const ROW = 52;
 const AUTO_SAVE = { general: { autoSave: [true] } };
@@ -35,7 +33,6 @@ test.afterEach(async () => {
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// Opens the career (dismissing the mismatch banner)
 async function launch(options = {}) {
   electronApp = await electron.launchWithDefaultOptions({
     ui: "react",
@@ -54,9 +51,7 @@ async function launch(options = {}) {
     welcome,
     tableEditor: new TableEditorPage(window),
     drawer: new NotificationDrawer(window),
-    banner: new Banner(window),
-    nav: new NavigationBar(window),
-    strip: window.getByTestId("auto-save-paused"),
+    bar: new ExternalChangeBar(window),
   };
 }
 
@@ -76,10 +71,10 @@ async function waitForNoFileMissing(window) {
   );
 }
 
-// Deletes the career and waits for the file-missing banner
-async function deleteExternally(banner) {
+// Deletes the career and waits for the bar
+async function deleteExternally(bar) {
   fs.unlinkSync(careerPath);
-  await banner.waitForBanner("file-missing", { timeout: 10000 });
+  await bar.waitFor({ reason: "missing" });
 }
 
 async function headerNames(app) {
@@ -115,12 +110,20 @@ async function windowTitle() {
   );
 }
 
-test("an external delete shows the banner and a drawer entry (react)", async () => {
+test("an external delete shows the bar, no banner, and a drawer entry without dismiss (react)", async () => {
   test.setTimeout(120 * 1000);
-  const { window, drawer, banner } = await launch();
+  const { window, drawer, bar } = await launch();
 
-  await deleteExternally(banner);
-  expect(await banner.message()).to.equal(BANNER_MESSAGE);
+  await deleteExternally(bar);
+  expect(await bar.text()).to.include(BAR_TEXT);
+  expect(await bar.buttons()).to.deep.equal([
+    "Save mine as a copy…",
+    "Put it back",
+    "Hide",
+  ]);
+  expect(
+    await window.locator('[data-testid="banner"][data-kind="file-missing"]').count(),
+  ).to.equal(0);
 
   const [stored] = await storedOfKind(window, "file-missing");
   await drawer.open();
@@ -133,50 +136,51 @@ test("an external delete shows the banner and a drawer entry (react)", async () 
   expect(item).to.include({
     kind: "file-missing",
     title: "File Missing",
-    description: "CAREER-E2ETEST was deleted or moved outside the editor.",
+    description: BAR_TEXT,
   });
-  expect(await drawer.linkIds(stored.id)).to.deep.equal([
-    "save-here",
-    "branch",
-  ]);
+  expect(await drawer.linkIds(stored.id)).to.deep.equal(["copy", "put-back"]);
+  expect(
+    await drawer.item(stored.id).locator('[data-action="dismiss-notification"]').count(),
+  ).to.equal(0);
 });
 
-test("Save here recreates the deleted file (react)", async () => {
+test("Put it back recreates the deleted file (react)", async () => {
   test.setTimeout(120 * 1000);
-  const { window, banner } = await launch();
+  const { window, bar } = await launch();
 
-  await deleteExternally(banner);
-  await banner.saveHere();
+  await deleteExternally(bar);
+  await bar.putBack();
 
   await poll(
     () => fs.existsSync(careerPath),
     (exists) => exists,
-    { message: "Save here did not recreate the file", timeout: 30000 },
+    { message: "Put it back did not recreate the file", timeout: 30000 },
   );
   const team = await readSavedTable(careerPath, TEAM_TABLE_ID, ["LongName"]);
   expect(team.records[ROW].LongName).to.equal("New York");
   await waitForNoFileMissing(window);
+  await bar.waitForHidden();
 });
 
-test("Save as new writes the deleted file to a new path (react)", async () => {
+test("Save mine as a copy writes the deleted file to a new path (react)", async () => {
   test.setTimeout(120 * 1000);
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "mfe-missing-"));
-  const branchPath = path.join(dir, "CAREER-BRANCH");
+  const copyPath = path.join(dir, "CAREER-BRANCH");
   try {
-    const { window, banner } = await launch();
+    const { window, bar } = await launch();
 
-    await deleteExternally(banner);
-    await stubSaveDialog(electronApp, branchPath);
-    await banner.saveAsNew();
+    await deleteExternally(bar);
+    await stubSaveDialog(electronApp, copyPath);
+    await bar.copy();
 
     await poll(
-      () => fs.existsSync(branchPath),
+      () => fs.existsSync(copyPath),
       (exists) => exists,
-      { message: "Save as new did not write the new file", timeout: 30000 },
+      { message: "The copy was not written", timeout: 30000 },
     );
     await poll(
       () => windowTitle(),
-      (title) => title.includes(branchPath),
+      (title) => title.includes(copyPath),
       { message: "The title never showed the new path" },
     );
     await waitForNoFileMissing(window);
@@ -189,40 +193,29 @@ test("Save as new writes the deleted file to a new path (react)", async () => {
   }
 });
 
-test("auto-save pauses on an external delete until Dismiss (react)", async () => {
+test("auto-save pauses on an external delete until Put it back (react)", async () => {
   test.setTimeout(120 * 1000);
-  const { app, window, welcome, tableEditor, drawer, banner, nav, strip } =
-    await launch({ preferences: AUTO_SAVE });
+  const { app, welcome, tableEditor, bar } = await launch({
+    preferences: AUTO_SAVE,
+  });
 
   await openTeamTable(welcome, tableEditor);
-  await deleteExternally(banner);
-  await strip.waitFor();
-  expect(await strip.innerText()).to.include(
-    "Auto-save is paused: CAREER-E2ETEST was deleted or moved outside the editor.",
+  await deleteExternally(bar);
+  expect(await bar.text()).to.include(
+    "Auto-save is paused until you choose.",
   );
+  expect(await bar.buttons()).not.to.include("Hide");
 
   await setLongName(app, tableEditor);
   await wait(1000);
   expect(fs.existsSync(careerPath)).to.equal(false);
 
-  // The banner may have timed out during the edit; the drawer X also dismisses
-  if (await banner.isVisible()) {
-    await banner.dismiss();
-  } else {
-    const [stored] = await storedOfKind(window, "file-missing");
-    await nav.openTab("Home");
-    await drawer.open();
-    await drawer.dismiss(stored.id);
-  }
-  await poll(
-    () => strip.count(),
-    (count) => count === 0,
-    { message: "The auto-save paused strip is still shown" },
-  );
+  await bar.putBack();
+  await bar.waitForHidden();
   await poll(
     () => fs.existsSync(careerPath),
     (exists) => exists,
-    { message: "The paused edit was never auto-saved", timeout: 30000 },
+    { message: "Put it back never wrote the file", timeout: 30000 },
   );
   const team = await readSavedTable(careerPath, TEAM_TABLE_ID, ["LongName"]);
   expect(team.records[ROW].LongName).to.equal("Old York");
@@ -230,14 +223,14 @@ test("auto-save pauses on an external delete until Dismiss (react)", async () =>
 
 test("renaming the file back replaces File Missing with File Changed (react)", async () => {
   test.setTimeout(120 * 1000);
-  const { window, banner } = await launch();
+  const { window, bar } = await launch();
   const movedPath = `${careerPath}-MOVED`;
 
   fs.renameSync(careerPath, movedPath);
-  await banner.waitForBanner("file-missing", { timeout: 10000 });
+  await bar.waitFor({ reason: "missing" });
   fs.renameSync(movedPath, careerPath);
 
-  await banner.waitForBanner("file-changed", { timeout: 10000 });
+  await bar.waitFor({ reason: "changed" });
   await waitForNoFileMissing(window);
   expect(await storedOfKind(window, "file-changed")).to.have.length(1);
 });

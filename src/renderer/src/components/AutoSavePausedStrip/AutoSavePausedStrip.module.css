@@ -12,15 +12,40 @@
     background: var(--banner-info);
 }
 
+.text {
+    min-width: 0;
+}
+
 .message {
     margin: 0;
 }
 
 .actions {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--spacing-2);
+    align-items: center;
 }
 
 .action {
     padding: var(--spacing-1) var(--spacing-3);
+}
+
+.hide {
+    display: inline-flex;
+    padding: 8px;
+    color: var(--on-banner);
+    cursor: pointer;
+    background: transparent;
+    border: none;
+
+    &:focus-visible {
+        outline: 2px solid var(--on-banner);
+    }
+
+    svg {
+        width: 14px;
+        height: 14px;
+        fill: currentcolor;
+    }
 }

@@ -135,7 +135,7 @@ describe('describeNotification update-available', () => {
 });
 
 describe('describeNotification file-changed', () => {
-    it('names the file and offers reload and branch', () => {
+    it('names the file and offers copy, load and keep', () => {
         const n: AppNotification = {
             id: 'n3',
             kind: 'file-changed',
@@ -148,8 +148,9 @@ describe('describeNotification file-changed', () => {
             title: 'File Changed',
             description: 'CAREER-TEST was changed outside the editor.',
             links: [
-                { id: 'reload', label: 'Reload' },
-                { id: 'branch', label: 'Branch and save new' }
+                { id: 'copy', label: 'Save mine as a copy…' },
+                { id: 'load', label: 'Load the new version' },
+                { id: 'keep', label: 'Keep my version' }
             ],
             bannerMessage:
                 'This save file has been modified outside of this program. Do you want to reload the file?',
@@ -159,7 +160,7 @@ describe('describeNotification file-changed', () => {
 });
 
 describe('describeNotification file-missing', () => {
-    it('names the file and offers save here and save as new', () => {
+    it('names the file and offers copy and put back', () => {
         const n: AppNotification = {
             id: 'n5',
             kind: 'file-missing',
@@ -172,8 +173,8 @@ describe('describeNotification file-missing', () => {
             title: 'File Missing',
             description: 'CAREER-TEST was deleted or moved outside the editor.',
             links: [
-                { id: 'save-here', label: 'Save here' },
-                { id: 'branch', label: 'Save as new' }
+                { id: 'copy', label: 'Save mine as a copy…' },
+                { id: 'put-back', label: 'Put it back' }
             ],
             bannerMessage:
                 'This save file was deleted or moved outside of this program. Save it again here, or save it to a new location?',

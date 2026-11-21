@@ -1,6 +1,9 @@
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import AutoSavePausedStrip from '@renderer/components/AutoSavePausedStrip/AutoSavePausedStrip';
-import { useExternalChange } from '@renderer/context/ExternalChangeContext';
+import {
+    isEnabled,
+    useExternalChange
+} from '@renderer/context/ExternalChangeContext';
 import { FranchiseFileContext } from '@renderer/context/FranchiseFileContext';
 import usePreference from '@renderer/hooks/usePreference';
 import useNotifications from '@renderer/notifications/useNotifications';
@@ -12,19 +15,17 @@ type ExternalNotification = Extract<
     { kind: 'file-changed' | 'file-missing' }
 >;
 
-// A settings checkbox is stored as [true] or [] (main's _isPreferenceEnabled)
-function isEnabled(value: unknown): boolean {
-    return Array.isArray(value) ? value.includes(true) : Boolean(value);
-}
-
-// Main pauses auto-save while the open file has a File Changed or File
-// Missing notification. With auto-save off nothing is paused, so the strip
-// stays hidden.
+// The bar for the open file's File Changed or File Missing notification, with
+// auto-save on or off. Main pauses auto-save until the user chooses. With
+// auto-save off the bar can be hidden, until a new notification arrives or
+// auto-save is turned on.
 const AutoSavePaused: React.FC = () => {
     const [openFile] = useContext(FranchiseFileContext);
     const { notifications } = useNotifications();
-    const [autoSave] = usePreference<unknown>('general.autoSave', false);
-    const { reload, branch, saveHere } = useExternalChange();
+    const [autoSavePref] = usePreference<unknown>('general.autoSave', false);
+    const { load, keep, copy, putBack } = useExternalChange();
+    // The notification id the user hid
+    const [hiddenId, setHiddenId] = useState<string>();
 
     const forFile = notifications.filter(
         (n): n is ExternalNotification =>
@@ -34,22 +35,28 @@ const AutoSavePaused: React.FC = () => {
     // Main keeps one or the other; missing wins if somehow both are there
     const external =
         forFile.find((n) => n.kind === 'file-missing') ?? forFile[0];
-    if (!openFile || !external || !isEnabled(autoSave)) return null;
+    const autoSave = isEnabled(autoSavePref);
+    if (!openFile || !external) return null;
+    if (!autoSave && hiddenId === external.id) return null;
 
     const { fileId } = openFile;
-    const fileName = basename(openFile.path ?? external.data.path);
+    const common = {
+        autoSave,
+        fileName: basename(openFile.path ?? external.data.path),
+        onCopy: () => void copy(fileId),
+        onHide: () => setHiddenId(external.id)
+    };
     return external.kind === 'file-missing' ? (
         <AutoSavePausedStrip
-            fileName={fileName}
-            onBranch={() => branch(fileId)}
-            onSaveHere={() => saveHere(fileId)}
+            {...common}
+            onPutBack={() => void putBack(fileId)}
             reason='missing'
         />
     ) : (
         <AutoSavePausedStrip
-            fileName={fileName}
-            onBranch={() => branch(fileId)}
-            onReload={() => reload(fileId)}
+            {...common}
+            onKeep={() => void keep(fileId)}
+            onLoad={() => void load(fileId)}
             reason='changed'
         />
     );

@@ -3,17 +3,20 @@
  * @param {Object} loggedIpc - Wrapped IPC with dev logging
  * @param {ReturnType<import("../services/notificationStore").createNotificationStore>} store
  * @param {object} [options]
- * @param {(notification: object) => void} [options.onDismissed] - Called with a
- *   notification the user dismissed, after it is removed
+ * @param {(notification: object) => boolean} [options.canDismiss] - False
+ *   keeps the notification on a dismiss
  */
-function registerNotificationsHandlers(loggedIpc, store, { onDismissed } = {}) {
+function registerNotificationsHandlers(
+  loggedIpc,
+  store,
+  { canDismiss = () => true } = {},
+) {
   loggedIpc.handle("notifications:list", async () => store.list());
 
   loggedIpc.handle("notifications:dismiss", async (event, id) => {
     const notification = store.list().find((n) => n.id === id);
-    if (!notification) return;
+    if (!notification || !canDismiss(notification)) return;
     store.remove(id);
-    onDismissed?.(notification);
   });
 
   loggedIpc.handle("notifications:mark-read", async (event, ids) => {

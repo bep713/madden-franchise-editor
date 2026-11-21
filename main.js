@@ -142,13 +142,8 @@ franchiseFileManager.setAutoSavePausedCheck(
 );
 franchiseFileManager.registerIpcHandlers(loggedIpc);
 registerNotificationsHandlers(loggedIpc, notificationStore, {
-  // Dismissing the change resumes auto-save and saves edits made while paused.
-  // For a missing file that save recreates it at the old path.
-  onDismissed: (n) => {
-    if (EXTERNAL_CHANGE_KINDS.includes(n.kind)) {
-      franchiseFileManager.requestAutoSave(n.fileId);
-    }
-  },
+  // An outside change is resolved by a choice (load, keep, copy, save), never dismissed
+  canDismiss: (n) => !EXTERNAL_CHANGE_KINDS.includes(n.kind),
 });
 registerExternalDataHandlers(loggedIpc, franchiseFileManager);
 preferencesHandler.registerPreferencesHandlers(

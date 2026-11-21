@@ -10,22 +10,24 @@ const {
   stubSaveDialog,
   messageBoxCalls,
 } = require("../../util/dialogStubs");
+const { readSavedTable } = require("../../util/diskReader");
 const { poll } = require("../../util/poll");
 
 const App = require("../../models/App");
 const WelcomePage = require("../../models/react/WelcomePage");
 const TableEditorPage = require("../../models/react/TableEditorPage");
 const NotificationDrawer = require("../../models/react/NotificationDrawer");
-const Banner = require("../../models/react/Banner");
+const ExternalChangeBar = require("../../models/react/ExternalChangeBar");
 const NavigationBar = require("../../models/react/NavigationBar");
 
-const BANNER_MESSAGE =
-  "This save file has been modified outside of this program. Do you want to reload the file?";
 const TEAM_TABLE_ID = 7482;
 const ROW = 52;
 const CONFIRM = 0;
 const CANCEL = 1;
 const AUTO_SAVE = { general: { autoSave: [true] } };
+const BAR_TEXT =
+  "CAREER-E2ETEST was changed outside the editor. Which version do you want to keep?";
+const PAUSED = "Auto-save is paused until you choose.";
 
 let electronApp;
 
@@ -46,7 +48,6 @@ function touchExternally(filePath) {
   fs.writeFileSync(filePath, fs.readFileSync(filePath));
 }
 
-// Opens the career (dismissing the mismatch banner)
 async function launch(options = {}) {
   electronApp = await electron.launchWithDefaultOptions({
     ui: "react",
@@ -65,9 +66,8 @@ async function launch(options = {}) {
     welcome,
     tableEditor: new TableEditorPage(window),
     drawer: new NotificationDrawer(window),
-    banner: new Banner(window),
     nav: new NavigationBar(window),
-    strip: window.getByTestId("auto-save-paused"),
+    bar: new ExternalChangeBar(window),
   };
 }
 
@@ -87,17 +87,34 @@ async function waitForNoFileChanged(window) {
   );
 }
 
-// Touches the career and waits for the file-changed banner (1s debounce)
-async function changeExternally(banner) {
+// Touches the career and waits for the bar (1s debounce)
+async function changeExternally(bar) {
   touchExternally(careerPath);
-  await banner.waitForBanner("file-changed", { timeout: 10000 });
+  await bar.waitFor({ reason: "changed" });
 }
 
-async function waitForNoStrip(strip) {
+// A real change: different bytes, so a save of ours would overwrite them.
+// Returns the bytes and mtime on disk.
+async function changeBytesExternally(bar) {
+  const external = Buffer.concat([
+    fs.readFileSync(careerPath),
+    Buffer.from("EXTERNAL"),
+  ]);
+  fs.writeFileSync(careerPath, external);
+  await bar.waitFor({ reason: "changed" });
+  return { external, mtimeMs: fs.statSync(careerPath).mtimeMs };
+}
+
+function expectUnchanged({ external, mtimeMs }) {
+  expect(fs.statSync(careerPath).mtimeMs).to.equal(mtimeMs);
+  expect(fs.readFileSync(careerPath).equals(external)).to.equal(true);
+}
+
+async function waitForWritten({ external }, message) {
   await poll(
-    () => strip.count(),
-    (count) => count === 0,
-    { message: "The auto-save paused strip is still shown" },
+    () => fs.readFileSync(careerPath).equals(external),
+    (same) => !same,
+    { message, timeout: 30000 },
   );
 }
 
@@ -108,6 +125,11 @@ async function headerNames(app) {
 
 async function readLongName(app) {
   const team = await app.readTable(TEAM_TABLE_ID, ["LongName"]);
+  return team.records[ROW].LongName;
+}
+
+async function savedLongName() {
+  const team = await readSavedTable(careerPath, TEAM_TABLE_ID, ["LongName"]);
   return team.records[ROW].LongName;
 }
 
@@ -128,10 +150,17 @@ async function setLongName(app, tableEditor) {
   );
 }
 
-// Edits Team LongName in memory (auto-save is off, nothing is saved)
 async function editLongName(app, welcome, tableEditor) {
   await openTeamTable(welcome, tableEditor);
   await setLongName(app, tableEditor);
+}
+
+async function waitForBoxes(count) {
+  return poll(
+    () => messageBoxCalls(electronApp),
+    (calls) => calls.length === count,
+    { message: `Expected ${count} message box(es)` },
+  );
 }
 
 async function windowTitle() {
@@ -140,12 +169,22 @@ async function windowTitle() {
   );
 }
 
-test("an external change shows the banner and a drawer entry (react)", async () => {
+test("an external change shows the bar, no banner, and a drawer entry without dismiss (react)", async () => {
   test.setTimeout(120 * 1000);
-  const { window, drawer, banner } = await launch();
+  const { window, drawer, bar } = await launch();
 
-  await changeExternally(banner);
-  expect(await banner.message()).to.equal(BANNER_MESSAGE);
+  await changeExternally(bar);
+  expect(await bar.text()).to.include(BAR_TEXT);
+  expect(await bar.text()).not.to.include(PAUSED);
+  expect(await bar.buttons()).to.deep.equal([
+    "Save mine as a copy…",
+    "Load the new version",
+    "Keep my version",
+    "Hide",
+  ]);
+  expect(
+    await window.locator('[data-testid="banner"][data-kind="file-changed"]').count(),
+  ).to.equal(0);
 
   const [stored] = await fileChangedNotifications(window);
   await drawer.open();
@@ -160,26 +199,40 @@ test("an external change shows the banner and a drawer entry (react)", async () 
     title: "File Changed",
     description: "CAREER-E2ETEST was changed outside the editor.",
   });
-  expect(await drawer.linkIds(stored.id)).to.deep.equal(["reload", "branch"]);
+  expect(await drawer.linkIds(stored.id)).to.deep.equal(["copy", "load", "keep"]);
+  expect(
+    await drawer.item(stored.id).locator('[data-action="dismiss-notification"]').count(),
+  ).to.equal(0);
+  // main refuses a dismiss too
+  await window.evaluate(
+    (id) => window.electronAPI.notifications.dismiss(id),
+    stored.id,
+  );
+  expect(await fileChangedNotifications(window)).to.have.length(1);
 });
 
-test("Reload drops unsaved edits after the confirm (react)", async () => {
+test("Load the new version drops unsaved edits after the confirm (react)", async () => {
   test.setTimeout(120 * 1000);
-  const { app, window, welcome, tableEditor, banner } = await launch();
+  const { app, window, welcome, tableEditor, bar } = await launch();
 
   await editLongName(app, welcome, tableEditor);
-  await changeExternally(banner);
+  await changeExternally(bar);
   await stubMessageBox(electronApp, CONFIRM);
-  await banner.reload();
+  await bar.load();
 
   await poll(
     () => readLongName(app),
     (name) => name === "New York",
-    { message: "The reload never restored the on-disk value" },
+    { message: "The load never restored the on-disk value" },
   );
   const [box] = await messageBoxCalls(electronApp);
-  expect(box.message).to.equal("Reload CAREER-E2ETEST?");
+  expect(box).to.include({
+    message: "Load the new version of CAREER-E2ETEST?",
+    detail: "Your unsaved edits will be lost.",
+  });
+  expect(box.buttons).to.deep.equal(["Load new version", "Cancel"]);
   await waitForNoFileChanged(window);
+  await bar.waitForHidden();
 
   await tableEditor.waitForTableToLoad();
   await tableEditor.openTableById(TEAM_TABLE_ID);
@@ -187,51 +240,61 @@ test("Reload drops unsaved edits after the confirm (react)", async () => {
   expect(await tableEditor.grid.getTextAtSelectedCell()).to.equal("New York");
 });
 
-test("cancelling the Reload confirm keeps the edit (react)", async () => {
+test("cancelling the Load confirm keeps the edit (react)", async () => {
   test.setTimeout(120 * 1000);
-  const { app, window, welcome, tableEditor, banner } = await launch();
+  const { app, window, welcome, tableEditor, bar } = await launch();
 
   await editLongName(app, welcome, tableEditor);
-  await changeExternally(banner);
+  await changeExternally(bar);
   await stubMessageBox(electronApp, CANCEL);
-  await banner.reload();
+  await bar.load();
 
-  await poll(
-    () => messageBoxCalls(electronApp),
-    (calls) => calls.length === 1,
-    { message: "The Reload confirm never showed" },
-  );
+  await waitForBoxes(1);
   await wait(500);
   expect(await readLongName(app)).to.equal("Old York");
   expect(await fileChangedNotifications(window)).to.have.length(1);
 });
 
-test("Branch and save new moves the file to the new path (react)", async () => {
+test("Load the new version with no edits doesn't ask (react)", async () => {
+  test.setTimeout(120 * 1000);
+  const { window, bar } = await launch({ preferences: AUTO_SAVE });
+
+  await changeExternally(bar);
+  await stubMessageBox(electronApp, CANCEL);
+  await bar.load();
+
+  await bar.waitForHidden();
+  await waitForNoFileChanged(window);
+  expect(await messageBoxCalls(electronApp)).to.have.length(0);
+});
+
+test("Save mine as a copy moves the file to the new path (react)", async () => {
   test.setTimeout(120 * 1000);
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "mfe-branch-"));
-  const branchPath = path.join(dir, "CAREER-BRANCH");
+  const copyPath = path.join(dir, "CAREER-BRANCH");
   try {
-    const { window, banner } = await launch();
+    const { window, bar } = await launch();
 
-    await changeExternally(banner);
-    await stubSaveDialog(electronApp, branchPath);
-    await banner.branch();
+    await changeExternally(bar);
+    await stubSaveDialog(electronApp, copyPath);
+    await bar.copy();
 
     await poll(
-      () => fs.existsSync(branchPath),
+      () => fs.existsSync(copyPath),
       (exists) => exists,
-      { message: "Branch did not write the new file", timeout: 30000 },
+      { message: "The copy was not written", timeout: 30000 },
     );
     await poll(
       () => windowTitle(),
-      (title) => title.includes(branchPath),
+      (title) => title.includes(copyPath),
       { message: "The title never showed the new path" },
     );
     await waitForNoFileChanged(window);
+    await bar.waitForHidden();
     const recent = await window.evaluate(() =>
       window.electronAPI.recentFiles.getRecentFiles(),
     );
-    expect(recent.map((entry) => entry.path)).to.include(branchPath);
+    expect(recent.map((entry) => entry.path)).to.include(copyPath);
 
     await electronApp.close();
     electronApp = null;
@@ -240,75 +303,134 @@ test("Branch and save new moves the file to the new path (react)", async () => {
   }
 });
 
-test("the banner's Dismiss removes the drawer entry (react)", async () => {
+test("auto-save on: paused edits aren't written until Keep my version, which writes them (react)", async () => {
   test.setTimeout(120 * 1000);
-  const { window, drawer, banner } = await launch();
-
-  await changeExternally(banner);
-  const [stored] = await fileChangedNotifications(window);
-  await banner.dismiss();
-  await banner.waitForHidden();
-  await waitForNoFileChanged(window);
-
-  await drawer.open();
-  expect(await drawer.item(stored.id).count()).to.equal(0);
-});
-
-test("auto-save pauses on an external change until Dismiss (react)", async () => {
-  test.setTimeout(120 * 1000);
-  const { app, window, welcome, tableEditor, drawer, banner, nav, strip } =
-    await launch({ preferences: AUTO_SAVE });
-  const filePath = careerPath;
+  const { app, window, welcome, tableEditor, bar } = await launch({
+    preferences: AUTO_SAVE,
+  });
 
   await openTeamTable(welcome, tableEditor);
-  await changeExternally(banner);
-  await strip.waitFor();
-  expect(await strip.innerText()).to.include(
-    "Auto-save is paused: CAREER-E2ETEST was changed outside the editor.",
-  );
-  const external = fs.readFileSync(filePath);
+  const disk = await changeBytesExternally(bar);
+  expect(await bar.text()).to.include(PAUSED);
+  expect(await bar.buttons()).not.to.include("Hide");
 
   await setLongName(app, tableEditor);
   await wait(1000);
-  expect(fs.readFileSync(filePath).equals(external)).to.equal(true);
+  expectUnchanged(disk);
 
-  // The banner may have timed out during the edit; the drawer X also dismisses
-  if (await banner.isVisible()) {
-    await banner.dismiss();
-  } else {
-    const [stored] = await fileChangedNotifications(window);
-    await nav.openTab("Home");
-    await drawer.open();
-    await drawer.dismiss(stored.id);
-  }
-  await waitForNoStrip(strip);
-  await poll(
-    () => fs.readFileSync(filePath).equals(external),
-    (same) => !same,
-    { message: "The paused edit was never auto-saved", timeout: 30000 },
-  );
-});
+  await stubMessageBox(electronApp, CONFIRM);
+  await bar.keep();
+  const [box] = await waitForBoxes(1);
+  expect(box).to.include({
+    message: "Keep your version of CAREER-E2ETEST?",
+    detail:
+      "Auto-save resumes and saves your edits now. The changes made outside the editor will be lost.",
+  });
+  expect(box.buttons).to.deep.equal(["Keep mine", "Cancel"]);
 
-test("Reload from the auto-save paused strip clears it (react)", async () => {
-  test.setTimeout(120 * 1000);
-  const { window, banner, strip } = await launch({ preferences: AUTO_SAVE });
-
-  await changeExternally(banner);
-  await strip.waitFor();
-  // Nothing is unsaved, so there is no confirm
-  await stubMessageBox(electronApp, CANCEL);
-  await strip.getByRole("button", { name: "Reload", exact: true }).click();
-
-  await waitForNoStrip(strip);
+  await bar.waitForHidden();
   await waitForNoFileChanged(window);
-  expect(await messageBoxCalls(electronApp)).to.have.length(0);
+  await waitForWritten(disk, "Keep never saved the paused edit");
+  expect(await savedLongName()).to.equal("Old York");
 });
 
-test("no auto-save paused strip with auto-save off (react)", async () => {
+test("auto-save on: Keep my version with no edits writes nothing (react)", async () => {
   test.setTimeout(120 * 1000);
-  const { window, banner, strip } = await launch();
+  const { window, bar } = await launch({ preferences: AUTO_SAVE });
 
-  await changeExternally(banner);
+  const disk = await changeBytesExternally(bar);
+  await stubMessageBox(electronApp, CONFIRM);
+  await bar.keep();
+  const [box] = await waitForBoxes(1);
+  expect(box.detail).to.equal(
+    "Auto-save resumes. Your next edit replaces the changes made outside the editor.",
+  );
+
+  await bar.waitForHidden();
+  await waitForNoFileChanged(window);
+  // An auto-save would start right away; give it time to land
+  await wait(3000);
+  expectUnchanged(disk);
+});
+
+test("auto-save off: Keep my version writes nothing, then Save writes without asking (react)", async () => {
+  test.setTimeout(120 * 1000);
+  const { app, window, welcome, tableEditor, bar } = await launch();
+
+  await editLongName(app, welcome, tableEditor);
+  const disk = await changeBytesExternally(bar);
+  await stubMessageBox(electronApp, CONFIRM);
+  await bar.keep();
+  const [box] = await waitForBoxes(1);
+  expect(box.detail).to.equal(
+    "Nothing is saved now. When you save, the changes made outside the editor will be lost.",
+  );
+
+  await bar.waitForHidden();
+  await waitForNoFileChanged(window);
+  await wait(1000);
+  expectUnchanged(disk);
+
+  await app._clickMenuItem("Save");
+  await waitForWritten(disk, "Save never wrote the edit");
+  expect(await savedLongName()).to.equal("Old York");
+  expect(await messageBoxCalls(electronApp)).to.have.length(1);
+});
+
+test("auto-save off: Save while unresolved asks every time until Replace (react)", async () => {
+  test.setTimeout(120 * 1000);
+  const { app, window, welcome, tableEditor, bar } = await launch();
+
+  await editLongName(app, welcome, tableEditor);
+  const disk = await changeBytesExternally(bar);
+
+  await stubMessageBox(electronApp, CANCEL);
+  await app._clickMenuItem("Save");
+  const [box] = await waitForBoxes(1);
+  expect(box).to.include({
+    message: "Replace CAREER-E2ETEST with your version?",
+    detail: "The changes made outside the editor will be lost.",
+  });
+  expect(box.buttons).to.deep.equal(["Replace", "Cancel"]);
+  await wait(1000);
+  expectUnchanged(disk);
   expect(await fileChangedNotifications(window)).to.have.length(1);
-  expect(await strip.count()).to.equal(0);
+
+  await app._clickMenuItem("Save");
+  await waitForBoxes(2);
+  await wait(500);
+  expectUnchanged(disk);
+
+  await stubMessageBox(electronApp, CONFIRM);
+  await app._clickMenuItem("Save");
+  await waitForBoxes(3);
+  await waitForWritten(disk, "Replace never wrote the edit");
+  expect(await savedLongName()).to.equal("Old York");
+  await waitForNoFileChanged(window);
+  await bar.waitForHidden();
+});
+
+test("auto-save off: the X hides the bar, the drawer entry stays and Save still asks (react)", async () => {
+  test.setTimeout(120 * 1000);
+  const { app, window, drawer, nav, welcome, tableEditor, bar } = await launch();
+
+  await editLongName(app, welcome, tableEditor);
+  const disk = await changeBytesExternally(bar);
+  const [stored] = await fileChangedNotifications(window);
+  await bar.hide();
+  await bar.waitForHidden();
+
+  await stubMessageBox(electronApp, CANCEL);
+  await app._clickMenuItem("Save");
+  await waitForBoxes(1);
+  await wait(500);
+  expectUnchanged(disk);
+
+  await nav.openTab("Home");
+  await drawer.open();
+  await poll(
+    () => drawer.item(stored.id).count(),
+    (count) => count === 1,
+    { message: "The drawer entry went away with the bar" },
+  );
 });

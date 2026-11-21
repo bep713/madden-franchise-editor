@@ -3,57 +3,105 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import AutoSavePausedStrip from './AutoSavePausedStrip';
 
+const buttonNames = () =>
+    screen.getAllByRole('button').map((b) => b.textContent || b.ariaLabel);
+
+const PAUSED = 'Auto-save is paused until you choose.';
+
 describe('AutoSavePausedStrip', () => {
-    it('names the file and calls onReload and onBranch', async () => {
-        const onReload = vi.fn();
-        const onBranch = vi.fn();
+    it.each([true, false])(
+        'changed (auto-save %s): text, buttons in order, and their callbacks',
+        async (autoSave) => {
+            const props = {
+                onCopy: vi.fn(),
+                onHide: vi.fn(),
+                onLoad: vi.fn(),
+                onKeep: vi.fn()
+            };
+            render(
+                <AutoSavePausedStrip
+                    {...props}
+                    autoSave={autoSave}
+                    fileName='CAREER-TEST'
+                    reason='changed'
+                />
+            );
+
+            const text = screen.getByRole('status').textContent;
+            expect(text).toContain(
+                'CAREER-TEST was changed outside the editor. Which version do you want to keep?'
+            );
+            expect(text?.includes(PAUSED)).toBe(autoSave);
+            expect(buttonNames()).toEqual([
+                'Save mine as a copy…',
+                'Load the new version',
+                'Keep my version',
+                ...(autoSave ? [] : ['Hide'])
+            ]);
+
+            await userEvent.click(
+                screen.getByRole('button', { name: 'Save mine as a copy…' })
+            );
+            await userEvent.click(
+                screen.getByRole('button', { name: 'Load the new version' })
+            );
+            await userEvent.click(
+                screen.getByRole('button', { name: 'Keep my version' })
+            );
+            expect(props.onCopy).toHaveBeenCalledTimes(1);
+            expect(props.onLoad).toHaveBeenCalledTimes(1);
+            expect(props.onKeep).toHaveBeenCalledTimes(1);
+        }
+    );
+
+    it.each([true, false])(
+        'missing (auto-save %s): text, buttons in order, and their callbacks',
+        async (autoSave) => {
+            const props = {
+                onCopy: vi.fn(),
+                onHide: vi.fn(),
+                onPutBack: vi.fn()
+            };
+            render(
+                <AutoSavePausedStrip
+                    {...props}
+                    autoSave={autoSave}
+                    fileName='CAREER-TEST'
+                    reason='missing'
+                />
+            );
+
+            const text = screen.getByRole('status').textContent;
+            expect(text).toContain(
+                'CAREER-TEST was deleted or moved outside the editor.'
+            );
+            expect(text?.includes(PAUSED)).toBe(autoSave);
+            expect(buttonNames()).toEqual([
+                'Save mine as a copy…',
+                'Put it back',
+                ...(autoSave ? [] : ['Hide'])
+            ]);
+
+            await userEvent.click(
+                screen.getByRole('button', { name: 'Put it back' })
+            );
+            expect(props.onPutBack).toHaveBeenCalledTimes(1);
+        }
+    );
+
+    it('the X (auto-save off) calls onHide', async () => {
+        const onHide = vi.fn();
         render(
             <AutoSavePausedStrip
+                autoSave={false}
                 fileName='CAREER-TEST'
-                onBranch={onBranch}
-                onReload={onReload}
-                reason='changed'
-            />
-        );
-
-        expect(screen.getByRole('status').textContent).toContain(
-            'Auto-save is paused: CAREER-TEST was changed outside the editor.'
-        );
-        expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
-        expect(screen.queryByRole('button', { name: 'Save here' })).toBeNull();
-
-        await userEvent.click(screen.getByRole('button', { name: 'Reload' }));
-        expect(onReload).toHaveBeenCalledTimes(1);
-        await userEvent.click(
-            screen.getByRole('button', { name: 'Branch and save new' })
-        );
-        expect(onBranch).toHaveBeenCalledTimes(1);
-    });
-
-    it('says the file is missing and calls onSaveHere and onBranch', async () => {
-        const onSaveHere = vi.fn();
-        const onBranch = vi.fn();
-        render(
-            <AutoSavePausedStrip
-                fileName='CAREER-TEST'
-                onBranch={onBranch}
-                onSaveHere={onSaveHere}
+                onCopy={vi.fn()}
+                onHide={onHide}
+                onPutBack={vi.fn()}
                 reason='missing'
             />
         );
-
-        expect(screen.getByRole('status').textContent).toContain(
-            'Auto-save is paused: CAREER-TEST was deleted or moved outside the editor.'
-        );
-        expect(screen.queryByRole('button', { name: 'Reload' })).toBeNull();
-
-        await userEvent.click(
-            screen.getByRole('button', { name: 'Save here' })
-        );
-        expect(onSaveHere).toHaveBeenCalledTimes(1);
-        await userEvent.click(
-            screen.getByRole('button', { name: 'Save as new' })
-        );
-        expect(onBranch).toHaveBeenCalledTimes(1);
+        await userEvent.click(screen.getByRole('button', { name: 'Hide' }));
+        expect(onHide).toHaveBeenCalledTimes(1);
     });
 });

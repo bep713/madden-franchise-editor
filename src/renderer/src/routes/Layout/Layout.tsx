@@ -36,15 +36,21 @@ const UpdateBanners: React.FC = () => {
     return null;
 };
 
+// Inside ExternalChangeProvider, which Save's confirm needs
+const FileMenuCommands: React.FC = () => {
+    useFileMenuCommands();
+    return null;
+};
+
 const Layout: React.FC = () => {
     const [openFile] = useContext(FranchiseFileContext);
-    useFileMenuCommands();
     useMenuState();
     const editorTabs = useEditorTabsController();
 
     return (
         <BannerProvider>
             <ExternalChangeProvider>
+                <FileMenuCommands />
                 <NotificationBanners selectTab={editorTabs.selectTab} />
                 <UpdateBanners />
                 <EditorTabsContext.Provider value={editorTabs}>

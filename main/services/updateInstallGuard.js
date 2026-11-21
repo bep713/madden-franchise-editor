@@ -42,9 +42,9 @@ function createInstallGuard({
 
     const names = dirty.map(fileName).join(", ");
     const detail = [`Unsaved: ${names}`];
-    if (dirty.some((id) => hasPendingFileChange(id))) {
+    for (const id of dirty.filter((id) => hasPendingFileChange(id))) {
       detail.push(
-        "The file was changed outside the editor; saving overwrites those changes.",
+        `${fileName(id)} was changed outside the editor. Saving replaces those changes.`,
       );
     }
     if (dirty.some((id) => hasMissingFile(id))) {
