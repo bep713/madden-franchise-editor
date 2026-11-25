@@ -16,6 +16,11 @@ import ExpressionEditorActionBar, {
 } from '../components/TableActionBar/ExpressionEditorActionBar';
 
 interface Props {
+    // Compact table editor spacing, and its action bar toggle
+    compact: boolean;
+    onToggleSpacing: () => void;
+    // Shown in the header in place of the table's title (compact)
+    tablePicker?: React.ReactNode;
     setTableLoaderOptions: LoaderOptionsSetter;
     table: TableData;
 }
@@ -38,7 +43,13 @@ function getDisplayValue(
     return format === 'hex' ? value.toUpperCase() : value;
 }
 
-const ExpressionEditorView = ({ setTableLoaderOptions, table }: Props) => {
+const ExpressionEditorView = ({
+    compact,
+    onToggleSpacing,
+    tablePicker,
+    setTableLoaderOptions,
+    table
+}: Props) => {
     const [displayType, setDisplayType] = useState<'decimal' | 'hex'>(
         'decimal'
     );
@@ -60,6 +71,8 @@ const ExpressionEditorView = ({ setTableLoaderOptions, table }: Props) => {
             // are never produced until then.
         } else if (action === TableActions.TOGGLE_HEX) {
             setDisplayType(displayType === 'hex' ? 'decimal' : 'hex');
+        } else if (action === TableActions.TOGGLE_SPACING) {
+            onToggleSpacing();
         }
     };
 
@@ -68,12 +81,15 @@ const ExpressionEditorView = ({ setTableLoaderOptions, table }: Props) => {
 
     return (
         <>
-            <TableHeader table={table}>
+            <TableHeader compact={compact} table={table} title={tablePicker}>
                 <TablePagination
                     onChange={handlePaginationChange}
                     table={table}
                 />
-                <ExpressionEditorActionBar onActionClick={handleActionClick} />
+                <ExpressionEditorActionBar
+                    compact={compact}
+                    onActionClick={handleActionClick}
+                />
             </TableHeader>
             <div className={baseStyles.tableEditorComponentWrapper}>
                 <Allotment defaultSizes={[1, 1]}>
@@ -81,6 +97,7 @@ const ExpressionEditorView = ({ setTableLoaderOptions, table }: Props) => {
                         <Layout direction='column' fullHeight>
                             <Text emphasis>Instructions</Text>
                             <TableEditorComponent
+                                compact={compact}
                                 table={{
                                     headers: INSTRUCTION_HEADERS,
                                     records: (

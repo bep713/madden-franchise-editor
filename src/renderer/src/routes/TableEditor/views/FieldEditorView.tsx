@@ -20,6 +20,11 @@ import JumpToColumnModal from '../components/JumpToColumnModal/JumpToColumnModal
 import ReferencesModal from '../components/ReferencesModal/ReferencesModal';
 
 interface Props {
+    // Compact table editor spacing, and its action bar toggle
+    compact: boolean;
+    onToggleSpacing: () => void;
+    // Shown in the header in place of the table's title (compact)
+    tablePicker?: React.ReactNode;
     fileId: string;
     // Selected when the table loads (a followed reference)
     initialSelection?: CellPosition | null;
@@ -58,6 +63,9 @@ interface Props {
 }
 
 const FieldEditorView = ({
+    compact,
+    onToggleSpacing,
+    tablePicker,
     fileId,
     initialSelection,
     initialScroll,
@@ -236,19 +244,23 @@ const FieldEditorView = ({
             openJumpToColumn();
         } else if (action === TableActions.SWITCH_ORIENTATION) {
             onToggleOrientation();
+        } else if (action === TableActions.TOGGLE_SPACING) {
+            onToggleSpacing();
         }
     };
 
     return (
         <>
-            <TableHeader table={table}>
+            <TableHeader compact={compact} table={table} title={tablePicker}>
                 <FieldEditorActionBar
+                    compact={compact}
                     isPinned={isPinned}
                     onActionClick={handleActionClick}
                 />
             </TableHeader>
             <div className={baseStyles.tableEditorComponentWrapper}>
                 <TableEditorComponent
+                    compact={compact}
                     fileId={fileId}
                     initialScroll={initialScroll}
                     initialSelection={initialSelection}

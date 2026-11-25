@@ -6,3 +6,7 @@
     background-color: var(--primary-soft);
     box-shadow: 1px 1px 10px 0 var(--shadow-soft);
 }
+
+.wrapper.compact {
+    padding: var(--spacing-1) var(--spacing-2);
+}

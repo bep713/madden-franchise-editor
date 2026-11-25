@@ -16,6 +16,15 @@
     --ht-link-hover-color: var(--text-link);
 }
 
+/* Compact spacing: v4's metrics, 13px text in 23px rows (20px line + 2 * 1px
+   padding + 1px border) */
+.wrapper.compact :global(.ht-theme-main-dark-auto) {
+    --ht-cell-horizontal-padding: 4px;
+    --ht-cell-vertical-padding: 1px;
+    --ht-font-size: 13px;
+    --ht-line-height: 20px;
+}
+
 .table th {
     text-align: left;
 }

@@ -59,3 +59,7 @@ export function buildSidebarRows(
 
     return rows;
 }
+
+// A stable react-window key: a pinned table is listed twice
+export const rowKey = (row: SidebarRow): string =>
+    row.kind === 'table' ? `${row.section}-${row.table.id}` : row.kind;

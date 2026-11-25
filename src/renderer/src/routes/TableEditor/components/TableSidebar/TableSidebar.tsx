@@ -10,7 +10,7 @@ import Text from '@renderer/components/Text/Text';
 import Search from '@assets/icons/search.svg?react';
 import Pushpin from '@assets/icons/pushpin.svg?react';
 import Unpin from '@assets/icons/unpin.svg?react';
-import { SidebarRow } from './sidebarRows';
+import { SidebarRow, rowKey } from './sidebarRows';
 import { OpenMode, getOpenMode } from '@renderer/utils/openMode';
 
 const TABLE_ROW_HEIGHT = 63;
@@ -23,9 +23,6 @@ const ROW_HEIGHTS: Record<SidebarRow['kind'], number> = {
     table: TABLE_ROW_HEIGHT,
     divider: DIVIDER_HEIGHT
 };
-
-const rowKey = (row: SidebarRow): string =>
-    row.kind === 'table' ? `${row.section}-${row.table.id}` : row.kind;
 
 interface TableSidebarProps {
     // Shown before the search box (the table editor's Back/Forward)

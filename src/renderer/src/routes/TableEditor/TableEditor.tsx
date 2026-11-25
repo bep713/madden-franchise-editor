@@ -11,8 +11,6 @@ import {
 import { Allotment } from 'allotment';
 import 'allotment/dist/style.css';
 
-import Fuse from 'fuse.js';
-
 import styles from './TableEditor.module.scss';
 import { FranchiseFileContext } from '@renderer/context/FranchiseFileContext';
 import { TableData, TableListItem, TableType } from '@shared/types';
@@ -20,6 +18,7 @@ import TableSidebar from './components/TableSidebar/TableSidebar';
 import { buildSidebarRows } from './components/TableSidebar/sidebarRows';
 import usePinnedTables from '@renderer/hooks/usePinnedTables';
 import usePreference from '@renderer/hooks/usePreference';
+import useTableEditorSpacing from '@renderer/hooks/useTableEditorSpacing';
 import useLoader from '@renderer/hooks/useLoader';
 import ExpressionEditorView from './views/ExpressionEditorView';
 import FieldEditorView from './views/FieldEditorView';
@@ -33,6 +32,8 @@ import { HistoryPlace, TabHistory } from '@renderer/tabs/tabHistory';
 import HistoryButtons from './components/HistoryButtons/HistoryButtons';
 import { OpenMode } from '@renderer/utils/openMode';
 import useTableDataCommands from './useTableDataCommands';
+import TablePicker from './components/TablePicker/TablePicker';
+import { filterTables } from './filterTables';
 
 interface LoadOptions {
     // Reload even if the table is already shown (a tab switch)
@@ -72,6 +73,9 @@ const TableEditor: React.FC = () => {
     const [selectedTableData, setSelectedTableData] =
         useState<TableData | null>(null);
     const [filterText, setFilterText] = useState('');
+    const { compact, toggleSpacing } = useTableEditorSpacing();
+    // False after the sidebar is snapped closed, and kept through compact
+    const [sidebarVisible, setSidebarVisible] = useState(true);
     // Set together with selectedTableData, so the grid only renders once
     const [pendingSelection, setPendingSelection] =
         useState<CellPosition | null>(null);
@@ -123,21 +127,10 @@ const TableEditor: React.FC = () => {
     const allTables = activeFranchiseFile?.tables;
 
     // Derived, not seeded into state, so it updates when the model arrives async.
-    const filteredTables = useMemo(() => {
-        if (!allTables) {
-            return undefined;
-        }
-
-        if (filterText.length === 0) {
-            return [...allTables].sort((a, b) => a.index - b.index);
-        }
-
-        const fuse = new Fuse(allTables, {
-            keys: ['index', 'name', 'id'],
-            includeScore: true
-        });
-        return fuse.search(filterText).map((result) => result.item);
-    }, [allTables, filterText]);
+    const filteredTables = useMemo(
+        () => allTables && filterTables(allTables, filterText),
+        [allTables, filterText]
+    );
 
     const sidebarRows = useMemo(
         () =>
@@ -456,86 +449,121 @@ const TableEditor: React.FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab.key, fileId, revision]);
 
+    // The sidebar's search text isn't kept across a spacing switch
+    const onToggleSpacing = useCallback(() => {
+        setFilterText('');
+        toggleSpacing();
+    }, [toggleSpacing]);
+
     if (!activeFranchiseFile) {
         return null;
     }
 
+    const historyButtons = (
+        <HistoryButtons
+            history={history}
+            onGo={onGoHistory}
+            tableNames={tableNames}
+        />
+    );
+
+    // Compact: Back/Forward and the table picker in the table's header
+    const tablePicker = compact ? (
+        <div className={styles.tablePickerWrapper}>
+            {historyButtons}
+            <TablePicker
+                onFilter={setFilterText}
+                onTableSelect={onSidebarSelect}
+                rows={sidebarRows}
+                selectedTable={selectedTable}
+            />
+        </div>
+    ) : undefined;
+
+    const content = (
+        <div className={styles.tableContentWrapper}>
+            {tableLoader}
+            {selectedTable &&
+                selectedTableData &&
+                (isExpressionTable ? (
+                    <ExpressionEditorView
+                        compact={compact}
+                        key={selectedTable.id}
+                        onToggleSpacing={onToggleSpacing}
+                        setTableLoaderOptions={setTableLoaderOptions}
+                        table={selectedTableData}
+                        tablePicker={tablePicker}
+                    />
+                ) : (
+                    <FieldEditorView
+                        compact={compact}
+                        fileId={activeFranchiseFile.fileId}
+                        gridRef={gridRef}
+                        initialScroll={pendingScroll}
+                        initialSelection={pendingSelection}
+                        isInverted={isInverted}
+                        isPinned={isPinned(selectedTable)}
+                        onFollowReference={onFollowReference}
+                        onNavigateInTable={onNavigateInTable}
+                        onExport={onExport}
+                        onImport={onImport}
+                        onScroll={onScroll}
+                        onSelectionChange={onSelectionChange}
+                        onToggleOrientation={onToggleOrientation}
+                        onTogglePin={() => togglePin(selectedTable)}
+                        onToggleSpacing={onToggleSpacing}
+                        setTableLoaderOptions={setTableLoaderOptions}
+                        table={selectedTableData}
+                        tableNames={tableNames}
+                        tablePicker={tablePicker}
+                        tables={allTables ?? []}
+                    />
+                ))}
+        </div>
+    );
+
+    // Compact hides the sidebar's pane rather than leaving the Allotment out,
+    // so the grid stays mounted (with its selection and scroll) across a
+    // switch
     return (
-        <div className={styles.tableEditorWrapper}>
+        <div
+            className={styles.tableEditorWrapper}
+            data-spacing={compact ? 'compact' : 'default'}
+        >
             <div className={styles.tableWrapper}>
                 <Allotment
                     className={styles.tableMainWrapper}
                     defaultSizes={[1, 4]}
+                    onVisibleChange={(index, visible) => {
+                        if (index === 0 && !compact) {
+                            setSidebarVisible(visible);
+                        }
+                    }}
                 >
                     <Allotment.Pane
                         className={styles.tableListWrapper}
                         minSize={240}
                         snap
+                        visible={!compact && sidebarVisible}
                     >
-                        <TableSidebar
-                            headerStart={
-                                <HistoryButtons
-                                    history={history}
-                                    onGo={onGoHistory}
-                                    tableNames={tableNames}
-                                />
-                            }
-                            onFilter={setFilterText}
-                            onTableSelect={onSidebarSelect}
-                            onTogglePinnedVisible={() =>
-                                setShowPinnedTablesValue(
-                                    showPinnedTables ? [] : [true]
-                                )
-                            }
-                            onTogglePin={togglePin}
-                            rows={sidebarRows}
-                            selectedTableId={selectedTableId}
-                            showPinnedTables={showPinnedTables}
-                        />
+                        {!compact && (
+                            <TableSidebar
+                                headerStart={historyButtons}
+                                onFilter={setFilterText}
+                                onTableSelect={onSidebarSelect}
+                                onTogglePinnedVisible={() =>
+                                    setShowPinnedTablesValue(
+                                        showPinnedTables ? [] : [true]
+                                    )
+                                }
+                                onTogglePin={togglePin}
+                                rows={sidebarRows}
+                                selectedTableId={selectedTableId}
+                                showPinnedTables={showPinnedTables}
+                            />
+                        )}
                     </Allotment.Pane>
-                    <Allotment.Pane>
-                        <div className={styles.tableContentWrapper}>
-                            {tableLoader}
-                            {selectedTable &&
-                                selectedTableData &&
-                                (isExpressionTable ? (
-                                    <ExpressionEditorView
-                                        key={selectedTable.id}
-                                        setTableLoaderOptions={
-                                            setTableLoaderOptions
-                                        }
-                                        table={selectedTableData}
-                                    />
-                                ) : (
-                                    <FieldEditorView
-                                        fileId={activeFranchiseFile.fileId}
-                                        gridRef={gridRef}
-                                        initialScroll={pendingScroll}
-                                        initialSelection={pendingSelection}
-                                        isInverted={isInverted}
-                                        isPinned={isPinned(selectedTable)}
-                                        onFollowReference={onFollowReference}
-                                        onNavigateInTable={onNavigateInTable}
-                                        onExport={onExport}
-                                        onImport={onImport}
-                                        onScroll={onScroll}
-                                        onSelectionChange={onSelectionChange}
-                                        onToggleOrientation={
-                                            onToggleOrientation
-                                        }
-                                        onTogglePin={() =>
-                                            togglePin(selectedTable)
-                                        }
-                                        setTableLoaderOptions={
-                                            setTableLoaderOptions
-                                        }
-                                        table={selectedTableData}
-                                        tableNames={tableNames}
-                                        tables={allTables ?? []}
-                                    />
-                                ))}
-                        </div>
-                    </Allotment.Pane>
+                    <Allotment.Pane>{content}</Allotment.Pane>
                 </Allotment>
             </div>
 
