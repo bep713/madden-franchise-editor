@@ -5,6 +5,7 @@ import Export from '@assets/icons/export.svg?react';
 import Import from '@assets/icons/import.svg?react';
 import Jump from '@assets/icons/jump.svg?react';
 import Pushpin from '@assets/icons/pushpin.svg?react';
+import Spacing from '@assets/icons/spacing.svg?react';
 import Switch from '@assets/icons/switchOrientation.svg?react';
 
 export enum TableActions {
@@ -12,15 +13,18 @@ export enum TableActions {
     IMPORT,
     PIN,
     JUMP_TO_COLUMN,
-    SWITCH_ORIENTATION
+    SWITCH_ORIENTATION,
+    TOGGLE_SPACING
 }
 
 interface Props {
+    // Labels Switch spacing with the spacing it switches to
+    compact: boolean;
     isPinned: boolean;
     onActionClick: (action: number) => void;
 }
 
-const FieldEditorActionBar = ({ isPinned, onActionClick }: Props) => {
+const FieldEditorActionBar = ({ compact, isPinned, onActionClick }: Props) => {
     const items: LinkProps[] = [
         {
             color: 'black',
@@ -61,6 +65,16 @@ const FieldEditorActionBar = ({ isPinned, onActionClick }: Props) => {
             leftAsset: <Switch />,
             onClick: () => onActionClick(TableActions.SWITCH_ORIENTATION),
             text: 'Switch orientation'
+        },
+        {
+            color: 'black',
+            'data-action': TableActions[TableActions.TOGGLE_SPACING],
+            key: TableActions.TOGGLE_SPACING,
+            leftAsset: <Spacing />,
+            onClick: () => onActionClick(TableActions.TOGGLE_SPACING),
+            text: compact
+                ? 'Switch to default spacing'
+                : 'Switch to compact spacing'
         }
     ];
 

@@ -18,6 +18,10 @@ class TableEditorPage {
       loader: this.window.locator('[role="status"][aria-busy="true"]'),
       search: this.window.getByPlaceholder("Search tables..."),
       header: this.window.getByTestId("table-header-title"),
+      // Compact spacing's table combobox, in place of the header title
+      picker: this.window.getByTestId("table-picker"),
+      pickerOptions: this.window.locator('[role="listbox"] [role="option"]'),
+      spacingToggle: this.window.locator('[data-action="TOGGLE_SPACING"]'),
       // In either sidebar section
       selectedSidebarTable: this.window.locator(
         'button[data-table-id][aria-current="true"]',
@@ -131,14 +135,65 @@ class TableEditorPage {
 
   async waitForTableToLoad() {
     await this.locators.loader.waitFor({ state: "hidden" });
-    await this.locators.header.waitFor();
+    await this.locators.header.or(this.locators.picker).waitFor();
     await this.grid.locators.firstCell.waitFor();
   }
 
   // "<id> - <name>", same format as v4's getSelectedTableName. Unnamed
-  // tables show just "<id>".
+  // tables show just "<id>". Read from the picker in compact spacing.
   async getSelectedTableName() {
+    if ((await this.locators.picker.count()) > 0) {
+      return this.getPickerText();
+    }
     return this.locators.header.innerText();
+  }
+
+  // Compact spacing
+
+  async getPickerText() {
+    return this.locators.picker.inputValue();
+  }
+
+  // Ids of the picker's rendered options, top to bottom (the list is
+  // virtualized, so only the first rows on a long list)
+  async getPickerTableIds() {
+    return this.locators.pickerOptions.evaluateAll((options) =>
+      options.map((option) => Number(option.dataset.tableId)),
+    );
+  }
+
+  // Searches the picker for `text`, then opens `id` (clicked, with
+  // `modifiers`) or, without an id, the first match with Enter
+  async pickTable(text, { id, modifiers } = {}) {
+    await this.locators.picker.click();
+    await this.locators.picker.fill(text);
+    if (id === undefined) {
+      await this.locators.pickerOptions.first().waitFor();
+      await this.locators.picker.press("Enter");
+      return;
+    }
+    await this.window
+      .locator(`[role="listbox"] [role="option"][data-table-id="${id}"]`)
+      .first()
+      .click({ modifiers });
+  }
+
+  async closePicker() {
+    await this.locators.picker.press("Escape");
+  }
+
+  async getSpacingToggleText() {
+    return (await this.locators.spacingToggle.innerText()).trim();
+  }
+
+  async toggleSpacing() {
+    await this.locators.spacingToggle.click();
+  }
+
+  // The sidebar (and its pinned toggle) only exists in default spacing. Not
+  // the search box: the picker has the same placeholder.
+  async isSidebarVisible() {
+    return (await this.locators.pinnedToggle.count()) > 0;
   }
 
   selectedSidebarTable() {

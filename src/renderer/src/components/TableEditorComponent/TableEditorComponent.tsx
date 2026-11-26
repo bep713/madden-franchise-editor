@@ -8,6 +8,7 @@ import React, {
     useRef
 } from 'react';
 
+import cx from 'classnames';
 import type Handsontable from 'handsontable';
 import { HotTable, HotTableRef } from '@handsontable/react-wrapper';
 import 'handsontable/styles/handsontable.min.css';
@@ -100,6 +101,8 @@ export interface GridHandle {
 
 interface Props {
     isInverted?: boolean;
+    // Compact table editor spacing: v4-like cell padding and row height
+    compact?: boolean;
     table: TableData | ReadOnlyTable;
     // Editing is enabled when fileId is set and table is a TableData
     fileId?: string;
@@ -125,6 +128,11 @@ interface Props {
     // Find references to this record... in the context menu
     onFindReferences?: (recordIndex: number) => void;
 }
+
+const THEME_NAME = 'ht-theme-main-dark-auto';
+// A theme with no stylesheet, used to make Handsontable re-read the theme's
+// CSS variables (see the compact effect)
+const RELOAD_THEME_NAME = 'ht-theme-reload';
 
 // The element that scrolls the grid's viewport
 function getScrollHolder(hotRef: React.RefObject<HotTableRef>) {
@@ -186,7 +194,7 @@ function isEditableTable(table: Props['table']): table is TableData {
 // (useUndoStack), in record terms, so a data update doesn't affect it.
 const TableEditorComponent = forwardRef<GridHandle, Props>(
     function TableEditorComponent(props, ref) {
-        const { isInverted, table } = props;
+        const { compact, isInverted, table } = props;
         const hotRef = useRef<HotTableRef>(null);
         const wrapperRef = useRef<HTMLDivElement>(null);
         const propsRef = useRef(props);
@@ -715,6 +723,49 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
             return () => clearTimeout(timer);
         }, [table, isInverted, undo]);
 
+        // A spacing switch changes the theme's CSS variables (the compact
+        // class), but Handsontable caches them, and useTheme with the current
+        // name does nothing. Switching to another theme and back re-reads
+        // them. useTheme scrolls to the top, so the first visible row, the
+        // horizontal scroll and the selection are put back.
+        const appliedCompactRef = useRef(!!compact);
+        useLayoutEffect(() => {
+            const hot = hotRef.current?.hotInstance;
+            if (!hot || appliedCompactRef.current === !!compact) {
+                return;
+            }
+            appliedCompactRef.current = !!compact;
+            const firstRow = hot.getFirstFullyVisibleRow();
+            const left = getScrollHolder(hotRef)?.scrollLeft ?? 0;
+            hot.useTheme(RELOAD_THEME_NAME);
+            hot.useTheme(THEME_NAME);
+            if (typeof firstRow === 'number' && firstRow > 0) {
+                hot.scrollViewportTo({ row: firstRow, verticalSnap: 'top' });
+            }
+            const holder = getScrollHolder(hotRef);
+            if (holder) {
+                holder.scrollLeft = left;
+            }
+            // The toggle's click deselected the grid (outside click)
+            const selection = lastSelectionRef.current;
+            if (!selection) {
+                return;
+            }
+            const [row, col] = orientationRef.current.toVisualCell(
+                toRecordCell(selection)
+            );
+            if (row !== null && row !== undefined) {
+                hot.selectCell(row, col, row, col, false);
+            }
+            // As after an orientation switch, once the click is done
+            const timer = setTimeout(() => {
+                if (!hot.isDestroyed) {
+                    hot.listen();
+                }
+            });
+            return () => clearTimeout(timer);
+        }, [compact]);
+
         // A paste past the grid's edge is clipped. It would add rows (records)
         // or columns (fields, or inverted records) that aren't in the file:
         // main rejects their writes, but the normal view's new rows would
@@ -723,7 +774,7 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
 
         return (
             <div
-                className={styles.wrapper}
+                className={cx(styles.wrapper, { [styles.compact]: compact })}
                 onAuxClick={handleAuxClick}
                 onClick={handleClick}
                 onMouseDownCapture={handleMouseDownCapture}
@@ -735,8 +786,6 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
                     afterScrollVertically={afterScroll}
                     afterSelectionEnd={afterSelectionEnd}
                     autoColumnSize={isInverted ? false : undefined}
-                    autoWrapCol={true}
-                    autoWrapRow={true}
                     beforeChange={beforeChange}
                     beforeCreateCol={beforeCreate}
                     beforeCreateRow={beforeCreate}
@@ -759,7 +808,7 @@ const TableEditorComponent = forwardRef<GridHandle, Props>(
                     rowHeaders={
                         isInverted ? false : (index: number) => String(index)
                     }
-                    themeName='ht-theme-main-dark-auto'
+                    themeName={THEME_NAME}
                     undo={false}
                     width='100%'
                 />

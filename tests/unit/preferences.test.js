@@ -56,9 +56,9 @@ test("a real user's file loads and is rewritten with only the missing sections a
     path.join(__dirname, "fixtures/preferences/real-user.json"),
     "utf8",
   );
-  // The fixture predates showPinnedTables, uiVersion and theme, which are filled in
-  // on load. The store merges general over the defaults, so they land in
-  // schema order.
+  // The fixture predates showPinnedTables, uiVersion, theme and
+  // tableEditorSpacing, which are filled in on load. The store merges general
+  // over the defaults, so they land in schema order.
   const saved = JSON.parse(input);
   const general = {};
   for (const [key, value] of Object.entries(saved.general)) {
@@ -66,6 +66,7 @@ test("a real user's file loads and is rewritten with only the missing sections a
     if (key === "defaultEditor") {
       general.uiVersion = "v5";
       general.theme = "system";
+      general.tableEditorSpacing = "default";
     }
     if (key === "autoSave") general.showPinnedTables = [true];
   }

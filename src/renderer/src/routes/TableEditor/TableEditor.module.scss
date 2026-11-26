@@ -219,3 +219,14 @@ td.active-row {
     cursor: default;
     resize: none;
 }
+
+// Compact spacing: Back/Forward and the table picker in the table's header
+.tablePickerWrapper {
+    display: flex;
+    gap: var(--spacing-1);
+    align-items: center;
+}
+
+[data-spacing='compact'] .tableEditorComponentWrapper {
+    padding: 2px;
+}

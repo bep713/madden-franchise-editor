@@ -46,13 +46,13 @@ const GetStartedCard: React.FC<GetStartedCardProps> = ({
 }: GetStartedCardProps) => {
     const fileLoaded = !!openFile;
 
-    const items = [
+    const openFileLink = (
         <Link
             key={GetStartedActions.OPEN_FILE}
             onClick={() => onActionClick(GetStartedActions.OPEN_FILE)}
-            text={fileLoaded ? 'Open a different file...' : 'Open a file...'}
+            text={fileLoaded ? 'Open a different file' : 'Open a file...'}
         />
-    ];
+    );
 
     const franchiseActions = [
         <Link
@@ -80,6 +80,7 @@ const GetStartedCard: React.FC<GetStartedCardProps> = ({
             }
             text='Open schema management'
         />,
+        openFileLink,
         openFile?.path && (
             <Link
                 key={GetStartedActions.OPEN_FILE_LOCATION}
@@ -136,9 +137,7 @@ const GetStartedCard: React.FC<GetStartedCardProps> = ({
                             divider='solid'
                             gap='5'
                             items={
-                                fileLoaded
-                                    ? items.concat(franchiseActions)
-                                    : items
+                                fileLoaded ? franchiseActions : [openFileLink]
                             }
                             scrollable
                         />

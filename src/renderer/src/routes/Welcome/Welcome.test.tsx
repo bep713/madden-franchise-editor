@@ -463,7 +463,7 @@ describe('Welcome common files', () => {
         } as unknown as OpenFranchiseFile);
         await userEvent.click(
             within(screen.getByTestId('get-started-card')).getByText(
-                'Open a different file...'
+                'Open a different file'
             )
         );
         await screen.findByRole('dialog');

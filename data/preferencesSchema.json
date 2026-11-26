@@ -50,6 +50,18 @@
           "help": "Auto follows your Windows light/dark setting."
         },
         {
+          "key": "tableEditorSpacing",
+          "label": "Table editor spacing",
+          "type": "dropdown",
+          "defaultValue": "default",
+          "ui": "v5",
+          "options": [
+            { "label": "Default", "value": "default" },
+            { "label": "Compact (like legacy v4)", "value": "compact" }
+          ],
+          "help": "Compact uses tighter spacing and resembles the legacy table editor. It uses smaller cells and replaces the table list with a search box above the table."
+        },
+        {
           "key": "checkForUpdates",
           "label": "Automatically check for application updates",
           "type": "checkbox",

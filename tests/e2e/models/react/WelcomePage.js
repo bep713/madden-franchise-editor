@@ -16,7 +16,7 @@ class WelcomePage {
     // The side nav has its own "Open a file..." link
     Object.assign(this.locators, {
       openFileLink: this.locators.getStartedCard.getByText(
-        /^Open (a|a different) file\.\.\.$/,
+        /^Open (a file\.\.\.|a different file)$/,
       ),
       // Next to a common file's name in the card header
       changeFileParametersLink: this.locators.getStartedCard.locator(

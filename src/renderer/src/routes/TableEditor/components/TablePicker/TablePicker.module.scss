@@ -1,0 +1,146 @@
+@import '@assets/colors.css';
+@import '@assets/spacing.css';
+
+.wrapper {
+    --table-picker-width: 320px;
+
+    position: relative;
+    flex-shrink: 0;
+    width: var(--table-picker-width);
+}
+
+.inputBox {
+    display: flex;
+    gap: var(--spacing-2);
+    align-items: center;
+    padding: 0 var(--spacing-2);
+    background-color: var(--surface);
+    border: 1px solid var(--divider-color);
+    border-radius: 2px;
+
+    &:focus-within {
+        outline: 1px solid var(--text-primary);
+    }
+}
+
+.searchIcon {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    color: var(--text-secondary);
+}
+
+.input {
+    width: 100%;
+    min-width: 0;
+    padding: var(--spacing-1) 0;
+    font-size: 1em;
+    font-weight: 500;
+    color: inherit;
+    background-color: transparent;
+    border: none;
+
+    &:focus-visible {
+        outline: none;
+    }
+
+    &::placeholder {
+        font-style: italic;
+        font-weight: normal;
+    }
+}
+
+.chevron {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    align-self: stretch;
+    justify-content: center;
+    width: 20px;
+    color: var(--text-secondary);
+    cursor: pointer;
+
+    svg {
+        width: 12px;
+        height: 12px;
+        transition: transform 0.15s ease;
+    }
+
+    &:hover {
+        color: var(--text-primary);
+    }
+}
+
+.chevronOpen svg {
+    transform: rotate(180deg);
+}
+
+/* Above the grid's overlays, below banners and modals */
+.popup {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    z-index: 200;
+    width: 100%;
+    padding: var(--spacing-05) 0;
+    background-color: var(--surface-raised);
+    border: 1px solid var(--divider-color);
+    border-radius: 2px;
+    box-shadow: 1px 1px 10px 0 var(--shadow-soft);
+}
+
+.option {
+    display: flex;
+    gap: var(--spacing-2);
+    align-items: center;
+    padding: 0 var(--spacing-3);
+    cursor: pointer;
+}
+
+.optionText {
+    flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.current .optionText {
+    font-weight: 500;
+}
+
+.highlighted {
+    background-color: var(--hover);
+}
+
+.pin {
+    flex-shrink: 0;
+    width: 10px;
+    height: 10px;
+}
+
+.pinnedLabel {
+    display: flex;
+    align-items: flex-end;
+    padding: 0 var(--spacing-3);
+    font-size: 0.75em;
+    color: var(--text-secondary);
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    padding: 0 var(--spacing-2);
+
+    hr {
+        width: 100%;
+        margin: 0;
+        border: none;
+        border-top: 1px solid var(--divider-color);
+    }
+}
+
+.empty {
+    padding: var(--spacing-2) var(--spacing-3);
+    font-style: italic;
+    color: var(--text-secondary);
+}
