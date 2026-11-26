@@ -11,7 +11,7 @@ A user opens a Madden or CFB franchise file from the Welcome page. The Get Start
 
 ## How to get to it (user POV)
 
-- On the Welcome (Home) page, click "Open a file..." on the Get Started card, or click "Open a different file..." when a file is already open.
+- On the Welcome (Home) page, click "Open a file..." on the Get Started card, or click "Open a different file" when a file is already open.
 - Click "Open a file..." in the side nav (`[data-action="open-file"]`).
 - Click a file name on the Recent Files card.
 - Use File > Open (menu id `Open`) and File > Close (menu id `CloseFile`).
